@@ -1,6 +1,8 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
+use crate::rendering::get_render_offset;
+
 #[derive(Resource, Default)]
 pub struct Time {
     pub dt: f32,
@@ -13,5 +15,7 @@ pub fn update_time(mut time: ResMut<Time>) {
 }
 
 pub fn render_fps(time: Res<Time>) {
-    draw_text(time.fps.to_string().as_str(), 16.0, 32.0, 16.0, GOLD);
+    let offset = get_render_offset();
+
+    draw_text(time.fps.to_string().as_str(), 16.0 + offset.x, 32.0 + offset.y, 16.0, GOLD);
 }

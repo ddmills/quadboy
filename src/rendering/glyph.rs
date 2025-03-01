@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 
 use crate::common::{MacroquadColorable, Palette};
 
-use super::{GlyphMaterial, Position};
+use super::{get_render_offset, get_render_target_size, GlyphMaterial, Position};
 
 const TRANSPARENT: Color = Color::new(0., 0., 0., 0.);
 
@@ -70,6 +70,15 @@ pub fn render_glyphs(
 
     let texture = tilesets.glyph_texture.weak_clone();
 
+    // let target_size = get_render_target_size();
+    // let is_x_even = target_size.x % 2 == 0;
+    // let is_y_even = target_size.y % 2 == 0;
+
+    // let offset_x = if is_x_even { 0.0 } else { 0.5 };
+    // let offset_y = if is_y_even { 0.0 } else { 0.5 };
+
+    let offset = get_render_offset();
+
     for (glyph, position) in q_glyphs.iter() {
         let style = glyph.get_style();
 
@@ -81,8 +90,8 @@ pub fn render_glyphs(
 
         draw_texture_ex(
             &texture,
-            position.x,
-            position.y,
+            position.x + offset.x,
+            position.y + offset.y,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(16., 24.)),

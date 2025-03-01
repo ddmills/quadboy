@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use common::Palette;
 use ecs::{Time, render_fps, update_time};
 use macroquad::prelude::*;
-use rendering::{Glyph, GlyphMaterial, Position, load_tilesets, render_glyphs};
+use rendering::{create_render_camera, create_render_target, get_render_target_size, load_tilesets, render_glyphs, update_render_camera, update_render_target, Glyph, GlyphMaterial, Position, TEXEL_SIZE, TEXEL_SIZE_F32};
 
 mod common;
 mod ecs;
@@ -21,6 +21,8 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    set_default_filter_mode(FilterMode::Nearest);
+
     let tilesets = load_tilesets().await;
 
     let mut world = World::new();
@@ -39,10 +41,21 @@ async fn main() {
 
     world.spawn((
         Position::new(100., 100.),
-        Glyph::new(7, Palette::Yellow, Palette::Orange),
+        Glyph::new(10, Palette::Red, Palette::Yellow),
     ));
 
+    let mut render_target = create_render_target();
+    let mut render_camera = create_render_camera(&render_target);
+
     loop {
+        let target_size = get_render_target_size();
+        let target_size_f32 = target_size.as_vec2();
+
+        render_target = update_render_target(render_target);
+        update_render_camera(&mut render_camera, &render_target);
+
+        set_camera(&render_camera);
+
         clear_background(Palette::Black.into());
 
         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, Palette::Blue.into());
@@ -62,6 +75,24 @@ async fn main() {
 
         schedule_pre_update.run(&mut world);
         schedule_update.run(&mut world);
+
+        set_default_camera();
+        clear_background(ORANGE);
+
+        let dest_size = target_size.as_vec2() * vec2(TEXEL_SIZE_F32, TEXEL_SIZE_F32);
+
+        draw_texture_ex(
+            &render_target.texture,
+            0.,
+            0.,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(dest_size),
+                ..Default::default()
+            },
+        );
+
+        gl_use_default_material();
 
         next_frame().await;
     }
