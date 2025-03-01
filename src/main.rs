@@ -1,7 +1,12 @@
-use common::Palette;
+use bevy_ecs::prelude::*;
+use ecs::{render_fps, update_time, Time};
 use macroquad::prelude::*;
+use common::Palette;
+use rendering::GlyphMaterial;
 
+mod ecs;
 mod common;
+mod rendering;
 
 fn window_conf() -> Conf {
     Conf {
@@ -16,6 +21,17 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    let mut world = World::new();
+
+    world.init_resource::<Time>();
+    world.init_resource::<GlyphMaterial>();
+
+    let mut schedule_pre_update = Schedule::default();
+    let mut schedule_update = Schedule::default();
+
+    schedule_pre_update.add_systems(update_time);
+    schedule_update.add_systems(render_fps);
+
     loop {
         clear_background(Palette::Black.into());
 
@@ -23,8 +39,8 @@ async fn main() {
         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, Palette::Green.into());
         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, Palette::Yellow.into());
 
-        let fps = get_fps();
-        draw_text(fps.to_string().as_str(), 20.0, 20.0, 30.0, Palette::Orange.into());
+        schedule_pre_update.run(&mut world);
+        schedule_update.run(&mut world);
 
         next_frame().await;
     }
