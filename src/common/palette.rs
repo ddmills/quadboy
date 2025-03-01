@@ -16,14 +16,13 @@ pub enum Palette {
     DarkCyan = 0x2C7983,
 }
 
-pub fn hex(r: u8, g: u8, b: u8) -> u32
-{
+pub fn hex(r: u8, g: u8, b: u8) -> u32 {
     ((r as u32) << 16) + ((g as u32) << 8) + (b as u32)
 }
 
 pub trait MacroquadColorable {
     fn to_macroquad_color(&self) -> macroquad::prelude::Color;
-    fn to_macroquad_color_a(&self, a:f32) -> macroquad::prelude::Color;
+    fn to_macroquad_color_a(&self, a: f32) -> macroquad::prelude::Color;
 }
 
 impl From<Palette> for macroquad::prelude::Color {
@@ -40,8 +39,8 @@ impl MacroquadColorable for u32 {
 
         macroquad::prelude::Color::from_rgba(r, g, b, 255)
     }
-    
-    fn to_macroquad_color_a(&self, a:f32) -> macroquad::prelude::Color {
+
+    fn to_macroquad_color_a(&self, a: f32) -> macroquad::prelude::Color {
         self.to_macroquad_color().with_alpha(a)
     }
 }
@@ -50,8 +49,8 @@ impl MacroquadColorable for Palette {
     fn to_macroquad_color(&self) -> macroquad::prelude::Color {
         (*self as u32).to_macroquad_color()
     }
-    
-    fn to_macroquad_color_a(&self, a:f32) -> macroquad::prelude::Color {
+
+    fn to_macroquad_color_a(&self, a: f32) -> macroquad::prelude::Color {
         (*self as u32).to_macroquad_color_a(a)
     }
 }

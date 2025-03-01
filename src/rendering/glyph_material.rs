@@ -1,5 +1,5 @@
-use macroquad::prelude::*;
 use bevy_ecs::prelude::*;
+use macroquad::prelude::*;
 
 use super::alpha_blend;
 
