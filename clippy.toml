@@ -1,0 +1,3 @@
+allow-private-module-inception = true
+too-many-arguments-threshold = 16
+type-complexity-threshold = 500
