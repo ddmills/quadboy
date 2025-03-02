@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use super::{get_render_offset, GlyphMaterial, TilesetId, TilesetTextures, TRANSPARENT};
+use super::{get_render_offset, GlyphMaterial, TilesetId, TilesetTextures};
 
 pub struct Renderable {
     pub idx: usize,
@@ -61,6 +61,5 @@ pub fn render_all(
     }
 
     renderer.stack.clear();
-
     gl_use_default_material();
 }
