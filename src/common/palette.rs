@@ -2,8 +2,8 @@
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Palette {
     White = 0xD2DBDB,
-    Black = 0x171B1F,
-    Green = 0x2E862E,
+    Black = 0x161A1F,
+    Green = 0x2F812F,
     LightGreen = 0x1AAF1A,
     Brown = 0x664D3C,
     Blue = 0x294E94,
@@ -11,7 +11,7 @@ pub enum Palette {
     Red = 0xA83A3A,
     Orange = 0xE79519,
     Yellow = 0xEBCC21,
-    Purple = 0xB31DB3,
+    Purple = 0xAF0BB4,
     Cyan = 0x0EC9E2,
     DarkCyan = 0x2C7983,
 }
