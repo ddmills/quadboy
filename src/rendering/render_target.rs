@@ -3,10 +3,10 @@ use macroquad::prelude::*;
 pub const TEXEL_SIZE:u32 = 2;
 pub const TEXEL_SIZE_F32:f32 = TEXEL_SIZE as f32;
 
-pub fn get_render_target_size() -> IVec2 {
-    ivec2(
-        (screen_width() / TEXEL_SIZE_F32) as i32,
-        (screen_height() / TEXEL_SIZE_F32) as i32,
+pub fn get_render_target_size() -> UVec2 {
+    uvec2(
+        (screen_width() / TEXEL_SIZE_F32) as u32,
+        (screen_height() / TEXEL_SIZE_F32) as u32,
     )
 }
 
@@ -25,9 +25,9 @@ pub fn create_render_target() -> RenderTarget {
 }
 
 pub fn update_render_target(target: RenderTarget) -> RenderTarget {
-    let pref_size: IVec2 = get_render_target_size();
+    let pref_size = get_render_target_size();
 
-    if target.texture.size().as_ivec2() != pref_size {
+    if target.texture.size().as_uvec2() != pref_size {
         create_render_target()
     } else {
         target

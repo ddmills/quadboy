@@ -9,7 +9,7 @@ pub const TRANSPARENT: Color = Color::new(0., 0., 0., 0.);
 
 #[derive(Component, Default)]
 pub struct Glyph {
-    idx: usize,
+    pub idx: usize,
     fg1: Option<u32>,
     fg2: Option<u32>,
     bg: Option<u32>,
@@ -94,16 +94,16 @@ pub fn render_glyphs(
     for (glyph, position) in q_glyphs.iter() {
         let style = glyph.get_style();
 
-        renderer.draw(Renderable {
-            idx: glyph.idx,
-            fg1: style.fg1,
-            fg2: style.fg2,
-            bg: style.bg,
-            outline: style.outline,
-            tileset_id: TilesetId::Glyph,
-            x: position.x * TILE_SIZE_F32.0,
-            y: position.y * TILE_SIZE_F32.1,
-        });
+        // renderer.draw(Renderable {
+        //     idx: glyph.idx,
+        //     fg1: style.fg1,
+        //     fg2: style.fg2,
+        //     bg: style.bg,
+        //     outline: style.outline,
+        //     tileset_id: TilesetId::Glyph,
+        //     x: position.x * TILE_SIZE_F32.0,
+        //     y: position.y * TILE_SIZE_F32.1,
+        // });
     }
 }
 

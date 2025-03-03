@@ -25,13 +25,15 @@ pub fn render_fps(time: Res<Time>, mut renderer: ResMut<Renderer>) {
     for (i, c) in t.chars().enumerate() {
         renderer.draw(Renderable {
             idx: cp437_idx(c).unwrap_or(0),
-            fg1: Palette::Yellow.to_macroquad_color(),
+            fg1: Palette::LightGreen.to_macroquad_color(),
             fg2: TRANSPARENT,
             bg: TRANSPARENT,
             outline: TRANSPARENT,
             tileset_id: TilesetId::BodyFont,
             x: i as f32 * BODY_FONT_SIZE_F32.0,
             y: 0.,
+            w: BODY_FONT_SIZE_F32.0,
+            h: BODY_FONT_SIZE_F32.1,
         });
     }
 }

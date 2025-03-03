@@ -63,6 +63,8 @@ pub fn render_text(
                 tileset_id: super::TilesetId::BodyFont,
                 x: position.x * TILE_SIZE_F32.0 + i as f32 * BODY_FONT_SIZE_F32.0,
                 y: position.y * TILE_SIZE_F32.1,
+                w: BODY_FONT_SIZE_F32.0,
+                h: BODY_FONT_SIZE_F32.1,
             });
         }
     }
