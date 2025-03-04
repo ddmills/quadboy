@@ -5,7 +5,7 @@ mod position;
 mod render_target;
 mod text;
 mod renderer;
-mod pipeline;
+mod glyph_batch;
 
 pub use color_blend::*;
 pub use glyph::*;
@@ -14,4 +14,4 @@ pub use position::*;
 pub use render_target::*;
 pub use text::*;
 pub use renderer::*;
-pub use pipeline::*;
+pub use glyph_batch::*;

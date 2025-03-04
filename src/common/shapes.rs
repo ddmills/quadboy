@@ -27,12 +27,12 @@ pub fn render_shapes(q_shapes: Query<(&Rectangle, &Position)>)
 {
     let offset = get_render_offset();
     for (shape, position) in q_shapes.iter() {
-        draw_rectangle(
-            (position.x * TILE_SIZE_F32.0) + offset.x,
-            (position.y * TILE_SIZE_F32.1) + offset.y,
-            shape.width as f32,
-            shape.height as f32,
-            shape.color.to_macroquad_color(),
-        );
+        // draw_rectangle(
+        //     (position.x * TILE_SIZE_F32.0) + offset.x,
+        //     (position.y * TILE_SIZE_F32.1) + offset.y,
+        //     shape.width as f32,
+        //     shape.height as f32,
+        //     shape.color.to_macroquad_color(),
+        // );
     }
 }

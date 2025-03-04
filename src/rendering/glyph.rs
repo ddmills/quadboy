@@ -1,9 +1,9 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32, TITLE_FONT_SIZE_F32}, common::{MacroquadColorable, Palette}};
+use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32, TITLE_FONT_SIZE_F32}, common::{MacroquadColorable}};
 
-use super::{Position, Renderable, Renderer};
+use super::{get_render_offset, glyph_batch, GlyphBatch, Position, Renderable};
 
 pub const TRANSPARENT: Color = Color::new(0., 0., 0., 0.);
 
@@ -82,29 +82,37 @@ impl Glyph {
             outline: self
                 .outline
                 .map(|x| x.to_macroquad_color())
-                .unwrap_or(Palette::Black.to_macroquad_color()),
+                .unwrap_or(TRANSPARENT),
         }
     }
 }
 
 pub fn render_glyphs(
     q_glyphs: Query<(&Glyph, &Position)>,
-    mut renderer: ResMut<Renderer>,
+    mut glyph_batch: Single<&mut GlyphBatch>,
 ) {
-    for (glyph, position) in q_glyphs.iter() {
+    let offset = get_render_offset();
+
+    let renderables = q_glyphs.iter().map(|(glyph, pos)| {
         let style = glyph.get_style();
 
-        // renderer.draw(Renderable {
-        //     idx: glyph.idx,
-        //     fg1: style.fg1,
-        //     fg2: style.fg2,
-        //     bg: style.bg,
-        //     outline: style.outline,
-        //     tileset_id: TilesetId::Glyph,
-        //     x: position.x * TILE_SIZE_F32.0,
-        //     y: position.y * TILE_SIZE_F32.1,
-        // });
-    }
+        let x = (pos.x * TILE_SIZE_F32.0) + offset.x;
+        let y = (pos.y * TILE_SIZE_F32.1) + offset.y;
+
+        Renderable {
+            idx: glyph.idx,
+            fg1: style.fg1.to_vec(),
+            fg2: style.fg2.to_vec(),
+            bg: style.bg.to_vec(),
+            outline: style.outline.to_vec(),
+            x,
+            y,
+            w: TILE_SIZE_F32.0,
+            h: TILE_SIZE_F32.1,
+        }
+    }).collect::<Vec<_>>();
+
+    glyph_batch.draw(renderables);
 }
 
 pub async fn load_tilesets() -> TilesetTextures {
