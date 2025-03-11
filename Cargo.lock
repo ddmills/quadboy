@@ -513,6 +513,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "macroquad-profiler"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a0f3792c62d2a730a25ca837bbbdfadc7df4a54033533b9a12489f809f325e5"
+dependencies = [
+ "macroquad",
+]
+
+[[package]]
 name = "macroquad_macro"
 version = "0.1.8"
 source = "git+https://github.com/not-fl3/macroquad#fc5a963857e113888e8721e01c349a5ef32dc930"
@@ -666,6 +675,7 @@ version = "0.1.0"
 dependencies = [
  "bevy_ecs",
  "macroquad",
+ "macroquad-profiler",
 ]
 
 [[package]]

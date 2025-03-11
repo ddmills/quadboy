@@ -9,6 +9,7 @@ opt-level = 3
 [dependencies]
 bevy_ecs = "0.15.3"
 macroquad = "0.4.13"
+macroquad-profiler = "0.2.0"
 
 [patch.crates-io]
 macroquad = { git = "https://github.com/not-fl3/macroquad" }

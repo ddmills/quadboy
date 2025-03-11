@@ -1,11 +1,11 @@
 use std::{u32, vec};
 
 use bevy_ecs::prelude::*;
-use macroquad::{prelude::*, rand::ChooseRandom};
+use macroquad::{prelude::*, rand::ChooseRandom, telemetry::{self, ZoneGuard}};
 
 use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32, TITLE_FONT_SIZE_F32}, common::{MacroquadColorable, Palette}, ecs::Time};
 
-use super::{GlyphBatch, Position, Renderable};
+use super::{get_render_target_size, GlyphBatch, Position, Renderable};
 
 #[derive(Component, Default)]
 pub struct Glyph {
@@ -98,36 +98,54 @@ pub fn render_glyphs(
     let fg1 = options.choose().unwrap();
     let fg2 = options.choose().unwrap();
 
-    let renderables = q_glyphs.iter().enumerate().map(|(idx, (glyph, pos))| {
-        let style = glyph.get_style();
+    let screen = get_render_target_size().as_vec2();
+    let w = TILE_SIZE_F32.0;
+    let h = TILE_SIZE_F32.1;
 
-        let x = (pos.x * TILE_SIZE_F32.0);
-        let y = (pos.y * TILE_SIZE_F32.1);
+    telemetry::begin_zone("get-renderables");
+    let renderables = q_glyphs
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (glyph, pos))| {
+            let x = pos.x * TILE_SIZE_F32.0;
+            let y = pos.y * TILE_SIZE_F32.1;
 
-        let t1 = (idx + (time.start.floor() as usize)) % options.len();
-        let t2= (idx + (time.start.floor() as usize) + 1) % options.len();
+            if x + w < 0. || x > screen.x || y + h < 0. || y > screen.y {
+                return None;
+            }
 
-        let fg1: Palette = options[t1];
-        let fg2: Palette = options[t2];
+            let style = glyph.get_style();
 
-        Renderable {
-            idx: glyph.idx,
-            // fg1: style.fg1,
-            // fg2: style.fg2,
-            fg1: fg1.to_vec4(),
-            fg2: fg2.to_vec4(),
-            bg: style.bg,
-            // bg: fg2.to_macroquad_color(),
-            // outline: style.outline,
-            outline: Palette::Black.to_vec4(),
-            x,
-            y,
-            w: TILE_SIZE_F32.0,
-            h: TILE_SIZE_F32.1,
-        }
-    }).collect::<Vec<_>>();
 
-    glyph_batch.set_glyphs(renderables);
+            let t1 = (idx + (time.start.floor() as usize)) % options.len();
+            let t2= (idx + (time.start.floor() as usize) + 1) % options.len();
+
+            let fg1: Palette = options[t1];
+            let fg2: Palette = options[t2];
+
+            Some(Renderable {
+                idx: glyph.idx,
+                // fg1: style.fg1,
+                // fg2: style.fg2,
+                fg1: fg1.to_vec4(),
+                fg2: fg2.to_vec4(),
+                bg: style.bg,
+                // bg: fg2.to_macroquad_color(),
+                // outline: style.outline,
+                outline: Palette::Black.to_vec4(),
+                x,
+                y,
+                w: TILE_SIZE_F32.0,
+                h: TILE_SIZE_F32.1,
+            })
+        });
+
+    telemetry::end_zone();
+
+    {
+        let _z = ZoneGuard::new("set-glyphs");
+        glyph_batch.set_glyphs(renderables);
+    }
 }
 
 pub async fn load_tilesets() -> TilesetTextures {

@@ -135,10 +135,10 @@ impl GlyphBatch {
         }
     }
 
-    pub fn set_glyphs(&mut self, glyphs: Vec<Renderable>) {
+    pub fn set_glyphs<I>(&mut self, glyphs: I) where I: Iterator<Item = Renderable> {
         let screen = get_render_target_size().as_vec2();
 
-        self.vertices = glyphs.iter().flat_map(|g| {
+        self.vertices = glyphs.flat_map(|g| {
             // cull when not visible to screen
             if g.x + g.w < 0. || g.x > screen.x || g.y + g.h < 0. || g.y > screen.y {
                 return vec![];
