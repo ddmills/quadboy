@@ -1,8 +1,7 @@
 use bevy_ecs::prelude::*;
-use cfg::TILE_SIZE_F32;
 use common::{render_shapes, MacroquadColorable, Palette, Rectangle};
 use ecs::{Time, render_fps, update_time};
-use macroquad::{miniquad::{PassAction, UniformsSource}, prelude::*};
+use macroquad::{miniquad::PassAction, prelude::*};
 use rendering::{create_render_camera, create_render_target, get_render_target_size, load_tilesets, render_all, render_glyphs, render_text, update_render_camera, update_render_target, BaseShaderUniforms, Glyph, GlyphMaterial, Position, Renderable, GlyphBatch, Text, TEXEL_SIZE, TEXEL_SIZE_F32};
 
 mod common;
@@ -68,43 +67,41 @@ async fn main() {
     let mut render_target = create_render_target();
     let mut render_camera = create_render_camera(&render_target);
 
-    let glyph_batch_id = world.spawn(GlyphBatch::new(id)).id();
+    world.spawn((GlyphBatch::new(id)));
 
     loop {
+        clear_background(Palette::Purple.to_macroquad_color());
 
+        // resize the render target to half the current screen size
         render_target = update_render_target(render_target);
-        update_render_camera(&mut render_camera, &render_target);
 
-        clear_background(Palette::Black.to_macroquad_color());
+        // update_render_camera(&mut render_camera, &render_target);
         // set_camera(&render_camera);
 
         schedule_pre_update.run(&mut world);
         schedule_update.run(&mut world);
-        schedule_post_update.run(&mut world);
-
-        let mut q = world.query::<&mut GlyphBatch>();
-        let mut glyph_batch = q.single_mut(&mut world);
 
         {
             let gl = unsafe { get_internal_gl() };
             gl.quad_context.begin_pass(Some(render_target.render_pass.raw_miniquad_id()), PassAction::Nothing);
         }
 
-        glyph_batch.render();
-        
+        // will call "render" for the glyph batch
+        schedule_post_update.run(&mut world);
+
         {
             let gl = unsafe { get_internal_gl() };
             gl.quad_context.end_render_pass();
         }
 
-        set_default_camera();
+        // set_default_camera();
+        // update_render_camera(&mut render_camera, &render_target);
+        // set_camera(&render_camera);
 
         clear_background(Palette::Black.to_macroquad_color());
-        let t = get_fps().to_string();
-        draw_text(&t, 30.0, 200.0, 30.0, Palette::LightGreen.to_macroquad_color());
 
         let target_size = get_render_target_size();
-        let dest_size = target_size.as_vec2() * vec2(TEXEL_SIZE_F32, TEXEL_SIZE_F32);
+        let dest_size = target_size.as_vec2() * TEXEL_SIZE_F32;
 
         draw_texture_ex(
             &render_target.texture,
@@ -116,6 +113,9 @@ async fn main() {
                 ..Default::default()
             },
         );
+
+        let t = get_fps().to_string();
+        draw_text(&t, 0.0, 16.0, 32.0, WHITE);
 
         gl_use_default_material();
 

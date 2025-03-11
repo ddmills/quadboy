@@ -1,11 +1,11 @@
+use std::{u32, vec};
+
 use bevy_ecs::prelude::*;
-use macroquad::prelude::*;
+use macroquad::{prelude::*, rand::ChooseRandom};
 
-use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32, TITLE_FONT_SIZE_F32}, common::{MacroquadColorable}};
+use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32, TITLE_FONT_SIZE_F32}, common::{MacroquadColorable, Palette}, ecs::Time};
 
-use super::{get_render_offset, glyph_batch, GlyphBatch, Position, Renderable};
-
-pub const TRANSPARENT: Color = Color::new(0., 0., 0., 0.);
+use super::{GlyphBatch, Position, Renderable};
 
 #[derive(Component, Default)]
 pub struct Glyph {
@@ -48,11 +48,13 @@ pub enum TilesetId {
 }
 
 pub struct GlyphStyle {
-    pub fg1: Color,
-    pub fg2: Color,
-    pub bg: Color,
-    pub outline: Color,
+    pub fg1: Vec4,
+    pub fg2: Vec4,
+    pub bg: Vec4,
+    pub outline: Vec4,
 }
+
+pub const TRANSPARENT: Vec4 = Vec4::splat(0.);
 
 impl Glyph {
     pub fn new<T: Into<u32>>(idx: usize, fg1: T, fg2: T) -> Self {
@@ -69,19 +71,19 @@ impl Glyph {
         GlyphStyle {
             bg: self
                 .bg
-                .map(|x| x.to_macroquad_color())
+                .map(|x| x.to_vec4_a(1.))
                 .unwrap_or(TRANSPARENT),
             fg1: self
                 .fg1
-                .map(|x| x.to_macroquad_color())
+                .map(|x| x.to_vec4_a(1.))
                 .unwrap_or(TRANSPARENT),
             fg2: self
                 .fg2
-                .map(|x| x.to_macroquad_color())
+                .map(|x| x.to_vec4_a(1.))
                 .unwrap_or(TRANSPARENT),
             outline: self
                 .outline
-                .map(|x| x.to_macroquad_color())
+                .map(|x| x.to_vec4_a(1.))
                 .unwrap_or(TRANSPARENT),
         }
     }
@@ -90,21 +92,34 @@ impl Glyph {
 pub fn render_glyphs(
     q_glyphs: Query<(&Glyph, &Position)>,
     mut glyph_batch: Single<&mut GlyphBatch>,
+    time: Res<Time>
 ) {
-    let offset = get_render_offset();
+    let options = vec![Palette::Yellow, Palette::Red, Palette::Purple, Palette::Green];
+    let fg1 = options.choose().unwrap();
+    let fg2 = options.choose().unwrap();
 
-    let renderables = q_glyphs.iter().map(|(glyph, pos)| {
+    let renderables = q_glyphs.iter().enumerate().map(|(idx, (glyph, pos))| {
         let style = glyph.get_style();
 
-        let x = (pos.x * TILE_SIZE_F32.0) + offset.x;
-        let y = (pos.y * TILE_SIZE_F32.1) + offset.y;
+        let x = (pos.x * TILE_SIZE_F32.0);
+        let y = (pos.y * TILE_SIZE_F32.1);
+
+        let t1 = (idx + (time.start.floor() as usize)) % options.len();
+        let t2= (idx + (time.start.floor() as usize) + 1) % options.len();
+
+        let fg1: Palette = options[t1];
+        let fg2: Palette = options[t2];
 
         Renderable {
             idx: glyph.idx,
-            fg1: style.fg1.to_vec(),
-            fg2: style.fg2.to_vec(),
-            bg: style.bg.to_vec(),
-            outline: style.outline.to_vec(),
+            // fg1: style.fg1,
+            // fg2: style.fg2,
+            fg1: fg1.to_vec4(),
+            fg2: fg2.to_vec4(),
+            bg: style.bg,
+            // bg: fg2.to_macroquad_color(),
+            // outline: style.outline,
+            outline: Palette::Black.to_vec4(),
             x,
             y,
             w: TILE_SIZE_F32.0,
@@ -112,7 +127,7 @@ pub fn render_glyphs(
         }
     }).collect::<Vec<_>>();
 
-    glyph_batch.draw(renderables);
+    glyph_batch.set_glyphs(renderables);
 }
 
 pub async fn load_tilesets() -> TilesetTextures {

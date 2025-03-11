@@ -7,11 +7,13 @@ use crate::{cfg::BODY_FONT_SIZE_F32, common::{cp437_idx, MacroquadColorable, Pal
 pub struct Time {
     pub dt: f32,
     pub fps: i32,
+    pub start: f64,
 }
 
 pub fn update_time(mut time: ResMut<Time>) {
     time.dt = get_frame_time();
     time.fps = get_fps();
+    time.start = get_time();
 }
 
 pub fn render_fps(time: Res<Time>) {

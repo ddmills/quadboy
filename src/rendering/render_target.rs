@@ -11,14 +11,14 @@ pub fn get_render_target_size() -> UVec2 {
 }
 
 pub fn get_render_offset() -> Vec2 {
-    let target_size = get_render_target_size().as_vec2();
+    let size = get_render_target_size().as_vec2();
 
-    (target_size % 2.0) * 0.5
+    (size % 2.0) * 0.5
 }
 
 pub fn create_render_target() -> RenderTarget {
-    let pref_size = get_render_target_size();
-    let target = render_target(pref_size.x as u32, pref_size.y as u32);
+    let size = get_render_target_size();
+    let target = render_target(size.x, size.y);
     target.texture.set_filter(FilterMode::Nearest);
 
     target

@@ -126,7 +126,6 @@ impl GlyphBatch {
     }
 
     pub fn new(texture_id: TextureId) -> GlyphBatch {
-        // let render_target = miniquad::RenderPass::
         GlyphBatch {
             texture_id,
             stage: None,
@@ -136,7 +135,7 @@ impl GlyphBatch {
         }
     }
 
-    pub fn draw(&mut self, glyphs: Vec<Renderable>) {
+    pub fn set_glyphs(&mut self, glyphs: Vec<Renderable>) {
         let screen = get_render_target_size().as_vec2();
 
         self.vertices = glyphs.iter().flat_map(|g| {
@@ -216,10 +215,9 @@ impl GlyphBatch {
 
         gl.quad_context.apply_pipeline(&stage.pipeline);
         gl.quad_context.apply_bindings(&stage.bindings);
-        // gl.quad_context.begin_default_pass(PassAction::Nothing);
 
-        let screen_size = get_render_target_size().as_vec2();
-        let projection = Mat4::orthographic_rh_gl(0., screen_size.x, screen_size.y, 0., 0., 1.);
+        let target_size = get_render_target_size().as_vec2();
+        let projection = Mat4::orthographic_rh_gl(0., target_size.x, target_size.y, 0., 0., 1.);
 
         gl.quad_context.apply_uniforms(UniformsSource::table(
             &BaseShaderUniforms {
@@ -228,7 +226,6 @@ impl GlyphBatch {
         ));
 
         gl.quad_context.draw(0, self.indices.len() as i32, 1);
-        // gl.quad_context.end_render_pass();
     }
 }
 
@@ -283,7 +280,7 @@ void main() {
     vec4 v = texture2D(tex, tex_uv);
 
     if (v.a == 0) { // transparent (background)
-        gl_FragColor = bg;
+        gl_FragColor.a = 0.0;
     } else if (v.r == 0 && v.g == 0 && v.b == 0 && fg1.a > 0) { // Black (Primary)
         gl_FragColor = fg1;
     } else if (v.r == 1 && v.g == 1 && v.b == 1 && fg2.a > 0) { // White (Secondary)
@@ -295,7 +292,7 @@ void main() {
         // gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
     }
 
-    if (gl_FragColor.a == 0) {
-        discard;
-    }
+    // if (gl_FragColor.a == 0) {
+    //     discard;
+    // }
 }";

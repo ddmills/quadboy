@@ -28,20 +28,20 @@ impl Text {
         GlyphStyle {
             bg: self
                 .bg
-                .map(|x| x.to_macroquad_color())
+                .map(|x| x.to_vec4())
                 .unwrap_or(TRANSPARENT),
             fg1: self
                 .fg1
-                .map(|x| x.to_macroquad_color())
+                .map(|x| x.to_vec4())
                 .unwrap_or(TRANSPARENT),
             fg2: self
                 .fg2
-                .map(|x| x.to_macroquad_color())
+                .map(|x| x.to_vec4())
                 .unwrap_or(TRANSPARENT),
             outline: self
                 .outline
-                .map(|x| x.to_macroquad_color())
-                .unwrap_or(Palette::Black.to_macroquad_color()),
+                .map(|x| x.to_vec4())
+                .unwrap_or(Palette::Black.to_vec4()),
         }
     }
 }
