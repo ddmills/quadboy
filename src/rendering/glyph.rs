@@ -107,8 +107,8 @@ pub fn render_glyphs(
         .iter()
         .enumerate()
         .filter_map(|(idx, (glyph, pos))| {
-            let x = pos.x * TILE_SIZE_F32.0;
-            let y = pos.y * TILE_SIZE_F32.1;
+            let x = (pos.x + (time.start as f32).sin()) * TILE_SIZE_F32.0;
+            let y = (pos.y + (time.start as f32).sin()) * TILE_SIZE_F32.1;
 
             if x + w < 0. || x > screen.x || y + h < 0. || y > screen.y {
                 return None;

@@ -18,7 +18,8 @@ pub struct GlyphBatch {
     vertices: Vec<Vertex>,
     indices: Vec<u32>,
 
-    n_elements: usize,
+    max_size: usize,
+    size: usize,
 }
 
 #[repr(C)]
@@ -45,8 +46,7 @@ impl GlyphBatch {
         let n_elements = self.vertices.len() >> 2;
 
         if let Some(stage) = self.stage.as_mut() {
-            if n_elements > self.n_elements {
-                trace!("increase buffer size... {}", n_elements);
+            if n_elements > self.size {
                 ctx.delete_buffer(stage.bindings.vertex_buffers[0]);
                 ctx.delete_buffer(stage.bindings.index_buffer);
                 stage.bindings = Bindings {
@@ -62,7 +62,7 @@ impl GlyphBatch {
                     ),
                     images: vec![self.texture_id],
                 };
-                self.n_elements = n_elements;
+                self.size = n_elements;
             } else {
                 ctx.buffer_update(stage.bindings.vertex_buffers[0], vsource);
                 ctx.buffer_update(stage.bindings.index_buffer, isource);
@@ -102,7 +102,7 @@ impl GlyphBatch {
                 Default::default(),
             );
 
-            self.n_elements = n_elements;
+            self.size = n_elements;
 
             let bindings = Bindings {
                 vertex_buffers: vec![ctx.new_buffer(
@@ -125,81 +125,79 @@ impl GlyphBatch {
         }
     }
 
-    pub fn new(texture_id: TextureId) -> GlyphBatch {
+    pub fn new(texture_id: TextureId, max_size: usize) -> GlyphBatch {
+        let v_count = 4 * max_size;
+        let i_count = ((v_count + 3) >> 2) * 6;
+
+        let vertices = Vec::<Vertex>::with_capacity(v_count);
+        let mut indices = Vec::<u32>::with_capacity(i_count);
+
+        for i in 0..(i_count / 6) {
+            let k = (i << 2) as u32;
+            indices.push(k);
+            indices.push(k + 1);
+            indices.push(k + 2);
+            indices.push(k);
+            indices.push(k + 2);
+            indices.push(k + 3);
+        }
+
         GlyphBatch {
             texture_id,
             stage: None,
-            vertices: vec![],
-            indices: vec![],
-            n_elements: 0,
+            vertices,
+            indices,
+            max_size,
+            size: 0,
         }
     }
 
-    pub fn set_glyphs<I>(&mut self, glyphs: I) where I: Iterator<Item = Renderable> {
-        let screen = get_render_target_size().as_vec2();
+    pub fn set_glyphs<I>(&mut self, renderables: I) where I: Iterator<Item = Renderable> {
+        self.vertices.clear();
 
-        self.vertices = glyphs.flat_map(|g| {
-            // cull when not visible to screen
-            if g.x + g.w < 0. || g.x > screen.x || g.y + g.h < 0. || g.y > screen.y {
-                return vec![];
+        for (i, r) in renderables.enumerate() {
+            if i >= self.max_size {
+                trace!("LIMIT REACHED");
+                break;
             }
 
-            vec![
-                Vertex {// top left
-                    pos : Vec2::new(g.x, g.y),
-                    uv: Vec2::new(0., 0.),
-                    idx: g.idx as f32,
-                    fg1: g.fg1,
-                    fg2: g.fg2,
-                    bg: g.bg,
-                    outline: g.outline,
-                },
-                Vertex { // top right
-                    pos : Vec2::new(g.x + g.w, g.y),
-                    uv: Vec2::new(1.0, 0.),
-                    idx: g.idx as f32,
-                    fg1: g.fg1,
-                    fg2: g.fg2,
-                    bg: g.bg,
-                    outline: g.outline,
-                },
-                Vertex { // bottom right
-                    pos : Vec2::new(g.x + g.w, g.y + g.h),
-                    uv: Vec2::new(1., 1.),
-                    idx: g.idx as f32,
-                    fg1: g.fg1,
-                    fg2: g.fg2,
-                    bg: g.bg,
-                    outline: g.outline,
-                },
-                Vertex { // bottom left
-                    pos : Vec2::new(g.x, g.y + g.h),
-                    uv: Vec2::new(0., 1.),
-                    idx: g.idx as f32,
-                    fg1: g.fg1,
-                    fg2: g.fg2,
-                    bg: g.bg,
-                    outline: g.outline,
-                },
-            ]
-        }).collect::<Vec<_>>();
-
-        let n_indicies = ((self.vertices.len() + 3) >> 2) * 6;
-
-        // 4 verts = 1 quad, 1 quad = 6 verts
-        self.indices = Vec::<u32>::with_capacity(n_indicies);
-
-        // trace!("VERTS={} INDICIES={}", self.vertices.len(), n_indicies);
-
-        for i in 0..(n_indicies / 6) {
-            let k = (i << 2) as u32;
-            self.indices.push(k);
-            self.indices.push(k + 1);
-            self.indices.push(k + 2);
-            self.indices.push(k);
-            self.indices.push(k + 2);
-            self.indices.push(k + 3);
-        }
+            self.vertices.push(Vertex {// top left
+                pos : Vec2::new(r.x, r.y),
+                uv: Vec2::new(0., 0.),
+                idx: r.idx as f32,
+                fg1: r.fg1,
+                fg2: r.fg2,
+                bg: r.bg,
+                outline: r.outline,
+            });
+            self.vertices.push(Vertex { // top right
+                pos : Vec2::new(r.x + r.w, r.y),
+                uv: Vec2::new(1.0, 0.),
+                idx: r.idx as f32,
+                fg1: r.fg1,
+                fg2: r.fg2,
+                bg: r.bg,
+                outline: r.outline,
+            });
+            self.vertices.push(Vertex { // bottom right
+                pos : Vec2::new(r.x + r.w, r.y + r.h),
+                uv: Vec2::new(1., 1.),
+                idx: r.idx as f32,
+                fg1: r.fg1,
+                fg2: r.fg2,
+                bg: r.bg,
+                outline: r.outline,
+            });
+            self.vertices.push(Vertex { // bottom left
+                pos : Vec2::new(r.x, r.y + r.h),
+                uv: Vec2::new(0., 1.),
+                idx: r.idx as f32,
+                fg1: r.fg1,
+                fg2: r.fg2,
+                bg: r.bg,
+                outline: r.outline,
+            });
+        };
     }
 
     pub fn render(&mut self) {
@@ -225,7 +223,9 @@ impl GlyphBatch {
             },
         ));
 
-        gl.quad_context.draw(0, self.indices.len() as i32, 1);
+        let n = ((self.vertices.len() + 3) >> 2) * 6;
+
+        gl.quad_context.draw(0, n as i32, 1);
     }
 }
 

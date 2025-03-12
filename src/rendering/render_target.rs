@@ -1,7 +1,6 @@
 use macroquad::prelude::*;
 
-pub const TEXEL_SIZE:u32 = 2;
-pub const TEXEL_SIZE_F32:f32 = TEXEL_SIZE as f32;
+use crate::cfg::TEXEL_SIZE_F32;
 
 pub fn get_render_target_size() -> UVec2 {
     uvec2(
