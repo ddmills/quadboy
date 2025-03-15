@@ -1,19 +1,15 @@
-mod color_blend;
 mod glyph;
-mod glyph_material;
-mod position;
-mod render_target;
-mod text;
-mod renderer;
 mod glyph_batch;
+mod position;
 mod render_layer;
+mod render_target;
+mod renderer;
+mod text;
 
-pub use color_blend::*;
 pub use glyph::*;
-pub use glyph_material::*;
-pub use position::*;
-pub use render_target::*;
-pub use text::*;
-pub use renderer::*;
 pub use glyph_batch::*;
+pub use position::*;
 pub use render_layer::*;
+pub use render_target::*;
+pub use renderer::*;
+pub use text::*;

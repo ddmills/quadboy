@@ -1,9 +1,9 @@
 use bevy_ecs::component::Component;
-use macroquad::prelude::*;
 use macroquad::miniquad::*;
+use macroquad::prelude::*;
 
-use super::get_render_target_size;
 use super::Renderable;
+use super::get_render_target_size;
 
 #[derive(Component)]
 pub struct GlyphBatch {
@@ -35,8 +35,7 @@ pub struct BaseShaderUniforms {
 }
 
 impl GlyphBatch {
-    fn update_bindings(&mut self, ctx: &mut dyn RenderingBackend)
-    {
+    fn update_bindings(&mut self, ctx: &mut dyn RenderingBackend) {
         let vsource = BufferSource::slice(self.vertices.as_slice());
         let isource = BufferSource::slice(self.indices.as_slice());
 
@@ -76,18 +75,14 @@ impl GlyphBatch {
                 ShaderMeta {
                     images: vec!["tex".to_string()],
                     uniforms: UniformBlockLayout {
-                        uniforms: vec![
-                            UniformDesc::new("projection", UniformType::Mat4)
-                        ],
+                        uniforms: vec![UniformDesc::new("projection", UniformType::Mat4)],
                     },
                 },
             )
             .unwrap();
 
         let pipeline = ctx.new_pipeline(
-            &[
-                BufferLayout::default(),
-            ],
+            &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_pos", VertexFormat::Float2),
                 VertexAttribute::new("in_uv", VertexFormat::Float2),
@@ -133,8 +128,9 @@ impl GlyphBatch {
 
         self.size += 1;
 
-        self.vertices.push(Vertex {// top left
-            pos : Vec2::new(r.x, r.y),
+        self.vertices.push(Vertex {
+            // top left
+            pos: Vec2::new(r.x, r.y),
             uv: Vec2::new(0., 0.),
             idx: r.idx as f32,
             fg1: r.fg1,
@@ -142,8 +138,9 @@ impl GlyphBatch {
             bg: r.bg,
             outline: r.outline,
         });
-        self.vertices.push(Vertex { // top right
-            pos : Vec2::new(r.x + r.w, r.y),
+        self.vertices.push(Vertex {
+            // top right
+            pos: Vec2::new(r.x + r.w, r.y),
             uv: Vec2::new(1.0, 0.),
             idx: r.idx as f32,
             fg1: r.fg1,
@@ -151,8 +148,9 @@ impl GlyphBatch {
             bg: r.bg,
             outline: r.outline,
         });
-        self.vertices.push(Vertex { // bottom right
-            pos : Vec2::new(r.x + r.w, r.y + r.h),
+        self.vertices.push(Vertex {
+            // bottom right
+            pos: Vec2::new(r.x + r.w, r.y + r.h),
             uv: Vec2::new(1., 1.),
             idx: r.idx as f32,
             fg1: r.fg1,
@@ -160,8 +158,9 @@ impl GlyphBatch {
             bg: r.bg,
             outline: r.outline,
         });
-        self.vertices.push(Vertex { // bottom left
-            pos : Vec2::new(r.x, r.y + r.h),
+        self.vertices.push(Vertex {
+            // bottom left
+            pos: Vec2::new(r.x, r.y + r.h),
             uv: Vec2::new(0., 1.),
             idx: r.idx as f32,
             fg1: r.fg1,
@@ -189,11 +188,8 @@ impl GlyphBatch {
         let target_size = get_render_target_size().as_vec2();
         let projection = Mat4::orthographic_rh_gl(0., target_size.x, target_size.y, 0., 0., 1.);
 
-        gl.quad_context.apply_uniforms(UniformsSource::table(
-            &BaseShaderUniforms {
-                projection,
-            },
-        ));
+        gl.quad_context
+            .apply_uniforms(UniformsSource::table(&BaseShaderUniforms { projection }));
 
         let n = self.size * 6;
 

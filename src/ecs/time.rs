@@ -1,8 +1,6 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::BODY_FONT_SIZE_F32, common::{cp437_idx, MacroquadColorable, Palette}, rendering::{get_render_offset, Renderable, TilesetId, TRANSPARENT}};
-
 #[derive(Resource, Default)]
 pub struct Time {
     pub dt: f32,
@@ -17,8 +15,6 @@ pub fn update_time(mut time: ResMut<Time>) {
 }
 
 pub fn render_fps(time: Res<Time>) {
-    // let offset = get_render_offset();
-
     // draw_text(time.fps.to_string().as_str(), 16.0 + offset.x, 24.0 + offset.y, 16.0, GOLD);
 
     let binding = time.fps.to_string();
