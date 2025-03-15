@@ -10,11 +10,11 @@ use super::{get_render_target_size, GlyphBatch, Layers, Position, RenderLayer, R
 #[derive(Component, Default)]
 pub struct Glyph {
     pub idx: usize,
-    fg1: Option<u32>,
-    fg2: Option<u32>,
-    bg: Option<u32>,
-    outline: Option<u32>,
-    layer_id: RenderLayer,
+    pub fg1: Option<u32>,
+    pub fg2: Option<u32>,
+    pub bg: Option<u32>,
+    pub outline: Option<u32>,
+    pub layer_id: RenderLayer,
 }
 
 #[derive(Resource)]
@@ -64,7 +64,7 @@ impl Glyph {
             fg1: Some(fg1.into()),
             fg2: Some(fg2.into()),
             bg: None,
-            outline: None,
+            outline: Some(Palette::Black.into()),
             layer_id: RenderLayer::default(),
         }
     }
@@ -100,25 +100,21 @@ impl Glyph {
 pub fn render_glyphs(
     q_glyphs: Query<(&Glyph, &Position)>,
     mut layers: ResMut<Layers>,
-    time: Res<Time>
 ) {
-    let options = vec![Palette::Yellow, Palette::Red, Palette::Purple, Palette::Green];
-
     let screen = get_render_target_size().as_vec2();
-    let w = TILE_SIZE_F32.0;
-    let h = TILE_SIZE_F32.1;
-
-    telemetry::begin_zone("set-glyphs");
 
     layers.ground.clear();
     layers.text.clear();
 
+    telemetry::begin_zone("set-glyphs");
+
     q_glyphs
         .iter()
-        .enumerate()
-        .for_each(|(idx, (glyph, pos))| {
-            let x = (pos.x + (time.start as f32).sin()) * TILE_SIZE_F32.0;
-            let y = (pos.y + (time.start as f32).sin()) * TILE_SIZE_F32.1;
+        .for_each(|(glyph, pos)| {
+            let x = pos.x * TILE_SIZE_F32.0;
+            let y = pos.y * TILE_SIZE_F32.1;
+            let w = layers.get_glyph_width(glyph.layer_id);
+            let h = layers.get_glyph_height(glyph.layer_id);
 
             if x + w < 0. || x > screen.x || y + h < 0. || y > screen.y {
                 return;
@@ -126,27 +122,14 @@ pub fn render_glyphs(
 
             let style = glyph.get_style();
 
-            let t1 = (idx + (time.start.floor() as usize)) % options.len();
-            let t2= (idx + (time.start.floor() as usize) + 1) % options.len();
-
-            let fg1: Palette = options[t1];
-            let fg2: Palette = options[t2];
-            
-            let w = layers.get_glyph_width(glyph.layer_id);
-            let h = layers.get_glyph_height(glyph.layer_id);
-
             layers
                 .get_layer(glyph.layer_id)
-                .set_glyph(Renderable {
+                .add(Renderable {
                     idx: glyph.idx,
-                    // fg1: style.fg1,
-                    // fg2: style.fg2,
-                    fg1: fg1.to_vec4(),
-                    fg2: fg2.to_vec4(),
+                    fg1: style.fg1,
+                    fg2: style.fg2,
                     bg: style.bg,
-                    // bg: fg2.to_macroquad_color(),
-                    // outline: style.outline,
-                    outline: Palette::Black.to_vec4(),
+                    outline: style.outline,
                     x,
                     y,
                     w,

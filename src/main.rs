@@ -3,7 +3,7 @@ use cfg::TEXEL_SIZE_F32;
 use common::{render_shapes, MacroquadColorable, Palette, Rectangle};
 use ecs::{Time, render_fps, update_time};
 use macroquad::{miniquad::PassAction, prelude::*};
-use rendering::{create_render_target, get_render_target_size, load_tilesets, render_all, render_glyphs, update_render_target, Glyph, GlyphBatch, GlyphMaterial, Layers, Position, RenderLayer, Text};
+use rendering::{create_render_target, get_render_target_size, load_tilesets, render_all, render_glyphs, render_text, update_render_target, Glyph, GlyphBatch, GlyphMaterial, Layers, Position, RenderLayer, Text};
 
 mod common;
 mod ecs;
@@ -44,7 +44,7 @@ async fn main() {
     });
 
     schedule_pre_update.add_systems(update_time);
-    schedule_update.add_systems((render_fps, render_shapes, render_glyphs));
+    schedule_update.add_systems((render_fps, render_shapes, render_text, render_glyphs));
     schedule_post_update.add_systems(render_all);
 
     let mut idx = 0;
@@ -53,17 +53,7 @@ async fn main() {
         for x in 0..128 {
             world.spawn((
                 Position::new(x, y),
-                Glyph::new(idx % 256, Palette::Yellow, Palette::Red).layer(RenderLayer::Ground),
-            ));
-            idx += 1;
-        }
-    }
-
-    for y in 0..12 {
-        for x in 0..12 {
-            world.spawn((
-                Position::new_f32(x as f32 * 0.5 , y as f32 * 0.5),
-                Glyph::new(idx % 256, Palette::Yellow, Palette::Red).layer(RenderLayer::Text),
+                Glyph::new(idx % 256, Palette::Purple, Palette::Green).layer(RenderLayer::Ground),
             ));
             idx += 1;
         }
@@ -76,7 +66,11 @@ async fn main() {
 
     world.spawn((
         Text::new("Hello strangers. 0123456789"),
-        Position::screen(0., 1.),
+        Position::screen(0., 0.),
+    ));
+    world.spawn((
+        Text::new("Hello strangers. 0123456789").bg(Palette::Cyan),
+        Position::screen(0., 0.5),
     ));
 
     let mut render_target = create_render_target();
@@ -102,7 +96,6 @@ async fn main() {
 
         set_default_camera();
         gl_use_default_material();
-
 
         // draw final texture as double size
         let target_size = get_render_target_size();

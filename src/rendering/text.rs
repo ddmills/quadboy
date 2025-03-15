@@ -1,8 +1,8 @@
 use bevy_ecs::prelude::*;
 
-use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32}, common::{cp437_idx, MacroquadColorable, Palette}};
+use crate::common::{cp437_idx, Palette};
 
-use super::{GlyphStyle, Position, Renderable, TRANSPARENT};
+use super::{Glyph, Position, RenderLayer};
 
 #[derive(Component)]
 pub struct Text {
@@ -11,6 +11,8 @@ pub struct Text {
     pub fg1: Option<u32>,
     pub fg2: Option<u32>,
     pub outline: Option<u32>,
+    pub layer_id: RenderLayer,
+    glyphs: Vec<Entity>,
 }
 
 impl Text {
@@ -21,50 +23,39 @@ impl Text {
             fg1: Some(Palette::White.into()),
             fg2: None,
             outline: None,
+            layer_id: RenderLayer::Text,
+            glyphs: vec![],
         }
     }
-    
-    pub fn get_style(&self) -> GlyphStyle {
-        GlyphStyle {
-            bg: self
-                .bg
-                .map(|x| x.to_vec4())
-                .unwrap_or(TRANSPARENT),
-            fg1: self
-                .fg1
-                .map(|x| x.to_vec4())
-                .unwrap_or(TRANSPARENT),
-            fg2: self
-                .fg2
-                .map(|x| x.to_vec4())
-                .unwrap_or(TRANSPARENT),
-            outline: self
-                .outline
-                .map(|x| x.to_vec4())
-                .unwrap_or(Palette::Black.to_vec4()),
-        }
+
+    pub fn bg<T: Into<u32>>(mut self, bg: T) -> Self
+    {
+        self.bg = Some(bg.into());
+        self
     }
 }
 
 pub fn render_text(
-    q_text: Query<(&Text, &Position)>,
+    mut cmds: Commands,
+    mut q_text: Query<(&mut Text, &Position), Changed<Text>>,
 ) {
-    for (text, position) in q_text.iter() {
-        let style = text.get_style();
-
-        for (i, c) in text.value.chars().enumerate() {
-            // renderer.draw(Renderable {
-            //     idx: cp437_idx(c).unwrap_or(0),
-            //     fg1: style.fg1,
-            //     fg2: style.fg2,
-            //     bg: style.bg,
-            //     outline: style.outline,
-            //     tileset_id: super::TilesetId::BodyFont,
-            //     x: position.x * TILE_SIZE_F32.0 + i as f32 * BODY_FONT_SIZE_F32.0,
-            //     y: position.y * TILE_SIZE_F32.1,
-            //     w: BODY_FONT_SIZE_F32.0,
-            //     h: BODY_FONT_SIZE_F32.1,
-            // });
+    for (mut text, position) in q_text.iter_mut() {
+        for glyph_id in text.glyphs.iter() {
+            cmds.entity(*glyph_id).despawn();
         }
+
+        text.glyphs = text.value.chars().enumerate().map(|(i, c)| {
+            cmds.spawn((
+                Glyph {
+                    idx: cp437_idx(c).unwrap_or(0),
+                    fg1: text.fg1,
+                    fg2: text.fg2,
+                    bg: text.bg,
+                    outline: text.outline,
+                    layer_id: text.layer_id,
+                },
+                Position::new_f32(position.x + (i as f32 * 0.5), position.y),
+            )).id()
+        }).collect();
     }
 }
