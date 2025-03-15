@@ -1,15 +1,17 @@
 use bevy_ecs::prelude::*;
 use common::Palette;
 use ecs::{Time, render_fps, update_time};
+use engine::{update_key_input, KeyInput};
 use macroquad::prelude::*;
 use rendering::{
-    load_tilesets, render_all, render_glyphs, render_text, GameCamera, Glyph, Layers, Position, RenTarget, RenderLayer, Text
+    load_tilesets, render_all, render_glyphs, render_text, update_camera, GameCamera, Glyph, Layers, Position, RenTarget, RenderLayer, Text
 };
 
 mod cfg;
 mod common;
 mod ecs;
 mod rendering;
+mod engine;
 
 fn window_conf() -> Conf {
     Conf {
@@ -37,11 +39,12 @@ async fn main() {
     world.init_resource::<Time>();
     world.init_resource::<RenTarget>();
     world.init_resource::<Layers>();
+    world.init_resource::<KeyInput>();
     // world.init_resource::<GameCamera>();
     world.insert_resource(GameCamera {x: 1., y: 1. });
 
-    schedule_pre_update.add_systems(update_time);
-    schedule_update.add_systems((render_fps, render_text, render_glyphs));
+    schedule_pre_update.add_systems((update_time, update_key_input));
+    schedule_update.add_systems((update_camera, render_fps, render_text, render_glyphs));
     schedule_post_update.add_systems(render_all);
 
     let mut idx = 0;
@@ -73,7 +76,7 @@ async fn main() {
         let t = get_fps().to_string();
         draw_text(&t, 16.0, 32.0, 16.0, WHITE);
 
-        // macroquad_profiler::profiler(Default::default());
+        macroquad_profiler::profiler(Default::default());
 
         next_frame().await;
     }
