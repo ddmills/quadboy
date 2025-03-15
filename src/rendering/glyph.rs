@@ -5,7 +5,7 @@ use macroquad::{prelude::*, rand::ChooseRandom, telemetry::{self, ZoneGuard}};
 
 use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32, TITLE_FONT_SIZE_F32}, common::{MacroquadColorable, Palette}, ecs::Time};
 
-use super::{get_render_target_size, GlyphBatch, Position, Renderable};
+use super::{get_render_target_size, GlyphBatch, Layers, Position, RenderLayer, Renderable};
 
 #[derive(Component, Default)]
 pub struct Glyph {
@@ -14,6 +14,7 @@ pub struct Glyph {
     fg2: Option<u32>,
     bg: Option<u32>,
     outline: Option<u32>,
+    layer_id: RenderLayer,
 }
 
 #[derive(Resource)]
@@ -64,7 +65,14 @@ impl Glyph {
             fg2: Some(fg2.into()),
             bg: None,
             outline: None,
+            layer_id: RenderLayer::default(),
         }
+    }
+
+    pub fn layer(mut self, layer_id: RenderLayer) -> Self
+    {
+        self.layer_id = layer_id;
+        self
     }
 
     pub fn get_style(&self) -> GlyphStyle {
@@ -91,61 +99,62 @@ impl Glyph {
 
 pub fn render_glyphs(
     q_glyphs: Query<(&Glyph, &Position)>,
-    mut glyph_batch: Single<&mut GlyphBatch>,
+    mut layers: ResMut<Layers>,
     time: Res<Time>
 ) {
     let options = vec![Palette::Yellow, Palette::Red, Palette::Purple, Palette::Green];
-    let fg1 = options.choose().unwrap();
-    let fg2 = options.choose().unwrap();
 
     let screen = get_render_target_size().as_vec2();
     let w = TILE_SIZE_F32.0;
     let h = TILE_SIZE_F32.1;
 
-    telemetry::begin_zone("get-renderables");
-    let renderables = q_glyphs
+    telemetry::begin_zone("set-glyphs");
+
+    layers.ground.clear();
+    layers.text.clear();
+
+    q_glyphs
         .iter()
         .enumerate()
-        .filter_map(|(idx, (glyph, pos))| {
+        .for_each(|(idx, (glyph, pos))| {
             let x = (pos.x + (time.start as f32).sin()) * TILE_SIZE_F32.0;
             let y = (pos.y + (time.start as f32).sin()) * TILE_SIZE_F32.1;
 
             if x + w < 0. || x > screen.x || y + h < 0. || y > screen.y {
-                return None;
+                return;
             }
 
             let style = glyph.get_style();
-
 
             let t1 = (idx + (time.start.floor() as usize)) % options.len();
             let t2= (idx + (time.start.floor() as usize) + 1) % options.len();
 
             let fg1: Palette = options[t1];
             let fg2: Palette = options[t2];
+            
+            let w = layers.get_glyph_width(glyph.layer_id);
+            let h = layers.get_glyph_height(glyph.layer_id);
 
-            Some(Renderable {
-                idx: glyph.idx,
-                // fg1: style.fg1,
-                // fg2: style.fg2,
-                fg1: fg1.to_vec4(),
-                fg2: fg2.to_vec4(),
-                bg: style.bg,
-                // bg: fg2.to_macroquad_color(),
-                // outline: style.outline,
-                outline: Palette::Black.to_vec4(),
-                x,
-                y,
-                w: TILE_SIZE_F32.0,
-                h: TILE_SIZE_F32.1,
-            })
+            layers
+                .get_layer(glyph.layer_id)
+                .set_glyph(Renderable {
+                    idx: glyph.idx,
+                    // fg1: style.fg1,
+                    // fg2: style.fg2,
+                    fg1: fg1.to_vec4(),
+                    fg2: fg2.to_vec4(),
+                    bg: style.bg,
+                    // bg: fg2.to_macroquad_color(),
+                    // outline: style.outline,
+                    outline: Palette::Black.to_vec4(),
+                    x,
+                    y,
+                    w,
+                    h,
+                });
         });
 
     telemetry::end_zone();
-
-    {
-        let _z = ZoneGuard::new("set-glyphs");
-        glyph_batch.set_glyphs(renderables);
-    }
 }
 
 pub async fn load_tilesets() -> TilesetTextures {

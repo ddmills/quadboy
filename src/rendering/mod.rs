@@ -6,6 +6,7 @@ mod render_target;
 mod text;
 mod renderer;
 mod glyph_batch;
+mod render_layer;
 
 pub use color_blend::*;
 pub use glyph::*;
@@ -15,3 +16,4 @@ pub use render_target::*;
 pub use text::*;
 pub use renderer::*;
 pub use glyph_batch::*;
+pub use render_layer::*;

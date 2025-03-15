@@ -5,15 +5,10 @@ use macroquad::miniquad::*;
 use super::get_render_target_size;
 use super::Renderable;
 
-struct Stage {
-    pipeline: Pipeline,
-    bindings: Bindings,
-}
-
 #[derive(Component)]
 pub struct GlyphBatch {
-    texture_id: TextureId,
-    stage: Option<Stage>,
+    pipeline: Pipeline,
+    bindings: Bindings,
 
     vertices: Vec<Vertex>,
     indices: Vec<u32>,
@@ -22,6 +17,7 @@ pub struct GlyphBatch {
     size: usize,
 }
 
+#[derive(Default)]
 #[repr(C)]
 struct Vertex {
     pos: Vec2,
@@ -43,93 +39,16 @@ impl GlyphBatch {
     {
         let vsource = BufferSource::slice(self.vertices.as_slice());
         let isource = BufferSource::slice(self.indices.as_slice());
-        let n_elements = self.vertices.len() >> 2;
 
-        if let Some(stage) = self.stage.as_mut() {
-            if n_elements > self.size {
-                ctx.delete_buffer(stage.bindings.vertex_buffers[0]);
-                ctx.delete_buffer(stage.bindings.index_buffer);
-                stage.bindings = Bindings {
-                    vertex_buffers: vec![ctx.new_buffer(
-                        BufferType::VertexBuffer,
-                        BufferUsage::Immutable,
-                        vsource,
-                    )],
-                    index_buffer: ctx.new_buffer(
-                        BufferType::IndexBuffer,
-                        BufferUsage::Immutable,
-                        isource,
-                    ),
-                    images: vec![self.texture_id],
-                };
-                self.size = n_elements;
-            } else {
-                ctx.buffer_update(stage.bindings.vertex_buffers[0], vsource);
-                ctx.buffer_update(stage.bindings.index_buffer, isource);
-            }
-        } else {
-            let shader = ctx
-                .new_shader(
-                    miniquad::ShaderSource::Glsl {
-                        vertex: VERTEX,
-                        fragment: FRAGMENT,
-                    },
-                    ShaderMeta {
-                        images: vec!["tex".to_string()],
-                        uniforms: UniformBlockLayout {
-                            uniforms: vec![
-                                UniformDesc::new("projection", UniformType::Mat4)
-                            ],
-                        },
-                    },
-                )
-                .unwrap();
-
-            let pipeline = ctx.new_pipeline(
-                &[
-                    BufferLayout::default(),
-                ],
-                &[
-                    VertexAttribute::new("in_pos", VertexFormat::Float2),
-                    VertexAttribute::new("in_uv", VertexFormat::Float2),
-                    VertexAttribute::new("in_idx", VertexFormat::Float1),
-                    VertexAttribute::new("in_fg1", VertexFormat::Float4),
-                    VertexAttribute::new("in_fg2", VertexFormat::Float4),
-                    VertexAttribute::new("in_bg", VertexFormat::Float4),
-                    VertexAttribute::new("in_outline", VertexFormat::Float4),
-                ],
-                shader,
-                Default::default(),
-            );
-
-            self.size = n_elements;
-
-            let bindings = Bindings {
-                vertex_buffers: vec![ctx.new_buffer(
-                    BufferType::VertexBuffer,
-                    BufferUsage::Immutable,
-                    BufferSource::slice(self.vertices.as_slice()),
-                )],
-                index_buffer: ctx.new_buffer(
-                    BufferType::IndexBuffer,
-                    BufferUsage::Immutable,
-                    BufferSource::slice(self.indices.as_slice()),
-                ),
-                images: vec![self.texture_id],
-            };
-
-            self.stage = Some(Stage {
-                bindings,
-                pipeline,
-            });
-        }
+        ctx.buffer_update(self.bindings.vertex_buffers[0], vsource);
+        ctx.buffer_update(self.bindings.index_buffer, isource);
     }
 
     pub fn new(texture_id: TextureId, max_size: usize) -> GlyphBatch {
         let v_count = 4 * max_size;
         let i_count = ((v_count + 3) >> 2) * 6;
 
-        let vertices = Vec::<Vertex>::with_capacity(v_count);
+        let mut vertices = Vec::<Vertex>::with_capacity(v_count);
         let mut indices = Vec::<u32>::with_capacity(i_count);
 
         for i in 0..(i_count / 6) {
@@ -142,9 +61,63 @@ impl GlyphBatch {
             indices.push(k + 3);
         }
 
+        for _ in 0..v_count {
+            vertices.push(Vertex::default());
+        }
+
+        let ctx = unsafe { get_internal_gl().quad_context };
+
+        let shader = ctx
+            .new_shader(
+                miniquad::ShaderSource::Glsl {
+                    vertex: VERTEX,
+                    fragment: FRAGMENT,
+                },
+                ShaderMeta {
+                    images: vec!["tex".to_string()],
+                    uniforms: UniformBlockLayout {
+                        uniforms: vec![
+                            UniformDesc::new("projection", UniformType::Mat4)
+                        ],
+                    },
+                },
+            )
+            .unwrap();
+
+        let pipeline = ctx.new_pipeline(
+            &[
+                BufferLayout::default(),
+            ],
+            &[
+                VertexAttribute::new("in_pos", VertexFormat::Float2),
+                VertexAttribute::new("in_uv", VertexFormat::Float2),
+                VertexAttribute::new("in_idx", VertexFormat::Float1),
+                VertexAttribute::new("in_fg1", VertexFormat::Float4),
+                VertexAttribute::new("in_fg2", VertexFormat::Float4),
+                VertexAttribute::new("in_bg", VertexFormat::Float4),
+                VertexAttribute::new("in_outline", VertexFormat::Float4),
+            ],
+            shader,
+            Default::default(),
+        );
+
+        let bindings = Bindings {
+            vertex_buffers: vec![ctx.new_buffer(
+                BufferType::VertexBuffer,
+                BufferUsage::Immutable,
+                BufferSource::slice(vertices.as_slice()),
+            )],
+            index_buffer: ctx.new_buffer(
+                BufferType::IndexBuffer,
+                BufferUsage::Immutable,
+                BufferSource::slice(indices.as_slice()),
+            ),
+            images: vec![texture_id],
+        };
+
         GlyphBatch {
-            texture_id,
-            stage: None,
+            bindings,
+            pipeline,
             vertices,
             indices,
             max_size,
@@ -152,52 +125,55 @@ impl GlyphBatch {
         }
     }
 
-    pub fn set_glyphs<I>(&mut self, renderables: I) where I: Iterator<Item = Renderable> {
+    pub fn set_glyph(&mut self, r: Renderable) {
+        if self.size >= self.max_size {
+            trace!("LIMIT REACHED");
+            return;
+        }
+
+        self.size += 1;
+
+        self.vertices.push(Vertex {// top left
+            pos : Vec2::new(r.x, r.y),
+            uv: Vec2::new(0., 0.),
+            idx: r.idx as f32,
+            fg1: r.fg1,
+            fg2: r.fg2,
+            bg: r.bg,
+            outline: r.outline,
+        });
+        self.vertices.push(Vertex { // top right
+            pos : Vec2::new(r.x + r.w, r.y),
+            uv: Vec2::new(1.0, 0.),
+            idx: r.idx as f32,
+            fg1: r.fg1,
+            fg2: r.fg2,
+            bg: r.bg,
+            outline: r.outline,
+        });
+        self.vertices.push(Vertex { // bottom right
+            pos : Vec2::new(r.x + r.w, r.y + r.h),
+            uv: Vec2::new(1., 1.),
+            idx: r.idx as f32,
+            fg1: r.fg1,
+            fg2: r.fg2,
+            bg: r.bg,
+            outline: r.outline,
+        });
+        self.vertices.push(Vertex { // bottom left
+            pos : Vec2::new(r.x, r.y + r.h),
+            uv: Vec2::new(0., 1.),
+            idx: r.idx as f32,
+            fg1: r.fg1,
+            fg2: r.fg2,
+            bg: r.bg,
+            outline: r.outline,
+        });
+    }
+
+    pub fn clear(&mut self) {
         self.vertices.clear();
-
-        for (i, r) in renderables.enumerate() {
-            if i >= self.max_size {
-                trace!("LIMIT REACHED");
-                break;
-            }
-
-            self.vertices.push(Vertex {// top left
-                pos : Vec2::new(r.x, r.y),
-                uv: Vec2::new(0., 0.),
-                idx: r.idx as f32,
-                fg1: r.fg1,
-                fg2: r.fg2,
-                bg: r.bg,
-                outline: r.outline,
-            });
-            self.vertices.push(Vertex { // top right
-                pos : Vec2::new(r.x + r.w, r.y),
-                uv: Vec2::new(1.0, 0.),
-                idx: r.idx as f32,
-                fg1: r.fg1,
-                fg2: r.fg2,
-                bg: r.bg,
-                outline: r.outline,
-            });
-            self.vertices.push(Vertex { // bottom right
-                pos : Vec2::new(r.x + r.w, r.y + r.h),
-                uv: Vec2::new(1., 1.),
-                idx: r.idx as f32,
-                fg1: r.fg1,
-                fg2: r.fg2,
-                bg: r.bg,
-                outline: r.outline,
-            });
-            self.vertices.push(Vertex { // bottom left
-                pos : Vec2::new(r.x, r.y + r.h),
-                uv: Vec2::new(0., 1.),
-                idx: r.idx as f32,
-                fg1: r.fg1,
-                fg2: r.fg2,
-                bg: r.bg,
-                outline: r.outline,
-            });
-        };
+        self.size = 0;
     }
 
     pub fn render(&mut self) {
@@ -205,14 +181,10 @@ impl GlyphBatch {
 
         self.update_bindings(gl.quad_context);
 
-        let Some(ref stage) = self.stage else {
-            return;
-        };
-
         gl.flush();
 
-        gl.quad_context.apply_pipeline(&stage.pipeline);
-        gl.quad_context.apply_bindings(&stage.bindings);
+        gl.quad_context.apply_pipeline(&self.pipeline);
+        gl.quad_context.apply_bindings(&self.bindings);
 
         let target_size = get_render_target_size().as_vec2();
         let projection = Mat4::orthographic_rh_gl(0., target_size.x, target_size.y, 0., 0., 1.);
@@ -223,7 +195,7 @@ impl GlyphBatch {
             },
         ));
 
-        let n = ((self.vertices.len() + 3) >> 2) * 6;
+        let n = self.size * 6;
 
         gl.quad_context.draw(0, n as i32, 1);
     }
@@ -257,42 +229,4 @@ void main() {
     outline = in_outline;
 }";
 
-pub const FRAGMENT: &str = "#version 400
-precision lowp float;
-
-varying lowp vec2 uv;
-varying float idx;
-varying vec4 fg1;
-varying vec4 fg2;
-varying vec4 bg;
-varying vec4 outline;
-
-uniform sampler2D tex;
-
-void main() {
-    vec2 uv_scaled = uv / 16.0; // atlas is 16x16
-    float x = float(uint(idx) % 16u);
-    float y = float(uint(idx) / 16u);
-    vec2 uv_offset = vec2(x, y) / 16.0;
-
-    vec2 tex_uv = uv_offset + uv_scaled;
-
-    vec4 v = texture2D(tex, tex_uv);
-
-    if (v.a == 0) { // transparent (background)
-        gl_FragColor.a = 0.0;
-    } else if (v.r == 0 && v.g == 0 && v.b == 0 && fg1.a > 0) { // Black (Primary)
-        gl_FragColor = fg1;
-    } else if (v.r == 1 && v.g == 1 && v.b == 1 && fg2.a > 0) { // White (Secondary)
-        gl_FragColor = fg2;
-    } else if (v.r == 1 && v.g == 0 && v.b == 0 && outline.a > 0) { // Red (Outline)
-        gl_FragColor = outline;
-    } else { // debug
-        gl_FragColor = bg;
-        // gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-    }
-
-    // if (gl_FragColor.a == 0) {
-    //     discard;
-    // }
-}";
+const FRAGMENT: &str = include_str!("../assets/shaders/glyph-shader.glsl");

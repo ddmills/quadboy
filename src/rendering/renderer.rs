@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use super::GlyphBatch;
+use super::Layers;
 
 pub struct Renderable {
     pub idx: usize,
@@ -16,9 +16,8 @@ pub struct Renderable {
 }
 
 pub fn render_all(
-    mut q_glyph_batches: Query<&mut GlyphBatch>,
+    mut layers: ResMut<Layers>,
 ) {
-    for mut batch in q_glyph_batches.iter_mut() {
-        batch.render();
-    }
+    layers.ground.render();
+    layers.text.render();
 }

@@ -1,15 +1,14 @@
 #version 400
-
 precision lowp float;
 
-in vec2 uv;
+varying lowp vec2 uv;
+varying float idx;
+varying vec4 fg1;
+varying vec4 fg2;
+varying vec4 bg;
+varying vec4 outline;
 
-uniform float idx;
-uniform vec4 fg1;
-uniform vec4 fg2;
-uniform vec4 outline;
-uniform vec4 bg;
-uniform sampler2D Texture;
+uniform sampler2D tex;
 
 void main() {
     vec2 uv_scaled = uv / 16.0; // atlas is 16x16
@@ -19,19 +18,21 @@ void main() {
 
     vec2 tex_uv = uv_offset + uv_scaled;
 
-    vec4 tex = texture2D(Texture, tex_uv);
+    vec4 v = texture2D(tex, tex_uv);
 
-    gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-
-    if (tex.a == 0) { // transparent (background)
+    if (v.a == 0) { // transparent (background)
         gl_FragColor = bg;
-    } else if (tex.r == 0 && tex.g == 0 && tex.b == 0 && fg1.a > 0) { // Black (Primary)
+    } else if (v.r == 0 && v.g == 0 && v.b == 0 && fg1.a > 0) { // Black (Primary)
         gl_FragColor = fg1;
-    } else if (tex.r == 1 && tex.g == 1 && tex.b == 1 && fg2.a > 0) { // White (Secondary)
+    } else if (v.r == 1 && v.g == 1 && v.b == 1 && fg2.a > 0) { // White (Secondary)
         gl_FragColor = fg2;
-    } else if (tex.r == 1 && tex.g == 0 && tex.b == 0 && outline.a > 0) { // Red (Outline)
+    } else if (v.r == 1 && v.g == 0 && v.b == 0 && outline.a > 0) { // Red (Outline)
         gl_FragColor = outline;
     } else { // debug
-        gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+        gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+    }
+
+    if (gl_FragColor.a == 0) {
+        discard;
     }
 }
