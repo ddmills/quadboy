@@ -1,7 +1,6 @@
 use bevy_ecs::prelude::*;
 use macroquad::{
-    prelude::*,
-    telemetry::{self},
+    miniquad::gl, prelude::*, telemetry::{self}
 };
 
 use crate::{
@@ -9,7 +8,7 @@ use crate::{
     common::{MacroquadColorable, Palette},
 };
 
-use super::{Layers, Position, RenderLayer, Renderable, get_render_target_size};
+use super::{get_render_target_size, GameCamera, Layers, Position, RenderLayer, Renderable};
 
 #[derive(Component, Default)]
 pub struct Glyph {
@@ -63,7 +62,7 @@ impl Glyph {
     }
 }
 
-pub fn render_glyphs(q_glyphs: Query<(&Glyph, &Position)>, mut layers: ResMut<Layers>) {
+pub fn render_glyphs(q_glyphs: Query<(&Glyph, &Position)>, mut layers: ResMut<Layers>, camera: Res<GameCamera>) {
     let screen = get_render_target_size().as_vec2();
 
     layers.ground.clear();
@@ -72,10 +71,15 @@ pub fn render_glyphs(q_glyphs: Query<(&Glyph, &Position)>, mut layers: ResMut<La
     telemetry::begin_zone("set-glyphs");
 
     q_glyphs.iter().for_each(|(glyph, pos)| {
-        let x = pos.x * TILE_SIZE_F32.0;
-        let y = pos.y * TILE_SIZE_F32.1;
+        let mut x = pos.x * TILE_SIZE_F32.0;
+        let mut y = pos.y * TILE_SIZE_F32.1;
         let w = layers.get_glyph_width(glyph.layer_id);
         let h = layers.get_glyph_height(glyph.layer_id);
+
+        if glyph.layer_id == RenderLayer::Ground {
+            x -= camera.x * TILE_SIZE_F32.0;
+            y -= camera.y * TILE_SIZE_F32.1;
+        }
 
         if x + w < 0. || x > screen.x || y + h < 0. || y > screen.y {
             return;

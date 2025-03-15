@@ -4,7 +4,7 @@ use crate::cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32};
 
 use super::{GlyphBatch, TilesetTextures};
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum RenderLayer {
     #[default]
     Ground,

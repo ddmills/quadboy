@@ -3,8 +3,7 @@ use common::Palette;
 use ecs::{Time, render_fps, update_time};
 use macroquad::prelude::*;
 use rendering::{
-    Glyph, Layers, Position, RenTarget, RenderLayer, Text, load_tilesets, render_all,
-    render_glyphs, render_text,
+    load_tilesets, render_all, render_glyphs, render_text, GameCamera, Glyph, Layers, Position, RenTarget, RenderLayer, Text
 };
 
 mod cfg;
@@ -38,6 +37,8 @@ async fn main() {
     world.init_resource::<Time>();
     world.init_resource::<RenTarget>();
     world.init_resource::<Layers>();
+    // world.init_resource::<GameCamera>();
+    world.insert_resource(GameCamera {x: 1., y: 1. });
 
     schedule_pre_update.add_systems(update_time);
     schedule_update.add_systems((render_fps, render_text, render_glyphs));
