@@ -6,7 +6,7 @@ use crate::{
     common::{MacroquadColorable, Palette},
 };
 
-use super::{Layers, create_render_target, get_render_target_size};
+use super::{create_render_target, Layers, ScreenSize};
 
 #[derive(Resource)]
 pub struct RenTarget {
@@ -33,10 +33,10 @@ pub struct Renderable {
     pub h: f32,
 }
 
-pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenTarget>) {
-    let pref_size = get_render_target_size();
+pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenTarget>, screen: Res<ScreenSize>) {
+    let target_size = uvec2(screen.width as u32, screen.height as u32);
 
-    if ren.t.texture.size().as_uvec2() != pref_size {
+    if ren.t.texture.size().as_uvec2() != target_size {
         ren.t = create_render_target();
     }
 
@@ -66,7 +66,6 @@ pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenTarget>) {
     gl_use_default_material();
 
     // draw final texture as double size
-    let target_size = get_render_target_size();
     let dest_size = target_size.as_vec2() * TEXEL_SIZE_F32;
 
     draw_texture_ex(

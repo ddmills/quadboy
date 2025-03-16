@@ -1,6 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::{
-    miniquad::gl, prelude::*, telemetry::{self}
+    prelude::*,
+    telemetry::{self},
 };
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     common::{MacroquadColorable, Palette},
 };
 
-use super::{get_render_target_size, GameCamera, Layers, Position, RenderLayer, Renderable};
+use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
 
 #[derive(Component, Default)]
 pub struct Glyph {
@@ -62,9 +63,12 @@ impl Glyph {
     }
 }
 
-pub fn render_glyphs(q_glyphs: Query<(&Glyph, &Position)>, mut layers: ResMut<Layers>, camera: Res<GameCamera>) {
-    let screen = get_render_target_size().as_vec2();
-
+pub fn render_glyphs(
+    q_glyphs: Query<(&Glyph, &Position)>,
+    mut layers: ResMut<Layers>,
+    camera: Res<GameCamera>,
+    screen: Res<ScreenSize>,
+) {
     layers.ground.clear();
     layers.text.clear();
 
@@ -79,9 +83,11 @@ pub fn render_glyphs(q_glyphs: Query<(&Glyph, &Position)>, mut layers: ResMut<La
         if glyph.layer_id == RenderLayer::Ground {
             x -= camera.x * TILE_SIZE_F32.0;
             y -= camera.y * TILE_SIZE_F32.1;
-        }
 
-        if x + w < 0. || x > screen.x || y + h < 0. || y > screen.y {
+            if x + w < 0. || x > camera.w || y + h < 0. || y > camera.h {
+                return;
+            }
+        } else if x + w < 0. || x > screen.width || y + h < 0. || y > screen.height {
             return;
         }
 

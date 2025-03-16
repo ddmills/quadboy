@@ -1,17 +1,19 @@
 use bevy_ecs::prelude::*;
 use common::Palette;
 use ecs::{Time, render_fps, update_time};
-use engine::{update_key_input, KeyInput};
+use engine::{CurrentState, KeyInput, update_key_input, update_states};
 use macroquad::prelude::*;
+use macroquad_profiler::ProfilerParams;
 use rendering::{
-    load_tilesets, render_all, render_glyphs, render_text, update_camera, GameCamera, Glyph, Layers, Position, RenTarget, RenderLayer, Text
+    load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenTarget, RenderLayer, ScreenSize, Text
 };
 
 mod cfg;
 mod common;
 mod ecs;
-mod rendering;
 mod engine;
+mod rendering;
+mod ui;
 
 fn window_conf() -> Conf {
     Conf {
@@ -36,16 +38,17 @@ async fn main() {
     let mut schedule_post_update = Schedule::default();
 
     world.insert_resource(tilesets);
+    world.init_resource::<ScreenSize>();
     world.init_resource::<Time>();
     world.init_resource::<RenTarget>();
     world.init_resource::<Layers>();
     world.init_resource::<KeyInput>();
-    // world.init_resource::<GameCamera>();
-    world.insert_resource(GameCamera {x: 1., y: 1. });
+    world.init_resource::<CurrentState>();
+    world.init_resource::<GameCamera>();
 
     schedule_pre_update.add_systems((update_time, update_key_input));
-    schedule_update.add_systems((update_camera, render_fps, render_text, render_glyphs));
-    schedule_post_update.add_systems(render_all);
+    schedule_update.add_systems((update_screen_size, update_camera, render_fps, render_text, render_glyphs));
+    schedule_post_update.add_systems((render_all, update_states));
 
     let mut idx = 0;
 
@@ -74,9 +77,11 @@ async fn main() {
         schedule_post_update.run(&mut world);
 
         let t = get_fps().to_string();
-        draw_text(&t, 16.0, 32.0, 16.0, WHITE);
+        draw_text(&t, 16.0, 32.0, 32.0, GREEN);
 
-        macroquad_profiler::profiler(Default::default());
+        macroquad_profiler::profiler(ProfilerParams {
+            fps_counter_pos: vec2(0., 0.),
+        });
 
         next_frame().await;
     }
