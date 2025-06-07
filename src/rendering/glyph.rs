@@ -74,6 +74,9 @@ pub fn render_glyphs(
 
     telemetry::begin_zone("set-glyphs");
 
+    let screen_w = screen.width as f32;
+    let screen_h = screen.height as f32;
+
     q_glyphs.iter().for_each(|(glyph, pos)| {
         let mut x = pos.x * TILE_SIZE_F32.0;
         let mut y = pos.y * TILE_SIZE_F32.1;
@@ -84,10 +87,10 @@ pub fn render_glyphs(
             x -= camera.x * TILE_SIZE_F32.0;
             y -= camera.y * TILE_SIZE_F32.1;
 
-            if x + w < 0. || x > camera.w || y + h < 0. || y > camera.h {
+            if x + w < 0. || x > camera.width || y + h < 0. || y > camera.height {
                 return;
             }
-        } else if x + w < 0. || x > screen.width || y + h < 0. || y > screen.height {
+        } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
             return;
         }
 

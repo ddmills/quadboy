@@ -9,14 +9,14 @@ use crate::{
 use super::{create_render_target, Layers, ScreenSize};
 
 #[derive(Resource)]
-pub struct RenTarget {
-    pub t: RenderTarget,
+pub struct MainRenderTarget {
+    pub target: RenderTarget,
 }
 
-impl Default for RenTarget {
+impl Default for MainRenderTarget {
     fn default() -> Self {
-        RenTarget {
-            t: create_render_target(),
+        MainRenderTarget {
+            target: create_render_target(),
         }
     }
 }
@@ -33,11 +33,11 @@ pub struct Renderable {
     pub h: f32,
 }
 
-pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenTarget>, screen: Res<ScreenSize>) {
-    let target_size = uvec2(screen.width as u32, screen.height as u32);
+pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<MainRenderTarget>, screen: Res<ScreenSize>) {
+    let target_size = uvec2(screen.width, screen.height);
 
-    if ren.t.texture.size().as_uvec2() != target_size {
-        ren.t = create_render_target();
+    if ren.target.texture.size().as_uvec2() != target_size {
+        ren.target = create_render_target();
     }
 
     clear_background(Palette::Black.to_macroquad_color());
@@ -46,14 +46,14 @@ pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenTarget>, screen
 
     // clear render target
     ctx.begin_pass(
-        Some(ren.t.render_pass.raw_miniquad_id()),
+        Some(ren.target.render_pass.raw_miniquad_id()),
         PassAction::clear_color(0.0, 0.0, 0.0, 0.0),
     );
     ctx.end_render_pass();
 
     // render glyphs etc
     ctx.begin_pass(
-        Some(ren.t.render_pass.raw_miniquad_id()),
+        Some(ren.target.render_pass.raw_miniquad_id()),
         PassAction::Nothing,
     );
 
@@ -69,7 +69,7 @@ pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenTarget>, screen
     let dest_size = target_size.as_vec2() * TEXEL_SIZE_F32;
 
     draw_texture_ex(
-        &ren.t.texture,
+        &ren.target.texture,
         0.,
         0.,
         WHITE,

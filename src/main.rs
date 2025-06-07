@@ -5,8 +5,9 @@ use engine::{CurrentState, KeyInput, update_key_input, update_states};
 use macroquad::prelude::*;
 use macroquad_profiler::ProfilerParams;
 use rendering::{
-    load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenTarget, RenderLayer, ScreenSize, Text
+    load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, MainRenderTarget, RenderLayer, ScreenSize, Text
 };
+use ui::{update_ui_layout, UiLayout};
 
 mod cfg;
 mod common;
@@ -40,14 +41,15 @@ async fn main() {
     world.insert_resource(tilesets);
     world.init_resource::<ScreenSize>();
     world.init_resource::<Time>();
-    world.init_resource::<RenTarget>();
+    world.init_resource::<MainRenderTarget>();
     world.init_resource::<Layers>();
     world.init_resource::<KeyInput>();
     world.init_resource::<CurrentState>();
     world.init_resource::<GameCamera>();
+    world.init_resource::<UiLayout>();
 
     schedule_pre_update.add_systems((update_time, update_key_input));
-    schedule_update.add_systems((update_screen_size, update_camera, render_fps, render_text, render_glyphs));
+    schedule_update.add_systems((update_screen_size, update_ui_layout.run_if(resource_changed::<ScreenSize>), update_camera, render_fps, render_text, render_glyphs));
     schedule_post_update.add_systems((render_all, update_states));
 
     let mut idx = 0;
@@ -56,7 +58,7 @@ async fn main() {
         for x in 0..128 {
             world.spawn((
                 Position::new(x, y),
-                Glyph::new(idx % 256, Palette::Purple, Palette::Green).layer(RenderLayer::Ground),
+                Glyph::new(idx % 256, Palette::Orange, Palette::Green).layer(RenderLayer::Ground),
             ));
             idx += 1;
         }
@@ -76,12 +78,12 @@ async fn main() {
         schedule_update.run(&mut world);
         schedule_post_update.run(&mut world);
 
-        let t = get_fps().to_string();
-        draw_text(&t, 16.0, 32.0, 32.0, GREEN);
+        // let t = get_fps().to_string();
+        // draw_text(&t, 16.0, 32.0, 32.0, GREEN);
 
-        macroquad_profiler::profiler(ProfilerParams {
-            fps_counter_pos: vec2(0., 0.),
-        });
+        // macroquad_profiler::profiler(ProfilerParams {
+        //     fps_counter_pos: vec2(0., 0.),
+        // });
 
         next_frame().await;
     }
