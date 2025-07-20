@@ -2,11 +2,15 @@ use bevy_ecs::component::Component;
 use macroquad::miniquad::*;
 use macroquad::prelude::*;
 
+use crate::rendering::RenderTargetType;
+
 use super::Renderable;
 use super::get_render_target_size;
 
 #[derive(Component)]
 pub struct GlyphBatch {
+    pub target_type: RenderTargetType,
+
     pipeline: Pipeline,
     bindings: Bindings,
 
@@ -43,7 +47,7 @@ impl GlyphBatch {
         ctx.buffer_update(self.bindings.index_buffer, isource);
     }
 
-    pub fn new(texture_id: TextureId, max_size: usize) -> GlyphBatch {
+    pub fn new(texture_id: TextureId, target_type: RenderTargetType, max_size: usize) -> GlyphBatch {
         let v_count = 4 * max_size;
         let i_count = ((v_count + 3) >> 2) * 6;
 
@@ -111,6 +115,7 @@ impl GlyphBatch {
         };
 
         GlyphBatch {
+            target_type,
             bindings,
             pipeline,
             vertices,

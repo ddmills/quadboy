@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32};
+use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32}, rendering::RenderTargetType};
 
 use super::{GlyphBatch, TilesetTextures};
 
@@ -20,9 +20,10 @@ pub struct Layers {
 impl FromWorld for Layers {
     fn from_world(world: &mut World) -> Self {
         let textures = world.get_resource::<TilesetTextures>().unwrap();
+
         Self {
-            ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), 8000),
-            text: GlyphBatch::new(textures.font_body_texture.raw_miniquad_id(), 8000),
+            ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
+            text: GlyphBatch::new(textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Ui, 8000),
         }
     }
 }

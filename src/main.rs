@@ -5,9 +5,11 @@ use engine::{CurrentState, KeyInput, update_key_input, update_states};
 use macroquad::prelude::*;
 use macroquad_profiler::ProfilerParams;
 use rendering::{
-    load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, MainRenderTarget, RenderLayer, ScreenSize, Text
+    load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
 };
 use ui::{update_ui_layout, UiLayout};
+
+use crate::ui::render_layout;
 
 mod cfg;
 mod common;
@@ -41,7 +43,7 @@ async fn main() {
     world.insert_resource(tilesets);
     world.init_resource::<ScreenSize>();
     world.init_resource::<Time>();
-    world.init_resource::<MainRenderTarget>();
+    world.init_resource::<RenderTargets>();
     world.init_resource::<Layers>();
     world.init_resource::<KeyInput>();
     world.init_resource::<CurrentState>();
@@ -50,7 +52,7 @@ async fn main() {
 
     schedule_pre_update.add_systems((update_time, update_key_input));
     schedule_update.add_systems((update_screen_size, update_ui_layout.run_if(resource_changed::<ScreenSize>), update_camera, render_fps, render_text, render_glyphs));
-    schedule_post_update.add_systems((render_all, update_states));
+    schedule_post_update.add_systems((render_all, render_layout, update_states).chain());
 
     let mut idx = 0;
 
@@ -58,7 +60,9 @@ async fn main() {
         for x in 0..128 {
             world.spawn((
                 Position::new(x, y),
-                Glyph::new(idx % 256, Palette::Orange, Palette::Green).layer(RenderLayer::Ground),
+                Glyph::new(idx % 256, Palette::Orange, Palette::Green)
+                    .layer(RenderLayer::Ground)
+                    .bg(Palette::DarkCyan),
             ));
             idx += 1;
         }

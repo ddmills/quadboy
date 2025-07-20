@@ -53,6 +53,11 @@ impl Glyph {
         self
     }
 
+    pub fn bg<T: Into<u32>>(mut self, bg: T) -> Self {
+        self.bg = Some(bg.into());
+        self
+    }
+
     pub fn get_style(&self) -> GlyphStyle {
         GlyphStyle {
             bg: self.bg.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
