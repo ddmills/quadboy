@@ -3,10 +3,10 @@ use macroquad::math::Vec4;
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Palette {
-    White = 0xD2DBDB,
+    White = 0xE8EBEB,
     Black = 0x161A1F,
     Green = 0x2F812F,
-    LightGreen = 0x1AAF1A,
+    LightGreen = 0x04E904,
     Brown = 0x664D3C,
     Blue = 0x294E94,
     LightBlue = 0x2870DB,

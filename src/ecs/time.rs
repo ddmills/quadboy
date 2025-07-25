@@ -1,6 +1,8 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
+use crate::rendering::Text;
+
 #[derive(Resource, Default)]
 pub struct Time {
     pub dt: f32,
@@ -14,24 +16,14 @@ pub fn update_time(mut time: ResMut<Time>) {
     time.start = get_time();
 }
 
-pub fn render_fps(time: Res<Time>) {
-    // draw_text(time.fps.to_string().as_str(), 16.0 + offset.x, 24.0 + offset.y, 16.0, GOLD);
+#[derive(Component)]
+pub struct FpsDisplay;
 
+pub fn render_fps(time: Res<Time>, mut q_fps: Query<&mut Text, With<FpsDisplay>>) {
     let binding = time.fps.to_string();
     let t = binding.as_str();
 
-    for (i, c) in t.chars().enumerate() {
-        // renderer.draw(Renderable {
-        //     idx: cp437_idx(c).unwrap_or(0),
-        //     fg1: Palette::LightGreen.to_macroquad_color(),
-        //     fg2: TRANSPARENT,
-        //     bg: TRANSPARENT,
-        //     outline: TRANSPARENT,
-        //     tileset_id: TilesetId::BodyFont,
-        //     x: i as f32 * BODY_FONT_SIZE_F32.0,
-        //     y: 0.,
-        //     w: BODY_FONT_SIZE_F32.0,
-        //     h: BODY_FONT_SIZE_F32.1,
-        // });
+    for mut text in q_fps.iter_mut() {
+        text.value = t.into();
     }
 }

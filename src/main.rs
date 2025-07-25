@@ -9,7 +9,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::ui::render_layout;
+use crate::{ecs::FpsDisplay, ui::render_layout};
 
 mod cfg;
 mod common;
@@ -87,12 +87,13 @@ async fn main() {
     }
 
     world.spawn((
-        Text::new("1234567890").bg(Palette::LightBlue),
+        Text::new("123").fg1(Palette::LightGreen).bg(Palette::Black),
         Position::new_f32(0., 0.),
+        FpsDisplay,
     ));
 
     world.spawn((
-        Text::new("Hello strangers. test test").fg1(Palette::Cyan),
+        Text::new("Hello strangers. test test 1234567890").fg1(Palette::Cyan),
         Position::new_f32(0., 0.5),
     ));
 
@@ -100,9 +101,6 @@ async fn main() {
         schedule_pre_update.run(&mut world);
         schedule_update.run(&mut world);
         schedule_post_update.run(&mut world);
-
-        // let t = get_fps().to_string();
-        // draw_text(&t, 16.0, 32.0, 32.0, GREEN);
 
         // macroquad_profiler::profiler(ProfilerParams {
         //     fps_counter_pos: vec2(0., 0.),
