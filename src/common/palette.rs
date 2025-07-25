@@ -9,7 +9,7 @@ pub enum Palette {
     LightGreen = 0x1AAF1A,
     Brown = 0x664D3C,
     Blue = 0x294E94,
-    LightBlue = 0x608ED3,
+    LightBlue = 0x2870DB,
     Red = 0xA83A3A,
     Orange = 0xE79519,
     Yellow = 0xEBCC21,

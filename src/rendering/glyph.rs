@@ -6,7 +6,7 @@ use macroquad::{
 
 use crate::{
     cfg::TILE_SIZE_F32,
-    common::{MacroquadColorable, Palette},
+    common::{MacroquadColorable, Palette}, rendering::RenderTargetType,
 };
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
@@ -74,8 +74,9 @@ pub fn render_glyphs(
     camera: Res<GameCamera>,
     screen: Res<ScreenSize>,
 ) {
-    layers.ground.clear();
-    layers.text.clear();
+    for layer in layers.get_all().iter_mut() {
+        layer.clear();
+    }
 
     telemetry::begin_zone("set-glyphs");
 
@@ -87,8 +88,9 @@ pub fn render_glyphs(
         let mut y = pos.y * TILE_SIZE_F32.1;
         let w = layers.get_glyph_width(glyph.layer_id);
         let h = layers.get_glyph_height(glyph.layer_id);
+        let layer = layers.get_layer(glyph.layer_id);
 
-        if glyph.layer_id == RenderLayer::Ground {
+        if layer.target_type == RenderTargetType::World {
             x -= camera.x * TILE_SIZE_F32.0;
             y -= camera.y * TILE_SIZE_F32.1;
 
@@ -101,7 +103,7 @@ pub fn render_glyphs(
 
         let style = glyph.get_style();
 
-        layers.get_layer(glyph.layer_id).add(Renderable {
+        layer.add(Renderable {
             idx: glyph.idx,
             fg1: style.fg1,
             fg2: style.fg2,

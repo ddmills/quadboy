@@ -10,20 +10,20 @@ use super::{create_render_target, Layers, ScreenSize};
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RenderTargetType {
     World,
-    Ui,
+    Screen,
 }
 
 #[derive(Resource)]
 pub struct RenderTargets {
     pub world: RenderTarget,
-    pub ui: RenderTarget,
+    pub screen: RenderTarget,
 }
 
 impl Default for RenderTargets {
     fn default() -> Self {
         RenderTargets {
             world: create_render_target(),
-            ui: create_render_target(),
+            screen: create_render_target(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl RenderTargets {
     pub fn get(&mut self, target_type: RenderTargetType) -> &mut RenderTarget {
         match target_type {
             RenderTargetType::World => &mut self.world,
-            RenderTargetType::Ui => &mut self.ui,
+            RenderTargetType::Screen => &mut self.screen,
         }
     }
 }
@@ -54,21 +54,25 @@ pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenderTargets>, sc
 
     if ren.world.texture.size().as_uvec2() != target_size {
         ren.world = create_render_target();
-        ren.ui = create_render_target();
+        ren.screen = create_render_target();
     }
 
     clear_background(Palette::Black.to_macroquad_color());
 
-    let target = ren.get(layers.ground.target_type);
-
-    ctx_render_layer(target, &mut layers.ground);
-    ctx_render_layer(&ren.ui, &mut layers.text);
+    start_pass(&ren.world);
+    layers.ground.render();
+    end_pass();
+    
+    start_pass(&ren.screen);
+    layers.ui.render();
+    layers.text.render();
+    end_pass();
 
     set_default_camera();
     gl_use_default_material();
 }
 
-fn ctx_render_layer(target: &RenderTarget, glyphs: &mut GlyphBatch)
+fn start_pass(target: &RenderTarget)
 {
     let ctx = unsafe { get_internal_gl().quad_context };
 
@@ -84,8 +88,11 @@ fn ctx_render_layer(target: &RenderTarget, glyphs: &mut GlyphBatch)
         Some(target.render_pass.raw_miniquad_id()),
         PassAction::Nothing,
     );
+}
 
-    glyphs.render();
-
+fn end_pass()
+{
+    let ctx = unsafe { get_internal_gl().quad_context };
+    
     ctx.end_render_pass();
 }

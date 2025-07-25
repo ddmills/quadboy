@@ -32,6 +32,16 @@ impl Text {
         self.bg = Some(bg.into());
         self
     }
+
+    pub fn fg1<T: Into<u32>>(mut self, fg1: T) -> Self {
+        self.fg1 = Some(fg1.into());
+        self
+    }
+
+    pub fn outline<T: Into<u32>>(mut self, outline: T) -> Self {
+        self.outline = Some(outline.into());
+        self
+    }
 }
 
 pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position), Changed<Text>>) {

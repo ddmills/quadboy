@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use macroquad::{color::WHITE, math::uvec2, prelude::trace, texture::{draw_texture_ex, DrawTextureParams}};
+use macroquad::{color::WHITE, math::uvec2, texture::{draw_texture_ex, DrawTextureParams}};
 
 use crate::{cfg::{TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32}, rendering::{GameCamera, RenderTargets, ScreenSize}};
 
@@ -27,8 +27,6 @@ impl FromWorld for UiLayout {
 }
 
 pub fn update_ui_layout(mut ui: ResMut<UiLayout>, screen: Res<ScreenSize>, mut camera: ResMut<GameCamera>) {
-    trace!("screen changed");
-
     let left_panel_width = 8;
 
     ui.left_panel.x = 0;
@@ -67,7 +65,7 @@ pub fn render_layout(ren: Res<RenderTargets>, ui: Res<UiLayout>, screen: Res<Scr
     );
 
     draw_texture_ex(
-        &ren.ui.texture,
+        &ren.screen.texture,
         0.,
         0.,
         WHITE,
