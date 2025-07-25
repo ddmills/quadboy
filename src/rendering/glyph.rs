@@ -94,7 +94,7 @@ pub fn render_glyphs(
             x -= camera.x * TILE_SIZE_F32.0;
             y -= camera.y * TILE_SIZE_F32.1;
 
-            if x + w < 0. || x > camera.width || y + h < 0. || y > camera.height {
+            if x + w < 0. || x - w > camera.width || y + h < 0. || y - h > camera.height {
                 return;
             }
         } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {

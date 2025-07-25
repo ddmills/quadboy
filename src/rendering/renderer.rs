@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::{miniquad::PassAction, prelude::*};
 
 use crate::{
-    common::{MacroquadColorable, Palette}, rendering::GlyphBatch,
+    common::{MacroquadColorable, Palette}
 };
 
 use super::{create_render_target, Layers, ScreenSize};
