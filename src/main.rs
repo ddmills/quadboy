@@ -9,13 +9,14 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{ecs::FpsDisplay, ui::render_layout};
+use crate::{domain::{player_input, Player}, ecs::FpsDisplay, ui::render_layout};
 
 mod cfg;
 mod common;
 mod ecs;
 mod engine;
 mod rendering;
+mod domain;
 mod ui;
 
 fn window_conf() -> Conf {
@@ -51,7 +52,7 @@ async fn main() {
     world.init_resource::<UiLayout>();
 
     schedule_pre_update.add_systems((update_time, update_key_input));
-    schedule_update.add_systems((update_screen_size, update_ui_layout.run_if(resource_changed::<ScreenSize>), update_camera, render_fps, render_text, render_glyphs));
+    schedule_update.add_systems((update_screen_size, update_ui_layout.run_if(resource_changed::<ScreenSize>), player_input, update_camera, render_fps, render_text, render_glyphs));
     schedule_post_update.add_systems((render_all, render_layout, update_states).chain());
 
     let mut idx = 0;
@@ -67,6 +68,14 @@ async fn main() {
             idx += 1;
         }
     }
+
+    world.spawn((
+        Position::new(10, 12),
+        Glyph::new(5, Palette::LightBlue, Palette::Yellow)
+            .layer(RenderLayer::Ground)
+            .bg(Palette::White),
+        Player,
+    ));
 
     world.spawn((
         Position::new(12, 12),

@@ -16,21 +16,21 @@ pub struct GameCamera {
 pub fn update_camera(mut camera: ResMut<GameCamera>, keys: Res<KeyInput>, time: Res<Time>) {
     let speed = 25.;
 
-    if keys.is_down(KeyCode::A) {
-        camera.x -= speed * time.dt;
-    }
+    // if keys.is_down(KeyCode::A) {
+    //     camera.x -= speed * time.dt;
+    // }
 
-    if keys.is_down(KeyCode::D) {
-        camera.x += speed * time.dt;
-    }
+    // if keys.is_down(KeyCode::D) {
+    //     camera.x += speed * time.dt;
+    // }
 
-    if keys.is_down(KeyCode::W) {
-        camera.y -= speed * time.dt;
-    }
+    // if keys.is_down(KeyCode::W) {
+    //     camera.y -= speed * time.dt;
+    // }
 
-    if keys.is_down(KeyCode::S) {
-        camera.y += speed * time.dt;
-    }
+    // if keys.is_down(KeyCode::S) {
+    //     camera.y += speed * time.dt;
+    // }
 }
 
 #[derive(Resource, Default)]

@@ -58,6 +58,21 @@ impl Glyph {
         self
     }
 
+    pub fn outline<T: Into<u32>>(mut self, outline: T) -> Self {
+        self.outline = Some(outline.into());
+        self
+    }
+
+    pub fn fg1<T: Into<u32>>(mut self, fg1: T) -> Self {
+        self.fg1 = Some(fg1.into());
+        self
+    }
+
+    pub fn fg2<T: Into<u32>>(mut self, fg2: T) -> Self {
+        self.fg2 = Some(fg2.into());
+        self
+    }
+
     pub fn get_style(&self) -> GlyphStyle {
         GlyphStyle {
             bg: self.bg.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),

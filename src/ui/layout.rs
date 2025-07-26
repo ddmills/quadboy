@@ -27,7 +27,8 @@ impl FromWorld for UiLayout {
 }
 
 pub fn update_ui_layout(mut ui: ResMut<UiLayout>, screen: Res<ScreenSize>, mut camera: ResMut<GameCamera>) {
-    let left_panel_width = 8;
+    // let left_panel_width = 8;
+    let left_panel_width = 0;
 
     ui.left_panel.x = 0;
     ui.left_panel.y = 0;
