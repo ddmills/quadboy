@@ -13,6 +13,22 @@ pub enum RenderLayer {
     Text,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub enum GlyphTextureId {
+    #[default]
+    Cowboy,
+    BodyFont,
+}
+
+impl GlyphTextureId {
+    pub fn get_texture_idx(&self) -> usize {
+        match self {
+            GlyphTextureId::Cowboy => 0,
+            GlyphTextureId::BodyFont => 1,
+        }
+    }
+}
+
 #[derive(Resource)]
 pub struct Layers {
     pub ground: GlyphBatch,
@@ -26,10 +42,10 @@ impl FromWorld for Layers {
         let textures = world.get_resource::<TilesetTextures>().unwrap();
 
         Self {
-            ui: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
-            ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
-            actors: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
-            text: GlyphBatch::new(textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
+            ui: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
+            ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
+            actors: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
+            text: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
         }
     }
 }

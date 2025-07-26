@@ -6,7 +6,7 @@ use macroquad::{
 
 use crate::{
     cfg::TILE_SIZE_F32,
-    common::{MacroquadColorable, Palette}, rendering::RenderTargetType,
+    common::{MacroquadColorable, Palette}, rendering::{GlyphTextureId, RenderTargetType},
 };
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
@@ -19,6 +19,7 @@ pub struct Glyph {
     pub bg: Option<u32>,
     pub outline: Option<u32>,
     pub layer_id: RenderLayer,
+    pub texture_id: GlyphTextureId,
 }
 
 #[derive(Resource)]
@@ -45,11 +46,17 @@ impl Glyph {
             bg: None,
             outline: Some(Palette::Black.into()),
             layer_id: RenderLayer::default(),
+            texture_id: GlyphTextureId::Cowboy,
         }
     }
 
     pub fn layer(mut self, layer_id: RenderLayer) -> Self {
         self.layer_id = layer_id;
+        self
+    }
+
+    pub fn texture(mut self, texture_id: GlyphTextureId) -> Self {
+        self.texture_id = texture_id;
         self
     }
 
@@ -131,6 +138,7 @@ pub fn render_glyphs(
             y,
             w,
             h,
+            tex_idx: glyph.texture_id.get_texture_idx(),
         });
     });
 

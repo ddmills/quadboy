@@ -3,12 +3,14 @@ precision lowp float;
 
 varying lowp vec2 uv;
 varying float idx;
+varying float tex_idx;
 varying vec4 fg1;
 varying vec4 fg2;
 varying vec4 bg;
 varying vec4 outline;
 
-uniform sampler2D tex;
+uniform sampler2D tex_1;
+uniform sampler2D tex_2;
 
 void main() {
     vec2 uv_scaled = uv / 16.0; // atlas is 16x16
@@ -18,7 +20,13 @@ void main() {
 
     vec2 tex_uv = uv_offset + uv_scaled;
 
-    vec4 v = texture2D(tex, tex_uv);
+    vec4 v = vec4(0);
+
+    if (tex_idx == 0) {
+        v = texture2D(tex_1, tex_uv);
+    } else {
+        v = texture2D(tex_2, tex_uv);
+    }
 
     if (v.a == 0) { // transparent (background)
         gl_FragColor = bg;

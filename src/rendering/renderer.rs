@@ -30,6 +30,7 @@ impl Default for RenderTargets {
 
 pub struct Renderable {
     pub idx: usize,
+    pub tex_idx: usize,
     pub fg1: Vec4,
     pub fg2: Vec4,
     pub bg: Vec4,
