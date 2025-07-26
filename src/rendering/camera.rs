@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
-use macroquad::input::KeyCode;
+use macroquad::prelude::*;
 
-use crate::{cfg::TILE_SIZE, ecs::Time, engine::KeyInput};
+use crate::{cfg::{TILE_SIZE, TILE_SIZE_F32}, domain::Player, ecs::{Time, TimeFixed}, engine::KeyInput, rendering::Position};
 
 use super::get_render_target_size;
 
@@ -13,24 +13,39 @@ pub struct GameCamera {
     pub height: f32,
 }
 
-pub fn update_camera(mut camera: ResMut<GameCamera>, keys: Res<KeyInput>, time: Res<Time>) {
-    let speed = 25.;
+impl GameCamera {
+    pub fn focus_on(&mut self, x: f32, y: f32) {
+        self.x = x - (self.get_width_world() / 2.);
+        self.y = y - (self.get_height_world() / 2.);
+    }
 
-    // if keys.is_down(KeyCode::A) {
-    //     camera.x -= speed * time.dt;
-    // }
+    pub fn get_focus(&mut self) -> Vec2 {
+        vec2(
+            self.x + self.get_width_world() / 2.,
+            self.y + self.get_height_world() / 2.,
+        )
+    }
 
-    // if keys.is_down(KeyCode::D) {
-    //     camera.x += speed * time.dt;
-    // }
+    pub fn get_width_world(&self) -> f32 {
+        self.width / TILE_SIZE_F32.0
+    }
 
-    // if keys.is_down(KeyCode::W) {
-    //     camera.y -= speed * time.dt;
-    // }
+    pub fn get_height_world(&self) -> f32 {
+        self.height / TILE_SIZE_F32.1
+    }
+}
 
-    // if keys.is_down(KeyCode::S) {
-    //     camera.y += speed * time.dt;
-    // }
+pub fn update_camera(mut camera: ResMut<GameCamera>, q_player: Query<&Position, With<Player>>, fixed_time: Res<TimeFixed>) {
+    let player = q_player.single().unwrap();
+    let a = fixed_time.overstep_fraction();
+    let speed = 0.1;
+
+    let player_pos = vec2(player.x, player.y) + vec2(0.5, 0.5);
+    let camera_pos = camera.get_focus();
+
+    let target = camera_pos.lerp(player_pos, a * speed);
+
+    camera.focus_on(target.x, target.y);
 }
 
 #[derive(Resource, Default)]

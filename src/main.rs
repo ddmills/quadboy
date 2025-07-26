@@ -9,7 +9,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{domain::{player_input, Player}, ecs::FpsDisplay, ui::render_layout};
+use crate::{domain::{player_input, Player}, ecs::{FpsDisplay, TimeFixed}, ui::render_layout};
 
 mod cfg;
 mod common;
@@ -44,6 +44,7 @@ async fn main() {
     world.insert_resource(tilesets);
     world.init_resource::<ScreenSize>();
     world.init_resource::<Time>();
+    world.insert_resource(TimeFixed::new());
     world.init_resource::<RenderTargets>();
     world.init_resource::<Layers>();
     world.init_resource::<KeyInput>();

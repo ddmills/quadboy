@@ -98,6 +98,9 @@ pub fn render_glyphs(
     let screen_w = screen.width as f32;
     let screen_h = screen.height as f32;
 
+    let cam_x = (camera.x * TILE_SIZE_F32.0).floor();
+    let cam_y = (camera.y * TILE_SIZE_F32.1).floor();
+
     q_glyphs.iter().for_each(|(glyph, pos)| {
         let mut x = pos.x * TILE_SIZE_F32.0;
         let mut y = pos.y * TILE_SIZE_F32.1;
@@ -106,8 +109,8 @@ pub fn render_glyphs(
         let layer = layers.get_layer(glyph.layer_id);
 
         if layer.target_type == RenderTargetType::World {
-            x -= camera.x * TILE_SIZE_F32.0;
-            y -= camera.y * TILE_SIZE_F32.1;
+            x -= cam_x;
+            y -= cam_y;
 
             if x + w < 0. || x - w > camera.width || y + h < 0. || y - h > camera.height {
                 return;

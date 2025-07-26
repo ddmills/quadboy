@@ -42,8 +42,12 @@ pub fn update_ui_layout(mut ui: ResMut<UiLayout>, screen: Res<ScreenSize>, mut c
     }
     ui.game_panel.height = screen.tile_h;
 
-    camera.width = ui.game_panel.width as f32 * TILE_SIZE_F32.0;
-    camera.height = ui.game_panel.height as f32 * TILE_SIZE_F32.1;
+    // camera.width = ui.game_panel.width as f32 * TILE_SIZE_F32.0;
+    // camera.height = ui.game_panel.height as f32 * TILE_SIZE_F32.1;
+
+    
+    camera.width = screen.width as f32;
+    camera.height = screen.height as f32;
 }
 
 pub fn render_layout(ren: Res<RenderTargets>, ui: Res<UiLayout>, screen: Res<ScreenSize>)
