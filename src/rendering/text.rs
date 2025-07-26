@@ -63,6 +63,7 @@ pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position),
                         bg: text.bg,
                         outline: text.outline,
                         layer_id: text.layer_id,
+                        tex_id: 1,
                     },
                     Position::new_f32(position.x + (i as f32 * 0.5), position.y),
                 ))

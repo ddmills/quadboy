@@ -19,6 +19,7 @@ pub struct Glyph {
     pub bg: Option<u32>,
     pub outline: Option<u32>,
     pub layer_id: RenderLayer,
+    pub tex_id: usize,
 }
 
 #[derive(Resource)]
@@ -45,6 +46,7 @@ impl Glyph {
             bg: None,
             outline: Some(Palette::Black.into()),
             layer_id: RenderLayer::default(),
+            tex_id: 0,
         }
     }
 
@@ -131,6 +133,7 @@ pub fn render_glyphs(
             y,
             w,
             h,
+            tex_idx: 0,
         });
     });
 

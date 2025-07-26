@@ -26,10 +26,10 @@ impl FromWorld for Layers {
         let textures = world.get_resource::<TilesetTextures>().unwrap();
 
         Self {
-            ui: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
-            ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
-            actors: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
-            text: GlyphBatch::new(textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
+            ui: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
+            ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
+            actors: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
+            text: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
         }
     }
 }

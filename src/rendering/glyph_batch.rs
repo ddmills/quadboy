@@ -27,6 +27,7 @@ struct Vertex {
     pos: Vec2,
     uv: Vec2,
     idx: f32,
+    tex_idx: f32,
     fg1: Vec4,
     fg2: Vec4,
     bg: Vec4,
@@ -47,7 +48,7 @@ impl GlyphBatch {
         ctx.buffer_update(self.bindings.index_buffer, isource);
     }
 
-    pub fn new(texture_id: TextureId, target_type: RenderTargetType, max_size: usize) -> GlyphBatch {
+    pub fn new(texture_id_1: TextureId, texture_id_2: TextureId, target_type: RenderTargetType, max_size: usize) -> GlyphBatch {
         let v_count = 4 * max_size;
         let i_count = ((v_count + 3) >> 2) * 6;
 
@@ -77,7 +78,7 @@ impl GlyphBatch {
                     fragment: FRAGMENT,
                 },
                 ShaderMeta {
-                    images: vec!["tex".to_string()],
+                    images: vec!["tex_1".to_string(), "tex_2".to_string()],
                     uniforms: UniformBlockLayout {
                         uniforms: vec![UniformDesc::new("projection", UniformType::Mat4)],
                     },
@@ -91,6 +92,7 @@ impl GlyphBatch {
                 VertexAttribute::new("in_pos", VertexFormat::Float2),
                 VertexAttribute::new("in_uv", VertexFormat::Float2),
                 VertexAttribute::new("in_idx", VertexFormat::Float1),
+                VertexAttribute::new("in_tex_idx", VertexFormat::Float1),
                 VertexAttribute::new("in_fg1", VertexFormat::Float4),
                 VertexAttribute::new("in_fg2", VertexFormat::Float4),
                 VertexAttribute::new("in_bg", VertexFormat::Float4),
@@ -111,7 +113,7 @@ impl GlyphBatch {
                 BufferUsage::Immutable,
                 BufferSource::slice(indices.as_slice()),
             ),
-            images: vec![texture_id],
+            images: vec![texture_id_1, texture_id_2],
         };
 
         GlyphBatch {
@@ -138,6 +140,7 @@ impl GlyphBatch {
             pos: Vec2::new(r.x, r.y),
             uv: Vec2::new(0., 0.),
             idx: r.idx as f32,
+            tex_idx: r.tex_idx as f32,
             fg1: r.fg1,
             fg2: r.fg2,
             bg: r.bg,
@@ -148,6 +151,7 @@ impl GlyphBatch {
             pos: Vec2::new(r.x + r.w, r.y),
             uv: Vec2::new(1.0, 0.),
             idx: r.idx as f32,
+            tex_idx: r.tex_idx as f32,
             fg1: r.fg1,
             fg2: r.fg2,
             bg: r.bg,
@@ -158,6 +162,7 @@ impl GlyphBatch {
             pos: Vec2::new(r.x + r.w, r.y + r.h),
             uv: Vec2::new(1., 1.),
             idx: r.idx as f32,
+            tex_idx: r.tex_idx as f32,
             fg1: r.fg1,
             fg2: r.fg2,
             bg: r.bg,
@@ -168,6 +173,7 @@ impl GlyphBatch {
             pos: Vec2::new(r.x, r.y + r.h),
             uv: Vec2::new(0., 1.),
             idx: r.idx as f32,
+            tex_idx: r.tex_idx as f32,
             fg1: r.fg1,
             fg2: r.fg2,
             bg: r.bg,
@@ -206,6 +212,7 @@ pub const VERTEX: &str = "#version 400
 uniform mat4 projection;
 
 attribute float in_idx;
+attribute float in_tex_idx;
 attribute vec2 in_pos;
 attribute vec2 in_uv;
 attribute vec4 in_fg1;
@@ -214,6 +221,7 @@ attribute vec4 in_bg;
 attribute vec4 in_outline;
 
 varying lowp float idx;
+varying lowp float tex_idx;
 varying lowp vec2 uv;
 varying vec4 fg1;
 varying vec4 fg2;
@@ -224,6 +232,7 @@ void main() {
     gl_Position = projection * vec4(in_pos, 0, 1);
     uv = in_uv;
     idx = in_idx;
+    tex_idx = in_tex_idx;
     fg1 = in_fg1;
     fg2 = in_fg2;
     bg = in_bg;
