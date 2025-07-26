@@ -1,13 +1,6 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-#[derive(Default, PartialEq)]
-pub enum PositionSpace {
-    #[default]
-    World,
-    Screen,
-}
-
 #[derive(Component)]
 pub struct Position {
     pub x: f32,
@@ -22,17 +15,7 @@ impl Position {
         }
     }
 
-    pub fn screen(x: f32, y: f32) -> Self {
-        Self {
-            x,
-            y,
-        }
-    }
-
     pub fn new_f32(x: f32, y: f32) -> Self {
-        Self {
-            x,
-            y,
-        }
+        Self { x, y }
     }
 }

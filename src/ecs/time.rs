@@ -1,37 +1,94 @@
+use std::collections::{vec_deque, VecDeque};
+
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::BODY_FONT_SIZE_F32, common::{cp437_idx, MacroquadColorable, Palette}, rendering::{get_render_offset, Renderable, Renderer, TilesetId, TRANSPARENT}};
+use crate::rendering::{Position, ScreenSize, Text};
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct Time {
     pub dt: f32,
     pub fps: i32,
+    pub elapsed: f64,
+    pub frames: VecDeque<i32>,
+    pub frames_count: usize,
+    pub fixed_t: f32,
+    pub fixed_overstep: f32,
+    pub fixed_timestep: f32,
+}
+
+impl Default for Time
+{
+    fn default() -> Self {
+        Self {
+            dt: 0.,
+            fps: 0,
+            elapsed: 0.,
+            frames: VecDeque::new(),
+            frames_count: 60,
+            fixed_t: 0.,
+            fixed_overstep: 0.,
+            fixed_timestep: 1. / 60., // 60Hz
+        }
+    }
+}
+
+impl Time {
+    pub fn get_smooth_avg(&self) -> i32
+    {
+        self.frames.iter().sum::<i32>() / (self.frames_count as i32)
+    }
+    
+    pub fn get_min_fps(&self) -> i32
+    {
+        *self.frames.iter().min().unwrap_or(&0)
+    }
+
+    #[inline]
+    pub fn overstep_fraction(&self) -> f32 {
+        self.fixed_overstep / self.fixed_timestep
+    }
 }
 
 pub fn update_time(mut time: ResMut<Time>) {
-    time.dt = get_frame_time();
-    time.fps = get_fps();
+    let dt = get_frame_time();
+    let fps = get_fps();
+
+    time.dt = dt;
+    time.fps = fps;
+    time.elapsed = get_time();
+
+    if time.frames.len() >= time.frames_count {
+        time.frames.pop_front();
+    }
+    time.frames.push_back(fps);
+    time.fixed_overstep += dt;
+
+    while time.fixed_overstep >= time.fixed_timestep {
+        time.fixed_t += time.fixed_timestep;
+        time.fixed_overstep -= time.fixed_timestep;
+    }
 }
 
-pub fn render_fps(time: Res<Time>, mut renderer: ResMut<Renderer>) {
-    // let offset = get_render_offset();
+#[derive(Component)]
+pub struct FpsDisplay;
 
-    // draw_text(time.fps.to_string().as_str(), 16.0 + offset.x, 24.0 + offset.y, 16.0, GOLD);
+pub fn render_fps(
+    time: Res<Time>,
+    mut q_fps: Query<(&mut Text, &mut Position), With<FpsDisplay>>,
+    screen: Res<ScreenSize>
+) {
+    let smoothed = time.get_smooth_avg().to_string();
+    let min_fps = time.get_min_fps().to_string();
 
-    let binding = time.fps.to_string();
-    let t = binding.as_str();
+    for (mut text, mut position) in q_fps.iter_mut() {
+        let output = format!("{} (min {})", smoothed, min_fps);
+        let width = output.chars().count();
 
-    for (i, c) in t.chars().enumerate() {
-        renderer.draw(Renderable {
-            idx: cp437_idx(c).unwrap_or(0),
-            fg1: Palette::Yellow.to_macroquad_color(),
-            fg2: TRANSPARENT,
-            bg: TRANSPARENT,
-            outline: TRANSPARENT,
-            tileset_id: TilesetId::BodyFont,
-            x: i as f32 * BODY_FONT_SIZE_F32.0,
-            y: 0.,
-        });
+        if screen.tile_w > width {
+            position.x = (screen.tile_w as f32) - (width as f32 / 2.);
+        }
+
+        text.value = output;
     }
 }

@@ -1,66 +1,135 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::*;
+use macroquad::{miniquad::PassAction, prelude::*};
 
-use super::{get_render_offset, GlyphMaterial, TilesetId, TilesetTextures, TRANSPARENT};
+use crate::{
+    cfg::{TEXEL_SIZE_F32, TILE_SIZE}, common::{MacroquadColorable, Palette}, rendering::CrtShader, ui::UiLayout
+};
+
+use super::{create_render_target, Layers, ScreenSize};
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum RenderTargetType {
+    World,
+    Screen,
+}
+
+#[derive(Resource)]
+pub struct RenderTargets {
+    pub world: RenderTarget,
+    pub screen: RenderTarget,
+}
+
+impl Default for RenderTargets {
+    fn default() -> Self {
+        RenderTargets {
+            world: create_render_target(),
+            screen: create_render_target(),
+        }
+    }
+}
+
+impl RenderTargets {
+    pub fn get(&mut self, target_type: RenderTargetType) -> &mut RenderTarget {
+        match target_type {
+            RenderTargetType::World => &mut self.world,
+            RenderTargetType::Screen => &mut self.screen,
+        }
+    }
+}
 
 pub struct Renderable {
     pub idx: usize,
-    pub fg1: Color,
-    pub fg2: Color,
-    pub bg: Color,
-    pub outline: Color,
-    pub tileset_id: TilesetId,
+    pub fg1: Vec4,
+    pub fg2: Vec4,
+    pub bg: Vec4,
+    pub outline: Vec4,
     pub x: f32,
     pub y: f32,
-}
-
-#[derive(Resource, Default)]
-pub struct Renderer {
-    stack: Vec<Renderable>
-}
-
-impl Renderer {
-    pub fn draw(&mut self, renderable: Renderable) {
-        self.stack.push(renderable);
-    }
+    pub w: f32,
+    pub h: f32,
 }
 
 pub fn render_all(
-    mut renderer: ResMut<Renderer>,
-    material: Res<GlyphMaterial>,
-    tilesets: Res<TilesetTextures>,
+    mut layers: ResMut<Layers>,
+    mut ren: ResMut<RenderTargets>,
+    screen: Res<ScreenSize>,
+    crt: Res<CrtShader>,
+    ui: Res<UiLayout>
 ) {
-    gl_use_material(&material.0);
+    let target_size = uvec2(screen.width, screen.height);
 
-    let offset = get_render_offset();
-
-    for r in renderer.stack.iter() {
-        let texture = tilesets.get_by_id(&r.tileset_id);
-        let size = tilesets.get_size(&r.tileset_id);
-
-        material.0.set_uniform("fg1", r.fg1);
-        material.0.set_uniform("fg2", r.fg2);
-        material.0.set_uniform("outline", r.outline);
-        material.0.set_uniform("bg", r.bg);
-        material.0.set_uniform("idx", r.idx as f32);
-
-        draw_texture_ex(
-            texture,
-            r.x + offset.x,
-            r.y + offset.y,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(size),
-                source: None,
-                rotation: 0.,
-                flip_x: false,
-                flip_y: false,
-                pivot: None,
-            },
-        );
+    if ren.world.texture.size().as_uvec2() != target_size {
+        ren.world = create_render_target();
+        ren.screen = create_render_target();
     }
 
-    renderer.stack.clear();
+    clear_background(Palette::Black.to_macroquad_color());
 
+    start_pass(&ren.world);
+    layers.ground.render();
+    end_pass();
+    
+    start_pass(&ren.screen);
+    layers.ui.render();
+    layers.text.render();
+    end_pass();
+
+    // draw final texture as double size
+    let dest_size: macroquad::prelude::Vec2 = target_size.as_vec2() * TEXEL_SIZE_F32;
+
+    crt.mat.set_uniform("iTime", get_time() as f32);
+    crt.mat.set_uniform("iResolution", (dest_size.x, dest_size.y));
+    gl_use_material(&crt.mat);
+
+    draw_texture_ex(
+        &ren.world.texture,
+        (ui.game_panel.x * TILE_SIZE.0) as f32 * TEXEL_SIZE_F32,
+        (ui.game_panel.y * TILE_SIZE.1) as f32 * TEXEL_SIZE_F32,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(dest_size),
+            flip_y: true,
+            ..Default::default()
+        },
+    );
+    // gl_use_default_material();
+    draw_texture_ex(
+        &ren.screen.texture,
+        0.,
+        0.,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(dest_size),
+            flip_y: true,
+            ..Default::default()
+        },
+    );
+
+    set_default_camera();
     gl_use_default_material();
+}
+
+fn start_pass(target: &RenderTarget)
+{
+    let ctx = unsafe { get_internal_gl().quad_context };
+
+    // clear render target
+    ctx.begin_pass(
+        Some(target.render_pass.raw_miniquad_id()),
+        PassAction::clear_color(0.0, 0.0, 0.0, 0.0),
+    );
+    ctx.end_render_pass();
+
+    // render glyphs etc
+    ctx.begin_pass(
+        Some(target.render_pass.raw_miniquad_id()),
+        PassAction::Nothing,
+    );
+}
+
+fn end_pass()
+{
+    let ctx = unsafe { get_internal_gl().quad_context };
+    
+    ctx.end_render_pass();
 }

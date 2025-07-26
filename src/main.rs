@@ -1,14 +1,23 @@
 use bevy_ecs::prelude::*;
-use cfg::{TILE_SIZE, TILE_SIZE_F32};
-use common::{render_shapes, MacroquadColorable, Palette, Rectangle};
+use common::Palette;
 use ecs::{Time, render_fps, update_time};
+use engine::{CurrentState, KeyInput, update_key_input, update_states};
 use macroquad::prelude::*;
-use rendering::{create_render_camera, create_render_target, get_render_target_size, load_tilesets, render_all, render_glyphs, render_text, update_render_camera, update_render_target, Glyph, GlyphMaterial, Position, Renderer, Text, TEXEL_SIZE, TEXEL_SIZE_F32};
+use macroquad_profiler::ProfilerParams;
+use rendering::{
+    load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
+};
+use ui::{update_ui_layout, UiLayout};
 
+use crate::{domain::{player_input, Player}, ecs::FpsDisplay, rendering::CrtShader};
+
+mod cfg;
 mod common;
 mod ecs;
+mod engine;
 mod rendering;
-mod cfg;
+mod domain;
+mod ui;
 
 fn window_conf() -> Conf {
     Conf {
@@ -28,72 +37,73 @@ async fn main() {
     let tilesets = load_tilesets().await;
 
     let mut world = World::new();
-
-    world.init_resource::<Time>();
-    world.init_resource::<GlyphMaterial>();
-    world.init_resource::<Renderer>();
-    world.insert_resource(tilesets);
-
     let mut schedule_pre_update = Schedule::default();
     let mut schedule_update = Schedule::default();
+    let mut schedule_post_update = Schedule::default();
 
-    schedule_pre_update.add_systems(update_time);
+    world.insert_resource(tilesets);
+    world.init_resource::<ScreenSize>();
+    world.init_resource::<Time>();
+    world.init_resource::<RenderTargets>();
+    world.init_resource::<Layers>();
+    world.init_resource::<KeyInput>();
+    world.init_resource::<CurrentState>();
+    world.init_resource::<GameCamera>();
+    world.init_resource::<UiLayout>();
+    world.init_resource::<CrtShader>();
 
-    schedule_update.add_systems(render_fps);
-    schedule_update.add_systems((render_shapes, render_glyphs, render_text, render_all).chain());
+    schedule_pre_update.add_systems((
+        update_time,
+        update_key_input
+    ));
+    schedule_update.add_systems((
+        update_screen_size,
+        update_ui_layout.run_if(resource_changed::<ScreenSize>),
+        player_input,
+        update_camera,
+        render_fps,
+        render_text,
+        render_glyphs
+    ));
+    schedule_post_update.add_systems((render_all, update_states).chain());
 
-    let mut idx = 0;
-    for y in 0..32 {
-        for x in 0..32 {
+    for y in 0..128 {
+        for x in 0..128 {
             world.spawn((
                 Position::new(x, y),
-                Glyph::new(idx % 255, Palette::Red, Palette::Yellow),
+                Glyph::new(1, Palette::DarkCyan, Palette::Green)
+                    .bg(Palette::Brown)
+                    .layer(RenderLayer::Ground)
             ));
-            idx += 1;
         }
     }
 
     world.spawn((
-        Rectangle::new(16 * 5, 24, Palette::Green),
-        Position::new(4, 8),
+        Position::new(10, 12),
+        Glyph::new(147, Palette::LightBlue, Palette::Yellow)
+            .layer(RenderLayer::Ground),
+        Player,
     ));
 
     world.spawn((
-        Text::new("Hello strangers. 0123456789"),
-        Position::screen(0., 1.),
+        Text::new("123").fg1(Palette::LightGreen).bg(Palette::Black),
+        Position::new_f32(0., 0.),
+        FpsDisplay,
     ));
 
-    let mut render_target = create_render_target();
-    let mut render_camera = create_render_camera(&render_target);
+    world.spawn((
+        Text::new("Quadboy").fg1(Palette::Purple).bg(Palette::White),
+        Position::new_f32(0., 0.),
+    ));
 
     loop {
-        render_target = update_render_target(render_target);
-        update_render_camera(&mut render_camera, &render_target);
-
-        set_camera(&render_camera);
-
-        clear_background(Palette::Black.to_macroquad_color());
-
         schedule_pre_update.run(&mut world);
         schedule_update.run(&mut world);
+        schedule_post_update.run(&mut world);
 
-        set_default_camera();
-
-        let target_size = get_render_target_size();
-        let dest_size = target_size.as_vec2() * vec2(TEXEL_SIZE_F32, TEXEL_SIZE_F32);
-
-        draw_texture_ex(
-            &render_target.texture,
-            0.,
-            0.,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(dest_size),
-                ..Default::default()
-            },
-        );
-
-        gl_use_default_material();
+        // macroquad_profiler::profiler(ProfilerParams {
+        //     fps_counter_pos: vec2(0., 0.),
+        // });
 
         next_frame().await;
     }
