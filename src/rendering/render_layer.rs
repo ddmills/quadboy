@@ -8,6 +8,7 @@ use super::{GlyphBatch, TilesetTextures};
 pub enum RenderLayer {
     #[default]
     Ground,
+    Actors,
     Ui,
     Text,
 }
@@ -15,6 +16,7 @@ pub enum RenderLayer {
 #[derive(Resource)]
 pub struct Layers {
     pub ground: GlyphBatch,
+    pub actors: GlyphBatch,
     pub ui: GlyphBatch,
     pub text: GlyphBatch,
 }
@@ -26,6 +28,7 @@ impl FromWorld for Layers {
         Self {
             ui: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
             ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
+            actors: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
             text: GlyphBatch::new(textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
         }
     }
@@ -36,6 +39,7 @@ impl Layers {
     pub fn get_layer(&mut self, layer: RenderLayer) -> &mut GlyphBatch {
         match layer {
             RenderLayer::Ground => &mut self.ground,
+            RenderLayer::Actors => &mut self.actors,
             RenderLayer::Ui => &mut self.ui,
             RenderLayer::Text => &mut self.text,
         }
@@ -45,6 +49,7 @@ impl Layers {
         vec![
             &mut self.ui,
             &mut self.ground,
+            &mut self.actors,
             &mut self.text,
         ]
     }
@@ -53,6 +58,7 @@ impl Layers {
     pub fn get_glyph_width(&self, layer: RenderLayer) -> f32 {
         match layer {
             RenderLayer::Ground => TILE_SIZE_F32.0,
+            RenderLayer::Actors => TILE_SIZE_F32.0,
             RenderLayer::Ui => TILE_SIZE_F32.0,
             RenderLayer::Text => BODY_FONT_SIZE_F32.0,
         }
@@ -62,6 +68,7 @@ impl Layers {
     pub fn get_glyph_height(&self, layer: RenderLayer) -> f32 {
         match layer {
             RenderLayer::Ground => TILE_SIZE_F32.1,
+            RenderLayer::Actors => TILE_SIZE_F32.1,
             RenderLayer::Ui => TILE_SIZE_F32.1,
             RenderLayer::Text => BODY_FONT_SIZE_F32.1,
         }

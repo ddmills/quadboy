@@ -10,19 +10,10 @@ pub struct Panel {
     pub y: usize,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct UiLayout {
     pub left_panel: Panel,
     pub game_panel: Panel,
-}
-
-impl FromWorld for UiLayout {
-    fn from_world(world: &mut World) -> Self {
-        Self {
-            left_panel: Panel::default(),
-            game_panel: Panel::default(),
-        }
-    }
 }
 
 pub fn update_ui_layout(mut ui: ResMut<UiLayout>, screen: Res<ScreenSize>, mut camera: ResMut<GameCamera>) {

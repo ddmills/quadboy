@@ -81,7 +81,7 @@ async fn main() {
     world.spawn((
         Position::new(10, 12),
         Glyph::new(147, Palette::LightBlue, Palette::Yellow)
-            .layer(RenderLayer::Ground),
+            .layer(RenderLayer::Actors),
         Player,
     ));
 

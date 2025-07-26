@@ -1,4 +1,4 @@
-use std::collections::{vec_deque, VecDeque};
+use std::collections::VecDeque;
 
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;

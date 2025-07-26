@@ -28,15 +28,6 @@ impl Default for RenderTargets {
     }
 }
 
-impl RenderTargets {
-    pub fn get(&mut self, target_type: RenderTargetType) -> &mut RenderTarget {
-        match target_type {
-            RenderTargetType::World => &mut self.world,
-            RenderTargetType::Screen => &mut self.screen,
-        }
-    }
-}
-
 pub struct Renderable {
     pub idx: usize,
     pub fg1: Vec4,
@@ -67,6 +58,7 @@ pub fn render_all(
 
     start_pass(&ren.world);
     layers.ground.render();
+    layers.actors.render();
     end_pass();
     
     start_pass(&ren.screen);
