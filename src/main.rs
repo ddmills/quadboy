@@ -44,7 +44,7 @@ async fn main() {
     world.insert_resource(tilesets);
     world.init_resource::<ScreenSize>();
     world.init_resource::<Time>();
-    world.insert_resource(TimeFixed::new());
+    world.init_resource::<TimeFixed>();
     world.init_resource::<RenderTargets>();
     world.init_resource::<Layers>();
     world.init_resource::<KeyInput>();
