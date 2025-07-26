@@ -14,7 +14,7 @@ pub enum Palette {
     Orange = 0xE79519,
     Yellow = 0xEBCC21,
     Purple = 0xAF0BB4,
-    Cyan = 0x0EC9E2,
+    Cyan = 0x09D6F1,
     DarkCyan = 0x2C7983,
 }
 

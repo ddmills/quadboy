@@ -51,49 +51,37 @@ async fn main() {
     world.init_resource::<GameCamera>();
     world.init_resource::<UiLayout>();
 
-    schedule_pre_update.add_systems((update_time, update_key_input));
-    schedule_update.add_systems((update_screen_size, update_ui_layout.run_if(resource_changed::<ScreenSize>), player_input, update_camera, render_fps, render_text, render_glyphs));
+    schedule_pre_update.add_systems((
+        update_time,
+        update_key_input
+    ));
+    schedule_update.add_systems((
+        update_screen_size,
+        update_ui_layout.run_if(resource_changed::<ScreenSize>),
+        player_input,
+        update_camera,
+        render_fps,
+        render_text,
+        render_glyphs
+    ));
     schedule_post_update.add_systems((render_all, render_layout, update_states).chain());
-
-    let mut idx = 0;
 
     for y in 0..128 {
         for x in 0..128 {
             world.spawn((
                 Position::new(x, y),
-                Glyph::new(idx % 256, Palette::Orange, Palette::Green)
+                Glyph::new(1, Palette::DarkCyan, Palette::Green)
                     .layer(RenderLayer::Ground)
-                    .bg(Palette::DarkCyan),
             ));
-            idx += 1;
         }
     }
 
     world.spawn((
         Position::new(10, 12),
-        Glyph::new(5, Palette::LightBlue, Palette::Yellow)
-            .layer(RenderLayer::Ground)
-            .bg(Palette::White),
+        Glyph::new(147, Palette::LightBlue, Palette::Yellow)
+            .layer(RenderLayer::Ground),
         Player,
     ));
-
-    world.spawn((
-        Position::new(12, 12),
-        Glyph::new(1, Palette::Purple, Palette::Purple)
-            .layer(RenderLayer::Ui)
-            .bg(Palette::White),
-    ));
-
-    for y in 0..4 {
-        for x in 0..12 {
-            world.spawn((
-                Position::new(x, y),
-                Glyph::new(idx % 256, Palette::Purple, Palette::Purple)
-                    .layer(RenderLayer::Ui)
-            ));
-            idx += 1;
-        }
-    }
 
     world.spawn((
         Text::new("123").fg1(Palette::LightGreen).bg(Palette::Black),
@@ -102,8 +90,8 @@ async fn main() {
     ));
 
     world.spawn((
-        Text::new("Hello strangers. test test 1234567890").fg1(Palette::Cyan),
-        Position::new_f32(0., 0.5),
+        Text::new("Quadboy").fg1(Palette::Purple).bg(Palette::White),
+        Position::new_f32(0., 0.),
     ));
 
     loop {

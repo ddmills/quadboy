@@ -3,7 +3,7 @@ use std::collections::{vec_deque, VecDeque};
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::rendering::Text;
+use crate::rendering::{Position, ScreenSize, Text};
 
 #[derive(Resource)]
 pub struct Time {
@@ -73,11 +73,22 @@ pub fn update_time(mut time: ResMut<Time>) {
 #[derive(Component)]
 pub struct FpsDisplay;
 
-pub fn render_fps(time: Res<Time>, mut q_fps: Query<&mut Text, With<FpsDisplay>>) {
+pub fn render_fps(
+    time: Res<Time>,
+    mut q_fps: Query<(&mut Text, &mut Position), With<FpsDisplay>>,
+    screen: Res<ScreenSize>
+) {
     let smoothed = time.get_smooth_avg().to_string();
     let min_fps = time.get_min_fps().to_string();
 
-    for mut text in q_fps.iter_mut() {
-        text.value = format!("{} (min {})", smoothed, min_fps);
+    for (mut text, mut position) in q_fps.iter_mut() {
+        let output = format!("{} (min {})", smoothed, min_fps);
+        let width = output.chars().count();
+
+        if screen.tile_w > width {
+            position.x = (screen.tile_w as f32) - (width as f32 / 2.);
+        }
+
+        text.value = output;
     }
 }
