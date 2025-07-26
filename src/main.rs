@@ -9,7 +9,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{domain::{player_input, Player}, ecs::FpsDisplay, ui::render_layout};
+use crate::{domain::{player_input, Player}, ecs::FpsDisplay, rendering::CrtShader};
 
 mod cfg;
 mod common;
@@ -50,6 +50,7 @@ async fn main() {
     world.init_resource::<CurrentState>();
     world.init_resource::<GameCamera>();
     world.init_resource::<UiLayout>();
+    world.init_resource::<CrtShader>();
 
     schedule_pre_update.add_systems((
         update_time,
@@ -64,13 +65,14 @@ async fn main() {
         render_text,
         render_glyphs
     ));
-    schedule_post_update.add_systems((render_all, render_layout, update_states).chain());
+    schedule_post_update.add_systems((render_all, update_states).chain());
 
     for y in 0..128 {
         for x in 0..128 {
             world.spawn((
                 Position::new(x, y),
                 Glyph::new(1, Palette::DarkCyan, Palette::Green)
+                    .bg(Palette::Brown)
                     .layer(RenderLayer::Ground)
             ));
         }

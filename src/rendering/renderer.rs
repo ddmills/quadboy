@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::{miniquad::PassAction, prelude::*};
 
 use crate::{
-    common::{MacroquadColorable, Palette}
+    cfg::{TEXEL_SIZE_F32, TILE_SIZE}, common::{MacroquadColorable, Palette}, rendering::CrtShader, ui::UiLayout
 };
 
 use super::{create_render_target, Layers, ScreenSize};
@@ -49,7 +49,13 @@ pub struct Renderable {
     pub h: f32,
 }
 
-pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenderTargets>, screen: Res<ScreenSize>) {
+pub fn render_all(
+    mut layers: ResMut<Layers>,
+    mut ren: ResMut<RenderTargets>,
+    screen: Res<ScreenSize>,
+    crt: Res<CrtShader>,
+    ui: Res<UiLayout>
+) {
     let target_size = uvec2(screen.width, screen.height);
 
     if ren.world.texture.size().as_uvec2() != target_size {
@@ -67,6 +73,37 @@ pub fn render_all(mut layers: ResMut<Layers>, mut ren: ResMut<RenderTargets>, sc
     layers.ui.render();
     layers.text.render();
     end_pass();
+
+    // draw final texture as double size
+    let dest_size: macroquad::prelude::Vec2 = target_size.as_vec2() * TEXEL_SIZE_F32;
+
+    crt.mat.set_uniform("iTime", get_time() as f32);
+    crt.mat.set_uniform("iResolution", (dest_size.x, dest_size.y));
+    gl_use_material(&crt.mat);
+
+    draw_texture_ex(
+        &ren.world.texture,
+        (ui.game_panel.x * TILE_SIZE.0) as f32 * TEXEL_SIZE_F32,
+        (ui.game_panel.y * TILE_SIZE.1) as f32 * TEXEL_SIZE_F32,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(dest_size),
+            flip_y: true,
+            ..Default::default()
+        },
+    );
+    // gl_use_default_material();
+    draw_texture_ex(
+        &ren.screen.texture,
+        0.,
+        0.,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(dest_size),
+            flip_y: true,
+            ..Default::default()
+        },
+    );
 
     set_default_camera();
     gl_use_default_material();
