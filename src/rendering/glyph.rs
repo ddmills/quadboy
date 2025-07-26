@@ -109,10 +109,11 @@ pub fn render_glyphs(
     let cam_y = (camera.y * TILE_SIZE_F32.1).floor();
 
     q_glyphs.iter().for_each(|(glyph, pos)| {
+        let texture_id = glyph.texture_id;
         let mut x = pos.x * TILE_SIZE_F32.0;
         let mut y = pos.y * TILE_SIZE_F32.1;
-        let w = layers.get_glyph_width(glyph.layer_id);
-        let h = layers.get_glyph_height(glyph.layer_id);
+        let w = texture_id.get_glyph_width();
+        let h = texture_id.get_glyph_height();
         let layer = layers.get_layer(glyph.layer_id);
 
         if layer.target_type == RenderTargetType::World {
@@ -138,7 +139,7 @@ pub fn render_glyphs(
             y,
             w,
             h,
-            tex_idx: glyph.texture_id.get_texture_idx(),
+            tex_idx: texture_id.get_texture_idx(),
         });
     });
 

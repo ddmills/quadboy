@@ -10,7 +10,6 @@ pub enum RenderLayer {
     Ground,
     Actors,
     Ui,
-    Text,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
@@ -21,10 +20,27 @@ pub enum GlyphTextureId {
 }
 
 impl GlyphTextureId {
+    #[inline]
     pub fn get_texture_idx(&self) -> usize {
         match self {
-            GlyphTextureId::Cowboy => 0,
-            GlyphTextureId::BodyFont => 1,
+            Self::Cowboy => 0,
+            Self::BodyFont => 1,
+        }
+    }
+
+    #[inline]
+    pub fn get_glyph_width(&self) -> f32 {
+        match self {
+            Self::Cowboy => TILE_SIZE_F32.0,
+            Self::BodyFont => BODY_FONT_SIZE_F32.0,
+        }
+    }
+
+    #[inline]
+    pub fn get_glyph_height(&self) -> f32 {
+        match self {
+            Self::Cowboy => TILE_SIZE_F32.1,
+            Self::BodyFont => BODY_FONT_SIZE_F32.1,
         }
     }
 }
@@ -34,18 +50,18 @@ pub struct Layers {
     pub ground: GlyphBatch,
     pub actors: GlyphBatch,
     pub ui: GlyphBatch,
-    pub text: GlyphBatch,
 }
 
 impl FromWorld for Layers {
     fn from_world(world: &mut World) -> Self {
         let textures = world.get_resource::<TilesetTextures>().unwrap();
+        let texture_glyph = textures.glyph_texture.raw_miniquad_id();
+        let texture_body_text = textures.font_body_texture.raw_miniquad_id();
 
         Self {
-            ui: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
-            ground: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
-            actors: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::World, 8000),
-            text: GlyphBatch::new(textures.glyph_texture.raw_miniquad_id(), textures.font_body_texture.raw_miniquad_id(), RenderTargetType::Screen, 8000),
+            ground: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::World, 8000),
+            actors: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::World, 8000),
+            ui: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::Screen, 8000),
         }
     }
 }
@@ -57,7 +73,6 @@ impl Layers {
             RenderLayer::Ground => &mut self.ground,
             RenderLayer::Actors => &mut self.actors,
             RenderLayer::Ui => &mut self.ui,
-            RenderLayer::Text => &mut self.text,
         }
     }
 
@@ -66,27 +81,6 @@ impl Layers {
             &mut self.ui,
             &mut self.ground,
             &mut self.actors,
-            &mut self.text,
         ]
-    }
-
-    #[inline]
-    pub fn get_glyph_width(&self, layer: RenderLayer) -> f32 {
-        match layer {
-            RenderLayer::Ground => TILE_SIZE_F32.0,
-            RenderLayer::Actors => TILE_SIZE_F32.0,
-            RenderLayer::Ui => TILE_SIZE_F32.0,
-            RenderLayer::Text => BODY_FONT_SIZE_F32.0,
-        }
-    }
-
-    #[inline]
-    pub fn get_glyph_height(&self, layer: RenderLayer) -> f32 {
-        match layer {
-            RenderLayer::Ground => TILE_SIZE_F32.1,
-            RenderLayer::Actors => TILE_SIZE_F32.1,
-            RenderLayer::Ui => TILE_SIZE_F32.1,
-            RenderLayer::Text => BODY_FONT_SIZE_F32.1,
-        }
     }
 }

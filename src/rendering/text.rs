@@ -23,9 +23,14 @@ impl Text {
             fg1: Some(Palette::White.into()),
             fg2: None,
             outline: None,
-            layer_id: RenderLayer::Text,
+            layer_id: RenderLayer::Ui,
             glyphs: vec![],
         }
+    }
+
+    pub fn layer(mut self, layer_id: RenderLayer) -> Self {
+        self.layer_id = layer_id;
+        self
     }
 
     pub fn bg<T: Into<u32>>(mut self, bg: T) -> Self {

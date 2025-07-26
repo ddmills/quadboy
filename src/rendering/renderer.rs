@@ -64,7 +64,6 @@ pub fn render_all(
     
     start_pass(&ren.screen);
     layers.ui.render();
-    layers.text.render();
     end_pass();
 
     // draw final texture as double size

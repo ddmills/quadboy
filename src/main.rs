@@ -65,7 +65,9 @@ async fn main() {
         render_text,
         render_glyphs
     ));
-    schedule_post_update.add_systems((render_all, update_states).chain());
+    schedule_post_update.add_systems(
+        (render_all, update_states).chain()
+    );
 
     for y in 0..128 {
         for x in 0..128 {
@@ -79,6 +81,14 @@ async fn main() {
     }
 
     world.spawn((
+        Position::new(15, 12),
+        Glyph::new(4, Palette::Orange, Palette::Green)
+            .layer(RenderLayer::Actors)
+            .bg(Palette::White)
+            .outline(Palette::Red)
+    ));
+
+    world.spawn((
         Position::new(10, 12),
         Glyph::new(147, Palette::LightBlue, Palette::Yellow)
             .layer(RenderLayer::Actors),
@@ -86,7 +96,9 @@ async fn main() {
     ));
 
     world.spawn((
-        Text::new("123").fg1(Palette::LightGreen).bg(Palette::Black),
+        Text::new("123")
+            .fg1(Palette::LightGreen)
+            .bg(Palette::Black),
         Position::new_f32(0., 0.),
         FpsDisplay,
     ));
