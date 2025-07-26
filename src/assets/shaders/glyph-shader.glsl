@@ -20,7 +20,13 @@ void main() {
 
     vec2 tex_uv = uv_offset + uv_scaled;
 
-    vec4 v = texture2D(tex_1, tex_uv);
+    vec4 v = vec4(0);
+
+    if (tex_idx == 0) {
+        v = texture2D(tex_1, tex_uv);
+    } else {
+        v = texture2D(tex_2, tex_uv);
+    }
 
     if (v.a == 0) { // transparent (background)
         gl_FragColor = bg;

@@ -13,6 +13,22 @@ pub enum RenderLayer {
     Text,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub enum GlyphTextureId {
+    #[default]
+    Cowboy,
+    BodyFont,
+}
+
+impl GlyphTextureId {
+    pub fn get_texture_idx(&self) -> usize {
+        match self {
+            GlyphTextureId::Cowboy => 0,
+            GlyphTextureId::BodyFont => 1,
+        }
+    }
+}
+
 #[derive(Resource)]
 pub struct Layers {
     pub ground: GlyphBatch,

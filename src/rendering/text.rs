@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::common::{Palette, cp437_idx};
+use crate::{common::{cp437_idx, Palette}, rendering::GlyphTextureId};
 
 use super::{Glyph, Position, RenderLayer};
 
@@ -63,7 +63,7 @@ pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position),
                         bg: text.bg,
                         outline: text.outline,
                         layer_id: text.layer_id,
-                        tex_id: 1,
+                        texture_id: GlyphTextureId::BodyFont,
                     },
                     Position::new_f32(position.x + (i as f32 * 0.5), position.y),
                 ))
