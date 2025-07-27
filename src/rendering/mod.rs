@@ -8,6 +8,7 @@ mod renderer;
 mod text;
 mod crt_material;
 mod visibility;
+mod projection;
 
 pub use camera::*;
 pub use glyph::*;
@@ -19,3 +20,4 @@ pub use renderer::*;
 pub use text::*;
 pub use crt_material::*;
 pub use visibility::*;
+pub use projection::*;

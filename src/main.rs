@@ -1,4 +1,4 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{event::EventRegistry, prelude::*};
 use common::Palette;
 use ecs::{Time, render_fps, update_time};
 use engine::{CurrentState, KeyInput, update_key_input, update_states};
@@ -9,7 +9,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{player_input, Player, Zone}, ecs::FpsDisplay, rendering::{update_visibility, CrtShader, Visibility}};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{on_load_zone, player_input, LoadZoneEvent, Player, Zone}, ecs::FpsDisplay, rendering::{update_visibility, zone_idx, CrtShader, Visibility}};
 
 mod cfg;
 mod common;
@@ -52,11 +52,14 @@ async fn main() {
     world.init_resource::<UiLayout>();
     world.init_resource::<CrtShader>();
 
+    EventRegistry::register_event::<LoadZoneEvent>(&mut world);
+
     schedule_pre_update.add_systems((
         update_time,
         update_key_input
     ));
     schedule_update.add_systems((
+        on_load_zone,
         update_screen_size,
         update_ui_layout.run_if(resource_changed::<ScreenSize>),
         player_input,
@@ -69,18 +72,11 @@ async fn main() {
         (update_visibility, render_all, update_states).chain(),
     ));
 
+
     for y in 0..MAP_SIZE.1 {
         for x in 0..MAP_SIZE.0 {
-
-            let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |zx, zy| {
-                world.spawn((
-                    Position::new(x * ZONE_SIZE.0 + zx, y * ZONE_SIZE.1 + zy),
-                    Glyph::new(x + y, Palette::Brown, Palette::Green)
-                        .layer(RenderLayer::Ground),
-                )).id()
-            });
-
-            world.spawn(Zone::new(0, tiles));
+            let idx = zone_idx(x, y, 0);
+            world.send_event(LoadZoneEvent(idx));
         }
     }
 
@@ -94,7 +90,7 @@ async fn main() {
 
     world.spawn((
         Position::new(10, 12),
-        Glyph::new(147, Palette::LightBlue, Palette::Yellow)
+        Glyph::new(147, Palette::Yellow, Palette::LightBlue)
             .layer(RenderLayer::Actors),
         Player,
     ));
@@ -126,9 +122,9 @@ async fn main() {
         schedule_post_update.run(&mut world);
         telemetry::end_zone();
 
-        macroquad_profiler::profiler(ProfilerParams {
-            fps_counter_pos: vec2(0., 0.),
-        });
+        // macroquad_profiler::profiler(ProfilerParams {
+        //     fps_counter_pos: vec2(0., 0.),
+        // });
 
         next_frame().await;
     }
