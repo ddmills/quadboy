@@ -10,6 +10,7 @@ opt-level = 3
 bevy_ecs = "0.16.1"
 macroquad = "0.4.13"
 macroquad-profiler = "0.2.0"
+serde = { version = "1.0.219", features = ["derive"] }
 
 [patch.crates-io]
 macroquad = { git = "https://github.com/not-fl3/macroquad" }

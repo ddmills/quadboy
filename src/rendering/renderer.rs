@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use macroquad::{miniquad::PassAction, prelude::*};
+use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 
 use crate::{
     cfg::{TEXEL_SIZE_F32, TILE_SIZE}, common::{MacroquadColorable, Palette}, rendering::CrtShader, ui::UiLayout
@@ -48,6 +48,7 @@ pub fn render_all(
     crt: Res<CrtShader>,
     ui: Res<UiLayout>
 ) {
+    telemetry::begin_zone("render_all");
     let target_size = uvec2(screen.width, screen.height);
 
     if ren.world.texture.size().as_uvec2() != target_size {
@@ -99,6 +100,7 @@ pub fn render_all(
 
     set_default_camera();
     gl_use_default_material();
+    telemetry::end_zone();
 }
 
 fn start_pass(target: &RenderTarget)

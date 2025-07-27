@@ -2,14 +2,14 @@ use bevy_ecs::prelude::*;
 use common::Palette;
 use ecs::{Time, render_fps, update_time};
 use engine::{CurrentState, KeyInput, update_key_input, update_states};
-use macroquad::prelude::*;
+use macroquad::{prelude::*, telemetry};
 use macroquad_profiler::ProfilerParams;
 use rendering::{
     load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{domain::{player_input, Player}, ecs::FpsDisplay, rendering::CrtShader};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{player_input, Player, Zone}, ecs::FpsDisplay, rendering::{update_visibility, CrtShader, Visibility}};
 
 mod cfg;
 mod common;
@@ -63,20 +63,24 @@ async fn main() {
         update_camera,
         render_fps,
         render_text,
-        render_glyphs
+        render_glyphs,
     ));
-    schedule_post_update.add_systems(
-        (render_all, update_states).chain()
-    );
+    schedule_post_update.add_systems((
+        (update_visibility, render_all, update_states).chain(),
+    ));
 
-    for y in 0..128 {
-        for x in 0..128 {
-            world.spawn((
-                Position::new(x, y),
-                Glyph::new(1, Palette::DarkCyan, Palette::Green)
-                    .bg(Palette::Brown)
-                    .layer(RenderLayer::Ground)
-            ));
+    for y in 0..MAP_SIZE.1 {
+        for x in 0..MAP_SIZE.0 {
+
+            let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |zx, zy| {
+                world.spawn((
+                    Position::new(x * ZONE_SIZE.0 + zx, y * ZONE_SIZE.1 + zy),
+                    Glyph::new(x + y, Palette::Brown, Palette::Green)
+                        .layer(RenderLayer::Ground),
+                )).id()
+            });
+
+            world.spawn(Zone::new(0, tiles));
         }
     }
 
@@ -98,7 +102,8 @@ async fn main() {
     world.spawn((
         Text::new("123")
             .fg1(Palette::LightGreen)
-            .bg(Palette::Black),
+            .bg(Palette::Black)
+            .layer(RenderLayer::Ui),
         Position::new_f32(0., 0.),
         FpsDisplay,
     ));
@@ -109,13 +114,21 @@ async fn main() {
     ));
 
     loop {
+        telemetry::begin_zone("schedule_pre_update");
         schedule_pre_update.run(&mut world);
-        schedule_update.run(&mut world);
-        schedule_post_update.run(&mut world);
+        telemetry::end_zone();
 
-        // macroquad_profiler::profiler(ProfilerParams {
-        //     fps_counter_pos: vec2(0., 0.),
-        // });
+        telemetry::begin_zone("schedule_update");
+        schedule_update.run(&mut world);
+        telemetry::end_zone();
+
+        telemetry::begin_zone("schedule_post_update");
+        schedule_post_update.run(&mut world);
+        telemetry::end_zone();
+
+        macroquad_profiler::profiler(ProfilerParams {
+            fps_counter_pos: vec2(0., 0.),
+        });
 
         next_frame().await;
     }

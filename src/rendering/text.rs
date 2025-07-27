@@ -1,10 +1,11 @@
 use bevy_ecs::prelude::*;
 
-use crate::{common::{cp437_idx, Palette}, rendering::GlyphTextureId};
+use crate::{common::{cp437_idx, Palette}, rendering::{visibility, GlyphTextureId, Visibility}};
 
 use super::{Glyph, Position, RenderLayer};
 
 #[derive(Component)]
+#[require(Visibility)]
 pub struct Text {
     pub value: String,
     pub bg: Option<u32>,
@@ -49,8 +50,10 @@ impl Text {
     }
 }
 
-pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position), Changed<Text>>) {
-    for (mut text, position) in q_text.iter_mut() {
+
+
+pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position, &Visibility), Or<(Changed<Text>, Changed<Visibility>)>>) {
+    for (mut text, position, visibility) in q_text.iter_mut() {
         for glyph_id in text.glyphs.iter() {
             cmds.entity(*glyph_id).despawn();
         }
@@ -71,6 +74,7 @@ pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position),
                         texture_id: GlyphTextureId::BodyFont,
                     },
                     Position::new_f32(position.x + (i as f32 * 0.5), position.y),
+                    visibility.clone(),
                 ))
                 .id()
             })

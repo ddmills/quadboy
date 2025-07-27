@@ -6,12 +6,13 @@ use macroquad::{
 
 use crate::{
     cfg::TILE_SIZE_F32,
-    common::{MacroquadColorable, Palette}, rendering::{GlyphTextureId, RenderTargetType},
+    common::{MacroquadColorable, Palette}, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility},
 };
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
 
 #[derive(Component, Default)]
+#[require(Visibility)]
 pub struct Glyph {
     pub idx: usize,
     pub fg1: Option<u32>,
@@ -91,7 +92,7 @@ impl Glyph {
 }
 
 pub fn render_glyphs(
-    q_glyphs: Query<(&Glyph, &Position)>,
+    q_glyphs: Query<(&Glyph, &Position), With<IsVisible>>,
     mut layers: ResMut<Layers>,
     camera: Res<GameCamera>,
     screen: Res<ScreenSize>,
