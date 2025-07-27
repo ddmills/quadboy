@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::{TILE_SIZE, TILE_SIZE_F32}, domain::Player, ecs::Time, rendering::Position};
+use crate::{cfg::{TILE_SIZE, TILE_SIZE_F32}, domain::Player, ecs::Time, rendering::{zone_center_world, Position}};
 
 use super::get_render_target_size;
 
@@ -38,9 +38,11 @@ impl GameCamera {
 pub fn update_camera(mut camera: ResMut<GameCamera>, q_player: Query<&Position, With<Player>>, time: Res<Time>) {
     let player = q_player.single().unwrap();
     let a = time.overstep_fraction();
-    let speed = 0.1;
+    let speed = 0.08;
 
-    let player_pos = vec2(player.x, player.y);
+    let z_pos = zone_center_world(player.zone_idx());
+
+    let player_pos = vec2(z_pos.0, z_pos.1);
     let camera_pos = camera.get_focus();
 
     let target = camera_pos.lerp(player_pos, a * speed);

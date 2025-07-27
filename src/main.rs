@@ -9,7 +9,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{load_nearby_zones, on_load_zone, on_player_move, on_set_zone_status, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zone, Zones}, ecs::FpsDisplay, rendering::{update_visibility, zone_idx, CrtShader, Visibility}};
+use crate::{domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones}, ecs::FpsDisplay, rendering::{on_zone_status_change, update_visibility, CrtShader}};
 
 mod cfg;
 mod common;
@@ -64,11 +64,12 @@ async fn main() {
     ));
     schedule_update.add_systems((
         (
-            on_player_move,
+            activate_zones_by_player,
             load_nearby_zones,
             on_load_zone,
             on_unload_zone,
             on_set_zone_status,
+            on_zone_status_change,
         ).chain(),
         update_screen_size,
         update_ui_layout.run_if(resource_changed::<ScreenSize>),

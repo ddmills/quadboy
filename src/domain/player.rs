@@ -72,23 +72,6 @@ pub fn player_input(
     }
 }
 
-
-// check when player moves to a different zone and set it as active
-pub fn on_player_move(
-    mut e_player_moved: EventReader<PlayerMovedEvent>,
-    mut zones: ResMut<Zones>,
-) {
-    for e in e_player_moved.read() {
-        let player_zone_idx = world_to_zone_idx(e.x, e.y, e.z);
-
-        zones.player = player_zone_idx;
-
-        if !zones.active.contains(&player_zone_idx) {
-            zones.active = vec![player_zone_idx];
-        }
-    }
-}
-
 #[derive(Component)]
 pub struct PlayerDebug;
 

@@ -50,8 +50,6 @@ impl Text {
     }
 }
 
-
-
 pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position, &Visibility), Or<(Changed<Text>, Changed<Visibility>)>>) {
     for (mut text, position, visibility) in q_text.iter_mut() {
         for glyph_id in text.glyphs.iter() {
@@ -72,6 +70,7 @@ pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position, 
                         outline: text.outline,
                         layer_id: text.layer_id,
                         texture_id: GlyphTextureId::BodyFont,
+                        is_dormant: false,
                     },
                     Position::new_f32(position.x + (i as f32 * 0.5), position.y),
                     visibility.clone(),

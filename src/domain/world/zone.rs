@@ -1,7 +1,6 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette}, domain::{Zone, Zones}, rendering::{zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette}, domain::{PlayerMovedEvent, Zone, Zones}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
 pub enum ZoneStatus {
@@ -33,7 +32,8 @@ pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEve
                 Position::new(wpos.0, wpos.1),
                 Glyph::new(x + y, Palette::Brown, Palette::Green)
                     .layer(RenderLayer::Ground),
-                ChildOf(zone_e)
+                ChildOf(zone_e),
+                ZoneStatus::Dormant,
             )).id()
         });
 
@@ -77,6 +77,21 @@ pub fn on_set_zone_status(
     }
 }
 
+// check when player moves to a different zone and set it as active
+pub fn activate_zones_by_player(
+    mut e_player_moved: EventReader<PlayerMovedEvent>,
+    mut zones: ResMut<Zones>,
+) {
+    for e in e_player_moved.read() {
+        let player_zone_idx = world_to_zone_idx(e.x, e.y, e.z);
+
+        zones.player = player_zone_idx;
+
+        if !zones.active.contains(&player_zone_idx) {
+            zones.active = vec![player_zone_idx];
+        }
+    }
+}
 
 // determine which zones should
 //  - be loaded

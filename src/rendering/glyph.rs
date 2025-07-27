@@ -5,8 +5,7 @@ use macroquad::{
 };
 
 use crate::{
-    cfg::TILE_SIZE_F32,
-    common::{MacroquadColorable, Palette}, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility},
+    cfg::TILE_SIZE_F32, common::{MacroquadColorable, Palette}, domain::ZoneStatus, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility}
 };
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
@@ -21,6 +20,7 @@ pub struct Glyph {
     pub outline: Option<u32>,
     pub layer_id: RenderLayer,
     pub texture_id: GlyphTextureId,
+    pub is_dormant: bool,
 }
 
 #[derive(Resource)]
@@ -37,6 +37,7 @@ pub struct GlyphStyle {
 }
 
 pub const TRANSPARENT: Vec4 = Vec4::splat(0.);
+pub const SHROUD_COLOR: Vec4 = Vec4::new(0.227, 0.243, 0.247, 1.0);
 
 impl Glyph {
     pub fn new<T: Into<u32>>(idx: usize, fg1: T, fg2: T) -> Self {
@@ -48,6 +49,7 @@ impl Glyph {
             outline: Some(Palette::Black.into()),
             layer_id: RenderLayer::default(),
             texture_id: GlyphTextureId::Cowboy,
+            is_dormant: false,
         }
     }
 
@@ -82,6 +84,15 @@ impl Glyph {
     }
 
     pub fn get_style(&self) -> GlyphStyle {
+        if self.is_dormant {
+            return GlyphStyle {
+                bg: TRANSPARENT,
+                fg1: SHROUD_COLOR,
+                fg2: SHROUD_COLOR,
+                outline: self.outline.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
+            };
+        }
+
         GlyphStyle {
             bg: self.bg.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
             fg1: self.fg1.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
@@ -157,5 +168,11 @@ pub async fn load_tilesets() -> TilesetTextures {
     TilesetTextures {
         glyph_texture,
         font_body_texture,
+    }
+}
+
+pub fn on_zone_status_change(mut q_changed: Query<(&mut Glyph, &ZoneStatus), Changed<ZoneStatus>>) {
+    for (mut glyph, status) in q_changed.iter_mut() {
+        glyph.is_dormant = *status == ZoneStatus::Dormant;
     }
 }
