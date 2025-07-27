@@ -1,22 +1,12 @@
 use bevy_ecs::{component::Component, entity::Entity, resource::Resource};
 
-use crate::{cfg::MAP_SIZE, common::{Grid, Grid3d}};
+use crate::common::Grid;
 
-#[derive(Resource)]
-pub struct Map {
-    pub zones: Grid3d<OverworldZone>
+#[derive(Resource, Default)]
+pub struct Zones {
+    pub active: Vec<usize>,
+    pub player: usize,
 }
-
-impl Default for Map {
-    fn default() -> Self {
-        Self {
-            zones: Grid3d::init(MAP_SIZE.0, MAP_SIZE.1, MAP_SIZE.2, OverworldZone)
-        }
-    }
-}
-
-#[derive(Clone, Default)]
-pub struct OverworldZone;
 
 #[derive(Component)]
 pub struct Zone {

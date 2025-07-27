@@ -24,3 +24,10 @@ pub fn zone_local_to_world(zone_idx: usize, x: usize, y: usize) -> (usize, usize
 
     (cpos.0 * ZONE_SIZE.0 + x, cpos.1 * ZONE_SIZE.1 + y, cpos.2)
 }
+
+#[inline]
+pub fn world_to_zone_idx(x: usize, y: usize, z: usize) -> usize {
+    let cpos = (x / ZONE_SIZE.0, y / ZONE_SIZE.1, z);
+
+    zone_idx(cpos.0, cpos.1, cpos.2)
+}

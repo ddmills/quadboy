@@ -9,7 +9,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{on_load_zone, player_input, LoadZoneEvent, Player, Zone}, ecs::FpsDisplay, rendering::{update_visibility, zone_idx, CrtShader, Visibility}};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{load_nearby_zones, on_load_zone, on_player_move, on_set_zone_status, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zone, Zones}, ecs::FpsDisplay, rendering::{update_visibility, zone_idx, CrtShader, Visibility}};
 
 mod cfg;
 mod common;
@@ -51,15 +51,25 @@ async fn main() {
     world.init_resource::<GameCamera>();
     world.init_resource::<UiLayout>();
     world.init_resource::<CrtShader>();
+    world.init_resource::<Zones>();
 
     EventRegistry::register_event::<LoadZoneEvent>(&mut world);
+    EventRegistry::register_event::<UnloadZoneEvent>(&mut world);
+    EventRegistry::register_event::<SetZoneStatusEvent>(&mut world);
+    EventRegistry::register_event::<PlayerMovedEvent>(&mut world);
 
     schedule_pre_update.add_systems((
         update_time,
         update_key_input
     ));
     schedule_update.add_systems((
-        on_load_zone,
+        (
+            on_player_move,
+            load_nearby_zones,
+            on_load_zone,
+            on_unload_zone,
+            on_set_zone_status,
+        ).chain(),
         update_screen_size,
         update_ui_layout.run_if(resource_changed::<ScreenSize>),
         player_input,
@@ -67,18 +77,11 @@ async fn main() {
         render_fps,
         render_text,
         render_glyphs,
+        render_player_debug,
     ));
     schedule_post_update.add_systems((
         (update_visibility, render_all, update_states).chain(),
     ));
-
-
-    for y in 0..MAP_SIZE.1 {
-        for x in 0..MAP_SIZE.0 {
-            let idx = zone_idx(x, y, 0);
-            world.send_event(LoadZoneEvent(idx));
-        }
-    }
 
     world.spawn((
         Position::new(15, 12),
@@ -102,6 +105,15 @@ async fn main() {
             .layer(RenderLayer::Ui),
         Position::new_f32(0., 0.),
         FpsDisplay,
+    ));
+
+    world.spawn((
+        Text::new("123")
+            .fg1(Palette::LightGreen)
+            .bg(Palette::Black)
+            .layer(RenderLayer::Ui),
+        Position::new_f32(3.5, 0.0),
+        PlayerDebug,
     ));
 
     world.spawn((
