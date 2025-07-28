@@ -9,7 +9,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones}, ecs::FpsDisplay, rendering::{on_zone_status_change, update_visibility, CrtShader}};
+use crate::{cfg::WINDOW_SIZE, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones}, ecs::FpsDisplay, rendering::{on_zone_status_change, update_visibility, CrtShader}};
 
 mod cfg;
 mod common;
@@ -22,8 +22,8 @@ mod ui;
 fn window_conf() -> Conf {
     Conf {
         window_title: "Quadboy".to_string(),
-        window_width: 800,
-        window_height: 600,
+        window_width: WINDOW_SIZE.0 as i32,
+        window_height: WINDOW_SIZE.1 as i32,
         fullscreen: false,
         window_resizable: true,
         ..Default::default()

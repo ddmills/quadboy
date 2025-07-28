@@ -50,12 +50,11 @@ pub fn update_camera(
     let center_pos = vec2(z_pos.0, z_pos.1);
     let camera_pos = camera.get_focus();
     let zone_pos = zone_local_to_world(player.zone_idx(), 0, 0);
+    let player_local_pos = world_to_zone_local(player.x as usize, player.y as usize);
 
-    let edge_pad = (3., 2.);
+    let edge_pad = (1., 1.);
 
-    let local_player = world_to_zone_local(player.x as usize, player.y as usize);
-
-    let mut target = center_pos;
+    let mut target = player_pos;
 
     let camera_w = camera.get_width_world();
     let camera_h = camera.get_height_world();
@@ -63,44 +62,40 @@ pub fn update_camera(
     let camera_radius = (camera_w / 2., camera_h / 2.);
     let camera_radius_buff = (camera_radius.0 - edge_pad.0, camera_radius.1 - edge_pad.1);
 
-    if ZONE_SIZE_F32.0 < camera_w {
-        target.x = center_pos.x;
-    } else {
-        target.x = player_pos.x;
-    }
-
-    if ZONE_SIZE_F32.1 < camera_h {
-        target.y = center_pos.y;
-    } else {
-        target.y = player_pos.y;
-    }
-
     // left edge
-    let left_edge = local_player.0 as f32 - camera_radius_buff.0;
+    let left_edge = player_local_pos.0 as f32 - camera_radius_buff.0;
 
     if left_edge < 0. {
         target.x = zone_pos.0 as f32 + camera_radius_buff.0;
     }
 
     // right edge
-    let right_edge = local_player.0 as f32 + camera_radius_buff.0;
+    let right_edge = player_local_pos.0 as f32 + camera_radius_buff.0;
 
     if right_edge > ZONE_SIZE_F32.0 {
         target.x = (zone_pos.0 as f32 + ZONE_SIZE_F32.0) - camera_radius_buff.0;
     }
 
     // top edge
-    let top_edge = local_player.1 as f32 - camera_radius_buff.1;
+    let top_edge = player_local_pos.1 as f32 - camera_radius_buff.1;
 
     if top_edge < 0. {
         target.y = zone_pos.1 as f32 + camera_radius_buff.1;
     }
 
     // bottom edge
-    let bottom_edge = local_player.1 as f32 + camera_radius_buff.1;
+    let bottom_edge = player_local_pos.1 as f32 + camera_radius_buff.1;
 
     if bottom_edge > ZONE_SIZE_F32.1 {
         target.y = (zone_pos.1 as f32 + ZONE_SIZE_F32.1) - camera_radius_buff.1;
+    }
+
+    if ZONE_SIZE_F32.0 < camera_w {
+        target.x = center_pos.x;
+    }
+
+    if ZONE_SIZE_F32.1 < camera_h {
+        target.y = center_pos.y;
     }
 
     let target_fin = camera_pos.lerp(target, a * speed);
