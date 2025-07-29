@@ -46,7 +46,7 @@ pub fn update_camera(
 
     let z_pos = zone_center_world(player.zone_idx());
 
-    let player_pos = vec2(player.x, player.y);
+    let player_pos = vec2(player.x + 0.5, player.y + 0.5);
     let center_pos = vec2(z_pos.0, z_pos.1);
     let camera_pos = camera.get_focus();
     let zone_pos = zone_local_to_world(player.zone_idx(), 0, 0);

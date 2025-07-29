@@ -101,8 +101,8 @@ async fn main() {
 
     world.spawn((
         Text::new("123")
-            .fg1(Palette::LightGreen)
-            .bg(Palette::Black)
+            .fg1(Palette::White)
+            .bg(Palette::Purple)
             .layer(RenderLayer::Ui),
         Position::new_f32(0., 0.),
         FpsDisplay,
@@ -110,16 +110,11 @@ async fn main() {
 
     world.spawn((
         Text::new("123")
-            .fg1(Palette::LightGreen)
-            .bg(Palette::Black)
+            .fg1(Palette::White)
+            .bg(Palette::Purple)
             .layer(RenderLayer::Ui),
-        Position::new_f32(3.5, 0.0),
+        Position::new_f32(0., 0.5),
         PlayerDebug,
-    ));
-
-    world.spawn((
-        Text::new("Quadboy").fg1(Palette::Purple).bg(Palette::White),
-        Position::new_f32(0., 0.),
     ));
 
     loop {
