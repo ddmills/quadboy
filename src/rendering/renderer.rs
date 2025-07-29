@@ -56,7 +56,7 @@ pub fn render_all(
         ren.screen = create_render_target();
     }
 
-    clear_background(Palette::Black.to_macroquad_color());
+    clear_background(Palette::Clear.to_macroquad_color());
 
     start_pass(&ren.world);
     layers.ground.render();

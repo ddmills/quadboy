@@ -46,7 +46,7 @@ impl Glyph {
             fg1: Some(fg1.into()),
             fg2: Some(fg2.into()),
             bg: None,
-            outline: Some(Palette::Black.into()),
+            outline: Some(Palette::Clear.into()),
             layer_id: RenderLayer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
@@ -122,8 +122,8 @@ pub fn render_glyphs(
 
     q_glyphs.iter().for_each(|(glyph, pos)| {
         let texture_id = glyph.texture_id;
-        let mut x = pos.x * TILE_SIZE_F32.0;
-        let mut y = pos.y * TILE_SIZE_F32.1;
+        let mut x = (pos.x * TILE_SIZE_F32.0).floor();
+        let mut y = (pos.y * TILE_SIZE_F32.1).floor();
         let w = texture_id.get_glyph_width();
         let h = texture_id.get_glyph_height();
         let layer = layers.get_layer(glyph.layer_id);

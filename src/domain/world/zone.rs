@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette}, domain::{PlayerMovedEvent, Zone, Zones}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette, Rand}, domain::{PlayerMovedEvent, Zone, Zones}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
 pub enum ZoneStatus {
@@ -24,13 +24,15 @@ pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEve
 {
     for LoadZoneEvent(zone_idx) in e_load_zone.read() {
         let zone_e = cmds.spawn(ZoneStatus::Dormant).id();
+        let mut rand = Rand::seed(*zone_idx as u64);
 
         let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             let wpos = zone_local_to_world(*zone_idx, x, y);
+            let idx = rand.pick(&[0, 1, 2, 3]);
 
             cmds.spawn((
                 Position::new(wpos.0, wpos.1),
-                Glyph::new(x + y, Palette::Brown, Palette::Green)
+                Glyph::new(idx, Palette::DarkCyan, Palette::Green)
                     .layer(RenderLayer::Ground),
                 ChildOf(zone_e),
                 ZoneStatus::Dormant,
