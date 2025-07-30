@@ -1,19 +1,16 @@
 use bevy_ecs::{event::EventRegistry, prelude::*};
 use common::Palette;
-use ecs::{Time, render_fps, update_time};
-use engine::{CurrentState, KeyInput, update_key_input, update_states};
+use engine::{CurrentState, KeyInput, update_key_input, update_states, Time, render_fps, update_time};
 use macroquad::{prelude::*, telemetry};
-use macroquad_profiler::ProfilerParams;
 use rendering::{
     load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{cfg::WINDOW_SIZE, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones}, ecs::FpsDisplay, rendering::{on_zone_status_change, update_visibility, CrtShader}};
+use crate::{cfg::WINDOW_SIZE, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_spawn_zone, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{render_profiler, FpsDisplay}, rendering::{on_zone_status_change, update_visibility, CrtShader}};
 
 mod cfg;
 mod common;
-mod ecs;
 mod engine;
 mod rendering;
 mod domain;
@@ -55,6 +52,7 @@ async fn main() {
 
     EventRegistry::register_event::<LoadZoneEvent>(&mut world);
     EventRegistry::register_event::<UnloadZoneEvent>(&mut world);
+    EventRegistry::register_event::<SpawnZoneEvent>(&mut world);
     EventRegistry::register_event::<SetZoneStatusEvent>(&mut world);
     EventRegistry::register_event::<PlayerMovedEvent>(&mut world);
 
@@ -68,6 +66,7 @@ async fn main() {
             load_nearby_zones,
             on_load_zone,
             on_unload_zone,
+            on_spawn_zone,
             on_set_zone_status,
             on_zone_status_change,
         ).chain(),
@@ -81,7 +80,7 @@ async fn main() {
         render_player_debug,
     ));
     schedule_post_update.add_systems((
-        (update_visibility, render_all, update_states).chain(),
+        (update_visibility, render_all, update_states, render_profiler).chain(),
     ));
 
     world.spawn((
@@ -129,10 +128,6 @@ async fn main() {
         telemetry::begin_zone("schedule_post_update");
         schedule_post_update.run(&mut world);
         telemetry::end_zone();
-
-        // macroquad_profiler::profiler(ProfilerParams {
-        //     fps_counter_pos: vec2(0., 0.),
-        // });
 
         next_frame().await;
     }

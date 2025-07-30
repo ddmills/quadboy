@@ -1,11 +1,18 @@
 use bevy_ecs::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette, Rand}, domain::{PlayerMovedEvent, Zone, Zones}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette, Rand}, domain::{PlayerMovedEvent, Zone, Zones}, engine::{save_zone, try_load_zone}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
 pub enum ZoneStatus {
     Active,
     Dormant,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct ZoneSaveData {
+    pub idx: usize,
+    // pub terrain: Grid<Terrain>,
 }
 
 #[derive(Event)]
@@ -15,20 +22,44 @@ pub struct LoadZoneEvent(pub usize);
 pub struct UnloadZoneEvent(pub usize);
 
 #[derive(Event)]
+pub struct SpawnZoneEvent {
+    pub data: ZoneSaveData,
+}
+
+#[derive(Event)]
 pub struct SetZoneStatusEvent {
     pub idx: usize,
     pub status: ZoneStatus,
 }
 
-pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEvent>)
-{
+pub fn on_load_zone(
+    mut e_load_zone: EventReader<LoadZoneEvent>,
+    mut e_spawn_zone: EventWriter<SpawnZoneEvent>,
+) {
     for LoadZoneEvent(zone_idx) in e_load_zone.read() {
+        if let Some(save_data) = try_load_zone(*zone_idx) {
+            e_spawn_zone.write(SpawnZoneEvent { data: save_data });
+            continue;
+        };
+
+        let data = ZoneSaveData { idx: *zone_idx };
+        e_spawn_zone.write(SpawnZoneEvent { data });
+    }
+}
+
+pub fn on_spawn_zone(
+    mut cmds: Commands,
+    mut e_spawn_zone: EventReader<SpawnZoneEvent>
+)
+{
+    for e in e_spawn_zone.read()
+    {
         let zone_e = cmds.spawn(ZoneStatus::Dormant).id();
-        let mut rand = Rand::seed(*zone_idx as u64);
+        let mut rand = Rand::seed(e.data.idx as u64);
 
         let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-            let wpos = zone_local_to_world(*zone_idx, x, y);
-            let idx = rand.pick(&[0, 1, 2, 3]);
+            let wpos = zone_local_to_world(e.data.idx, x, y);
+            let idx = rand.pick(&[0, 0, 0, 1, 1, 1, 1, 2, 3]);
 
             cmds.spawn((
                 Position::new(wpos.0, wpos.1),
@@ -39,7 +70,7 @@ pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEve
             )).id()
         });
 
-        cmds.entity(zone_e).insert(Zone::new(*zone_idx, tiles));
+        cmds.entity(zone_e).insert(Zone::new(e.data.idx, tiles));
     }
 }
 
@@ -55,7 +86,7 @@ pub fn on_unload_zone(
             continue;
         };
 
-        // save_zone(&zone.to_save());
+        save_zone(&zone.to_save());
 
         cmds.entity(zone_e).despawn();
     }

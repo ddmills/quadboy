@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::rendering::{Position, ScreenSize, Text};
+use crate::rendering::Text;
 
 #[derive(Resource)]
 pub struct Time {
@@ -82,4 +82,10 @@ pub fn render_fps(
     for mut text in q_fps.iter_mut() {
         text.value = format!("QUADBOY {}", smoothed);
     }
+}
+
+pub fn render_profiler() {
+    macroquad_profiler::profiler(macroquad_profiler::ProfilerParams {
+        fps_counter_pos: vec2(0., 0.),
+    });
 }

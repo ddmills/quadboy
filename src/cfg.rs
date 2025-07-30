@@ -15,3 +15,5 @@ pub const WINDOW_SIZE: (usize, usize) = (928, 720);
 
 pub const INPUT_RATE: f64 = 0.025;
 pub const INPUT_INITIAL_DELAY: f64 = 0.25;
+
+pub const ENABLE_SAVES: bool = true;

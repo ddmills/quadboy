@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
 
-use crate::{cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE}, domain::Zones, ecs::Time, engine::{InputRate, KeyInput}, rendering::{world_to_zone_idx, zone_idx, zone_xyz, Position, Text}};
+use crate::{cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE}, engine::Time, engine::{InputRate, KeyInput}, rendering::{zone_xyz, Position, Text}};
 
 #[derive(Component)]
 pub struct Player;

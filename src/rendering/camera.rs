@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::{TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE, ZONE_SIZE_F32}, domain::Player, ecs::Time, rendering::{world_to_zone_local, zone_center_world, zone_local_to_world, zone_xyz, Position}};
+use crate::{cfg::{TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32}, domain::Player, engine::Time, rendering::{world_to_zone_local, zone_center_world, zone_local_to_world, Position}};
 
 use super::get_render_target_size;
 
@@ -52,7 +52,7 @@ pub fn update_camera(
     let zone_pos = zone_local_to_world(player.zone_idx(), 0, 0);
     let player_local_pos = world_to_zone_local(player.x as usize, player.y as usize);
 
-    let edge_pad = (8., 5.);
+    let edge_pad = (1., 1.);
 
     let mut target = player_pos;
 
