@@ -80,11 +80,16 @@ async fn main() {
         render_player_debug,
     ));
     schedule_post_update.add_systems((
-        (update_visibility, render_all, update_states, render_profiler).chain(),
+        (
+            update_visibility,
+            render_all,
+            update_states,
+            // render_profiler,
+        ).chain(),
     ));
 
     world.spawn((
-        Position::new(15, 12),
+        Position::new(15, 12, 0),
         Glyph::new(4, Palette::Orange, Palette::Green)
             .layer(RenderLayer::Actors)
             .bg(Palette::White)
@@ -92,7 +97,7 @@ async fn main() {
     ));
 
     world.spawn((
-        Position::new(10, 12),
+        Position::new(10, 12, 0),
         Glyph::new(147, Palette::Yellow, Palette::LightBlue)
             .layer(RenderLayer::Actors),
         Player,
@@ -103,7 +108,7 @@ async fn main() {
             .fg1(Palette::White)
             .bg(Palette::Purple)
             .layer(RenderLayer::Ui),
-        Position::new_f32(0., 0.),
+        Position::new_f32(0., 0., 0.),
         FpsDisplay,
     ));
 
@@ -112,7 +117,7 @@ async fn main() {
             .fg1(Palette::White)
             .bg(Palette::Purple)
             .layer(RenderLayer::Ui),
-        Position::new_f32(0., 0.5),
+        Position::new_f32(0., 0.5, 0.),
         PlayerDebug,
     ));
 

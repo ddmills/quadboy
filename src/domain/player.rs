@@ -59,6 +59,22 @@ pub fn player_input(
         moved = true;
     }
 
+    if z > 0
+        && keys.is_down(KeyCode::E)
+        && input_rate.try_key(KeyCode::E, now, rate, delay)
+    {
+        position.z -= 1.;
+        moved = true;
+    }
+
+    if z < MAP_SIZE.2 - 1
+        && keys.is_down(KeyCode::Q)
+        && input_rate.try_key(KeyCode::Q, now, rate, delay)
+    {
+        position.z += 1.;
+        moved = true;
+    }
+
     for key in keys.released.iter() {
         input_rate.keys.remove(key);
     }
@@ -67,7 +83,7 @@ pub fn player_input(
         e_player_moved.write(PlayerMovedEvent {
             x: position.x as usize,
             y: position.y as usize,
-            z: 0,
+            z: position.z as usize,
         });
     }
 }
@@ -84,5 +100,5 @@ pub fn render_player_debug(
     let zone_idx = position.zone_idx();
     let zone_pos = zone_xyz(zone_idx);
 
-    debug.value = format!("{},{} ({},{} {})", position.x, position.y, zone_pos.0, zone_pos.1, zone_idx);
+    debug.value = format!("{},{},{} ({},{},{} {})", position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx);
 }

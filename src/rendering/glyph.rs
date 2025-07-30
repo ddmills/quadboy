@@ -5,7 +5,7 @@ use macroquad::{
 };
 
 use crate::{
-    cfg::TILE_SIZE_F32, common::{MacroquadColorable, Palette}, domain::ZoneStatus, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility}
+    cfg::TILE_SIZE_F32, common::{MacroquadColorable, Palette}, domain::{Player, ZoneStatus}, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility}
 };
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
@@ -40,6 +40,19 @@ pub const TRANSPARENT: Vec4 = Vec4::splat(0.);
 pub const SHROUD_COLOR: Vec4 = Vec4::new(0.227, 0.243, 0.247, 1.0);
 
 impl Glyph {
+    pub fn idx(idx: usize) -> Self {
+        Self {
+            idx,
+            fg1: None,
+            fg2: None,
+            bg: None,
+            outline: Some(Palette::Clear.into()),
+            layer_id: RenderLayer::default(),
+            texture_id: GlyphTextureId::Cowboy,
+            is_dormant: false,
+        }
+    }
+    
     pub fn new<T: Into<u32>>(idx: usize, fg1: T, fg2: T) -> Self {
         Self {
             idx,
@@ -68,6 +81,11 @@ impl Glyph {
         self
     }
 
+    pub fn bg_opt<T: Into<u32>>(mut self, bg: Option<T>) -> Self {
+        self.bg = bg.map(|v| v.into());
+        self
+    }
+
     pub fn outline<T: Into<u32>>(mut self, outline: T) -> Self {
         self.outline = Some(outline.into());
         self
@@ -75,6 +93,11 @@ impl Glyph {
 
     pub fn fg1<T: Into<u32>>(mut self, fg1: T) -> Self {
         self.fg1 = Some(fg1.into());
+        self
+    }
+
+    pub fn fg1_opt<T: Into<u32>>(mut self, fg1: Option<T>) -> Self {
+        self.fg1 = fg1.map(|v| v.into());
         self
     }
 
@@ -107,6 +130,7 @@ pub fn render_glyphs(
     mut layers: ResMut<Layers>,
     camera: Res<GameCamera>,
     screen: Res<ScreenSize>,
+    player: Query<&Position, With<Player>>,
 ) {
     for layer in layers.get_all().iter_mut() {
         layer.clear();
@@ -120,8 +144,11 @@ pub fn render_glyphs(
     let cam_x = (camera.x * TILE_SIZE_F32.0).floor();
     let cam_y = (camera.y * TILE_SIZE_F32.1).floor();
 
+    let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
+
     q_glyphs.iter().for_each(|(glyph, pos)| {
         let texture_id = glyph.texture_id;
+
         let mut x = (pos.x * TILE_SIZE_F32.0).floor();
         let mut y = (pos.y * TILE_SIZE_F32.1).floor();
         let w = texture_id.get_glyph_width();
@@ -129,6 +156,10 @@ pub fn render_glyphs(
         let layer = layers.get_layer(glyph.layer_id);
 
         if layer.target_type == RenderTargetType::World {
+            if pos.z.floor() != player_z {
+                return;
+            }
+
             x -= cam_x;
             y -= cam_y;
 

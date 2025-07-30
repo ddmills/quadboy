@@ -72,7 +72,7 @@ pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position, 
                         texture_id: GlyphTextureId::BodyFont,
                         is_dormant: false,
                     },
-                    Position::new_f32(position.x + (i as f32 * 0.5), position.y),
+                    Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
                     visibility.clone(),
                 ))
                 .id()

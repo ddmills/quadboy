@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette, Rand}, domain::{PlayerMovedEvent, Zone, Zones}, engine::{save_zone, try_load_zone}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::{Grid, Palette, Rand}, domain::{gen_zone, PlayerMovedEvent, Terrain, Zone, Zones}, engine::{save_zone, try_load_zone}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}};
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
 pub enum ZoneStatus {
@@ -12,7 +12,7 @@ pub enum ZoneStatus {
 #[derive(Deserialize, Serialize, Clone)]
 pub struct ZoneSaveData {
     pub idx: usize,
-    // pub terrain: Grid<Terrain>,
+    pub terrain: Grid<Terrain>,
 }
 
 #[derive(Event)]
@@ -42,7 +42,7 @@ pub fn on_load_zone(
             continue;
         };
 
-        let data = ZoneSaveData { idx: *zone_idx };
+        let data = gen_zone(*zone_idx);
         e_spawn_zone.write(SpawnZoneEvent { data });
     }
 }
@@ -55,22 +55,26 @@ pub fn on_spawn_zone(
     for e in e_spawn_zone.read()
     {
         let zone_e = cmds.spawn(ZoneStatus::Dormant).id();
-        let mut rand = Rand::seed(e.data.idx as u64);
 
         let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             let wpos = zone_local_to_world(e.data.idx, x, y);
-            let idx = rand.pick(&[0, 0, 0, 1, 1, 1, 1, 2, 3]);
+            let terrain = e.data.terrain.get(x, y).unwrap_or(&Terrain::Dirt);
+            
+            let idx = terrain.tile();
+            let (bg, fg) = terrain.colors();
 
             cmds.spawn((
-                Position::new(wpos.0, wpos.1),
-                Glyph::new(idx, Palette::DarkCyan, Palette::Green)
+                Position::new(wpos.0, wpos.1, wpos.2),
+                Glyph::idx(idx)
+                    .bg_opt(bg)
+                    .fg1_opt(fg)
                     .layer(RenderLayer::Ground),
                 ChildOf(zone_e),
                 ZoneStatus::Dormant,
             )).id()
         });
 
-        cmds.entity(zone_e).insert(Zone::new(e.data.idx, tiles));
+        cmds.entity(zone_e).insert(Zone::new(e.data.idx, e.data.terrain.clone(), tiles));
     }
 }
 
