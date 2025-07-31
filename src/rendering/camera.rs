@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::{CAMERA_MODE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32}, domain::Player, engine::Time, rendering::{world_to_zone_local, zone_center_world, zone_local_to_world, Position}};
+use crate::{cfg::{CAMERA_MODE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32}, domain::Player, engine::Time, rendering::{get_screen_size_texels, world_to_zone_local, zone_center_world, zone_local_to_world, Position}};
 
 use super::get_render_target_size;
 
@@ -104,6 +104,14 @@ pub fn update_camera(
         target.y = center_pos.y;
     }
 
+    if (camera.get_width_world() as u32).is_multiple_of(2) {
+        target.x = target.x.floor();
+    }
+
+    if (camera.get_height_world() as u32).is_multiple_of(2) {
+        target.y = target.y.floor();
+    }
+
     if CAMERA_MODE == CameraMode::Snap || camera_pos.distance_squared(target) < 0.001 {
         camera.focus_on(target.x, target.y);
     } else {
@@ -122,7 +130,7 @@ pub struct ScreenSize {
 
 pub fn update_screen_size(mut screen: ResMut<ScreenSize>)
 {
-    let size = get_render_target_size();
+    let size = get_screen_size_texels();
 
     if size.x != screen.width || size.y != screen.height {
         screen.width = size.x;

@@ -16,7 +16,7 @@ pub enum Palette {
     Purple = 0x650D68,
     Cyan = 0x09D6F1,
     DarkCyan = 0x28687C,
-    Clear = 0x19242B,
+    Clear = 0x121920,
 }
 
 #[allow(dead_code)]

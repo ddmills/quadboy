@@ -10,18 +10,32 @@ uniform float iTime;
 uniform vec2 iResolution;
 
 vec2 CRTCurveUV(vec2 uv) {
-    vec2 curvature = vec2(8.0, 6.0);
-    vec2 curved = uv * 2.0 - 1.0;
-    vec2 offset = abs(uv.yx) / curvature;
-    curved = curved + curved * offset * offset;
-    curved = curved * 0.5 + 0.5;
-    return curved;
+    vec2 curvature = vec2(9.0, 9.0);
+    uv = uv * 2.0 - 1.0;
+    vec2 offset = abs(uv.yx) / vec2(curvature.x, curvature.y);
+    uv = uv + uv * offset * offset;
+    uv = uv * 0.5 + 0.5;
+    return uv;
 }
 
 void DrawVignette(inout vec3 color, vec2 uv) {
-    float str = 0.5;
-    float vignette = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    vignette = clamp(pow(16.0 * vignette, 0.3), 0., 1.0);
+    float intensity = 3.0;
+    float roundness = 0.5;
+    float feather = 0.25;
+
+    vec2 delta = uv - vec2(0.5);
+
+    // Compute circular and square-like falloffs
+    float radialDist = length(delta);
+    float axialDist = max(abs(delta.x), abs(delta.y));
+
+    // Blend between circular and square based on roundness
+    float shapeDist = mix(axialDist, radialDist, roundness);
+
+    // Apply non-linear falloff for more realistic vignette
+    float falloff = pow(shapeDist, intensity);
+    float vignette = 1.0 - smoothstep(0.0, 1.0 - feather, falloff);
+
     color *= vignette;
 }
 
@@ -37,8 +51,8 @@ void DrawScanline(inout vec3 color, vec2 uv) {
 }
 
 void main() {
-    // vec2 crtUV = CRTCurveUV(uv);
-    vec2 crtUV = uv;
+    vec2 crtUV = CRTCurveUV(uv);
+    // vec2 crtUV = uv;
     vec4 tex = texture2D(Texture, crtUV);
 
     if (tex.a == 0) {
@@ -51,8 +65,8 @@ void main() {
         discard;
     }
 
-    // DrawVignette(res, uv);
-    DrawScanline(res, uv);
+    DrawVignette(res, crtUV);
+    DrawScanline(res, crtUV);
 
     gl_FragColor = vec4(res, 1.0);
 }

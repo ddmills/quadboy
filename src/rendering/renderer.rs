@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 
 use crate::{
-    cfg::{TEXEL_SIZE_F32, TILE_SIZE}, common::{MacroquadColorable, Palette}, rendering::CrtShader, ui::UiLayout
+    cfg::{TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32}, common::{MacroquadColorable, Palette}, rendering::{CrtShader, GameCamera}, ui::UiLayout
 };
 
 use super::{create_render_target, Layers, ScreenSize};
@@ -44,19 +44,23 @@ pub struct Renderable {
 pub fn render_all(
     mut layers: ResMut<Layers>,
     mut ren: ResMut<RenderTargets>,
+    camera: Res<GameCamera>,
     screen: Res<ScreenSize>,
     crt: Res<CrtShader>,
     ui: Res<UiLayout>
 ) {
     telemetry::begin_zone("render_all");
-    let target_size = uvec2(screen.width, screen.height);
+    let target_size = uvec2(
+        (camera.get_width_world().floor() * TILE_SIZE_F32.0) as u32,
+        (camera.get_height_world().floor() * TILE_SIZE_F32.1) as u32
+    );
 
     if ren.world.texture.size().as_uvec2() != target_size {
         ren.world = create_render_target();
         ren.screen = create_render_target();
     }
 
-    clear_background(Palette::Clear.to_macroquad_color());
+    clear_background(Color::from_hex(0x141414));
 
     start_pass(&ren.world);
     layers.ground.render();
@@ -69,15 +73,18 @@ pub fn render_all(
 
     // draw final texture as double size
     let dest_size: macroquad::prelude::Vec2 = target_size.as_vec2() * TEXEL_SIZE_F32;
-
     crt.mat.set_uniform("iTime", get_time() as f32);
     crt.mat.set_uniform("iResolution", (dest_size.x, dest_size.y));
     gl_use_material(&crt.mat);
 
+    let x = (screen.width - target_size.x) as f32;
+    let y = (screen.height - target_size.y) as f32;
+    draw_rectangle(x, y, target_size.x as f32 * TEXEL_SIZE_F32, target_size.y as f32 * TEXEL_SIZE_F32, Palette::Clear.to_macroquad_color());
+
     draw_texture_ex(
         &ren.world.texture,
-        (ui.game_panel.x * TILE_SIZE.0) as f32 * TEXEL_SIZE_F32,
-        (ui.game_panel.y * TILE_SIZE.1) as f32 * TEXEL_SIZE_F32,
+        x + (ui.game_panel.x * TILE_SIZE.0) as f32 * TEXEL_SIZE_F32,
+        y + (ui.game_panel.y * TILE_SIZE.1) as f32 * TEXEL_SIZE_F32,
         WHITE,
         DrawTextureParams {
             dest_size: Some(dest_size),
@@ -85,11 +92,11 @@ pub fn render_all(
             ..Default::default()
         },
     );
-    // gl_use_default_material();
+
     draw_texture_ex(
         &ren.screen.texture,
-        0.,
-        0.,
+        x,
+        y,
         WHITE,
         DrawTextureParams {
             dest_size: Some(dest_size),
