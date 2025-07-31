@@ -1,9 +1,15 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::{TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32}, domain::Player, engine::Time, rendering::{world_to_zone_local, zone_center_world, zone_local_to_world, Position}};
+use crate::{cfg::{CAMERA_MODE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32}, domain::Player, engine::Time, rendering::{world_to_zone_local, zone_center_world, zone_local_to_world, Position}};
 
 use super::get_render_target_size;
+
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum CameraMode {
+    Smooth,
+    Snap,
+}
 
 #[derive(Resource, Default)]
 pub struct GameCamera {
@@ -42,7 +48,7 @@ pub fn update_camera(
 ) {
     let player = q_player.single().unwrap();
     let a = time.overstep_fraction();
-    let speed = 0.05;
+    let speed = 0.075;
 
     let z_pos = zone_center_world(player.zone_idx());
 
@@ -98,10 +104,12 @@ pub fn update_camera(
         target.y = center_pos.y;
     }
 
-    let target_fin = camera_pos.lerp(target, a * speed);
-
-    camera.focus_on(target_fin.x, target_fin.y);
-
+    if CAMERA_MODE == CameraMode::Snap || camera_pos.distance_squared(target) < 0.001 {
+        camera.focus_on(target.x, target.y);
+    } else {
+        let target_fin = camera_pos.lerp(target, a * speed);
+        camera.focus_on(target_fin.x, target_fin.y);
+    }
 }
 
 #[derive(Resource, Default)]

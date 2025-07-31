@@ -1,3 +1,5 @@
+use crate::rendering::CameraMode;
+
 pub const TILE_SIZE: (usize, usize) = (16, 24);
 pub const TILE_SIZE_F32: (f32, f32) = (TILE_SIZE.0 as f32, TILE_SIZE.1 as f32);
 
@@ -17,3 +19,4 @@ pub const INPUT_RATE: f64 = 0.025;
 pub const INPUT_INITIAL_DELAY: f64 = 0.25;
 
 pub const ENABLE_SAVES: bool = false;
+pub const CAMERA_MODE: CameraMode = CameraMode::Smooth;
