@@ -1,11 +1,11 @@
 use bevy_ecs::prelude::*;
 use macroquad::{
     prelude::*,
-    telemetry::{self},
+    telemetry::{self}, ui::Layout,
 };
 
 use crate::{
-    cfg::TILE_SIZE_F32, common::{MacroquadColorable, Palette}, domain::{Player, ZoneStatus}, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility}
+    cfg::TILE_SIZE_F32, common::{MacroquadColorable, Palette}, domain::{Player, ZoneStatus}, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility}, ui::UiLayout
 };
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
@@ -130,6 +130,7 @@ pub fn render_glyphs(
     mut layers: ResMut<Layers>,
     camera: Res<GameCamera>,
     screen: Res<ScreenSize>,
+    ui: Res<UiLayout>,
     player: Query<&Position, With<Player>>,
 ) {
     for layer in layers.get_all().iter_mut() {
@@ -166,6 +167,9 @@ pub fn render_glyphs(
             if x + w < 0. || x - w > camera.width || y + h < 0. || y - h > camera.height {
                 return;
             }
+
+            x += (ui.game_panel.x as f32) * TILE_SIZE_F32.0;
+            y += (ui.game_panel.y as f32) * TILE_SIZE_F32.1;
         } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
             return;
         }

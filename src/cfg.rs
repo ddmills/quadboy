@@ -15,7 +15,7 @@ pub const ZONE_SIZE_F32: (f32, f32) = (ZONE_SIZE.0 as f32, ZONE_SIZE.1 as f32);
 
 pub const WINDOW_SIZE: (usize, usize) = (TILE_SIZE.0 * 70 + 12, TILE_SIZE.1 * 30 + 12);
 
-pub const INPUT_RATE: f64 = 0.025;
+pub const INPUT_RATE: f64 = 0.03;
 pub const INPUT_INITIAL_DELAY: f64 = 0.25;
 
 pub const ENABLE_SAVES: bool = false;

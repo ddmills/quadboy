@@ -9,6 +9,7 @@ pub enum RenderLayer {
     #[default]
     Ground,
     Actors,
+    UiPanels,
     Ui,
 }
 
@@ -49,6 +50,7 @@ impl GlyphTextureId {
 pub struct Layers {
     pub ground: GlyphBatch,
     pub actors: GlyphBatch,
+    pub panels: GlyphBatch,
     pub ui: GlyphBatch,
 }
 
@@ -61,6 +63,7 @@ impl FromWorld for Layers {
         Self {
             ground: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::World, 8000),
             actors: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::World, 8000),
+            panels: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::Screen, 8000),
             ui: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::Screen, 8000),
         }
     }
@@ -73,12 +76,14 @@ impl Layers {
             RenderLayer::Ground => &mut self.ground,
             RenderLayer::Actors => &mut self.actors,
             RenderLayer::Ui => &mut self.ui,
+            RenderLayer::UiPanels => &mut self.panels,
         }
     }
 
     pub fn get_all(&mut self) -> Vec<&mut GlyphBatch> {
         vec![
             &mut self.ui,
+            &mut self.panels,
             &mut self.ground,
             &mut self.actors,
         ]

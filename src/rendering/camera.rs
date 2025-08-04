@@ -3,8 +3,6 @@ use macroquad::prelude::*;
 
 use crate::{cfg::{CAMERA_MODE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32}, domain::Player, engine::Time, rendering::{get_screen_size_texels, world_to_zone_local, zone_center_world, zone_local_to_world, Position}};
 
-use super::get_render_target_size;
-
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum CameraMode {
     Smooth,

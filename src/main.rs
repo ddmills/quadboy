@@ -7,7 +7,7 @@ use rendering::{
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{cfg::WINDOW_SIZE, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_spawn_zone, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{render_profiler, FpsDisplay}, rendering::{on_zone_status_change, update_visibility, CrtShader}};
+use crate::{cfg::WINDOW_SIZE, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_spawn_zone, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{render_profiler, FpsDisplay}, rendering::{on_zone_status_change, update_visibility, CrtShader}, ui::draw_ui_panels};
 
 mod cfg;
 mod common;
@@ -72,6 +72,7 @@ async fn main() {
         ).chain(),
         update_screen_size,
         update_ui_layout.run_if(resource_changed::<ScreenSize>),
+        draw_ui_panels.run_if(resource_changed::<UiLayout>),
         player_input,
         update_camera,
         render_fps,
