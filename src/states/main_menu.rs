@@ -8,10 +8,9 @@ pub struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(ScheduleType::PreUpdate, (render_menu).run_if(enter_state(GameState::MainMenu)))
-            .add_systems(ScheduleType::Update, (
+            .add_systems(ScheduleType::Update,
                 main_menu_input.run_if(in_state(GameState::MainMenu)),
-                // cleanup_system::<CleanupMainMenu>.run_if(leave_state(GameState::MainMenu))
-            ).chain())
+            )
             .add_systems(ScheduleType::PostUpdate, cleanup_system::<CleanupMainMenu>.run_if(leave_state(GameState::MainMenu)));
     }
 }
@@ -51,8 +50,7 @@ fn render_menu(mut cmds: Commands)
 fn main_menu_input(
     keys: Res<KeyInput>,
     mut state: ResMut<CurrentState>,
-)
-{
+) {
     if keys.is_pressed(KeyCode::N)
     {
         state.next = GameState::Playing;

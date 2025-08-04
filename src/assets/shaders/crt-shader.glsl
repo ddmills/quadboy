@@ -66,7 +66,7 @@ void main() {
     }
 
     DrawVignette(res, crtUV);
-    // DrawScanline(res, crtUV);
+    DrawScanline(res, crtUV);
 
     gl_FragColor = vec4(res, 1.0);
 }
