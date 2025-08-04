@@ -122,6 +122,24 @@ async fn main() {
         PlayerDebug,
     ));
 
+    let hp = (9.5, 0.5);
+
+    world.spawn((
+        Text::new("HP             ")
+            .fg1(Palette::White)
+            .bg(Palette::Red)
+            .layer(RenderLayer::Ui),
+        Position::new_f32(hp.0, hp.1, 0.),
+    ));
+
+    world.spawn((
+        Text::new("            ")
+            .fg1(Palette::Black)
+            .bg(Palette::Gray)
+            .layer(RenderLayer::Ui),
+        Position::new_f32(hp.0 + 7.5, hp.1, 0.),
+    ));
+
     loop {
         telemetry::begin_zone("schedule_pre_update");
         schedule_pre_update.run(&mut world);

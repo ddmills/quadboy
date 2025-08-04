@@ -18,7 +18,7 @@ pub struct UiLayout {
 }
 
 pub fn update_ui_layout(mut ui: ResMut<UiLayout>, screen: Res<ScreenSize>, mut camera: ResMut<GameCamera>) {
-    let left_panel_width = 9;
+    let left_panel_width = 0;
     // let left_panel_width = 0;
 
     ui.left_panel.x = 0;
@@ -44,7 +44,7 @@ pub fn draw_ui_panels(mut cmds: Commands, mut ui: ResMut<UiLayout>) {
 
     ui.left_panel.glyphs = vec![];
 
-    let color= Palette::Black;
+    let color= Palette::Clear;
 
     for x in 0..ui.left_panel.width {
         for y in 0..ui.left_panel.height {

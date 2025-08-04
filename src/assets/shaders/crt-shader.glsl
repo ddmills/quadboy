@@ -51,8 +51,8 @@ void DrawScanline(inout vec3 color, vec2 uv) {
 }
 
 void main() {
-    vec2 crtUV = CRTCurveUV(uv);
-    // vec2 crtUV = uv;
+    // vec2 crtUV = CRTCurveUV(uv);
+    vec2 crtUV = uv;
     vec4 tex = texture2D(Texture, crtUV);
 
     if (tex.a == 0) {

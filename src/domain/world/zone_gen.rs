@@ -18,5 +18,8 @@ pub fn gen_zone(zone_idx: usize) -> ZoneSaveData {
         rand.pick(&terrains)
     });
 
-    ZoneSaveData { idx: zone_idx, terrain }
+    ZoneSaveData {
+        idx: zone_idx,
+        terrain,
+    }
 }
