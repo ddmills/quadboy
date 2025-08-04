@@ -1,9 +1,9 @@
-mod game_state;
+mod app;
 mod input;
 mod time;
 mod save;
 
-pub use game_state::*;
+pub use app::*;
 pub use input::*;
 pub use time::*;
 pub use save::*;

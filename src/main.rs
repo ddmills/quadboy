@@ -1,13 +1,13 @@
-use bevy_ecs::{event::EventRegistry, prelude::*};
+use bevy_ecs::prelude::*;
 use common::Palette;
-use engine::{CurrentState, KeyInput, update_key_input, update_states, Time, render_fps, update_time};
-use macroquad::{prelude::*, telemetry};
+use engine::{KeyInput, update_key_input, Time, render_fps, update_time};
+use macroquad::prelude::*;
 use rendering::{
     load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
 };
 use ui::{update_ui_layout, UiLayout};
 
-use crate::{cfg::WINDOW_SIZE, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_spawn_zone, on_unload_zone, player_input, render_player_debug, LoadZoneEvent, Player, PlayerDebug, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{render_profiler, FpsDisplay}, rendering::{on_zone_status_change, update_visibility, CrtShader}, ui::draw_ui_panels};
+use crate::{cfg::WINDOW_SIZE, domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{App, FpsDisplay, ScheduleType}, rendering::{update_visibility, CrtShader}, states::{update_states, CurrentState, MainMenuPlugin, PlayingStatePlugin}};
 
 mod cfg;
 mod common;
@@ -15,6 +15,7 @@ mod engine;
 mod rendering;
 mod domain;
 mod ui;
+mod states;
 
 fn window_conf() -> Conf {
     Conf {
@@ -33,76 +34,47 @@ async fn main() {
 
     let tilesets = load_tilesets().await;
 
-    let mut world = World::new();
-    let mut schedule_pre_update = Schedule::default();
-    let mut schedule_update = Schedule::default();
-    let mut schedule_post_update = Schedule::default();
+    let mut app = App::new();
 
-    world.insert_resource(tilesets);
-    world.init_resource::<ScreenSize>();
-    world.init_resource::<Time>();
-    world.init_resource::<RenderTargets>();
-    world.init_resource::<Layers>();
-    world.init_resource::<KeyInput>();
-    world.init_resource::<CurrentState>();
-    world.init_resource::<GameCamera>();
-    world.init_resource::<UiLayout>();
-    world.init_resource::<CrtShader>();
-    world.init_resource::<Zones>();
+    app
+        .add_plugin(MainMenuPlugin)
+        .add_plugin(PlayingStatePlugin)
+        .register_event::<LoadZoneEvent>()
+        .register_event::<UnloadZoneEvent>()
+        .register_event::<SpawnZoneEvent>()
+        .register_event::<SetZoneStatusEvent>()
+        .register_event::<PlayerMovedEvent>()
+        .insert_resource(tilesets)
+        .init_resource::<ScreenSize>()
+        .init_resource::<Time>()
+        .init_resource::<RenderTargets>()
+        .init_resource::<Layers>()
+        .init_resource::<KeyInput>()
+        .init_resource::<CurrentState>()
+        .init_resource::<GameCamera>()
+        .init_resource::<UiLayout>()
+        .init_resource::<CrtShader>()
+        .init_resource::<Zones>()
+        .add_systems(ScheduleType::PreUpdate, (
+            update_time,
+            update_key_input
+        ))
+        .add_systems(ScheduleType::Update, (
+            update_screen_size,
+            render_fps,
+            render_text,
+            render_glyphs,
+        ))
+        .add_systems(ScheduleType::PostUpdate, update_visibility)
+        .add_systems(ScheduleType::FrameFinal, (
+            (
+                render_all,
+                update_states,
+                // render_profiler,
+            ).chain(),
+        ));
 
-    EventRegistry::register_event::<LoadZoneEvent>(&mut world);
-    EventRegistry::register_event::<UnloadZoneEvent>(&mut world);
-    EventRegistry::register_event::<SpawnZoneEvent>(&mut world);
-    EventRegistry::register_event::<SetZoneStatusEvent>(&mut world);
-    EventRegistry::register_event::<PlayerMovedEvent>(&mut world);
-
-    schedule_pre_update.add_systems((
-        update_time,
-        update_key_input
-    ));
-    schedule_update.add_systems((
-        (
-            activate_zones_by_player,
-            load_nearby_zones,
-            on_load_zone,
-            on_unload_zone,
-            on_spawn_zone,
-            on_set_zone_status,
-            on_zone_status_change,
-        ).chain(),
-        update_screen_size,
-        update_ui_layout.run_if(resource_changed::<ScreenSize>),
-        draw_ui_panels.run_if(resource_changed::<UiLayout>),
-        player_input,
-        update_camera,
-        render_fps,
-        render_text,
-        render_glyphs,
-        render_player_debug,
-    ));
-    schedule_post_update.add_systems((
-        (
-            update_visibility,
-            render_all,
-            update_states,
-            // render_profiler,
-        ).chain(),
-    ));
-
-    world.spawn((
-        Position::new(15, 12, 0),
-        Glyph::new(4, Palette::Orange, Palette::Green)
-            .layer(RenderLayer::Actors)
-            .bg(Palette::White)
-            .outline(Palette::Red)
-    ));
-
-    world.spawn((
-        Position::new(10, 12, 0),
-        Glyph::new(147, Palette::Yellow, Palette::LightBlue)
-            .layer(RenderLayer::Actors),
-        Player,
-    ));
+    let world = app.get_world_mut();
 
     world.spawn((
         Text::new("123")
@@ -113,46 +85,8 @@ async fn main() {
         FpsDisplay,
     ));
 
-    world.spawn((
-        Text::new("123")
-            .fg1(Palette::White)
-            .bg(Palette::Purple)
-            .layer(RenderLayer::Ui),
-        Position::new_f32(0., 0.5, 0.),
-        PlayerDebug,
-    ));
-
-    let hp = (9.5, 0.5);
-
-    world.spawn((
-        Text::new("HP             ")
-            .fg1(Palette::White)
-            .bg(Palette::Red)
-            .layer(RenderLayer::Ui),
-        Position::new_f32(hp.0, hp.1, 0.),
-    ));
-
-    world.spawn((
-        Text::new("            ")
-            .fg1(Palette::Black)
-            .bg(Palette::Gray)
-            .layer(RenderLayer::Ui),
-        Position::new_f32(hp.0 + 7.5, hp.1, 0.),
-    ));
-
     loop {
-        telemetry::begin_zone("schedule_pre_update");
-        schedule_pre_update.run(&mut world);
-        telemetry::end_zone();
-
-        telemetry::begin_zone("schedule_update");
-        schedule_update.run(&mut world);
-        telemetry::end_zone();
-
-        telemetry::begin_zone("schedule_post_update");
-        schedule_post_update.run(&mut world);
-        telemetry::end_zone();
-
+        app.run();
         next_frame().await;
     }
 }

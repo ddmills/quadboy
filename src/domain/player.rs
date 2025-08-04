@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
 
-use crate::{cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE}, engine::Time, engine::{InputRate, KeyInput}, rendering::{zone_xyz, Position, Text}};
+use crate::{cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE}, engine::{InputRate, KeyInput, Time}, rendering::{zone_xyz, Position, Text}, states::{CurrentState, GameState}};
 
 #[derive(Component)]
 pub struct Player;
@@ -19,6 +19,7 @@ pub fn player_input(
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
     mut e_player_moved: EventWriter<PlayerMovedEvent>,
+    mut state: ResMut<CurrentState>,
 ) {
     let now = time.elapsed;
     let rate = INPUT_RATE;
@@ -26,6 +27,11 @@ pub fn player_input(
     let mut position = q_player.single_mut().unwrap();
     let mut moved = false;
     let (x, y, z) = position.world();
+
+    if keys.is_pressed(KeyCode::Escape)
+    {
+        state.next = GameState::MainMenu;
+    }
 
     if x > 0 
         && keys.is_down(KeyCode::A) 

@@ -137,7 +137,7 @@ pub fn render_glyphs(
         layer.clear();
     }
 
-    telemetry::begin_zone("set-glyphs");
+    telemetry::begin_zone("render_glyphs");
 
     let screen_w = screen.width as f32;
     let screen_h = screen.height as f32;

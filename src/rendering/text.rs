@@ -1,3 +1,5 @@
+use std::process::Child;
+
 use bevy_ecs::prelude::*;
 
 use crate::{common::{cp437_idx, Palette}, rendering::{visibility, GlyphTextureId, Visibility}};
@@ -50,8 +52,8 @@ impl Text {
     }
 }
 
-pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position, &Visibility), Or<(Changed<Text>, Changed<Visibility>)>>) {
-    for (mut text, position, visibility) in q_text.iter_mut() {
+pub fn render_text(mut cmds: Commands, mut q_text: Query<(Entity, &mut Text, &Position, &Visibility), Or<(Changed<Text>, Changed<Visibility>)>>) {
+    for (entity, mut text, position, visibility) in q_text.iter_mut() {
         for glyph_id in text.glyphs.iter() {
             cmds.entity(*glyph_id).despawn();
         }
@@ -74,6 +76,7 @@ pub fn render_text(mut cmds: Commands, mut q_text: Query<(&mut Text, &Position, 
                     },
                     Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
                     visibility.clone(),
+                    ChildOf(entity)
                 ))
                 .id()
             })
