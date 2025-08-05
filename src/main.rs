@@ -13,11 +13,10 @@ use crate::{
     domain::{
         LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones,
     },
-    engine::{App, FpsDisplay, ScheduleType},
-    rendering::{CrtShader, update_visibility},
+    engine::{App, ExitAppPlugin, FpsDisplay, ScheduleType},
+    rendering::{update_visibility, CrtShader},
     states::{
-        CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin,
-        PauseStatePlugin, PlayStatePlugin, update_app_states, update_game_states,
+        update_app_states, update_game_states, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin
     },
 };
 
@@ -48,7 +47,8 @@ async fn main() {
 
     let mut app = App::new();
 
-    app.add_plugin(MainMenuStatePlugin)
+    app.add_plugin(ExitAppPlugin)
+        .add_plugin(MainMenuStatePlugin)
         .add_plugin(PlayStatePlugin)
         .add_plugin(ExploreStatePlugin)
         .add_plugin(PauseStatePlugin)
@@ -97,8 +97,7 @@ async fn main() {
         FpsDisplay,
     ));
 
-    loop {
-        app.run();
+    while app.run() {
         next_frame().await;
     }
 }

@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
-    common::Grid,
-    domain::{PlayerMovedEvent, Terrain, Zone, Zones, gen_zone},
+    common::{Grid, Palette, Rand},
+    domain::{gen_zone, PlayerMovedEvent, Terrain, Zone, Zones},
     engine::{save_zone, try_load_zone},
     rendering::{
-        Glyph, Position, RenderLayer, world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz,
+        world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer
     },
     states::CleanupStatePlay,
 };
@@ -59,6 +59,7 @@ pub fn on_load_zone(
 pub fn on_spawn_zone(mut cmds: Commands, mut e_spawn_zone: EventReader<SpawnZoneEvent>) {
     for e in e_spawn_zone.read() {
         let zone_e = cmds.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
+        let mut r = Rand::seed(e.data.idx as u64 + 120);
 
         let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             let wpos = zone_local_to_world(e.data.idx, x, y);
@@ -66,6 +67,17 @@ pub fn on_spawn_zone(mut cmds: Commands, mut e_spawn_zone: EventReader<SpawnZone
 
             let idx = terrain.tile();
             let (bg, fg) = terrain.colors();
+
+            if r.bool(0.05) && *terrain != Terrain::River {
+                cmds.spawn((
+                    Position::new(wpos.0, wpos.1, wpos.2),
+                    Glyph::new(46, Palette::DarkGreen, Palette::Brown)
+                        .layer(RenderLayer::Actors),
+                    ChildOf(zone_e),
+                    ZoneStatus::Dormant,
+                    CleanupStatePlay,
+                ));
+            }
 
             cmds.spawn((
                 Position::new(wpos.0, wpos.1, wpos.2),
@@ -104,17 +116,17 @@ pub fn on_unload_zone(
 pub fn on_set_zone_status(
     mut e_set_zone_status: EventReader<SetZoneStatusEvent>,
     mut cmds: Commands,
-    q_zones: Query<(Entity, &Zone)>,
+    q_zones: Query<(Entity, &Zone, &Children)>,
 ) {
     for e in e_set_zone_status.read() {
-        let Some((zone_e, zone)) = q_zones.iter().find(|(_, c)| c.idx == e.idx) else {
+        let Some((zone_e, zone, children)) = q_zones.iter().find(|(_, z, _)| z.idx == e.idx) else {
             continue;
         };
 
         cmds.entity(zone_e).insert(e.status);
 
-        for tile in zone.tiles.iter() {
-            cmds.entity(*tile).insert(e.status);
+        for child in children.iter() {
+            cmds.entity(child).insert(e.status);
         }
     }
 }

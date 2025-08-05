@@ -24,7 +24,7 @@ pub enum Terrain {
 impl Terrain {
     pub fn tile(&self) -> usize {
         match self {
-            Terrain::Grass => 2,
+            Terrain::Grass => 1,
             Terrain::Dirt => 18,
             Terrain::River => 34,
         }

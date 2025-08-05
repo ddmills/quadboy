@@ -1,6 +1,8 @@
 use bevy_ecs::{event::EventRegistry, prelude::*, system::ScheduleSystem};
 use macroquad::telemetry;
 
+use crate::engine::ExitApp;
+
 pub enum ScheduleType {
     PreUpdate,
     Update,
@@ -31,7 +33,7 @@ impl App {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> bool {
         telemetry::begin_zone("schedule_pre_update");
         self.schedule_pre_update.run(&mut self.world);
         telemetry::end_zone();
@@ -47,6 +49,10 @@ impl App {
         telemetry::begin_zone("schedule_frame_final");
         self.schedule_frame_final.run(&mut self.world);
         telemetry::end_zone();
+
+        let exit = self.world.get_resource::<ExitApp>().map(|x| x.0).unwrap_or(false);
+
+        !exit
     }
 
     pub fn register_event<T: Event>(&mut self) -> &mut Self {
