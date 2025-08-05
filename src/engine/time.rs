@@ -33,6 +33,7 @@ impl Default for Time
     }
 }
 
+#[allow(dead_code)]
 impl Time {
     pub fn get_smooth_avg(&self) -> i32
     {
@@ -84,6 +85,7 @@ pub fn render_fps(
     }
 }
 
+#[allow(dead_code)]
 pub fn render_profiler() {
     macroquad_profiler::profiler(macroquad_profiler::ProfilerParams {
         fps_counter_pos: vec2(0., 0.),

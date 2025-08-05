@@ -1,8 +1,6 @@
-use std::process::Child;
-
 use bevy_ecs::prelude::*;
 
-use crate::{common::{cp437_idx, Palette}, rendering::{visibility, GlyphTextureId, Visibility}};
+use crate::{common::{cp437_idx, Palette}, rendering::{GlyphTextureId, Visibility}};
 
 use super::{Glyph, Position, RenderLayer};
 
@@ -18,6 +16,7 @@ pub struct Text {
     glyphs: Vec<Entity>,
 }
 
+#[allow(dead_code)]
 impl Text {
     pub fn new(value: &str) -> Self {
         Self {

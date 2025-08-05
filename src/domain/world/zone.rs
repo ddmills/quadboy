@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{gen_zone, PlayerMovedEvent, Terrain, Zone, Zones}, engine::{save_zone, try_load_zone}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}, states::CleanupPlaying};
+use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{gen_zone, PlayerMovedEvent, Terrain, Zone, Zones}, engine::{save_zone, try_load_zone}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}, states::CleanupStatePlay};
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
 pub enum ZoneStatus {
@@ -54,7 +54,7 @@ pub fn on_spawn_zone(
 {
     for e in e_spawn_zone.read()
     {
-        let zone_e = cmds.spawn((ZoneStatus::Dormant, CleanupPlaying)).id();
+        let zone_e = cmds.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
 
         let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             let wpos = zone_local_to_world(e.data.idx, x, y);
@@ -71,7 +71,7 @@ pub fn on_spawn_zone(
                     .layer(RenderLayer::Ground),
                 ChildOf(zone_e),
                 ZoneStatus::Dormant,
-                CleanupPlaying,
+                CleanupStatePlay,
             )).id()
         });
 

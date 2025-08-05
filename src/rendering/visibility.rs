@@ -1,6 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::telemetry;
 
+#[allow(dead_code)]
 #[derive(Component, Default, Clone, PartialEq, Eq)]
 pub enum Visibility {
     #[default]

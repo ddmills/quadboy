@@ -10,6 +10,7 @@ pub struct KeyInput {
     pub released: HashSet<KeyCode>,
 }
 
+#[allow(dead_code)]
 impl KeyInput {
     pub fn is_down(&self, key: KeyCode) -> bool {
         self.down.contains(&key)

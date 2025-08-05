@@ -28,6 +28,7 @@ pub fn hex(r: u8, g: u8, b: u8) -> u32 {
     ((r as u32) << 16) + ((g as u32) << 8) + (b as u32)
 }
 
+#[allow(dead_code)]
 pub trait MacroquadColorable {
     fn to_macroquad_color(&self) -> macroquad::prelude::Color;
     fn to_macroquad_color_a(&self, a: f32) -> macroquad::prelude::Color;

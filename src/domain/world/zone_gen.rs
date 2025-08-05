@@ -14,7 +14,7 @@ pub fn gen_zone(zone_idx: usize) -> ZoneSaveData {
         Terrain::River,
     ];
 
-    let terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
+    let terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| {
         rand.pick(&terrains)
     });
 

@@ -1,17 +1,17 @@
 use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
-use crate::{common::Palette, engine::{App, KeyInput, Plugin, ScheduleType}, rendering::{Position, RenderLayer, Text}, states::{cleanup_system, enter_state, in_state, leave_state, CurrentState, GameState}};
+use crate::{common::Palette, engine::{App, KeyInput, Plugin, ScheduleType}, rendering::{Position, RenderLayer, Text}, states::{cleanup_system, enter_app_state, in_app_state, leave_app_state, CurrentAppState, AppState}};
 
-pub struct MainMenuPlugin;
+pub struct MainMenuStatePlugin;
 
-impl Plugin for MainMenuPlugin {
+impl Plugin for MainMenuStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(ScheduleType::PreUpdate, (render_menu).run_if(enter_state(GameState::MainMenu)))
+        app.add_systems(ScheduleType::PreUpdate, (render_menu).run_if(enter_app_state(AppState::MainMenu)))
             .add_systems(ScheduleType::Update,
-                main_menu_input.run_if(in_state(GameState::MainMenu)),
+                main_menu_input.run_if(in_app_state(AppState::MainMenu)),
             )
-            .add_systems(ScheduleType::PostUpdate, cleanup_system::<CleanupMainMenu>.run_if(leave_state(GameState::MainMenu)));
+            .add_systems(ScheduleType::PostUpdate, cleanup_system::<CleanupMainMenu>.run_if(leave_app_state(AppState::MainMenu)));
     }
 }
 
@@ -20,7 +20,7 @@ struct CleanupMainMenu;
 
 fn render_menu(mut cmds: Commands)
 {
-    trace!("enter main menu!");
+    trace!("EnterAppState::<MainMenu>");
 
     cmds.spawn((
         Text::new("(N) NEW GAME")
@@ -49,10 +49,10 @@ fn render_menu(mut cmds: Commands)
 
 fn main_menu_input(
     keys: Res<KeyInput>,
-    mut state: ResMut<CurrentState>,
+    mut state: ResMut<CurrentAppState>,
 ) {
     if keys.is_pressed(KeyCode::N)
     {
-        state.next = GameState::Playing;
+        state.next = AppState::Play;
     }
 }

@@ -1,4 +1,4 @@
-use crate::cfg::{MAP_SIZE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE, ZONE_SIZE_F32};
+use crate::cfg::{MAP_SIZE, ZONE_SIZE, ZONE_SIZE_F32};
 
 
 // Convert a zone position to a zone index

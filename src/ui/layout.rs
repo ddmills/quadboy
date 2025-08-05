@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::{cfg::TILE_SIZE_F32, common::Palette, rendering::{GameCamera, Glyph, Position, RenderLayer, ScreenSize}, states::CleanupPlaying};
+use crate::{cfg::TILE_SIZE_F32, common::Palette, rendering::{GameCamera, Glyph, Position, RenderLayer, ScreenSize}, states::CleanupStatePlay};
 
 #[derive(Default)]
 pub struct Panel {
@@ -49,7 +49,7 @@ pub fn draw_ui_panels(mut cmds: Commands, mut ui: ResMut<UiLayout>) {
     for x in 0..ui.left_panel.width {
         for y in 0..ui.left_panel.height {
             let e = cmds.spawn((
-                CleanupPlaying,
+                CleanupStatePlay,
                 Position::new(x, y, 0),
                 Glyph::new(0, color, color)
                     .bg(color)

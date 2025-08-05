@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::{
     prelude::*,
-    telemetry::{self}, ui::Layout,
+    telemetry::{self},
 };
 
 use crate::{
@@ -39,6 +39,7 @@ pub struct GlyphStyle {
 pub const TRANSPARENT: Vec4 = Vec4::splat(0.);
 pub const SHROUD_COLOR: Vec4 = Vec4::new(0.227, 0.243, 0.247, 1.0);
 
+#[allow(dead_code)]
 impl Glyph {
     pub fn idx(idx: usize) -> Self {
         Self {

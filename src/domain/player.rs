@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
 
-use crate::{cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE}, engine::{InputRate, KeyInput, Time}, rendering::{zone_xyz, Position, Text}, states::{CurrentState, GameState}};
+use crate::{cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE}, engine::{InputRate, KeyInput, Time}, rendering::{zone_xyz, Position, Text}, states::{AppState, CurrentAppState, CurrentGameState, GameState}};
 
 #[derive(Component)]
 pub struct Player;
@@ -19,7 +19,8 @@ pub fn player_input(
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
     mut e_player_moved: EventWriter<PlayerMovedEvent>,
-    mut state: ResMut<CurrentState>,
+    mut app_state: ResMut<CurrentAppState>,
+    mut game_state: ResMut<CurrentGameState>,
 ) {
     let now = time.elapsed;
     let rate = INPUT_RATE;
@@ -30,7 +31,10 @@ pub fn player_input(
 
     if keys.is_pressed(KeyCode::Escape)
     {
-        state.next = GameState::MainMenu;
+        app_state.next = AppState::MainMenu;
+    } else if keys.is_pressed(KeyCode::P)
+    {
+        game_state.next = GameState::Pause;
     }
 
     if x > 0 

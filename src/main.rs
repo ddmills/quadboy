@@ -3,11 +3,11 @@ use common::Palette;
 use engine::{KeyInput, update_key_input, Time, render_fps, update_time};
 use macroquad::prelude::*;
 use rendering::{
-    load_tilesets, render_all, render_glyphs, render_text, update_camera, update_screen_size, GameCamera, Glyph, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
+    load_tilesets, render_all, render_glyphs, render_text, update_screen_size, GameCamera, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
 };
-use ui::{update_ui_layout, UiLayout};
+use ui::UiLayout;
 
-use crate::{cfg::WINDOW_SIZE, domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{App, FpsDisplay, ScheduleType}, rendering::{update_visibility, CrtShader}, states::{update_states, CurrentState, MainMenuPlugin, PlayingStatePlugin}};
+use crate::{cfg::WINDOW_SIZE, domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{App, FpsDisplay, ScheduleType}, rendering::{update_visibility, CrtShader}, states::{update_app_states, update_game_states, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin}};
 
 mod cfg;
 mod common;
@@ -37,8 +37,10 @@ async fn main() {
     let mut app = App::new();
 
     app
-        .add_plugin(MainMenuPlugin)
-        .add_plugin(PlayingStatePlugin)
+        .add_plugin(MainMenuStatePlugin)
+        .add_plugin(PlayStatePlugin)
+        .add_plugin(ExploreStatePlugin)
+        .add_plugin(PauseStatePlugin)
         .register_event::<LoadZoneEvent>()
         .register_event::<UnloadZoneEvent>()
         .register_event::<SpawnZoneEvent>()
@@ -50,7 +52,8 @@ async fn main() {
         .init_resource::<RenderTargets>()
         .init_resource::<Layers>()
         .init_resource::<KeyInput>()
-        .init_resource::<CurrentState>()
+        .init_resource::<CurrentAppState>()
+        .init_resource::<CurrentGameState>()
         .init_resource::<GameCamera>()
         .init_resource::<UiLayout>()
         .init_resource::<CrtShader>()
@@ -69,7 +72,8 @@ async fn main() {
         .add_systems(ScheduleType::FrameFinal, (
             (
                 render_all,
-                update_states,
+                update_app_states,
+                update_game_states,
                 // render_profiler,
             ).chain(),
         ));
