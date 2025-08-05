@@ -1,17 +1,16 @@
 use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
-use crate::{common::Palette, engine::{App, KeyInput, Plugin, ScheduleType}, rendering::{Position, RenderLayer, Text}, states::{cleanup_system, enter_app_state, in_app_state, leave_app_state, CurrentAppState, AppState}};
+use crate::{common::Palette, engine::{App, KeyInput, Plugin}, rendering::{Position, RenderLayer, Text}, states::{cleanup_system, AppState, AppStatePlugin, CurrentAppState}};
 
 pub struct MainMenuStatePlugin;
 
 impl Plugin for MainMenuStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(ScheduleType::PreUpdate, (render_menu).run_if(enter_app_state(AppState::MainMenu)))
-            .add_systems(ScheduleType::Update,
-                main_menu_input.run_if(in_app_state(AppState::MainMenu)),
-            )
-            .add_systems(ScheduleType::PostUpdate, cleanup_system::<CleanupMainMenu>.run_if(leave_app_state(AppState::MainMenu)));
+        AppStatePlugin::new(AppState::MainMenu)
+            .on_enter(app, render_menu)
+            .on_update(app, main_menu_input)
+            .on_leave(app, cleanup_system::<CleanupMainMenu>);
     }
 }
 

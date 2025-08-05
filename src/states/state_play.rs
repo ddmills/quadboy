@@ -1,19 +1,20 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
 
-use crate::{common::Palette, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_spawn_zone, on_unload_zone, Player, PlayerMovedEvent}, engine::{App, Plugin, ScheduleType}, rendering::{on_zone_status_change, update_camera, Glyph, Position, RenderLayer, ScreenSize}, states::{cleanup_system, enter_app_state, in_app_state, leave_app_state, AppState, CurrentGameState, GameState}, ui::{draw_ui_panels, update_ui_layout, UiLayout}};
+use crate::{common::Palette, domain::{activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status, on_spawn_zone, on_unload_zone, Player, PlayerMovedEvent}, engine::{App, Plugin, ScheduleType}, rendering::{on_zone_status_change, update_camera, Glyph, Position, RenderLayer, ScreenSize}, states::{cleanup_system, enter_app_state, in_app_state, leave_app_state, AppState, AppStatePlugin, CurrentGameState, GameState}, ui::{draw_ui_panels, update_ui_layout, UiLayout}};
 
 pub struct PlayStatePlugin;
 
 impl Plugin for PlayStatePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(ScheduleType::PreUpdate, (
+        AppStatePlugin::new(AppState::Play)
+            .on_enter(app, (
                 update_ui_layout,
                 draw_ui_panels,
                 spawn_stuff,
-            ).chain().run_if(enter_app_state(AppState::Play)))
-            .add_systems(ScheduleType::Update, (
+                ).chain()
+            )
+            .on_update(app, (
                 (
                     activate_zones_by_player,
                     load_nearby_zones,
@@ -25,12 +26,13 @@ impl Plugin for PlayStatePlugin {
                 ).chain(),
                 update_ui_layout.run_if(resource_changed::<ScreenSize>),
                 draw_ui_panels.run_if(resource_changed::<UiLayout>),
-                update_camera,
-            ).run_if(in_app_state(AppState::Play)))
-            .add_systems(ScheduleType::PostUpdate, (
-                on_leave_play_state,
-                cleanup_system::<CleanupStatePlay>
-            ).chain().run_if(leave_app_state(AppState::Play)));
+                update_camera)
+            )
+            .on_leave(app, (
+                    on_leave_play_state,
+                    cleanup_system::<CleanupStatePlay>
+                ).chain()
+            );
     }
 }
 

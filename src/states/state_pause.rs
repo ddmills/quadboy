@@ -1,7 +1,7 @@
-use bevy_ecs::{schedule::IntoScheduleConfigs, system::{Res, ResMut}};
+use bevy_ecs::system::{Res, ResMut};
 use macroquad::{input::KeyCode, prelude::trace};
 
-use crate::{engine::{KeyInput, Plugin, ScheduleType}, states::{in_game_state, CurrentGameState}};
+use crate::{engine::{KeyInput, Plugin}, states::{CurrentGameState, GameStatePlugin}};
 
 use super::GameState;
 
@@ -9,7 +9,8 @@ pub struct PauseStatePlugin;
 
 impl Plugin for PauseStatePlugin {
     fn build(&self, app: &mut crate::engine::App) {
-        app.add_systems(ScheduleType::Update, listen_for_inputs.run_if(in_game_state(GameState::Pause)));
+        GameStatePlugin::new(GameState::Pause)
+            .on_update(app, listen_for_inputs);
     }
 }
 
