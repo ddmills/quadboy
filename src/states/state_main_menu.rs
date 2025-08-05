@@ -1,7 +1,12 @@
 use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
-use crate::{common::Palette, engine::{App, KeyInput, Plugin}, rendering::{Position, RenderLayer, Text}, states::{cleanup_system, AppState, AppStatePlugin, CurrentAppState}};
+use crate::{
+    common::Palette,
+    engine::{App, KeyInput, Plugin},
+    rendering::{Position, RenderLayer, Text},
+    states::{AppState, AppStatePlugin, CurrentAppState, cleanup_system},
+};
 
 pub struct MainMenuStatePlugin;
 
@@ -17,8 +22,7 @@ impl Plugin for MainMenuStatePlugin {
 #[derive(Component)]
 struct CleanupMainMenu;
 
-fn render_menu(mut cmds: Commands)
-{
+fn render_menu(mut cmds: Commands) {
     trace!("EnterAppState::<MainMenu>");
 
     cmds.spawn((
@@ -46,12 +50,8 @@ fn render_menu(mut cmds: Commands)
     ));
 }
 
-fn main_menu_input(
-    keys: Res<KeyInput>,
-    mut state: ResMut<CurrentAppState>,
-) {
-    if keys.is_pressed(KeyCode::N)
-    {
+fn main_menu_input(keys: Res<KeyInput>, mut state: ResMut<CurrentAppState>) {
+    if keys.is_pressed(KeyCode::N) {
         state.next = AppState::Play;
     }
 }

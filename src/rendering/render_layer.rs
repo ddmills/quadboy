@@ -1,6 +1,9 @@
 use bevy_ecs::prelude::*;
 
-use crate::{cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32}, rendering::RenderTargetType};
+use crate::{
+    cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32},
+    rendering::RenderTargetType,
+};
 
 use super::{GlyphBatch, TilesetTextures};
 
@@ -61,10 +64,30 @@ impl FromWorld for Layers {
         let texture_body_text = textures.font_body_texture.raw_miniquad_id();
 
         Self {
-            ground: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::World, 8000),
-            actors: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::World, 8000),
-            panels: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::Screen, 8000),
-            ui: GlyphBatch::new(texture_glyph, texture_body_text, RenderTargetType::Screen, 8000),
+            ground: GlyphBatch::new(
+                texture_glyph,
+                texture_body_text,
+                RenderTargetType::World,
+                8000,
+            ),
+            actors: GlyphBatch::new(
+                texture_glyph,
+                texture_body_text,
+                RenderTargetType::World,
+                8000,
+            ),
+            panels: GlyphBatch::new(
+                texture_glyph,
+                texture_body_text,
+                RenderTargetType::Screen,
+                8000,
+            ),
+            ui: GlyphBatch::new(
+                texture_glyph,
+                texture_body_text,
+                RenderTargetType::Screen,
+                8000,
+            ),
         }
     }
 }

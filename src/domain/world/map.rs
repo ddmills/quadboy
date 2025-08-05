@@ -1,7 +1,10 @@
 use bevy_ecs::{component::Component, entity::Entity, resource::Resource};
 use serde::{Deserialize, Serialize};
 
-use crate::{common::{Grid, Palette}, domain::ZoneSaveData};
+use crate::{
+    common::{Grid, Palette},
+    domain::ZoneSaveData,
+};
 
 #[derive(Resource, Default)]
 pub struct Zones {
@@ -44,12 +47,18 @@ pub struct Zone {
 }
 
 impl Zone {
-    pub fn new(idx: usize, terrain: Grid<Terrain>, tiles: Grid<Entity>) -> Self
-    {
-        Self { idx, tiles, terrain }
+    pub fn new(idx: usize, terrain: Grid<Terrain>, tiles: Grid<Entity>) -> Self {
+        Self {
+            idx,
+            tiles,
+            terrain,
+        }
     }
 
     pub fn to_save(&self) -> ZoneSaveData {
-        ZoneSaveData { idx: self.idx, terrain: self.terrain.clone() }
+        ZoneSaveData {
+            idx: self.idx,
+            terrain: self.terrain.clone(),
+        }
     }
 }

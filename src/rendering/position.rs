@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::rendering::{world_to_zone_idx};
+use crate::rendering::world_to_zone_idx;
 
 #[derive(Component)]
 pub struct Position {
@@ -29,8 +29,7 @@ impl Position {
     }
 
     #[inline]
-    pub fn world(&self) -> (usize, usize, usize)
-    {
+    pub fn world(&self) -> (usize, usize, usize) {
         (self.x as usize, self.y as usize, self.z as usize)
     }
 }

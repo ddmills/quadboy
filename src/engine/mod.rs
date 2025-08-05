@@ -1,9 +1,9 @@
 mod app;
 mod input;
-mod time;
 mod save;
+mod time;
 
 pub use app::*;
 pub use input::*;
-pub use time::*;
 pub use save::*;
+pub use time::*;

@@ -1,7 +1,16 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{cfg::{MAP_SIZE, ZONE_SIZE}, common::Grid, domain::{gen_zone, PlayerMovedEvent, Terrain, Zone, Zones}, engine::{save_zone, try_load_zone}, rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer}, states::CleanupStatePlay};
+use crate::{
+    cfg::{MAP_SIZE, ZONE_SIZE},
+    common::Grid,
+    domain::{PlayerMovedEvent, Terrain, Zone, Zones, gen_zone},
+    engine::{save_zone, try_load_zone},
+    rendering::{
+        Glyph, Position, RenderLayer, world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz,
+    },
+    states::CleanupStatePlay,
+};
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
 pub enum ZoneStatus {
@@ -47,19 +56,14 @@ pub fn on_load_zone(
     }
 }
 
-pub fn on_spawn_zone(
-    mut cmds: Commands,
-    mut e_spawn_zone: EventReader<SpawnZoneEvent>
-)
-{
-    for e in e_spawn_zone.read()
-    {
+pub fn on_spawn_zone(mut cmds: Commands, mut e_spawn_zone: EventReader<SpawnZoneEvent>) {
+    for e in e_spawn_zone.read() {
         let zone_e = cmds.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
 
         let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             let wpos = zone_local_to_world(e.data.idx, x, y);
             let terrain = e.data.terrain.get(x, y).unwrap_or(&Terrain::Dirt);
-            
+
             let idx = terrain.tile();
             let (bg, fg) = terrain.colors();
 
@@ -72,21 +76,21 @@ pub fn on_spawn_zone(
                 ChildOf(zone_e),
                 ZoneStatus::Dormant,
                 CleanupStatePlay,
-            )).id()
+            ))
+            .id()
         });
 
-        cmds.entity(zone_e).insert(Zone::new(e.data.idx, e.data.terrain.clone(), tiles));
+        cmds.entity(zone_e)
+            .insert(Zone::new(e.data.idx, e.data.terrain.clone(), tiles));
     }
 }
 
 pub fn on_unload_zone(
     mut cmds: Commands,
     mut e_unload_zone: EventReader<UnloadZoneEvent>,
-    q_zones: Query<(Entity, &Zone)>
-)
-{
-    for UnloadZoneEvent(zone_idx) in e_unload_zone.read()
-    {
+    q_zones: Query<(Entity, &Zone)>,
+) {
+    for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
         let Some((zone_e, zone)) = q_zones.iter().find(|(_, c)| c.idx == *zone_idx) else {
             continue;
         };

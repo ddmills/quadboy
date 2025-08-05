@@ -1,7 +1,15 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::{cfg::{CAMERA_MODE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32}, domain::Player, engine::Time, rendering::{get_screen_size_texels, world_to_zone_local, zone_center_world, zone_local_to_world, Position}};
+use crate::{
+    cfg::{CAMERA_MODE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32},
+    domain::Player,
+    engine::Time,
+    rendering::{
+        Position, get_screen_size_texels, world_to_zone_local, zone_center_world,
+        zone_local_to_world,
+    },
+};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum CameraMode {
@@ -126,8 +134,7 @@ pub struct ScreenSize {
     pub tile_h: usize,
 }
 
-pub fn update_screen_size(mut screen: ResMut<ScreenSize>)
-{
+pub fn update_screen_size(mut screen: ResMut<ScreenSize>) {
     let size = get_screen_size_texels();
 
     if size.x != screen.width || size.y != screen.height {

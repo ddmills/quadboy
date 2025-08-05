@@ -1,21 +1,33 @@
 use bevy_ecs::prelude::*;
 use common::Palette;
-use engine::{KeyInput, update_key_input, Time, render_fps, update_time};
+use engine::{KeyInput, Time, render_fps, update_key_input, update_time};
 use macroquad::prelude::*;
 use rendering::{
-    load_tilesets, render_all, render_glyphs, render_text, update_screen_size, GameCamera, Layers, Position, RenderTargets, RenderLayer, ScreenSize, Text
+    GameCamera, Layers, Position, RenderLayer, RenderTargets, ScreenSize, Text, load_tilesets,
+    render_all, render_glyphs, render_text, update_screen_size,
 };
 use ui::UiLayout;
 
-use crate::{cfg::WINDOW_SIZE, domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones}, engine::{App, FpsDisplay, ScheduleType}, rendering::{update_visibility, CrtShader}, states::{update_app_states, update_game_states, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin}};
+use crate::{
+    cfg::WINDOW_SIZE,
+    domain::{
+        LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones,
+    },
+    engine::{App, FpsDisplay, ScheduleType},
+    rendering::{CrtShader, update_visibility},
+    states::{
+        CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin,
+        PauseStatePlugin, PlayStatePlugin, update_app_states, update_game_states,
+    },
+};
 
 mod cfg;
 mod common;
+mod domain;
 mod engine;
 mod rendering;
-mod domain;
-mod ui;
 mod states;
+mod ui;
 
 fn window_conf() -> Conf {
     Conf {
@@ -36,8 +48,7 @@ async fn main() {
 
     let mut app = App::new();
 
-    app
-        .add_plugin(MainMenuStatePlugin)
+    app.add_plugin(MainMenuStatePlugin)
         .add_plugin(PlayStatePlugin)
         .add_plugin(ExploreStatePlugin)
         .add_plugin(PauseStatePlugin)
@@ -58,25 +69,22 @@ async fn main() {
         .init_resource::<UiLayout>()
         .init_resource::<CrtShader>()
         .init_resource::<Zones>()
-        .add_systems(ScheduleType::PreUpdate, (
-            update_time,
-            update_key_input
-        ))
-        .add_systems(ScheduleType::Update, (
-            update_screen_size,
-            render_fps,
-            render_text,
-            render_glyphs,
-        ))
+        .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
+        .add_systems(
+            ScheduleType::Update,
+            (update_screen_size, render_fps, render_text, render_glyphs),
+        )
         .add_systems(ScheduleType::PostUpdate, update_visibility)
-        .add_systems(ScheduleType::FrameFinal, (
-            (
+        .add_systems(
+            ScheduleType::FrameFinal,
+            ((
                 render_all,
                 update_app_states,
                 update_game_states,
                 // render_profiler,
-            ).chain(),
-        ));
+            )
+                .chain(),),
+        );
 
     let world = app.get_world_mut();
 

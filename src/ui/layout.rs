@@ -1,6 +1,11 @@
 use bevy_ecs::prelude::*;
 
-use crate::{cfg::TILE_SIZE_F32, common::Palette, rendering::{GameCamera, Glyph, Position, RenderLayer, ScreenSize}, states::CleanupStatePlay};
+use crate::{
+    cfg::TILE_SIZE_F32,
+    common::Palette,
+    rendering::{GameCamera, Glyph, Position, RenderLayer, ScreenSize},
+    states::CleanupStatePlay,
+};
 
 #[derive(Default)]
 pub struct Panel {
@@ -17,7 +22,11 @@ pub struct UiLayout {
     pub game_panel: Panel,
 }
 
-pub fn update_ui_layout(mut ui: ResMut<UiLayout>, screen: Res<ScreenSize>, mut camera: ResMut<GameCamera>) {
+pub fn update_ui_layout(
+    mut ui: ResMut<UiLayout>,
+    screen: Res<ScreenSize>,
+    mut camera: ResMut<GameCamera>,
+) {
     let left_panel_width = 0;
     // let left_panel_width = 9;
 
@@ -44,17 +53,19 @@ pub fn draw_ui_panels(mut cmds: Commands, mut ui: ResMut<UiLayout>) {
 
     ui.left_panel.glyphs = vec![];
 
-    let color= Palette::Clear;
+    let color = Palette::Clear;
 
     for x in 0..ui.left_panel.width {
         for y in 0..ui.left_panel.height {
-            let e = cmds.spawn((
-                CleanupStatePlay,
-                Position::new(x, y, 0),
-                Glyph::new(0, color, color)
-                    .bg(color)
-                    .layer(RenderLayer::UiPanels),
-            )).id();
+            let e = cmds
+                .spawn((
+                    CleanupStatePlay,
+                    Position::new(x, y, 0),
+                    Glyph::new(0, color, color)
+                        .bg(color)
+                        .layer(RenderLayer::UiPanels),
+                ))
+                .id();
 
             ui.left_panel.glyphs.push(e);
         }

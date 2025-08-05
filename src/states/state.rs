@@ -71,16 +71,13 @@ pub fn cleanup_system<T: Component>(mut cmds: Commands, q: Query<Entity, With<T>
     }
 }
 
-
 pub struct GameStatePlugin {
     state: GameState,
 }
 
 impl GameStatePlugin {
     pub fn new(state: GameState) -> Self {
-        Self {
-            state,
-        }
+        Self { state }
     }
 
     pub fn on_enter<M>(
@@ -88,7 +85,10 @@ impl GameStatePlugin {
         app: &mut App,
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        app.add_systems(ScheduleType::PreUpdate, systems.run_if(enter_game_state(self.state)));
+        app.add_systems(
+            ScheduleType::PreUpdate,
+            systems.run_if(enter_game_state(self.state)),
+        );
         self
     }
 
@@ -97,7 +97,10 @@ impl GameStatePlugin {
         app: &mut App,
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        app.add_systems(ScheduleType::Update, systems.run_if(in_game_state(self.state)));
+        app.add_systems(
+            ScheduleType::Update,
+            systems.run_if(in_game_state(self.state)),
+        );
         self
     }
 
@@ -106,7 +109,10 @@ impl GameStatePlugin {
         app: &mut App,
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        app.add_systems(ScheduleType::PostUpdate, systems.run_if(leave_game_state(self.state)));
+        app.add_systems(
+            ScheduleType::PostUpdate,
+            systems.run_if(leave_game_state(self.state)),
+        );
         self
     }
 }
@@ -117,9 +123,7 @@ pub struct AppStatePlugin {
 
 impl AppStatePlugin {
     pub fn new(state: AppState) -> Self {
-        Self {
-            state,
-        }
+        Self { state }
     }
 
     pub fn on_enter<M>(
@@ -127,7 +131,10 @@ impl AppStatePlugin {
         app: &mut App,
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        app.add_systems(ScheduleType::PreUpdate, systems.run_if(enter_app_state(self.state)));
+        app.add_systems(
+            ScheduleType::PreUpdate,
+            systems.run_if(enter_app_state(self.state)),
+        );
         self
     }
 
@@ -136,7 +143,10 @@ impl AppStatePlugin {
         app: &mut App,
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        app.add_systems(ScheduleType::Update, systems.run_if(in_app_state(self.state)));
+        app.add_systems(
+            ScheduleType::Update,
+            systems.run_if(in_app_state(self.state)),
+        );
         self
     }
 
@@ -145,7 +155,10 @@ impl AppStatePlugin {
         app: &mut App,
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
-        app.add_systems(ScheduleType::PostUpdate, systems.run_if(leave_app_state(self.state)));
+        app.add_systems(
+            ScheduleType::PostUpdate,
+            systems.run_if(leave_app_state(self.state)),
+        );
         self
     }
 }

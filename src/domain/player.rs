@@ -1,7 +1,12 @@
 use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
 
-use crate::{cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE}, engine::{InputRate, KeyInput, Time}, rendering::{zone_xyz, Position, Text}, states::{AppState, CurrentAppState, CurrentGameState, GameState}};
+use crate::{
+    cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE},
+    engine::{InputRate, KeyInput, Time},
+    rendering::{Position, Text, zone_xyz},
+    states::{AppState, CurrentAppState, CurrentGameState, GameState},
+};
 
 #[derive(Component)]
 pub struct Player;
@@ -29,18 +34,13 @@ pub fn player_input(
     let mut moved = false;
     let (x, y, z) = position.world();
 
-    if keys.is_pressed(KeyCode::Escape)
-    {
+    if keys.is_pressed(KeyCode::Escape) {
         app_state.next = AppState::MainMenu;
-    } else if keys.is_pressed(KeyCode::P)
-    {
+    } else if keys.is_pressed(KeyCode::P) {
         game_state.next = GameState::Pause;
     }
 
-    if x > 0 
-        && keys.is_down(KeyCode::A) 
-        && input_rate.try_key(KeyCode::A, now, rate, delay)
-    {
+    if x > 0 && keys.is_down(KeyCode::A) && input_rate.try_key(KeyCode::A, now, rate, delay) {
         position.x -= 1.;
         moved = true;
     }
@@ -53,10 +53,7 @@ pub fn player_input(
         moved = true;
     }
 
-    if y > 0
-        && keys.is_down(KeyCode::W)
-        && input_rate.try_key(KeyCode::W, now, rate, delay)
-    {
+    if y > 0 && keys.is_down(KeyCode::W) && input_rate.try_key(KeyCode::W, now, rate, delay) {
         position.y -= 1.;
         moved = true;
     }
@@ -69,10 +66,7 @@ pub fn player_input(
         moved = true;
     }
 
-    if z > 0
-        && keys.is_down(KeyCode::E)
-        && input_rate.try_key(KeyCode::E, now, rate, delay)
-    {
+    if z > 0 && keys.is_down(KeyCode::E) && input_rate.try_key(KeyCode::E, now, rate, delay) {
         position.z -= 1.;
         moved = true;
     }
@@ -110,5 +104,8 @@ pub fn render_player_debug(
     let zone_idx = position.zone_idx();
     let zone_pos = zone_xyz(zone_idx);
 
-    debug.value = format!("{},{},{} ({},{},{} {})", position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx);
+    debug.value = format!(
+        "{},{},{} ({},{},{} {})",
+        position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx
+    );
 }

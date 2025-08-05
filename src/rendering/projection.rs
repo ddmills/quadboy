@@ -1,6 +1,5 @@
 use crate::cfg::{MAP_SIZE, ZONE_SIZE, ZONE_SIZE_F32};
 
-
 // Convert a zone position to a zone index
 #[inline]
 pub fn zone_idx(x: usize, y: usize, z: usize) -> usize {
@@ -42,6 +41,6 @@ pub fn zone_center_world(zone_idx: usize) -> (f32, f32) {
     let zone_pos = zone_xyz(zone_idx);
     (
         (zone_pos.0 * ZONE_SIZE.0) as f32 + (ZONE_SIZE_F32.0 / 2.),
-        (zone_pos.1 * ZONE_SIZE.1) as f32 + (ZONE_SIZE_F32.1 / 2.)
+        (zone_pos.1 * ZONE_SIZE.1) as f32 + (ZONE_SIZE_F32.1 / 2.),
     )
 }

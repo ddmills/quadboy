@@ -48,7 +48,12 @@ impl GlyphBatch {
         ctx.buffer_update(self.bindings.index_buffer, isource);
     }
 
-    pub fn new(texture_id_1: TextureId, texture_id_2: TextureId, target_type: RenderTargetType, max_size: usize) -> GlyphBatch {
+    pub fn new(
+        texture_id_1: TextureId,
+        texture_id_2: TextureId,
+        target_type: RenderTargetType,
+        max_size: usize,
+    ) -> GlyphBatch {
         let v_count = 4 * max_size;
         let i_count = ((v_count + 3) >> 2) * 6;
 

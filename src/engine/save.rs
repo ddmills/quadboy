@@ -5,7 +5,7 @@ use std::{
 
 use macroquad::prelude::{debug, error, warn};
 
-use crate::{cfg::{ENABLE_SAVES}, domain::ZoneSaveData};
+use crate::{cfg::ENABLE_SAVES, domain::ZoneSaveData};
 
 pub fn save_zone(zone: &ZoneSaveData) {
     if !ENABLE_SAVES {

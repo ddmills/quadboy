@@ -17,8 +17,7 @@ pub struct Time {
     pub fixed_timestep: f32,
 }
 
-impl Default for Time
-{
+impl Default for Time {
     fn default() -> Self {
         Self {
             dt: 0.,
@@ -35,13 +34,11 @@ impl Default for Time
 
 #[allow(dead_code)]
 impl Time {
-    pub fn get_smooth_avg(&self) -> i32
-    {
+    pub fn get_smooth_avg(&self) -> i32 {
         self.frames.iter().sum::<i32>() / (self.frames_count as i32)
     }
-    
-    pub fn get_min_fps(&self) -> i32
-    {
+
+    pub fn get_min_fps(&self) -> i32 {
         *self.frames.iter().min().unwrap_or(&0)
     }
 
@@ -74,10 +71,7 @@ pub fn update_time(mut time: ResMut<Time>) {
 #[derive(Component)]
 pub struct FpsDisplay;
 
-pub fn render_fps(
-    time: Res<Time>,
-    mut q_fps: Query<&mut Text, With<FpsDisplay>>,
-) {
+pub fn render_fps(time: Res<Time>, mut q_fps: Query<&mut Text, With<FpsDisplay>>) {
     let smoothed = time.get_smooth_avg().to_string();
 
     for mut text in q_fps.iter_mut() {

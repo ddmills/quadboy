@@ -12,7 +12,10 @@ pub enum Visibility {
 #[derive(Component)]
 pub struct IsVisible;
 
-pub fn update_visibility(mut cmds: Commands, q_visibles: Query<(Entity, &Visibility), Changed<Visibility>>) {
+pub fn update_visibility(
+    mut cmds: Commands,
+    q_visibles: Query<(Entity, &Visibility), Changed<Visibility>>,
+) {
     telemetry::begin_zone("update_visibility");
 
     for (entity, visibility) in q_visibles.iter() {

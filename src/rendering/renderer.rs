@@ -2,10 +2,12 @@ use bevy_ecs::prelude::*;
 use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 
 use crate::{
-    cfg::{TEXEL_SIZE_F32, TILE_SIZE}, common::{MacroquadColorable, Palette}, rendering::CrtShader
+    cfg::{TEXEL_SIZE_F32, TILE_SIZE},
+    common::{MacroquadColorable, Palette},
+    rendering::CrtShader,
 };
 
-use super::{create_render_target, Layers, ScreenSize};
+use super::{Layers, ScreenSize, create_render_target};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RenderTargetType {
@@ -50,7 +52,7 @@ pub fn render_all(
     telemetry::begin_zone("render_all");
     let target_size = uvec2(
         (screen.tile_w * TILE_SIZE.0) as u32,
-        (screen.tile_h * TILE_SIZE.1) as u32
+        (screen.tile_h * TILE_SIZE.1) as u32,
     );
 
     if ren.world.texture.size().as_uvec2() != target_size {
@@ -64,7 +66,7 @@ pub fn render_all(
     layers.ground.render();
     layers.actors.render();
     end_pass();
-    
+
     start_pass(&ren.screen);
     layers.panels.render();
     layers.ui.render();
@@ -74,12 +76,19 @@ pub fn render_all(
     let dest_size: macroquad::prelude::Vec2 = target_size.as_vec2() * TEXEL_SIZE_F32;
 
     crt.mat.set_uniform("iTime", get_time() as f32);
-    crt.mat.set_uniform("iResolution", (dest_size.x, dest_size.y));
+    crt.mat
+        .set_uniform("iResolution", (dest_size.x, dest_size.y));
     gl_use_material(&crt.mat);
 
     let x = (screen.width - target_size.x) as f32;
     let y = (screen.height - target_size.y) as f32;
-    draw_rectangle(x, y, target_size.x as f32 * TEXEL_SIZE_F32, target_size.y as f32 * TEXEL_SIZE_F32, Palette::Clear.to_macroquad_color());
+    draw_rectangle(
+        x,
+        y,
+        target_size.x as f32 * TEXEL_SIZE_F32,
+        target_size.y as f32 * TEXEL_SIZE_F32,
+        Palette::Clear.to_macroquad_color(),
+    );
 
     draw_texture_ex(
         &ren.world.texture,
@@ -110,8 +119,7 @@ pub fn render_all(
     telemetry::end_zone();
 }
 
-fn start_pass(target: &RenderTarget)
-{
+fn start_pass(target: &RenderTarget) {
     let ctx = unsafe { get_internal_gl().quad_context };
 
     // clear render target
@@ -128,9 +136,8 @@ fn start_pass(target: &RenderTarget)
     );
 }
 
-fn end_pass()
-{
+fn end_pass() {
     let ctx = unsafe { get_internal_gl().quad_context };
-    
+
     ctx.end_render_pass();
 }

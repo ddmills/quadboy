@@ -22,12 +22,12 @@ void main() {
 
 #[derive(Resource)]
 pub struct CrtShader {
-    pub mat: Material
+    pub mat: Material,
 }
 
 impl Default for CrtShader {
     fn default() -> Self {
-                let mat = load_material(
+        let mat = load_material(
             ShaderSource::Glsl {
                 vertex: CRT_VERTEX_SHADER,
                 fragment: CRT_FRAGMENT_SHADER,
@@ -42,9 +42,6 @@ impl Default for CrtShader {
         )
         .unwrap();
 
-        CrtShader {
-            mat
-        }
+        CrtShader { mat }
     }
 }
-

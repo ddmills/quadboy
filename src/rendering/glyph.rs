@@ -5,7 +5,11 @@ use macroquad::{
 };
 
 use crate::{
-    cfg::TILE_SIZE_F32, common::{MacroquadColorable, Palette}, domain::{Player, ZoneStatus}, rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility}, ui::UiLayout
+    cfg::TILE_SIZE_F32,
+    common::{MacroquadColorable, Palette},
+    domain::{Player, ZoneStatus},
+    rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility},
+    ui::UiLayout,
 };
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
@@ -53,7 +57,7 @@ impl Glyph {
             is_dormant: false,
         }
     }
-    
+
     pub fn new<T: Into<u32>>(idx: usize, fg1: T, fg2: T) -> Self {
         Self {
             idx,

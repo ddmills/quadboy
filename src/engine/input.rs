@@ -25,7 +25,6 @@ impl KeyInput {
     }
 }
 
-
 #[derive(Default)]
 pub struct KeyState {
     time: f64,

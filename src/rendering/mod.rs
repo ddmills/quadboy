@@ -1,23 +1,23 @@
 mod camera;
+mod crt_material;
 mod glyph;
 mod glyph_batch;
 mod position;
+mod projection;
 mod render_layer;
 mod render_target;
 mod renderer;
 mod text;
-mod crt_material;
 mod visibility;
-mod projection;
 
 pub use camera::*;
+pub use crt_material::*;
 pub use glyph::*;
 pub use glyph_batch::*;
 pub use position::*;
+pub use projection::*;
 pub use render_layer::*;
 pub use render_target::*;
 pub use renderer::*;
 pub use text::*;
-pub use crt_material::*;
 pub use visibility::*;
-pub use projection::*;
