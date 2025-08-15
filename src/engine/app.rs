@@ -50,7 +50,11 @@ impl App {
         self.schedule_frame_final.run(&mut self.world);
         telemetry::end_zone();
 
-        let exit = self.world.get_resource::<ExitApp>().map(|x| x.0).unwrap_or(false);
+        let exit = self
+            .world
+            .get_resource::<ExitApp>()
+            .map(|x| x.0)
+            .unwrap_or(false);
 
         !exit
     }

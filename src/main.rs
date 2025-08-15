@@ -13,10 +13,11 @@ use crate::{
     domain::{
         LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones,
     },
-    engine::{App, ExitAppPlugin, FpsDisplay, ScheduleType},
-    rendering::{update_visibility, CrtShader},
+    engine::{App, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
+    rendering::{CrtShader, Glyph, TrackZone, update_visibility},
     states::{
-        update_app_states, update_game_states, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin
+        CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin,
+        PauseStatePlugin, PlayStatePlugin, update_app_states, update_game_states,
     },
 };
 
@@ -47,6 +48,11 @@ async fn main() {
 
     let mut app = App::new();
 
+    let mut reg = SerializableComponentRegistry::new();
+    reg.register::<Position>();
+    reg.register::<TrackZone>();
+    reg.register::<Glyph>();
+
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)
         .add_plugin(PlayStatePlugin)
@@ -58,6 +64,7 @@ async fn main() {
         .register_event::<SetZoneStatusEvent>()
         .register_event::<PlayerMovedEvent>()
         .insert_resource(tilesets)
+        .insert_resource(reg)
         .init_resource::<ScreenSize>()
         .init_resource::<Time>()
         .init_resource::<RenderTargets>()

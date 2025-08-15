@@ -23,5 +23,6 @@ pub fn gen_zone(zone_idx: usize) -> ZoneSaveData {
     ZoneSaveData {
         idx: zone_idx,
         terrain,
+        entities: vec![],
     }
 }

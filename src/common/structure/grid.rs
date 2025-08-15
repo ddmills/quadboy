@@ -77,12 +77,22 @@ impl<T> Grid<T> {
     }
 
     #[inline]
+    pub fn get_at(&self, idx: usize) -> Option<&T> {
+        self.data.get(idx)
+    }
+
+    #[inline]
     pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
         self.data.get_mut(x * self.height + y)
     }
 
     #[inline]
-    pub fn set(&mut self, x: usize, y: usize, value: T) {
+    pub fn get_at_mut(&mut self, idx: usize) -> Option<&mut T> {
+        self.data.get_mut(idx)
+    }
+
+    #[inline]
+    pub fn insert(&mut self, x: usize, y: usize, value: T) {
         self.data[x * self.height + y] = value;
     }
 
@@ -94,6 +104,7 @@ impl<T> Grid<T> {
         self.data.fill(value);
     }
 
+    #[inline]
     pub fn iter(&'_ self) -> Iter<'_, T> {
         self.data.iter()
     }
@@ -104,7 +115,7 @@ impl<T> Grid<T> {
     {
         for x in 0..self.width {
             for y in 0..self.height {
-                self.set(x, y, fill_fn(x, y));
+                self.insert(x, y, fill_fn(x, y));
             }
         }
     }

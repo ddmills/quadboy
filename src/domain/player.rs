@@ -3,9 +3,10 @@ use macroquad::input::KeyCode;
 
 use crate::{
     cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE},
+    common::Palette,
     engine::{InputRate, KeyInput, Time},
-    rendering::{Position, Text, zone_xyz},
-    states::{AppState, CurrentAppState, CurrentGameState, GameState},
+    rendering::{Glyph, Position, RenderLayer, Text, TrackZone, zone_xyz},
+    states::{AppState, CleanupStatePlay, CurrentAppState, CurrentGameState, GameState},
 };
 
 #[derive(Component)]
@@ -19,6 +20,7 @@ pub struct PlayerMovedEvent {
 }
 
 pub fn player_input(
+    mut cmds: Commands,
     mut q_player: Query<&mut Position, With<Player>>,
     keys: Res<KeyInput>,
     time: Res<Time>,
@@ -38,6 +40,18 @@ pub fn player_input(
         app_state.next = AppState::MainMenu;
     } else if keys.is_pressed(KeyCode::P) {
         game_state.next = GameState::Pause;
+    }
+
+    if keys.is_pressed(KeyCode::G) {
+        cmds.spawn((
+            Position::new(x, y, z),
+            Glyph::new(4, Palette::Orange, Palette::Green)
+                .layer(RenderLayer::Actors)
+                .bg(Palette::White)
+                .outline(Palette::Red),
+            TrackZone,
+            CleanupStatePlay,
+        ));
     }
 
     if x > 0 && keys.is_down(KeyCode::A) && input_rate.try_key(KeyCode::A, now, rate, delay) {

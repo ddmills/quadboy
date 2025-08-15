@@ -1,0 +1,51 @@
+use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
+
+use crate::{
+    domain::Zone,
+    engine::{EntitySerializer, SerializableComponentRegistry, save_zone},
+};
+
+pub struct UnloadZoneCommand(pub usize);
+
+impl Command<Result> for UnloadZoneCommand {
+    fn apply(self, world: &mut World) -> Result {
+        let zone_idx = self.0;
+
+        let mut q_zones = world.query::<(Entity, &Zone)>();
+
+        let Some((zone_e, zone)) = q_zones.iter(world).find(|(_, c)| c.idx == zone_idx) else {
+            return Err("Zone not found".into());
+        };
+
+        let Some(registry) = world.get_resource::<SerializableComponentRegistry>() else {
+            return Err("Entity registry not found".into());
+        };
+
+        let mut ent_data = vec![];
+        let mut despawns = vec![];
+
+        for v in zone.entities.iter() {
+            for e in v {
+                despawns.push(*e);
+                let mut e_save = EntitySerializer::serialize(*e, world, registry);
+
+                ent_data.append(&mut e_save);
+            }
+        }
+
+        let mut zone_save = zone.to_save();
+        zone_save.entities = ent_data;
+
+        save_zone(&zone_save);
+
+        world.despawn(zone_e);
+
+        for e in despawns.iter() {
+            trace!("despawning e");
+            world.despawn(*e);
+        }
+
+        Ok(())
+    }
+}

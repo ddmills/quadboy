@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{BODY_FONT_SIZE_F32, TILE_SIZE_F32},
@@ -7,7 +8,7 @@ use crate::{
 
 use super::{GlyphBatch, TilesetTextures};
 
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RenderLayer {
     #[default]
     Ground,
@@ -16,7 +17,7 @@ pub enum RenderLayer {
     Ui,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum GlyphTextureId {
     #[default]
     Cowboy,

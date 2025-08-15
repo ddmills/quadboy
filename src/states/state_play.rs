@@ -8,10 +8,11 @@ use crate::{
         on_set_zone_status, on_spawn_zone, on_unload_zone,
     },
     engine::{App, Plugin},
-    rendering::{Glyph, Position, RenderLayer, ScreenSize, on_zone_status_change, update_camera},
-    states::{
-        AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system,
+    rendering::{
+        Glyph, Position, RenderLayer, ScreenSize, TrackZone, on_zone_status_change, update_camera,
+        update_entity_pos,
     },
+    states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system},
     ui::{UiLayout, draw_ui_panels, update_ui_layout},
 };
 
@@ -27,6 +28,7 @@ impl Plugin for PlayStatePlugin {
                     (
                         activate_zones_by_player,
                         load_nearby_zones,
+                        update_entity_pos,
                         on_load_zone,
                         on_spawn_zone,
                         on_unload_zone,
@@ -57,18 +59,10 @@ fn spawn_stuff(
     trace!("EnterAppState::<Play>");
 
     cmds.spawn((
-        Position::new(15, 12, 0),
-        Glyph::new(4, Palette::Orange, Palette::Green)
-            .layer(RenderLayer::Actors)
-            .bg(Palette::White)
-            .outline(Palette::Red),
-        CleanupStatePlay,
-    ));
-
-    cmds.spawn((
         Position::new(56, 56, 0),
         Glyph::new(147, Palette::Yellow, Palette::LightBlue).layer(RenderLayer::Actors),
         Player,
+        // StoreZonePosition,
         CleanupStatePlay,
     ));
 

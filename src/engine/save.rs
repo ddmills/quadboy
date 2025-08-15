@@ -5,20 +5,26 @@ use std::{
 
 use macroquad::prelude::{debug, error, warn};
 
-use crate::{cfg::ENABLE_SAVES, domain::ZoneSaveData};
+use crate::{
+    cfg::{ENABLE_SAVES, SAVE_NAME},
+    domain::ZoneSaveData,
+};
 
 pub fn save_zone(zone: &ZoneSaveData) {
     if !ENABLE_SAVES {
         return;
     }
 
-    let Ok(save_data) = ron::to_string(zone) else {
+    let Ok(save_data) = serde_json::to_string(zone) else {
         error!("could not save zone!");
         return;
     };
 
-    let file_path = format!("saves/zone-{}.ron", zone.idx);
-    debug!("saving {}", file_path);
+    fs::create_dir_all(format!("saves/{}", SAVE_NAME))
+        .expect("Error while creating save directory");
+
+    let file_path = format!("saves/{}/zone-{}.json", SAVE_NAME, zone.idx);
+
     store(file_path, save_data);
 }
 
@@ -42,13 +48,10 @@ pub fn try_load_zone(zone_idx: usize) -> Option<ZoneSaveData> {
         return None;
     }
 
-    let file_path = format!("saves/zone-{}.ron", zone_idx);
-
-    debug!("loading {}", file_path);
-
+    let file_path = format!("saves/{}/zone-{}.json", SAVE_NAME, zone_idx);
     let contents = read(&file_path)?;
 
-    let Ok(zone) = ron::from_str::<ZoneSaveData>(&contents) else {
+    let Ok(zone) = serde_json::from_str::<ZoneSaveData>(&contents) else {
         warn!("Could not deserialize zone save! corrupt? {}", file_path);
         return None;
     };

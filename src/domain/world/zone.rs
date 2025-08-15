@@ -3,11 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
-    common::{Grid, Palette, Rand},
-    domain::{gen_zone, PlayerMovedEvent, Terrain, Zone, Zones},
-    engine::{save_zone, try_load_zone},
+    common::{Grid, HashGrid, Palette, Rand},
+    domain::{PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones, gen_zone},
+    engine::{EntitySerializer, SerializableComponentRegistry, SerializedEntity, try_load_zone},
     rendering::{
-        world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer
+        Glyph, Position, RenderLayer, world_to_zone_idx, zone_idx, zone_local_to_world,
+        zone_xyz,
     },
     states::CleanupStatePlay,
 };
@@ -22,6 +23,7 @@ pub enum ZoneStatus {
 pub struct ZoneSaveData {
     pub idx: usize,
     pub terrain: Grid<Terrain>,
+    pub entities: Vec<SerializedEntity>,
 }
 
 #[derive(Event)]
@@ -56,10 +58,16 @@ pub fn on_load_zone(
     }
 }
 
-pub fn on_spawn_zone(mut cmds: Commands, mut e_spawn_zone: EventReader<SpawnZoneEvent>) {
+pub fn on_spawn_zone(
+    mut cmds: Commands,
+    mut e_spawn_zone: EventReader<SpawnZoneEvent>,
+    registry: Res<SerializableComponentRegistry>,
+) {
     for e in e_spawn_zone.read() {
         let zone_e = cmds.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
         let mut r = Rand::seed(e.data.idx as u64 + 120);
+
+        let entities = HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1);
 
         let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             let wpos = zone_local_to_world(e.data.idx, x, y);
@@ -71,14 +79,14 @@ pub fn on_spawn_zone(mut cmds: Commands, mut e_spawn_zone: EventReader<SpawnZone
             if r.bool(0.05) && *terrain != Terrain::River {
                 cmds.spawn((
                     Position::new(wpos.0, wpos.1, wpos.2),
-                    Glyph::new(46, Palette::DarkGreen, Palette::Brown)
-                        .layer(RenderLayer::Actors),
+                    Glyph::new(46, Palette::DarkGreen, Palette::Brown).layer(RenderLayer::Actors),
                     ChildOf(zone_e),
                     ZoneStatus::Dormant,
                     CleanupStatePlay,
                 ));
             }
 
+            // trees
             cmds.spawn((
                 Position::new(wpos.0, wpos.1, wpos.2),
                 Glyph::idx(idx)
@@ -92,24 +100,23 @@ pub fn on_spawn_zone(mut cmds: Commands, mut e_spawn_zone: EventReader<SpawnZone
             .id()
         });
 
-        cmds.entity(zone_e)
-            .insert(Zone::new(e.data.idx, e.data.terrain.clone(), tiles));
+        EntitySerializer::deserialize(&mut cmds, &e.data.entities, &registry);
+
+        cmds.entity(zone_e).insert(Zone::new(
+            e.data.idx,
+            e.data.terrain.clone(),
+            tiles,
+            entities,
+        ));
     }
 }
 
 pub fn on_unload_zone(
     mut cmds: Commands,
     mut e_unload_zone: EventReader<UnloadZoneEvent>,
-    q_zones: Query<(Entity, &Zone)>,
 ) {
     for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
-        let Some((zone_e, zone)) = q_zones.iter().find(|(_, c)| c.idx == *zone_idx) else {
-            continue;
-        };
-
-        save_zone(&zone.to_save());
-
-        cmds.entity(zone_e).despawn();
+        cmds.queue(UnloadZoneCommand(*zone_idx));
     }
 }
 
@@ -118,15 +125,22 @@ pub fn on_set_zone_status(
     mut cmds: Commands,
     q_zones: Query<(Entity, &Zone, &Children)>,
 ) {
-    for e in e_set_zone_status.read() {
-        let Some((zone_e, zone, children)) = q_zones.iter().find(|(_, z, _)| z.idx == e.idx) else {
+    for evt in e_set_zone_status.read() {
+        let Some((zone_e, zone, children)) = q_zones.iter().find(|(_, z, _)| z.idx == evt.idx)
+        else {
             continue;
         };
 
-        cmds.entity(zone_e).insert(e.status);
+        cmds.entity(zone_e).insert(evt.status);
 
         for child in children.iter() {
-            cmds.entity(child).insert(e.status);
+            cmds.entity(child).insert(evt.status);
+        }
+
+        for v in zone.entities.iter() {
+            for e in v.iter() {
+                cmds.entity(*e).insert(evt.status);
+            }
         }
     }
 }

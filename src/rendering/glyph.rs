@@ -1,9 +1,4 @@
-use bevy_ecs::prelude::*;
-use macroquad::{
-    prelude::*,
-    telemetry::{self},
-};
-
+use crate::engine::{SerializableComponent, SerializableValue};
 use crate::{
     cfg::TILE_SIZE_F32,
     common::{MacroquadColorable, Palette},
@@ -11,10 +6,16 @@ use crate::{
     rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility},
     ui::UiLayout,
 };
+use bevy_ecs::prelude::*;
+use macroquad::{
+    prelude::*,
+    telemetry::{self},
+};
+use serde::{Deserialize, Serialize};
 
 use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Serialize, Deserialize, Clone, SerializableComponent)]
 #[require(Visibility)]
 pub struct Glyph {
     pub idx: usize,

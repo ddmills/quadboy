@@ -5,7 +5,7 @@ use crate::{
     common::Palette,
     engine::{App, ExitAppEvent, KeyInput, Plugin},
     rendering::{Position, RenderLayer, Text},
-    states::{cleanup_system, AppState, AppStatePlugin, CurrentAppState},
+    states::{AppState, AppStatePlugin, CurrentAppState, cleanup_system},
 };
 
 pub struct MainMenuStatePlugin;
@@ -53,12 +53,12 @@ fn render_menu(mut cmds: Commands) {
 fn main_menu_input(
     keys: Res<KeyInput>,
     mut state: ResMut<CurrentAppState>,
-    mut e_exit_app: EventWriter<ExitAppEvent>
+    mut e_exit_app: EventWriter<ExitAppEvent>,
 ) {
     if keys.is_pressed(KeyCode::N) {
         state.next = AppState::Play;
     }
-    
+
     if keys.is_pressed(KeyCode::Q) {
         e_exit_app.write(ExitAppEvent);
     }
