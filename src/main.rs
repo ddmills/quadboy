@@ -42,6 +42,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    trace!("HELLO WORLD");
     set_default_filter_mode(FilterMode::Nearest);
 
     let tilesets = load_tilesets().await;

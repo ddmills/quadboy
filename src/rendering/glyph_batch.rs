@@ -213,7 +213,7 @@ impl GlyphBatch {
     }
 }
 
-pub const VERTEX: &str = "#version 400
+pub const VERTEX: &str = "#version 100
 uniform mat4 projection;
 
 attribute float in_idx;
@@ -234,7 +234,7 @@ varying vec4 bg;
 varying vec4 outline;
 
 void main() {
-    gl_Position = projection * vec4(in_pos, 0, 1);
+    gl_Position = projection * vec4(in_pos, 0.0, 1.0);
     uv = in_uv;
     idx = in_idx;
     tex_idx = in_tex_idx;
