@@ -22,17 +22,14 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
 
-      - name: Build
-        run: cargo build --release --target wasm32-unknown-unknown
+      - name: Install wasm-bindgen
+        run: cargo install wasm-bindgen-cli
 
-      - name: Prepare Deployment Directory
-        run: |
-          mkdir -p ./deploy
-          cp ./target/wasm32-unknown-unknown/release/quadboy.wasm ./deploy/
-          cp index.html ./deploy/
+      - name: Build
+        run: ./build-web.sh quadboy
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy
+          publish_dir: ./dist
