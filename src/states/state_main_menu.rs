@@ -26,25 +26,31 @@ fn render_menu(mut cmds: Commands) {
     trace!("EnterAppState::<MainMenu>");
 
     cmds.spawn((
-        Text::new("(N) NEW GAME")
-            .fg1(Palette::White)
-            .layer(RenderLayer::Ui),
+        Text::new("Welcome to...   QUADBOY"),
+        Position::new_f32(4., 2., 0.),
+        CleanupMainMenu,
+    ));
+
+    cmds.spawn((
+        Text::new("A cowboy adventure."),
+        Position::new_f32(4., 2.5, 0.),
+        CleanupMainMenu,
+    ));
+
+    cmds.spawn((
+        Text::new("({G|N}) NEW GAME"),
         Position::new_f32(4., 4., 0.),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("(L) LOAD")
-            .fg1(Palette::White)
-            .layer(RenderLayer::Ui),
+        Text::new("(L) LOAD"),
         Position::new_f32(4., 4.5, 0.),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("(Q) QUIT")
-            .fg1(Palette::White)
-            .layer(RenderLayer::Ui),
+        Text::new("({R|Q}) QUIT"),
         Position::new_f32(4., 5., 0.),
         CleanupMainMenu,
     ));

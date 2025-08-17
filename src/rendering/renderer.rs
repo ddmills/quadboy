@@ -60,7 +60,7 @@ pub fn render_all(
         ren.screen = create_render_target();
     }
 
-    clear_background(Color::from_hex(0x141414));
+    clear_background(Color::from_hex(0x0E0505));
 
     start_pass(&ren.world);
     layers.ground.render();

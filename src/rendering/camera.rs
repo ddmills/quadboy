@@ -54,7 +54,7 @@ pub fn update_camera(
 ) {
     let player = q_player.single().unwrap();
     let a = time.overstep_fraction();
-    let speed = 0.075;
+    let speed = 0.04;
 
     let z_pos = zone_center_world(player.zone_idx());
 

@@ -34,7 +34,7 @@ impl Terrain {
         match self {
             Terrain::Grass => (None, Some(Palette::DarkGreen.into())),
             Terrain::Dirt => (None, Some(Palette::Brown.into())),
-            Terrain::River => (Some(Palette::Blue.into()), Some(Palette::Cyan.into())),
+            Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
         }
     }
 }

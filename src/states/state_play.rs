@@ -34,11 +34,11 @@ impl Plugin for PlayStatePlugin {
                         on_unload_zone,
                         on_set_zone_status,
                         on_zone_status_change,
+                        update_camera,
                     )
                         .chain(),
                     update_ui_layout.run_if(resource_changed::<ScreenSize>),
                     draw_ui_panels.run_if(resource_changed::<UiLayout>),
-                    update_camera,
                 ),
             )
             .on_leave(
@@ -60,7 +60,7 @@ fn spawn_stuff(
 
     cmds.spawn((
         Position::new(56, 56, 0),
-        Glyph::new(147, Palette::Yellow, Palette::LightBlue).layer(RenderLayer::Actors),
+        Glyph::new(147, Palette::Yellow, Palette::Blue).layer(RenderLayer::Actors),
         Player,
         // StoreZonePosition,
         CleanupStatePlay,

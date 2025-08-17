@@ -14,9 +14,8 @@ uniform sampler2D tex_2;
 
 void main() {
     vec2 uv_scaled = uv / 16.0; // atlas is 16x16
-    
-    // Replace uint() conversion with float operations
-    float idx_float = floor(idx + 0.5); // round to nearest integer
+
+    float idx_float = floor(idx + 0.5);
     float x = mod(idx_float, 16.0);
     float y = floor(idx_float / 16.0);
     vec2 uv_offset = vec2(x, y) / 16.0;
@@ -25,7 +24,6 @@ void main() {
 
     vec4 v = vec4(0.0);
 
-    // Use abs() and small epsilon for floating point comparison
     if (abs(tex_idx - 0.0) < 0.5) {
         v = texture2D(tex_1, tex_uv);
     } else {

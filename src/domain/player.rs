@@ -119,7 +119,7 @@ pub fn render_player_debug(
     let zone_pos = zone_xyz(zone_idx);
 
     debug.value = format!(
-        "{},{},{} ({},{},{} {})",
+        "{},{},{} ({},{},{} {{Y|{}}})",
         position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx
     );
 }

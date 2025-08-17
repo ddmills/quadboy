@@ -1,7 +1,8 @@
 use bevy_ecs::prelude::*;
+use macroquad::miniquad::TextureId;
 
 use crate::{
-    common::{Palette, cp437_idx},
+    common::{cp437_idx, Palette, PaletteSequence, END_SEQ, FLAG_SEQ, START_SEQ},
     rendering::{GlyphTextureId, Visibility},
 };
 
@@ -16,7 +17,8 @@ pub struct Text {
     pub fg2: Option<u32>,
     pub outline: Option<u32>,
     pub layer_id: RenderLayer,
-    glyphs: Vec<Entity>,
+    pub glyphs: Vec<Entity>,
+    pub texture_id: GlyphTextureId,
 }
 
 #[allow(dead_code)]
@@ -30,6 +32,7 @@ impl Text {
             outline: None,
             layer_id: RenderLayer::Ui,
             glyphs: vec![],
+            texture_id: GlyphTextureId::BodyFont,
         }
     }
 
@@ -52,6 +55,61 @@ impl Text {
         self.outline = Some(outline.into());
         self
     }
+
+    pub fn get_glyphs(&self) -> Vec<Glyph>
+    {
+        let mut in_seq = false;
+        let mut in_flags = false;
+        let mut seq_setting = String::new();
+        let mut seq_value = String::new();
+
+        self.value.chars().filter_map(|c| {
+            if c == START_SEQ {
+                in_seq = true;
+                in_flags = true;
+                return None;
+            }
+
+            if in_seq && c == END_SEQ {
+                in_seq = false;
+                in_flags = false;
+
+                let mut seq = PaletteSequence::new(seq_setting.clone());
+                let glyphs= seq.apply_to(seq_value.clone(), &self);
+
+                seq_setting = String::new();
+                seq_value = String::new();
+
+                return Some(glyphs);
+            }
+
+            if in_seq && c == FLAG_SEQ {
+                in_flags = false;
+                return None;
+            }
+
+            if in_flags {
+                seq_setting.push(c);
+                return None;
+            }
+
+            if in_seq {
+                seq_value.push(c);
+                return None;
+            }
+
+            Some(vec![Glyph {
+                idx: cp437_idx(c).unwrap_or(0),
+                fg1: self.fg1,
+                fg2: self.fg2,
+                bg: self.bg,
+                outline: None,
+                layer_id: self.layer_id,
+                texture_id: self.texture_id,
+                is_dormant: false,
+            }])
+        }).flatten().collect()
+    }
 }
 
 pub fn render_text(
@@ -66,22 +124,12 @@ pub fn render_text(
             cmds.entity(*glyph_id).despawn();
         }
 
-        text.glyphs = text
-            .value
-            .chars()
+        text.glyphs = text.get_glyphs()
+            .iter()
             .enumerate()
-            .map(|(i, c)| {
+            .map(|(i, g)| {
                 cmds.spawn((
-                    Glyph {
-                        idx: cp437_idx(c).unwrap_or(0),
-                        fg1: text.fg1,
-                        fg2: text.fg2,
-                        bg: text.bg,
-                        outline: text.outline,
-                        layer_id: text.layer_id,
-                        texture_id: GlyphTextureId::BodyFont,
-                        is_dormant: false,
-                    },
+                    g.to_owned(),
                     Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
                     visibility.clone(),
                     ChildOf(entity),

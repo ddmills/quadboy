@@ -1,26 +1,30 @@
 use macroquad::math::Vec4;
 
+use crate::{common::cp437_idx, rendering::{Glyph, Text}};
+
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Palette {
-    White = 0xE1E4E4,
-    Black = 0x161A1F,
-    Gray = 0x3A3E42,
-    Green = 0x2F812F,
-    DarkGreen = 0x2C4E2C,
-    LightGreen = 0x04E904,
-    Brown = 0x664D3C,
-    DarkBrown = 0x271F1A,
-    Blue = 0x294E94,
-    DarkBlue = 0x1F2C42,
-    LightBlue = 0x2870DB,
-    Red = 0xA83A3A,
-    Orange = 0xE79519,
-    Yellow = 0xEBCC21,
-    Purple = 0x650D68,
-    Cyan = 0x09D6F1,
-    DarkCyan = 0x28687C,
-    Clear = 0x161E27,
+    White = 0xFFF1E8,
+    Black = 0x0F0E0F,
+    Gray = 0x5A5353,
+    Green = 0x3EBD3E,
+    DarkGreen = 0x265C42,
+    Brown = 0x8B4513,
+    DarkBrown = 0x4A2C2A,
+    Blue = 0x4A90E2,
+    DarkBlue = 0x2C5282,
+    Red = 0xE74C3C,
+    DarkRed = 0x8B1538,
+    Orange = 0xFF8C42,
+    DarkOrange = 0xA0522D,
+    Yellow = 0xF1C40F,
+    DarkYellow = 0x8B7D3A,
+    Purple = 0x9B59B6,
+    DarkPurple = 0x663366,
+    Cyan = 0x1ABC9C,
+    DarkCyan = 0x16A085,
+    Clear = 0x201820,
 }
 
 #[allow(dead_code)]
@@ -102,5 +106,120 @@ impl MacroquadColorable for Palette {
 impl std::convert::From<Palette> for u32 {
     fn from(val: Palette) -> Self {
         val as u32
+    }
+}
+
+pub const START_SEQ: char = '{';
+pub const END_SEQ: char = '}';
+pub const FLAG_SEQ: char = '|';
+
+fn get_seq_color(ch:&str) -> Palette
+{
+    match ch {
+        "W" => Palette::White,
+        "w" => Palette::White,
+        "R" => Palette::Red,
+        "r" => Palette::DarkRed,
+        "G" => Palette::Green,
+        "g" => Palette::DarkGreen,
+        "B" => Palette::Blue,
+        "b" => Palette::DarkBlue,
+        "Y" => Palette::Yellow,
+        "y" => Palette::DarkYellow,
+        "C" => Palette::Cyan,
+        "c" => Palette::DarkCyan,
+        "O" => Palette::Orange,
+        "o" => Palette::DarkOrange,
+        "P" => Palette::Purple,
+        "p" => Palette::DarkPurple,
+        _ => Palette::White,
+    }
+}
+
+enum PaletteSequenceType {
+    Solid,
+    Repeat,
+    Stretch,
+    Border,
+}
+
+impl PaletteSequenceType {
+    pub fn from_str(val: &str) -> PaletteSequenceType {
+        match val {
+            "solid" => Self::Solid,
+            "repeat" => Self::Repeat,
+            "stretch" => Self::Stretch,
+            "border" => Self::Border,
+            _ => Self::Solid,
+        }
+    }
+}
+
+pub struct PaletteSequence {
+    seq_type: PaletteSequenceType,
+    seq_colors: Vec<Palette>,
+}
+
+impl PaletteSequence {
+    pub fn new(value: String) -> Self
+    {
+        let split = value.split(' ').collect::<Vec<_>>();
+        let mut seq_type = PaletteSequenceType::Repeat;
+        let mut seq_colors = value.clone();
+
+        if split.len() == 2 {
+            seq_type = PaletteSequenceType::from_str(split[1]);
+            seq_colors = split[0].to_string();
+        }
+
+        let mut colors = seq_colors
+            .split('-')
+            .map(get_seq_color)
+            .collect::<Vec<_>>();
+
+        if colors.is_empty() {
+            colors = vec![Palette::White];
+        }
+
+        Self {
+            seq_colors: colors,
+            seq_type,
+        }
+    }
+
+    pub fn apply_to(&mut self, value: String, text: &Text) -> Vec<Glyph>
+    {
+        let color_len = self.seq_colors.len();
+        let value_len = value.len();
+
+        value.chars().enumerate().map(|(idx, c)| {
+            let fg1 = match self.seq_type {
+                PaletteSequenceType::Solid => *self.seq_colors.first().unwrap(),
+                PaletteSequenceType::Repeat => *self.seq_colors.get(idx % color_len).unwrap(),
+                PaletteSequenceType::Stretch => {
+                    let dist = idx as f32 / value_len as f32;
+                    let new_idx = (dist * color_len as f32).floor() as usize;
+                    *self.seq_colors.get(new_idx).unwrap()
+                },
+                PaletteSequenceType::Border => {
+                    if idx == 0 || idx == value_len - 1 {
+                        *self.seq_colors.first().unwrap()
+                    } else {
+                        *self.seq_colors.get(1 % color_len).unwrap()
+                    }
+                },
+            };
+
+            Glyph {
+                idx: cp437_idx(c).unwrap_or(0),
+                fg1: Some(fg1.into()),
+                fg2: text.fg2,
+                bg: text.bg,
+                outline: text.outline,
+                layer_id: text.layer_id,
+                texture_id: text.texture_id,
+                is_dormant: false,
+            }
+        }).collect()
     }
 }

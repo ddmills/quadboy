@@ -32,16 +32,13 @@ fn render_explore_hud(mut cmds: Commands) {
     trace!("EnterGameState::<Explore>");
 
     cmds.spawn((
-        Text::new("123")
-            .fg1(Palette::White)
-            .bg(Palette::Purple)
-            .layer(RenderLayer::Ui),
+        Text::new("123").bg(Palette::Black),
         Position::new_f32(0., 0.5, 0.),
         PlayerDebug,
         CleanupStateExplore,
     ));
 
-    let hp = (9.5, 0.5);
+    let hp = (12.5, 0.5);
 
     cmds.spawn((
         Text::new("HP             ")
