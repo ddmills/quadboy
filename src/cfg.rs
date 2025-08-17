@@ -18,7 +18,7 @@ pub const WINDOW_SIZE: (usize, usize) = (TILE_SIZE.0 * 70 + 12, TILE_SIZE.1 * 30
 pub const INPUT_RATE: f64 = 0.035;
 pub const INPUT_INITIAL_DELAY: f64 = 0.15;
 
-pub const ENABLE_SAVES: bool = true;
+pub const ENABLE_SAVES: bool = false;
 pub const SAVE_NAME: &str = "test";
 
 pub const CAMERA_MODE: CameraMode = CameraMode::Smooth(0.04);
