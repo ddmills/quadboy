@@ -1,11 +1,13 @@
-use web_sys;
 use bevy_ecs::prelude::*;
 use common::Palette;
 use engine::{KeyInput, Time, render_fps, update_key_input, update_time};
-use macroquad::{miniquad::conf::{Platform, WebGLVersion}, prelude::*};
+use macroquad::{
+    miniquad::conf::{Platform, WebGLVersion},
+    prelude::*,
+};
 use rendering::{
-    GameCamera, Layers, Position, RenderLayer, RenderTargets, ScreenSize, Text, load_tilesets,
-    render_all, render_glyphs, render_text, update_screen_size,
+    GameCamera, Layers, Position, RenderTargets, ScreenSize, Text, load_tilesets, render_all,
+    render_glyphs, render_text, update_screen_size,
 };
 use ui::UiLayout;
 
@@ -14,10 +16,11 @@ use crate::{
     domain::{
         LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones,
     },
-    engine::{render_profiler, App, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
-    rendering::{update_visibility, CrtShader, Glyph, TrackZone},
+    engine::{App, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
+    rendering::{CrtShader, Glyph, TrackZone, update_visibility},
     states::{
-        update_app_states, update_game_states, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin
+        CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin,
+        PauseStatePlugin, PlayStatePlugin, update_app_states, update_game_states,
     },
 };
 

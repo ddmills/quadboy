@@ -117,7 +117,11 @@ pub fn update_camera(
         target.y = target.y.floor();
     }
 
-    let mode = if camera_pos.distance_squared(target) < 0.001 { CameraMode::Snap } else { CAMERA_MODE };
+    let mode = if camera_pos.distance_squared(target) < 0.001 {
+        CameraMode::Snap
+    } else {
+        CAMERA_MODE
+    };
 
     match mode {
         CameraMode::Snap => camera.focus_on(target.x, target.y),

@@ -1,6 +1,9 @@
 use macroquad::math::Vec4;
 
-use crate::{common::cp437_idx, rendering::{Glyph, Text}};
+use crate::{
+    common::cp437_idx,
+    rendering::{Glyph, Text},
+};
 
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -113,8 +116,7 @@ pub const START_SEQ: char = '{';
 pub const END_SEQ: char = '}';
 pub const FLAG_SEQ: char = '|';
 
-fn get_seq_color(ch:&str) -> Palette
-{
+fn get_seq_color(ch: &str) -> Palette {
     match ch {
         "W" => Palette::White,
         "w" => Palette::White,
@@ -161,8 +163,7 @@ pub struct PaletteSequence {
 }
 
 impl PaletteSequence {
-    pub fn new(value: String) -> Self
-    {
+    pub fn new(value: String) -> Self {
         let split = value.split(' ').collect::<Vec<_>>();
         let mut seq_type = PaletteSequenceType::Repeat;
         let mut seq_colors = value.clone();
@@ -172,10 +173,7 @@ impl PaletteSequence {
             seq_colors = split[0].to_string();
         }
 
-        let mut colors = seq_colors
-            .split('-')
-            .map(get_seq_color)
-            .collect::<Vec<_>>();
+        let mut colors = seq_colors.split('-').map(get_seq_color).collect::<Vec<_>>();
 
         if colors.is_empty() {
             colors = vec![Palette::White];
@@ -187,39 +185,42 @@ impl PaletteSequence {
         }
     }
 
-    pub fn apply_to(&mut self, value: String, text: &Text) -> Vec<Glyph>
-    {
+    pub fn apply_to(&mut self, value: String, text: &Text) -> Vec<Glyph> {
         let color_len = self.seq_colors.len();
         let value_len = value.len();
 
-        value.chars().enumerate().map(|(idx, c)| {
-            let fg1 = match self.seq_type {
-                PaletteSequenceType::Solid => *self.seq_colors.first().unwrap(),
-                PaletteSequenceType::Repeat => *self.seq_colors.get(idx % color_len).unwrap(),
-                PaletteSequenceType::Stretch => {
-                    let dist = idx as f32 / value_len as f32;
-                    let new_idx = (dist * color_len as f32).floor() as usize;
-                    *self.seq_colors.get(new_idx).unwrap()
-                },
-                PaletteSequenceType::Border => {
-                    if idx == 0 || idx == value_len - 1 {
-                        *self.seq_colors.first().unwrap()
-                    } else {
-                        *self.seq_colors.get(1 % color_len).unwrap()
+        value
+            .chars()
+            .enumerate()
+            .map(|(idx, c)| {
+                let fg1 = match self.seq_type {
+                    PaletteSequenceType::Solid => *self.seq_colors.first().unwrap(),
+                    PaletteSequenceType::Repeat => *self.seq_colors.get(idx % color_len).unwrap(),
+                    PaletteSequenceType::Stretch => {
+                        let dist = idx as f32 / value_len as f32;
+                        let new_idx = (dist * color_len as f32).floor() as usize;
+                        *self.seq_colors.get(new_idx).unwrap()
                     }
-                },
-            };
+                    PaletteSequenceType::Border => {
+                        if idx == 0 || idx == value_len - 1 {
+                            *self.seq_colors.first().unwrap()
+                        } else {
+                            *self.seq_colors.get(1 % color_len).unwrap()
+                        }
+                    }
+                };
 
-            Glyph {
-                idx: cp437_idx(c).unwrap_or(0),
-                fg1: Some(fg1.into()),
-                fg2: text.fg2,
-                bg: text.bg,
-                outline: text.outline,
-                layer_id: text.layer_id,
-                texture_id: text.texture_id,
-                is_dormant: false,
-            }
-        }).collect()
+                Glyph {
+                    idx: cp437_idx(c).unwrap_or(0),
+                    fg1: Some(fg1.into()),
+                    fg2: text.fg2,
+                    bg: text.bg,
+                    outline: text.outline,
+                    layer_id: text.layer_id,
+                    texture_id: text.texture_id,
+                    is_dormant: false,
+                }
+            })
+            .collect()
     }
 }

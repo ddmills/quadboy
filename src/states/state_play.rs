@@ -9,7 +9,7 @@ use crate::{
     },
     engine::{App, Plugin},
     rendering::{
-        Glyph, Position, RenderLayer, ScreenSize, TrackZone, on_zone_status_change, update_camera,
+        Glyph, Position, RenderLayer, ScreenSize, on_zone_status_change, update_camera,
         update_entity_pos,
     },
     states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system},

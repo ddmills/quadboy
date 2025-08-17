@@ -39,25 +39,32 @@ fn render_explore_hud(mut cmds: Commands) {
     ));
 
     cmds.spawn((
-        Text::new("Under the {C-b border|vast, starry sky}, your {R|heart} aches").bg(Palette::Black),
+        Text::new("Under the {C-b border|vast, starry sky}, your {R|heart} aches")
+            .bg(Palette::Black),
         Position::new_f32(0., 13., 0.),
-        CleanupStateExplore
+        CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Text::new("for new {r-R-Y-Y-Y-Y-R-r stretch|horizons} and {G-g-o-G-g-o repeat|untamed trails}.").bg(Palette::Black),
+        Text::new(
+            "for new {r-R-Y-Y-Y-Y-R-r stretch|horizons} and {G-g-o-G-g-o repeat|untamed trails}.",
+        )
+        .bg(Palette::Black),
         Position::new_f32(0., 13.5, 0.),
-        CleanupStateExplore
+        CleanupStateExplore,
     ));
     cmds.spawn((
-        Text::new("With a steady hand, you grip the {C-c-w-W-Y-C-c-C-w repeat|chrome-plated pistol},").bg(Palette::Black),
+        Text::new(
+            "With a steady hand, you grip the {C-c-w-W-Y-C-c-C-w repeat|chrome-plated pistol},",
+        )
+        .bg(Palette::Black),
         Position::new_f32(0., 14., 0.),
-        CleanupStateExplore
+        CleanupStateExplore,
     ));
     cmds.spawn((
         Text::new("Eyes Scanning The {b|Darkness}, ready to face the Unknown.").bg(Palette::Black),
         Position::new_f32(0., 14.5, 0.),
-        CleanupStateExplore
+        CleanupStateExplore,
     ));
 }
 

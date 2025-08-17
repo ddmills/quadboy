@@ -2,7 +2,10 @@ use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
-    cfg::SAVE_NAME, common::Palette, engine::{delete_save, App, ExitAppEvent, KeyInput, Plugin}, rendering::{Position, RenderLayer, Text}, states::{cleanup_system, AppState, AppStatePlugin, CurrentAppState}
+    cfg::SAVE_NAME,
+    engine::{App, ExitAppEvent, KeyInput, Plugin, delete_save},
+    rendering::{Position, Text},
+    states::{AppState, AppStatePlugin, CurrentAppState, cleanup_system},
 };
 
 pub struct MainMenuStatePlugin;

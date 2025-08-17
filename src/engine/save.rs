@@ -179,7 +179,10 @@ fn delete_save_wasm(save_name: &str) {
     }
 
     if deleted_count > 0 {
-        warn!("Deleted {} save files for save: {}", deleted_count, save_name);
+        warn!(
+            "Deleted {} save files for save: {}",
+            deleted_count, save_name
+        );
     } else {
         warn!("No save files found for save: {}", save_name);
     }

@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::{Grid, HashGrid, Palette, Rand},
-    domain::{gen_zone, PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones},
-    engine::{try_load_zone, EntitySerializer, SerializableComponentRegistry, SerializedEntity},
+    domain::{PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones, gen_zone},
+    engine::{EntitySerializer, SerializableComponentRegistry, SerializedEntity, try_load_zone},
     rendering::{
-        world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer
+        Glyph, Position, RenderLayer, world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz,
     },
     states::CleanupStatePlay,
 };
@@ -110,10 +110,7 @@ pub fn on_spawn_zone(
     }
 }
 
-pub fn on_unload_zone(
-    mut cmds: Commands,
-    mut e_unload_zone: EventReader<UnloadZoneEvent>,
-) {
+pub fn on_unload_zone(mut cmds: Commands, mut e_unload_zone: EventReader<UnloadZoneEvent>) {
     for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
         cmds.queue(UnloadZoneCommand(*zone_idx));
     }
