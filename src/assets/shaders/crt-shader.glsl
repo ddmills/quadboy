@@ -19,9 +19,9 @@ vec2 CRTCurveUV(vec2 uv) {
 }
 
 void DrawVignette(inout vec3 color, vec2 uv) {
-    float intensity = 5.75;
-    float roundness = 0.05;
-    float feather = 0.95;
+    float intensity = 6.5;
+    float roundness = 0.01;
+    float feather = 0.96;
 
     vec2 delta = uv - vec2(0.5);
 
@@ -41,7 +41,7 @@ void DrawScanline(inout vec3 color, vec2 uv) {
     float phase = iTime / 100.0;
     float thickness = 2.6;
     float opacity = 0.2;
-    vec3 lineColor = vec3(0.22, 0.25, 0.27);
+    vec3 lineColor = vec3(0.26);
 
     float v = 0.5 * (sin((uv.y + phase) * 3.14159 / width * iResolution.y) + 1.0);
     color.rgb -= (lineColor - color.rgb) * (pow(v, thickness) - 1.0) * opacity;
@@ -65,10 +65,7 @@ void DrawFilmGrain(inout vec3 color, vec2 uv) {
     color.rgb += noise;
 }
 
-vec3 DrawRGBSeparation(sampler2D tex, vec2 uv) {
-    float separation = 0.0002;
-    // float separation = 0.0;
-
+vec3 DrawRGBSeparation(sampler2D tex, vec2 uv, float separation) {
     float r = texture2D(tex, uv + vec2(separation, 0.0)).r;
     float g = texture2D(tex, uv).g;
     float b = texture2D(tex, uv - vec2(separation, 0.0)).b;
@@ -129,7 +126,9 @@ void main() {
         discard;
     }
 
-    vec3 texColor = DrawRGBSeparation(Texture, crtUV);
+    float separation = 0.001;
+    // float separation = 0.0; // TODO: this needs to be pixel based. need to have a uniform for screen size
+    vec3 texColor = DrawRGBSeparation(Texture, crtUV, separation);
     vec4 tex = vec4(texColor, texture2D(Texture, crtUV).a);
 
     if(tex.a == 0.0) {
@@ -138,8 +137,8 @@ void main() {
 
     vec3 res = tex.rgb * color.rgb;
 
-    DrawBloom(res, crtUV);
-    DrawColorTemperature(res);
+    // DrawBloom(res, crtUV);
+    // DrawColorTemperature(res);
     DrawScanline(res, crtUV);
     DrawShadowMask(res, crtUV);
     DrawFilmGrain(res, crtUV);
