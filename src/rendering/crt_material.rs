@@ -3,18 +3,20 @@ use macroquad::prelude::*;
 
 const CRT_FRAGMENT_SHADER: &str = include_str!("../assets/shaders/crt-shader.glsl");
 const CRT_VERTEX_SHADER: &str = "#version 100
+precision highp float;
+
 attribute vec3 position;
 attribute vec2 texcoord;
 attribute vec4 color0;
 
-varying lowp vec2 uv;
-varying lowp vec4 color;
+varying vec2 uv;
+varying vec4 color;
 
 uniform mat4 Model;
 uniform mat4 Projection;
 
 void main() {
-    gl_Position = Projection * Model * vec4(position, 1);
+    gl_Position = Projection * Model * vec4(position, 1.0);
     color = color0 / 255.0;
     uv = texcoord;
 }

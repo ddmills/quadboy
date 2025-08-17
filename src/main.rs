@@ -1,7 +1,8 @@
+use web_sys;
 use bevy_ecs::prelude::*;
 use common::Palette;
 use engine::{KeyInput, Time, render_fps, update_key_input, update_time};
-use macroquad::prelude::*;
+use macroquad::{miniquad::conf::{Platform, WebGLVersion}, prelude::*};
 use rendering::{
     GameCamera, Layers, Position, RenderLayer, RenderTargets, ScreenSize, Text, load_tilesets,
     render_all, render_glyphs, render_text, update_screen_size,
@@ -36,6 +37,10 @@ fn window_conf() -> Conf {
         window_height: WINDOW_SIZE.1 as i32,
         fullscreen: false,
         window_resizable: true,
+        platform: Platform {
+            webgl_version: WebGLVersion::WebGL2,
+            ..Default::default()
+        },
         ..Default::default()
     }
 }

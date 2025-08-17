@@ -86,7 +86,7 @@ HTML=$(
 		</head>
 		<body style="margin: 0; padding: 0; height: 100vh; width: 100vw;">
 		    <canvas id="glcanvas" tabindex='1' hidden></canvas>
-		    <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle.js"></script>
+		    <script src="./mq_js_bundle.js"></script>
 		    <script type="module">
 		        import init, { set_wasm } from "./${PROJECT_NAME}.js";
 		        async function impl_run() {
@@ -126,7 +126,7 @@ fi
 
 # Generate bindgen outputs
 mkdir -p dist
-wasm-bindgen $TARGET_DIR/"$PROJECT_NAME".wasm --out-dir dist --target web --no-typescript
+wasm-bindgen $TARGET_DIR/"$PROJECT_NAME".wasm --out-dir dist --target web --no-typescript --weak-refs
 
 # Shim to tie the thing together
 sed -i "s/import \* as __wbg_star0 from 'env';//" dist/"$PROJECT_NAME".js
@@ -136,3 +136,7 @@ sed -i "s/const imports = __wbg_get_imports();/return __wbg_get_imports();/" dis
 
 # Create index from the HTML variable
 echo "$HTML" >dist/index.html
+
+mkdir -p dist/src
+cp ./src/assets ./dist/src -r
+cp ./mq_js_bundle.js ./dist
