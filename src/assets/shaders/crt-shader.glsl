@@ -40,11 +40,11 @@ void DrawVignette(inout vec3 color, vec2 uv) {
 }
 
 void DrawScanline(inout vec3 color, vec2 uv) {
-    float width = 2.0;
+    float width = 3.0;
     float phase = iTime / 100.0;
-    float thickness = 2.4;
-    float opacity = 0.2;
-    vec3 lineColor = vec3(0.27, 0.31, 0.33);
+    float thickness = 2.6;
+    float opacity = 0.15;
+    vec3 lineColor = vec3(0.22, 0.25, 0.27);
 
     float v = 0.5 * (sin((uv.y + phase) * 3.14159 / width * iResolution.y) + 1.0);
     color.rgb -= (lineColor - color.rgb) * (pow(v, thickness) - 1.0) * opacity;
