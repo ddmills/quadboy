@@ -11,9 +11,9 @@ use crate::{
     },
 };
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum CameraMode {
-    Smooth,
+    Smooth(f32),
     Snap,
 }
 
@@ -54,7 +54,6 @@ pub fn update_camera(
 ) {
     let player = q_player.single().unwrap();
     let a = time.overstep_fraction();
-    let speed = 0.04;
 
     let z_pos = zone_center_world(player.zone_idx());
 
@@ -118,11 +117,14 @@ pub fn update_camera(
         target.y = target.y.floor();
     }
 
-    if CAMERA_MODE == CameraMode::Snap || camera_pos.distance_squared(target) < 0.001 {
-        camera.focus_on(target.x, target.y);
-    } else {
-        let target_fin = camera_pos.lerp(target, a * speed);
-        camera.focus_on(target_fin.x, target_fin.y);
+    let mode = if camera_pos.distance_squared(target) < 0.001 { CameraMode::Snap } else { CAMERA_MODE };
+
+    match mode {
+        CameraMode::Snap => camera.focus_on(target.x, target.y),
+        CameraMode::Smooth(speed) => {
+            let target_fin = camera_pos.lerp(target, a * speed);
+            camera.focus_on(target_fin.x, target_fin.y);
+        }
     }
 }
 

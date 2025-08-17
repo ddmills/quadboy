@@ -14,11 +14,10 @@ use crate::{
     domain::{
         LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones,
     },
-    engine::{App, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
-    rendering::{CrtShader, Glyph, TrackZone, update_visibility},
+    engine::{render_profiler, App, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
+    rendering::{update_visibility, CrtShader, Glyph, TrackZone},
     states::{
-        CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin,
-        PauseStatePlugin, PlayStatePlugin, update_app_states, update_game_states,
+        update_app_states, update_game_states, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin
     },
 };
 
@@ -47,7 +46,6 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    trace!("HELLO WORLD");
     set_default_filter_mode(FilterMode::Nearest);
 
     let tilesets = load_tilesets().await;
@@ -102,10 +100,7 @@ async fn main() {
     let world = app.get_world_mut();
 
     world.spawn((
-        Text::new("123")
-            .fg1(Palette::White)
-            .bg(Palette::Purple)
-            .layer(RenderLayer::Ui),
+        Text::new("123").bg(Palette::Black),
         Position::new_f32(0., 0., 0.),
         FpsDisplay,
     ));

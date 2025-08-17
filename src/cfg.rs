@@ -21,4 +21,4 @@ pub const INPUT_INITIAL_DELAY: f64 = 0.15;
 pub const ENABLE_SAVES: bool = true;
 pub const SAVE_NAME: &str = "test";
 
-pub const CAMERA_MODE: CameraMode = CameraMode::Smooth;
+pub const CAMERA_MODE: CameraMode = CameraMode::Smooth(0.04);

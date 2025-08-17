@@ -33,29 +33,31 @@ fn render_explore_hud(mut cmds: Commands) {
 
     cmds.spawn((
         Text::new("123").bg(Palette::Black),
-        Position::new_f32(0., 0.5, 0.),
+        Position::new_f32(6., 0., 0.),
         PlayerDebug,
         CleanupStateExplore,
     ));
 
-    let hp = (12.5, 0.5);
-
     cmds.spawn((
-        Text::new("HP             ")
-            .fg1(Palette::White)
-            .bg(Palette::Red)
-            .layer(RenderLayer::Ui),
-        Position::new_f32(hp.0, hp.1, 0.),
-        CleanupStateExplore,
+        Text::new("Under the {C-b border|vast, starry sky}, your {R|heart} aches").bg(Palette::Black),
+        Position::new_f32(0., 13., 0.),
+        CleanupStateExplore
     ));
 
     cmds.spawn((
-        Text::new("            ")
-            .fg1(Palette::Black)
-            .bg(Palette::Gray)
-            .layer(RenderLayer::Ui),
-        Position::new_f32(hp.0 + 7.5, hp.1, 0.),
-        CleanupStateExplore,
+        Text::new("for new {r-R-Y-Y-Y-Y-R-r stretch|horizons} and {G-g-o-G-g-o repeat|untamed trails}.").bg(Palette::Black),
+        Position::new_f32(0., 13.5, 0.),
+        CleanupStateExplore
+    ));
+    cmds.spawn((
+        Text::new("With a steady hand, you grip the {C-c-w-W-Y-C-c-C-w repeat|chrome-plated pistol},").bg(Palette::Black),
+        Position::new_f32(0., 14., 0.),
+        CleanupStateExplore
+    ));
+    cmds.spawn((
+        Text::new("Eyes Scanning The {b|Darkness}, ready to face the Unknown.").bg(Palette::Black),
+        Position::new_f32(0., 14.5, 0.),
+        CleanupStateExplore
     ));
 }
 

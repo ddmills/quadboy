@@ -26,7 +26,7 @@ fn render_menu(mut cmds: Commands) {
     trace!("EnterAppState::<MainMenu>");
 
     cmds.spawn((
-        Text::new("Welcome to...   QUADBOY"),
+        Text::new("Welcome to...   {R-O-Y-G-B-P stretch|QUADBOY}"),
         Position::new_f32(4., 2., 0.),
         CleanupMainMenu,
     ));
@@ -38,7 +38,7 @@ fn render_menu(mut cmds: Commands) {
     ));
 
     cmds.spawn((
-        Text::new("({G|N}) NEW GAME"),
+        Text::new("(N) NEW GAME"),
         Position::new_f32(4., 4., 0.),
         CleanupMainMenu,
     ));

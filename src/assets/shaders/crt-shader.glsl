@@ -126,8 +126,8 @@ void main() {
         discard;
     }
 
-    float separation = 0.001;
-    // float separation = 0.0; // TODO: this needs to be pixel based. need to have a uniform for screen size
+    // float separation = 0.001;
+    float separation = 0.0; // TODO: this needs to be pixel based. need to have a uniform for screen size
     vec3 texColor = DrawRGBSeparation(Texture, crtUV, separation);
     vec4 tex = vec4(texColor, texture2D(Texture, crtUV).a);
 
@@ -139,9 +139,9 @@ void main() {
 
     // DrawBloom(res, crtUV);
     // DrawColorTemperature(res);
-    DrawScanline(res, crtUV);
+    // DrawScanline(res, crtUV);
     DrawShadowMask(res, crtUV);
-    DrawFilmGrain(res, crtUV);
+    // DrawFilmGrain(res, crtUV);
     DrawFlicker(res);
     DrawVignette(res, crtUV);
 
