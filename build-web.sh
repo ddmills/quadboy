@@ -64,6 +64,9 @@ set -- "${POSITIONAL[@]}"
 
 PROJECT_NAME=$1
 
+# Get the short git SHA
+GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
 HTML=$(
 	cat <<-END
 		<html lang="en">
@@ -90,6 +93,7 @@ HTML=$(
 			<canvas id="glcanvas" tabindex='1' hidden></canvas>
 			<script src="./mq_js_bundle.js"></script>
 			<script type="module">
+				console.log('%c' + '  ${PROJECT_NAME} '.toUpperCase() + '[${GIT_SHA}]  ', 'background: #111411; color: #e9e548');
 				import init, { set_wasm } from "./${PROJECT_NAME}.js";
 				async function impl_run() {
 					let wbg = await init();
