@@ -3,7 +3,6 @@ const version = 2
   , canvas = document.querySelector("#glcanvas");
 var gl, clipboard = null, wasm_memory, animation_frame_timeout, FS, GL, Module, wasm_exports, emscripten_shaders_hack, importObject, plugins = [], high_dpi = !1, blocking_event_loop = !1;
 function init_webgl(e) {
-    console.log(e);
     if (e == 1) {
         gl = canvas.getContext("webgl");
         console.log(gl);
