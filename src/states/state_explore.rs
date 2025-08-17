@@ -5,7 +5,7 @@ use crate::{
     common::Palette,
     domain::{PlayerDebug, player_input, render_player_debug},
     engine::{App, Plugin},
-    rendering::{Position, RenderLayer, Text},
+    rendering::{Position, Text},
     states::{GameStatePlugin, cleanup_system},
 };
 

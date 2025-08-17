@@ -42,7 +42,6 @@ impl Terrain {
 #[derive(Component)]
 pub struct Zone {
     pub idx: usize,
-    pub tiles: Grid<Entity>,
     pub terrain: Grid<Terrain>,
     pub entities: HashGrid<Entity>,
 }
@@ -51,12 +50,10 @@ impl Zone {
     pub fn new(
         idx: usize,
         terrain: Grid<Terrain>,
-        tiles: Grid<Entity>,
         entities: HashGrid<Entity>,
     ) -> Self {
         Self {
             idx,
-            tiles,
             terrain,
             entities,
         }

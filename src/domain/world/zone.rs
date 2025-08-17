@@ -68,7 +68,7 @@ pub fn on_spawn_zone(
 
         let entities = HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1);
 
-        let tiles = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
+        Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             let wpos = zone_local_to_world(e.data.idx, x, y);
             let terrain = e.data.terrain.get(x, y).unwrap_or(&Terrain::Dirt);
 
@@ -104,7 +104,6 @@ pub fn on_spawn_zone(
         cmds.entity(zone_e).insert(Zone::new(
             e.data.idx,
             e.data.terrain.clone(),
-            tiles,
             entities,
         ));
     }

@@ -167,8 +167,8 @@ HTML=$(
 			<canvas id="glcanvas" tabindex='1' hidden></canvas>
 			<script src="./mq_js_bundle.js"></script>
 			<script type="module">
-				console.log('%c ${PROJECT_NAME} [${GIT_SHA}] ', 'background: #111411; color: #e9e548; padding: 4px 8px; border-radius: 3px;');
-				console.log('Built: ${BUILD_TIME} (${BUILD_MODE})');
+				console.log('%c ${PROJECT_NAME} - [${GIT_SHA} ${BUILD_MODE}] ${BUILD_TIME} ', 'background: #111411; color: #e9e548;');
+
 				import init, { set_wasm } from "./${PROJECT_NAME}.js";
 				async function impl_run() {
 					let wbg = await init();
