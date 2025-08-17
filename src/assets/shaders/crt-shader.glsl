@@ -19,9 +19,9 @@ vec2 CRTCurveUV(vec2 uv) {
 }
 
 void DrawVignette(inout vec3 color, vec2 uv) {
-    float intensity = 4.0;
-    float roundness = 0.9;
-    float feather = 0.5;
+    float intensity = 5.75;
+    float roundness = 0.05;
+    float feather = 0.95;
 
     vec2 delta = uv - vec2(0.5);
 
@@ -37,10 +37,10 @@ void DrawVignette(inout vec3 color, vec2 uv) {
 }
 
 void DrawScanline(inout vec3 color, vec2 uv) {
-    float width = 4.0;
+    float width = 3.0;
     float phase = iTime / 100.0;
     float thickness = 2.6;
-    float opacity = 0.25;
+    float opacity = 0.2;
     vec3 lineColor = vec3(0.22, 0.25, 0.27);
 
     float v = 0.5 * (sin((uv.y + phase) * 3.14159 / width * iResolution.y) + 1.0);
@@ -52,7 +52,7 @@ float random(vec2 st) {
 }
 
 void DrawFilmGrain(inout vec3 color, vec2 uv) {
-    float intensity = 0.06;
+    float intensity = 0.03;
     float speed = 10.0;
 
     vec2 noiseCoord = uv * iResolution.xy * 0.5;
@@ -65,23 +65,85 @@ void DrawFilmGrain(inout vec3 color, vec2 uv) {
     color.rgb += noise;
 }
 
+vec3 DrawRGBSeparation(sampler2D tex, vec2 uv) {
+    float separation = 0.0002;
+    // float separation = 0.0;
+
+    float r = texture2D(tex, uv + vec2(separation, 0.0)).r;
+    float g = texture2D(tex, uv).g;
+    float b = texture2D(tex, uv - vec2(separation, 0.0)).b;
+
+    return vec3(r, g, b);
+}
+
+void DrawBloom(inout vec3 color, vec2 uv) {
+    float intensity = 0.3;
+    float threshold = 0.7;
+
+    float luma = dot(color, vec3(0.299, 0.587, 0.114));
+
+    if(luma > threshold) {
+        float bloom = (luma - threshold) * intensity;
+        color += bloom;
+    }
+}
+
+void DrawColorTemperature(inout vec3 color) {
+    vec3 warmTint = vec3(1.05, 1.0, 0.95);
+    color *= warmTint;
+
+    color = (color - 0.5) * 1.1 + 0.5;
+}
+
+void DrawShadowMask(inout vec3 color, vec2 uv) {
+    float intensity = 0.25;
+    vec2 maskCoord = uv * iResolution.xy;
+
+    vec3 mask = vec3(1.0);
+    float x = mod(maskCoord.x, 3.0);
+
+    if(x < 1.0) {
+        mask = vec3(1.0, 0.7, 0.7); // Red phosphor
+    } else if(x < 2.0) {
+        mask = vec3(0.7, 1.0, 0.7); // Green phosphor  
+    } else {
+        mask = vec3(0.7, 0.7, 1.0); // Blue phosphor
+    }
+
+    color *= mix(vec3(1.0), mask, intensity);
+}
+
+void DrawFlicker(inout vec3 color) {
+    float flickerIntensity = 0.01;
+    float flickerSpeed = 15.0;
+
+    float flicker = 1.0 + sin(iTime * flickerSpeed + random(vec2(iTime * 0.1))) * flickerIntensity;
+    color *= flicker;
+}
+
 void main() {
     vec2 crtUV = CRTCurveUV(uv);
     // vec2 crtUV = uv;
-    vec4 tex = texture2D(Texture, crtUV);
-
-    if (tex.a == 0.0) {
-        discard;
-    }
-
-    vec3 res = tex.rgb * color.rgb;
 
     if(crtUV.x < 0.0 || crtUV.x > 1.0 || crtUV.y < 0.0 || crtUV.y > 1.0) {
         discard;
     }
 
+    vec3 texColor = DrawRGBSeparation(Texture, crtUV);
+    vec4 tex = vec4(texColor, texture2D(Texture, crtUV).a);
+
+    if(tex.a == 0.0) {
+        discard;
+    }
+
+    vec3 res = tex.rgb * color.rgb;
+
+    DrawBloom(res, crtUV);
+    DrawColorTemperature(res);
     DrawScanline(res, crtUV);
+    DrawShadowMask(res, crtUV);
     DrawFilmGrain(res, crtUV);
+    DrawFlicker(res);
     DrawVignette(res, crtUV);
 
     gl_FragColor = vec4(res, 1.0);
