@@ -13,12 +13,12 @@ HELP_STRING=$(
 
 		  This'll go through the following steps:
 
-			    1. Build as target 'wasm32-unknown-unknown'.
-			    2. Create the directory 'dist' if it doesn't already exist.
-			    3. Run wasm-bindgen with output into the 'dist' directory.
-		            - If the '--release' flag is provided, the build will be optimized for release.
-			    4. Apply patches to the output js file (detailed here: https://github.com/not-fl3/macroquad/issues/212#issuecomment-835276147).
-			    5. Generate coresponding 'index.html' file.
+				1. Build as target 'wasm32-unknown-unknown'.
+				2. Create the directory 'dist' if it doesn't already exist.
+				3. Run wasm-bindgen with output into the 'dist' directory.
+					- If the '--release' flag is provided, the build will be optimized for release.
+				4. Apply patches to the output js file (detailed here: https://github.com/not-fl3/macroquad/issues/212#issuecomment-835276147).
+				5. Generate coresponding 'index.html' file.
 
 			Author: Tom Solberg <me@sbg.dev>
 			Edit: Nik codes <nik.code.things@gmail.com>
@@ -68,47 +68,49 @@ HTML=$(
 	cat <<-END
 		<html lang="en">
 		<head>
-		    <meta charset="utf-8">
-		    <title>${PROJECT_NAME}</title>
-		    <style>
-		        html,
-		        body,
-		        canvas {
-		            margin: 0px;
-		            padding: 0px;
-		            width: 100%;
-		            height: 100%;
-		            overflow: hidden;
-		            position: absolute;
-		            z-index: 0;
-		        }
-		    </style>
+			<meta charset="utf-8">
+			<title>${PROJECT_NAME}</title>
+			<style>
+				html,
+				body,
+				canvas {
+					margin: 0px;
+					padding: 0px;
+					width: 100%;
+					height: 100%;
+					overflow: hidden;
+					position: absolute;
+					z-index: 0;
+					image-rendering: pixelated;
+					background-color: black;
+				}
+			</style>
 		</head>
 		<body style="margin: 0; padding: 0; height: 100vh; width: 100vw;">
-		    <canvas id="glcanvas" tabindex='1' hidden></canvas>
-		    <script src="./mq_js_bundle.js"></script>
-		    <script type="module">
-		        import init, { set_wasm } from "./${PROJECT_NAME}.js";
-		        async function impl_run() {
-		            let wbg = await init();
-		            miniquad_add_plugin({
-		                register_plugin: (a) => (a.wbg = wbg),
-		                on_init: () => set_wasm(wasm_exports),
-		                version: "0.0.1",
-		                name: "wbg",
-		            });
-		            load("./${PROJECT_NAME}_bg.wasm");
-		        }
-		        window.run = function() {
-		            document.getElementById("run-container").remove();
-		            document.getElementById("glcanvas").removeAttribute("hidden");
-		            document.getElementById("glcanvas").focus();
-		            impl_run();
-		        }
-		    </script>
-		    <div id="run-container" style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column;">
-		        <button onclick="run()">Run Game</button>
-		    </div>
+			<canvas id="glcanvas" tabindex='1' hidden></canvas>
+			<script src="./mq_js_bundle.js"></script>
+			<script type="module">
+				import init, { set_wasm } from "./${PROJECT_NAME}.js";
+				async function impl_run() {
+					let wbg = await init();
+					miniquad_add_plugin({
+						register_plugin: (a) => (a.wbg = wbg),
+						on_init: () => set_wasm(wasm_exports),
+						version: "0.0.1",
+						name: "wbg",
+					});
+					load("./${PROJECT_NAME}_bg.wasm");
+				}
+				window.run = function() {
+					document.getElementById("run-container").remove();
+					document.getElementById("glcanvas").removeAttribute("hidden");
+					document.getElementById("glcanvas").focus();
+					impl_run();
+				}
+			</script>
+			<div id="run-container" style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column;">
+				<button onclick="run()">Run Game</button>
+			</div>
 		</body>
 		</html>
 	END
