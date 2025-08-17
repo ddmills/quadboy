@@ -2,10 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
-    common::Palette,
-    engine::{App, ExitAppEvent, KeyInput, Plugin},
-    rendering::{Position, RenderLayer, Text},
-    states::{AppState, AppStatePlugin, CurrentAppState, cleanup_system},
+    cfg::SAVE_NAME, common::Palette, engine::{delete_save, App, ExitAppEvent, KeyInput, Plugin}, rendering::{Position, RenderLayer, Text}, states::{cleanup_system, AppState, AppStatePlugin, CurrentAppState}
 };
 
 pub struct MainMenuStatePlugin;
@@ -62,6 +59,11 @@ fn main_menu_input(
     mut e_exit_app: EventWriter<ExitAppEvent>,
 ) {
     if keys.is_pressed(KeyCode::N) {
+        delete_save(SAVE_NAME);
+        state.next = AppState::Play;
+    }
+
+    if keys.is_pressed(KeyCode::L) {
         state.next = AppState::Play;
     }
 

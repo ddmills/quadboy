@@ -103,3 +103,84 @@ fn read(file_path: &String) -> Option<String> {
         }
     }
 }
+
+pub fn delete_save(save_name: &str) {
+    if !ENABLE_SAVES {
+        return;
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let save_path = format!("saves/{}", save_name);
+        if let Err(e) = std::fs::remove_dir_all(&save_path) {
+            warn!("Failed to delete save directory {}: {}", save_path, e);
+        } else {
+            warn!("Deleted save directory: {}", save_path);
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        delete_save_wasm(save_name);
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn delete_save_wasm(save_name: &str) {
+    let window = match web_sys::window() {
+        Some(w) => w,
+        None => {
+            error!("Could not access window for localStorage");
+            return;
+        }
+    };
+
+    let storage = match window.local_storage() {
+        Ok(Some(s)) => s,
+        Ok(None) => {
+            error!("localStorage is not available");
+            return;
+        }
+        Err(_) => {
+            error!("Error accessing localStorage");
+            return;
+        }
+    };
+
+    // Get all localStorage keys to find matching save files
+    let length = match storage.length() {
+        Ok(len) => len,
+        Err(_) => {
+            error!("Failed to get localStorage length");
+            return;
+        }
+    };
+
+    let save_prefix = format!("saves/{}/", save_name);
+    let mut keys_to_delete = Vec::new();
+
+    // Collect all keys that match the save pattern
+    for i in 0..length {
+        if let Ok(Some(key)) = storage.key(i) {
+            if key.starts_with(&save_prefix) {
+                keys_to_delete.push(key);
+            }
+        }
+    }
+
+    // Delete all matching keys
+    let mut deleted_count = 0;
+    for key in keys_to_delete {
+        if storage.remove_item(&key).is_ok() {
+            deleted_count += 1;
+        } else {
+            warn!("Failed to delete localStorage key: {}", key);
+        }
+    }
+
+    if deleted_count > 0 {
+        warn!("Deleted {} save files for save: {}", deleted_count, save_name);
+    } else {
+        warn!("No save files found for save: {}", save_name);
+    }
+}
