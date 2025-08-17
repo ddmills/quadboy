@@ -105,7 +105,7 @@ void DrawShadowMask(inout vec3 color, vec2 uv) {
     if(x < 1.0) {
         mask = vec3(1.0, 0.7, 0.7); // Red phosphor
     } else if(x < 2.0) {
-        mask = vec3(0.7, 1.0, 0.7); // Green phosphor  
+        mask = vec3(0.7, 1.0, 0.7); // Green phosphor
     } else {
         mask = vec3(0.7, 0.7, 1.0); // Blue phosphor
     }

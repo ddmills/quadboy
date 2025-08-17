@@ -1,11 +1,11 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid},
+    common::{Grid, Rand},
     domain::{Terrain, ZoneSaveData},
 };
 
 pub fn gen_zone(zone_idx: usize) -> ZoneSaveData {
-    // let mut rand = Rand::seed(zone_idx as u64);
+    let mut rand = Rand::seed(zone_idx as u64);
     let terrains = [
         Terrain::Dirt,
         Terrain::Dirt,
@@ -18,8 +18,7 @@ pub fn gen_zone(zone_idx: usize) -> ZoneSaveData {
         Terrain::River,
     ];
 
-    // let terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| rand.pick(&terrains));
-    let terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| Terrain::Grass);
+    let terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| rand.pick(&terrains));
 
     ZoneSaveData {
         idx: zone_idx,

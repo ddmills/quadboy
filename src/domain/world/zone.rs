@@ -3,12 +3,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
-    common::{Grid, HashGrid, Palette},
-    domain::{PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones, gen_zone},
-    engine::{EntitySerializer, SerializableComponentRegistry, SerializedEntity, try_load_zone},
+    common::{Grid, HashGrid, Palette, Rand},
+    domain::{gen_zone, PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones},
+    engine::{try_load_zone, EntitySerializer, SerializableComponentRegistry, SerializedEntity},
     rendering::{
-        Glyph, Position, RenderLayer, world_to_zone_idx, zone_idx, zone_local_to_world,
-        zone_xyz,
+        world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz, Glyph, Position, RenderLayer
     },
     states::CleanupStatePlay,
 };
@@ -65,7 +64,7 @@ pub fn on_spawn_zone(
 ) {
     for e in e_spawn_zone.read() {
         let zone_e = cmds.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
-        // let mut r = Rand::seed(e.data.idx as u64 + 120);
+        let mut r = Rand::seed(e.data.idx as u64 + 120);
 
         let entities = HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1);
 
@@ -76,15 +75,15 @@ pub fn on_spawn_zone(
             let idx = terrain.tile();
             let (bg, fg) = terrain.colors();
 
-            // if r.bool(0.05) && *terrain != Terrain::River {
-            //     cmds.spawn((
-            //         Position::new(wpos.0, wpos.1, wpos.2),
-            //         Glyph::new(46, Palette::DarkGreen, Palette::Brown).layer(RenderLayer::Actors),
-            //         ChildOf(zone_e),
-            //         ZoneStatus::Dormant,
-            //         CleanupStatePlay,
-            //     ));
-            // }
+            if r.bool(0.05) && *terrain != Terrain::River {
+                cmds.spawn((
+                    Position::new(wpos.0, wpos.1, wpos.2),
+                    Glyph::new(46, Palette::DarkGreen, Palette::Brown).layer(RenderLayer::Actors),
+                    ChildOf(zone_e),
+                    ZoneStatus::Dormant,
+                    CleanupStatePlay,
+                ));
+            }
 
             // trees
             cmds.spawn((
