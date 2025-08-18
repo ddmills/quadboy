@@ -1,5 +1,4 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 use crate::{
     domain::Zone,
@@ -42,7 +41,6 @@ impl Command<Result> for UnloadZoneCommand {
         world.despawn(zone_e);
 
         for e in despawns.iter() {
-            trace!("despawning e");
             world.despawn(*e);
         }
 

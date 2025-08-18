@@ -2,6 +2,7 @@ use bevy_ecs::{component::Component, entity::Entity, resource::Resource};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    cfg::ZONE_SIZE,
     common::{Grid, HashGrid, Palette},
     domain::ZoneSaveData,
 };
@@ -32,7 +33,7 @@ impl Terrain {
 
     pub fn colors(&self) -> (Option<u32>, Option<u32>) {
         match self {
-            Terrain::Grass => (None, Some(Palette::DarkGreen.into())),
+            Terrain::Grass => (None, Some(Palette::DarkBrown.into())),
             Terrain::Dirt => (None, Some(Palette::Brown.into())),
             Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
         }
@@ -47,15 +48,11 @@ pub struct Zone {
 }
 
 impl Zone {
-    pub fn new(
-        idx: usize,
-        terrain: Grid<Terrain>,
-        entities: HashGrid<Entity>,
-    ) -> Self {
+    pub fn new(idx: usize, terrain: Grid<Terrain>) -> Self {
         Self {
             idx,
             terrain,
-            entities,
+            entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
         }
     }
 

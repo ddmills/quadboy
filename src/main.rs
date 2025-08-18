@@ -13,14 +13,13 @@ use ui::UiLayout;
 
 use crate::{
     cfg::WINDOW_SIZE,
-    domain::{
-        LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, SpawnZoneEvent, UnloadZoneEvent, Zones,
-    },
+    domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones},
     engine::{App, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
     rendering::{CrtShader, Glyph, TrackZone, update_visibility},
     states::{
-        CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin,
-        PauseStatePlugin, PlayStatePlugin, update_app_states, update_game_states,
+        CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
+        ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin,
+        update_app_states, update_game_states,
     },
 };
 
@@ -59,6 +58,8 @@ async fn main() {
     reg.register::<Position>();
     reg.register::<TrackZone>();
     reg.register::<Glyph>();
+    reg.register::<CleanupStatePlay>();
+    reg.register::<CleanupStateExplore>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)
@@ -67,7 +68,6 @@ async fn main() {
         .add_plugin(PauseStatePlugin)
         .register_event::<LoadZoneEvent>()
         .register_event::<UnloadZoneEvent>()
-        .register_event::<SpawnZoneEvent>()
         .register_event::<SetZoneStatusEvent>()
         .register_event::<PlayerMovedEvent>()
         .insert_resource(tilesets)

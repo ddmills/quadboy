@@ -2,14 +2,11 @@ use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cfg::{MAP_SIZE, ZONE_SIZE},
-    common::{Grid, HashGrid, Palette, Rand},
-    domain::{PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones, gen_zone},
-    engine::{EntitySerializer, SerializableComponentRegistry, SerializedEntity, try_load_zone},
-    rendering::{
-        Glyph, Position, RenderLayer, world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz,
-    },
-    states::CleanupStatePlay,
+    cfg::MAP_SIZE,
+    common::Grid,
+    domain::{LoadZoneCommand, PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones},
+    engine::SerializedEntity,
+    rendering::{world_to_zone_idx, zone_idx, zone_xyz},
 };
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
@@ -32,80 +29,14 @@ pub struct LoadZoneEvent(pub usize);
 pub struct UnloadZoneEvent(pub usize);
 
 #[derive(Event)]
-pub struct SpawnZoneEvent {
-    pub data: ZoneSaveData,
-}
-
-#[derive(Event)]
 pub struct SetZoneStatusEvent {
     pub idx: usize,
     pub status: ZoneStatus,
 }
 
-pub fn on_load_zone(
-    mut e_load_zone: EventReader<LoadZoneEvent>,
-    mut e_spawn_zone: EventWriter<SpawnZoneEvent>,
-) {
+pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEvent>) {
     for LoadZoneEvent(zone_idx) in e_load_zone.read() {
-        if let Some(save_data) = try_load_zone(*zone_idx) {
-            e_spawn_zone.write(SpawnZoneEvent { data: save_data });
-            continue;
-        };
-
-        let data = gen_zone(*zone_idx);
-        e_spawn_zone.write(SpawnZoneEvent { data });
-    }
-}
-
-pub fn on_spawn_zone(
-    mut cmds: Commands,
-    mut e_spawn_zone: EventReader<SpawnZoneEvent>,
-    registry: Res<SerializableComponentRegistry>,
-) {
-    for e in e_spawn_zone.read() {
-        let zone_e = cmds.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
-        let mut r = Rand::seed(e.data.idx as u64 + 120);
-
-        let entities = HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1);
-
-        Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-            let wpos = zone_local_to_world(e.data.idx, x, y);
-            let terrain = e.data.terrain.get(x, y).unwrap_or(&Terrain::Dirt);
-
-            let idx = terrain.tile();
-            let (bg, fg) = terrain.colors();
-
-            if r.bool(0.05) && *terrain != Terrain::River {
-                cmds.spawn((
-                    Position::new(wpos.0, wpos.1, wpos.2),
-                    Glyph::new(46, Palette::DarkGreen, Palette::Brown).layer(RenderLayer::Actors),
-                    ChildOf(zone_e),
-                    ZoneStatus::Dormant,
-                    CleanupStatePlay,
-                ));
-            }
-
-            // trees
-            cmds.spawn((
-                Position::new(wpos.0, wpos.1, wpos.2),
-                Glyph::idx(idx)
-                    .bg_opt(bg)
-                    .fg1_opt(fg)
-                    .layer(RenderLayer::Ground),
-                ChildOf(zone_e),
-                ZoneStatus::Dormant,
-                CleanupStatePlay,
-            ))
-            .id()
-        });
-
-        EntitySerializer::deserialize(&mut cmds, &e.data.entities, &registry);
-
-        cmds.entity(zone_e).insert(Zone::new(
-            e.data.idx,
-            e.data.terrain.clone(),
-            entities,
-        ));
+        cmds.queue(LoadZoneCommand(*zone_idx));
     }
 }
 

@@ -1,13 +1,14 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
     domain::{
         Player, PlayerMovedEvent, activate_zones_by_player, load_nearby_zones, on_load_zone,
-        on_set_zone_status, on_spawn_zone, on_unload_zone,
+        on_set_zone_status, on_unload_zone,
     },
-    engine::{App, Plugin},
+    engine::{App, Plugin, SerializableComponent},
     rendering::{
         Glyph, Position, RenderLayer, ScreenSize, on_zone_status_change, update_camera,
         update_entity_pos,
@@ -30,7 +31,6 @@ impl Plugin for PlayStatePlugin {
                         load_nearby_zones,
                         update_entity_pos,
                         on_load_zone,
-                        on_spawn_zone,
                         on_unload_zone,
                         on_set_zone_status,
                         on_zone_status_change,
@@ -48,7 +48,7 @@ impl Plugin for PlayStatePlugin {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Serialize, SerializableComponent, Deserialize, Clone)]
 pub struct CleanupStatePlay;
 
 fn spawn_stuff(

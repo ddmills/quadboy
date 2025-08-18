@@ -10,11 +10,11 @@ pub fn derive_serializable_component(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl SerializableComponent for #name {
-            fn to_serializable(&self) -> Box<dyn SerializableValue> {
+            fn to_serializable(&self) -> Box<dyn crate::engine::SerializableValue> {
                 Box::new(self.clone())
             }
 
-            fn from_serializable(value: &dyn SerializableValue, cmds: &mut EntityCommands) {
+            fn from_serializable(value: &dyn crate::engine::SerializableValue, cmds: &mut EntityCommands) {
                 if let Some(component) = value.as_any().downcast_ref::<#name>() {
                     cmds.insert(component.clone());
                 }

@@ -1,10 +1,11 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
     domain::{PlayerDebug, player_input, render_player_debug},
-    engine::{App, Plugin},
+    engine::{App, Plugin, SerializableComponent},
     rendering::{Position, Text},
     states::{GameStatePlugin, cleanup_system},
 };
@@ -25,7 +26,7 @@ impl Plugin for ExploreStatePlugin {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct CleanupStateExplore;
 
 fn render_explore_hud(mut cmds: Commands) {

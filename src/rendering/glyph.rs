@@ -1,4 +1,4 @@
-use crate::engine::{SerializableComponent, SerializableValue};
+use crate::engine::SerializableComponent;
 use crate::{
     cfg::TILE_SIZE_F32,
     common::{MacroquadColorable, Palette},

@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use bevy_ecs::system::RunSystemOnce;
 use serde::{Deserialize, Serialize};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
@@ -195,43 +196,49 @@ impl EntitySerializer {
     }
 
     pub fn deserialize_entity(
-        cmds: &mut Commands,
-        serialized_entity: &SerializedEntity,
-        registry: &SerializableComponentRegistry,
+        world: &mut World,
+        serialized_entity: SerializedEntity,
+        // registry: &SerializableComponentRegistry,
     ) -> Entity {
-        let mut e_cmds = cmds.spawn_empty();
-        let entity = e_cmds.id();
-
-        for component_data in serialized_entity.components.iter() {
-            if let Some(deserializer) = registry.deserializers.get(&component_data.type_name) {
-                match deserializer(&component_data.data) {
-                    Ok(serializable_value) => {
-                        if let Some(inserter) = registry.inserters.get(&component_data.type_name) {
-                            inserter(serializable_value.as_ref(), &mut e_cmds);
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!(
-                            "Failed to deserialize component {}: {}",
-                            component_data.type_name, e
-                        );
-                    }
-                }
-            }
-        }
-
-        entity
+        world
+            .run_system_once_with(deser, serialized_entity)
+            .unwrap()
     }
 
-    pub fn deserialize<T: DeserializableInput>(
-        cmds: &mut Commands,
-        input: &T,
-        registry: &SerializableComponentRegistry,
-    ) -> Vec<Entity> {
+    pub fn deserialize<T: DeserializableInput>(world: &mut World, input: &T) -> Vec<Entity> {
         input
             .get_entities()
             .iter()
-            .map(|d| EntitySerializer::deserialize_entity(cmds, d, registry))
+            .map(|e| EntitySerializer::deserialize_entity(world, e.to_owned().clone()))
             .collect()
     }
+}
+
+fn deser(
+    In(serialized_entity): In<SerializedEntity>,
+    mut cmds: Commands,
+    registry: Res<SerializableComponentRegistry>,
+) -> Entity {
+    let mut e_cmds = cmds.spawn_empty();
+    let entity = e_cmds.id();
+
+    for component_data in serialized_entity.components.iter() {
+        if let Some(deserializer) = registry.deserializers.get(&component_data.type_name) {
+            match deserializer(&component_data.data) {
+                Ok(serializable_value) => {
+                    if let Some(inserter) = registry.inserters.get(&component_data.type_name) {
+                        inserter(serializable_value.as_ref(), &mut e_cmds);
+                    }
+                }
+                Err(e) => {
+                    eprintln!(
+                        "Failed to deserialize component {}: {}",
+                        component_data.type_name, e
+                    );
+                }
+            }
+        }
+    }
+
+    entity
 }

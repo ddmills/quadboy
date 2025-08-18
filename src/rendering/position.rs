@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::domain::{Zone, ZoneStatus};
 use crate::rendering::{world_to_zone_idx, world_to_zone_local};
 
-use crate::engine::{SerializableComponent, SerializableValue};
+use crate::engine::SerializableComponent;
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Position {

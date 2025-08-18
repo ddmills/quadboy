@@ -75,7 +75,7 @@ impl Text {
                     in_flags = false;
 
                     let mut seq = PaletteSequence::new(seq_setting.clone());
-                    let glyphs = seq.apply_to(seq_value.clone(), &self);
+                    let glyphs = seq.apply_to(seq_value.clone(), self);
 
                     seq_setting = String::new();
                     seq_value = String::new();
