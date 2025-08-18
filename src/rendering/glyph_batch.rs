@@ -134,7 +134,7 @@ impl GlyphBatch {
 
     pub fn add(&mut self, r: Renderable) {
         if self.size >= self.max_size {
-            trace!("LIMIT REACHED {}", self.size);
+            trace!("GlyphBatch limit reached {}", self.size);
             return;
         }
 

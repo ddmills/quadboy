@@ -1,5 +1,5 @@
 use bevy_ecs::system::{Res, ResMut};
-use macroquad::{input::KeyCode, prelude::trace};
+use macroquad::input::KeyCode;
 
 use crate::{
     engine::{KeyInput, Plugin},
@@ -18,7 +18,6 @@ impl Plugin for PauseStatePlugin {
 
 fn listen_for_inputs(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
     if keys.is_pressed(KeyCode::P) {
-        trace!("leave pause");
         game_state.next = GameState::Explore;
     }
 }

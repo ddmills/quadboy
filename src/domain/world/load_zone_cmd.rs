@@ -16,8 +16,6 @@ impl Command<Result> for LoadZoneCommand {
     fn apply(self, world: &mut World) -> Result {
         let zone_idx = self.0;
 
-        trace!("Loading zone: {}", zone_idx);
-
         // Check if zone is already loaded
         let mut q_zones = world.query::<&Zone>();
         if q_zones.iter(world).any(|zone| zone.idx == zone_idx) {
@@ -26,10 +24,6 @@ impl Command<Result> for LoadZoneCommand {
 
         // Try to load from save data, or generate new zone
         let Some(zone_data) = try_load_zone(zone_idx) else {
-            trace!(
-                "No save data found for zone {}, generating new zone",
-                zone_idx
-            );
             gen_zone(world, zone_idx);
             return Ok(());
         };
@@ -64,7 +58,6 @@ impl Command<Result> for LoadZoneCommand {
             .entity_mut(zone_entity_id)
             .insert(Zone::new(zone_data.idx, zone_data.terrain));
 
-        trace!("Successfully loaded zone: {}", zone_idx);
         Ok(())
     }
 }
