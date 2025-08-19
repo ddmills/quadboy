@@ -121,6 +121,6 @@ pub fn render_player_debug(
 
     debug.value = format!(
         "{},{},{} ({},{},{} {{Y|{}}}) [{},{}]",
-        position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx, cursor.local.0, cursor.local.1
+        position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx, cursor.world.0.floor(), cursor.world.1.floor()
     );
 }

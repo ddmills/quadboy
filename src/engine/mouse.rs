@@ -1,8 +1,10 @@
+use std::alloc::Layout;
+
 use bevy_ecs::prelude::*;
 use macroquad::input::mouse_position;
 use macroquad::prelude::*;
 
-use crate::{cfg::{MAP_SIZE, TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE}, rendering::{GameCamera, ScreenSize}};
+use crate::{cfg::{MAP_SIZE, TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE}, rendering::{GameCamera, ScreenSize}, ui::UiLayout};
 
 #[derive(Resource, Default)]
 pub struct Mouse {
@@ -29,6 +31,7 @@ pub fn update_mouse(
     mut cursor: ResMut<Mouse>,
     screen: Res<ScreenSize>,
     camera: Res<GameCamera>,
+    layout: Res<UiLayout>,
 ) {
     let target_size = (
         (screen.tile_w * TILE_SIZE.0) as u32,
@@ -64,8 +67,8 @@ pub fn update_mouse(
     );
 
     let world = (
-        (camera.x + local.0).clamp(0., (MAP_SIZE.0 * ZONE_SIZE.0 - 1) as f32 + 0.99),
-        (camera.y + local.1).clamp(0., (MAP_SIZE.1 * ZONE_SIZE.1 - 1) as f32 + 0.99),
+        (camera.x + local.0 - layout.game_panel.x as f32).clamp(0., (MAP_SIZE.0 * ZONE_SIZE.0 - 1) as f32 + 0.99),
+        (camera.y + local.1 - layout.game_panel.y as f32).clamp(0., (MAP_SIZE.1 * ZONE_SIZE.1 - 1) as f32 + 0.99),
     );
 
     cursor.px = px;
