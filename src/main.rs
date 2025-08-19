@@ -14,12 +14,10 @@ use ui::UiLayout;
 use crate::{
     cfg::WINDOW_SIZE,
     domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones},
-    engine::{App, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
-    rendering::{CrtShader, Glyph, TrackZone, update_visibility},
+    engine::{update_mouse, App, Mouse, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
+    rendering::{update_visibility, CrtShader, Glyph, TrackZone},
     states::{
-        CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
-        ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin,
-        update_app_states, update_game_states,
+        update_app_states, update_game_states, CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin
     },
 };
 
@@ -72,6 +70,7 @@ async fn main() {
         .register_event::<PlayerMovedEvent>()
         .insert_resource(tilesets)
         .insert_resource(reg)
+        .init_resource::<Mouse>()
         .init_resource::<ScreenSize>()
         .init_resource::<Time>()
         .init_resource::<RenderTargets>()
@@ -86,7 +85,13 @@ async fn main() {
         .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
         .add_systems(
             ScheduleType::Update,
-            (update_screen_size, render_fps, render_text, render_glyphs),
+            (
+                update_screen_size,
+                update_mouse,
+                render_fps,
+                render_text,
+                render_glyphs
+            ),
         )
         .add_systems(ScheduleType::PostUpdate, update_visibility)
         .add_systems(

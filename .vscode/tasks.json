@@ -4,17 +4,26 @@
         {
             "label": "cargo run",
             "type": "shell",
-            "command": "~/.cargo/bin/cargo", // note: full path to the cargo
-            "args": [
-                "run",
-                // "--release",
-                // "--",
-                // "arg1"
-            ],
+            "command": "cargo",
+            "args": ["run"],
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "options": {
+                "env": {
+                    "RUST_BACKTRACE": "1"
+                }
+            },
+            "problemMatcher": ["$rustc"]
         }
     ]
 }

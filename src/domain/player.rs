@@ -4,8 +4,8 @@ use macroquad::input::KeyCode;
 use crate::{
     cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE},
     common::Palette,
-    engine::{InputRate, KeyInput, Time},
-    rendering::{Glyph, Position, RenderLayer, Text, TrackZone, zone_xyz},
+    engine::{Mouse, InputRate, KeyInput, Time},
+    rendering::{zone_xyz, Glyph, Position, RenderLayer, Text, TrackZone},
     states::{AppState, CleanupStatePlay, CurrentAppState, CurrentGameState, GameState},
 };
 
@@ -112,6 +112,7 @@ pub struct PlayerDebug;
 pub fn render_player_debug(
     q_player: Query<&Position, With<Player>>,
     mut q_debug: Query<&mut Text, With<PlayerDebug>>,
+    cursor: Res<Mouse>,
 ) {
     let position = q_player.single().unwrap();
     let mut debug = q_debug.single_mut().unwrap();
@@ -119,7 +120,7 @@ pub fn render_player_debug(
     let zone_pos = zone_xyz(zone_idx);
 
     debug.value = format!(
-        "{},{},{} ({},{},{} {{Y|{}}})",
-        position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx
+        "{},{},{} ({},{},{} {{Y|{}}}) [{},{}]",
+        position.x, position.y, position.z, zone_pos.0, zone_pos.1, zone_pos.2, zone_idx, cursor.local.0, cursor.local.1
     );
 }
