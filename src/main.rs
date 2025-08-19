@@ -7,13 +7,15 @@ use macroquad::{
 };
 use rendering::{
     GameCamera, Layers, Position, RenderTargets, ScreenSize, Text, load_tilesets, render_all,
-    render_glyphs, render_text, update_screen_size,
+    render_glyphs, render_text, update_crt_uniforms, update_screen_size,
 };
 use ui::UiLayout;
 
 use crate::{
     cfg::WINDOW_SIZE,
-    domain::{GameSettings, LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones},
+    domain::{
+        GameSettings, LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones,
+    },
     engine::{
         App, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
         update_mouse,
@@ -94,6 +96,7 @@ async fn main() {
             (
                 update_screen_size,
                 update_mouse,
+                update_crt_uniforms,
                 render_fps,
                 render_text,
                 render_glyphs,

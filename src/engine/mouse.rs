@@ -1,4 +1,3 @@
-
 use bevy_ecs::prelude::*;
 use macroquad::input::mouse_position;
 use macroquad::prelude::*;

@@ -1,5 +1,5 @@
-use bevy_ecs::prelude::*;
 use crate::rendering::{CameraMode, CrtCurvature};
+use bevy_ecs::prelude::*;
 
 #[derive(Resource, Clone)]
 pub struct GameSettings {

@@ -4,7 +4,6 @@ use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 use crate::{
     cfg::{TEXEL_SIZE_F32, TILE_SIZE},
     common::{MacroquadColorable, Palette},
-    domain::GameSettings,
     rendering::CrtShader,
 };
 
@@ -49,7 +48,6 @@ pub fn render_all(
     mut ren: ResMut<RenderTargets>,
     screen: Res<ScreenSize>,
     crt: Res<CrtShader>,
-    settings: Res<GameSettings>,
 ) {
     telemetry::begin_zone("render_all");
     let target_size = uvec2(
@@ -80,22 +78,6 @@ pub fn render_all(
     crt.mat.set_uniform("u_time", get_time() as f32);
     crt.mat
         .set_uniform("u_resolution", vec2(dest_size.x, dest_size.y));
-
-    let curve_values = settings.crt_curvature.get_values();
-    crt.mat
-        .set_uniform("u_crt_curve", vec2(curve_values.0, curve_values.1));
-    crt.mat
-        .set_uniform("u_crt", if settings.crt_curvature.is_enabled() { 1 } else { 0 });
-    crt.mat
-        .set_uniform("u_scanline", if settings.crt_scanline { 1 } else { 0 });
-    crt.mat
-        .set_uniform("u_film_grain", if settings.crt_film_grain { 1 } else { 0 });
-    crt.mat
-        .set_uniform("u_flicker", if settings.crt_flicker { 1 } else { 0 });
-    crt.mat
-        .set_uniform("u_vignette", if settings.crt_vignette { 1 } else { 0 });
-    crt.mat
-        .set_uniform("u_chromatic_ab", if settings.crt_chromatic_ab { 1 } else { 0 });
 
     gl_use_material(&crt.mat);
 

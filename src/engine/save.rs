@@ -9,9 +9,7 @@ use web_sys;
 
 use macroquad::prelude::{error, warn};
 
-use crate::{
-    domain::ZoneSaveData,
-};
+use crate::domain::ZoneSaveData;
 
 pub fn save_zone(zone: &ZoneSaveData, save_name: &str) {
     let Ok(save_data) = serde_json::to_string(zone) else {
@@ -96,7 +94,6 @@ fn read(file_path: &String) -> Option<String> {
 }
 
 pub fn delete_save(save_name: &str) {
-
     #[cfg(not(target_arch = "wasm32"))]
     {
         let save_path = format!("saves/{}", save_name);

@@ -1,5 +1,7 @@
-use bevy_ecs::resource::Resource;
+use bevy_ecs::{prelude::*, system::ResMut};
 use macroquad::prelude::*;
+
+use crate::domain::GameSettings;
 
 #[derive(Debug, Clone, Copy)]
 pub enum CrtCurvature {
@@ -71,5 +73,33 @@ impl Default for CrtShader {
         .unwrap();
 
         CrtShader { mat }
+    }
+}
+
+pub fn update_crt_uniforms(crt: ResMut<CrtShader>, settings: Res<GameSettings>) {
+    if settings.is_changed() {
+        let curve_values = settings.crt_curvature.get_values();
+        crt.mat
+            .set_uniform("u_crt_curve", vec2(curve_values.0, curve_values.1));
+        crt.mat.set_uniform(
+            "u_crt",
+            if settings.crt_curvature.is_enabled() {
+                1
+            } else {
+                0
+            },
+        );
+        crt.mat
+            .set_uniform("u_scanline", if settings.crt_scanline { 1 } else { 0 });
+        crt.mat
+            .set_uniform("u_film_grain", if settings.crt_film_grain { 1 } else { 0 });
+        crt.mat
+            .set_uniform("u_flicker", if settings.crt_flicker { 1 } else { 0 });
+        crt.mat
+            .set_uniform("u_vignette", if settings.crt_vignette { 1 } else { 0 });
+        crt.mat.set_uniform(
+            "u_chromatic_ab",
+            if settings.crt_chromatic_ab { 1 } else { 0 },
+        );
     }
 }
