@@ -1,11 +1,11 @@
-use std::alloc::Layout;
 
 use bevy_ecs::prelude::*;
 use macroquad::input::mouse_position;
 use macroquad::prelude::*;
 
 use crate::{
-    cfg::{CRT_CURVATURE, MAP_SIZE, TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE},
+    cfg::{MAP_SIZE, TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE},
+    domain::GameSettings,
     rendering::{GameCamera, ScreenSize},
     ui::UiLayout,
 };
@@ -18,12 +18,12 @@ pub struct Mouse {
     pub uv: (f32, f32),
 }
 
-fn crt_curve_uv(uv: (f32, f32)) -> (f32, f32) {
-    if !CRT_CURVATURE.is_enabled() {
+fn crt_curve_uv(uv: (f32, f32), crt_curvature: &crate::rendering::CrtCurvature) -> (f32, f32) {
+    if !crt_curvature.is_enabled() {
         return uv;
     }
 
-    let curve_values = CRT_CURVATURE.get_values();
+    let curve_values = crt_curvature.get_values();
     let curvature = Vec2::new(curve_values.0, curve_values.1);
     let input = Vec2::new(uv.0, uv.1);
     let mut out = input * 2.0 - 1.0;
@@ -38,6 +38,7 @@ pub fn update_mouse(
     screen: Res<ScreenSize>,
     camera: Res<GameCamera>,
     layout: Res<UiLayout>,
+    settings: Res<GameSettings>,
 ) {
     let target_size = (
         (screen.tile_w * TILE_SIZE.0) as u32,
@@ -59,7 +60,7 @@ pub fn update_mouse(
         (px_flat.0 as f32 / target_size.0 as f32).clamp(0., 1.),
         (px_flat.1 as f32 / target_size.1 as f32).clamp(0., 1.),
     );
-    let uv = crt_curve_uv(flat_uv);
+    let uv = crt_curve_uv(flat_uv, &settings.crt_curvature);
 
     let px = (
         (uv.0 * target_size.0 as f32) as usize,

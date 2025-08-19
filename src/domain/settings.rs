@@ -1,0 +1,35 @@
+use bevy_ecs::prelude::*;
+use crate::rendering::{CameraMode, CrtCurvature};
+
+#[derive(Resource, Clone)]
+pub struct GameSettings {
+    pub input_rate: f64,
+    pub input_initial_delay: f64,
+    pub enable_saves: bool,
+    pub save_name: String,
+    pub camera_mode: CameraMode,
+    pub crt_curvature: CrtCurvature,
+    pub crt_scanline: bool,
+    pub crt_film_grain: bool,
+    pub crt_flicker: bool,
+    pub crt_vignette: bool,
+    pub crt_chromatic_ab: bool,
+}
+
+impl Default for GameSettings {
+    fn default() -> Self {
+        Self {
+            input_rate: 0.035,
+            input_initial_delay: 0.15,
+            enable_saves: true,
+            save_name: "test".to_string(),
+            camera_mode: CameraMode::Smooth(0.04),
+            crt_curvature: CrtCurvature::Curve(9.0, 7.0),
+            crt_scanline: true,
+            crt_film_grain: true,
+            crt_flicker: true,
+            crt_vignette: true,
+            crt_chromatic_ab: true,
+        }
+    }
+}

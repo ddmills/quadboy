@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
-    cfg::SAVE_NAME,
+    domain::GameSettings,
     engine::{App, ExitAppEvent, KeyInput, Plugin, delete_save},
     rendering::{Position, Text},
     states::{AppState, AppStatePlugin, CurrentAppState, cleanup_system},
@@ -60,9 +60,12 @@ fn main_menu_input(
     keys: Res<KeyInput>,
     mut state: ResMut<CurrentAppState>,
     mut e_exit_app: EventWriter<ExitAppEvent>,
+    settings: Res<GameSettings>,
 ) {
     if keys.is_pressed(KeyCode::N) {
-        delete_save(SAVE_NAME);
+        if settings.enable_saves {
+            delete_save(&settings.save_name);
+        }
         state.next = AppState::Play;
     }
 

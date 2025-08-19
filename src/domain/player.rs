@@ -2,8 +2,9 @@ use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
 
 use crate::{
-    cfg::{INPUT_INITIAL_DELAY, INPUT_RATE, MAP_SIZE, ZONE_SIZE},
+    cfg::{MAP_SIZE, ZONE_SIZE},
     common::Palette,
+    domain::GameSettings,
     engine::{InputRate, KeyInput, Mouse, Time},
     rendering::{Glyph, Position, RenderLayer, Text, TrackZone, zone_xyz},
     states::{AppState, CleanupStatePlay, CurrentAppState, CurrentGameState, GameState},
@@ -28,10 +29,11 @@ pub fn player_input(
     mut e_player_moved: EventWriter<PlayerMovedEvent>,
     mut app_state: ResMut<CurrentAppState>,
     mut game_state: ResMut<CurrentGameState>,
+    settings: Res<GameSettings>,
 ) {
     let now = time.elapsed;
-    let rate = INPUT_RATE;
-    let delay = INPUT_INITIAL_DELAY;
+    let rate = settings.input_rate;
+    let delay = settings.input_initial_delay;
     let mut position = q_player.single_mut().unwrap();
     let mut moved = false;
     let (x, y, z) = position.world();

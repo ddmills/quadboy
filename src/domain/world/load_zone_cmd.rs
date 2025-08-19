@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     cfg::ZONE_SIZE,
     common::Grid,
-    domain::{Terrain, Zone, gen_zone},
+    domain::{GameSettings, Terrain, Zone, gen_zone},
     engine::{EntitySerializer, try_load_zone},
     rendering::{Glyph, Position, RenderLayer, zone_local_to_world},
     states::CleanupStatePlay,
@@ -22,7 +22,19 @@ impl Command<Result> for LoadZoneCommand {
         }
 
         // Try to load from save data, or generate new zone
-        let Some(zone_data) = try_load_zone(zone_idx) else {
+        let zone_data = {
+            let Some(settings) = world.get_resource::<GameSettings>() else {
+                return Err("GameSettings resource not found".into());
+            };
+
+            if settings.enable_saves {
+                try_load_zone(zone_idx, &settings.save_name)
+            } else {
+                None
+            }
+        };
+
+        let Some(zone_data) = zone_data else {
             gen_zone(world, zone_idx);
             return Ok(());
         };

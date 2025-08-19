@@ -10,15 +10,10 @@ use web_sys;
 use macroquad::prelude::{error, warn};
 
 use crate::{
-    cfg::{ENABLE_SAVES, SAVE_NAME},
     domain::ZoneSaveData,
 };
 
-pub fn save_zone(zone: &ZoneSaveData) {
-    if !ENABLE_SAVES {
-        return;
-    }
-
+pub fn save_zone(zone: &ZoneSaveData, save_name: &str) {
     let Ok(save_data) = serde_json::to_string(zone) else {
         error!("could not save zone!");
         return;
@@ -26,11 +21,11 @@ pub fn save_zone(zone: &ZoneSaveData) {
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        fs::create_dir_all(format!("saves/{}", SAVE_NAME))
+        fs::create_dir_all(format!("saves/{}", save_name))
             .expect("Error while creating save directory");
     }
 
-    let file_path = format!("saves/{}/zone-{}.json", SAVE_NAME, zone.idx);
+    let file_path = format!("saves/{}/zone-{}.json", save_name, zone.idx);
 
     store(file_path, save_data);
 }
@@ -69,12 +64,8 @@ fn store(file_path: String, data: String) {
     }
 }
 
-pub fn try_load_zone(zone_idx: usize) -> Option<ZoneSaveData> {
-    if !ENABLE_SAVES {
-        return None;
-    }
-
-    let file_path = format!("saves/{}/zone-{}.json", SAVE_NAME, zone_idx);
+pub fn try_load_zone(zone_idx: usize, save_name: &str) -> Option<ZoneSaveData> {
+    let file_path = format!("saves/{}/zone-{}.json", save_name, zone_idx);
     let contents = read(&file_path)?;
 
     let Ok(zone) = serde_json::from_str::<ZoneSaveData>(&contents) else {
@@ -105,9 +96,6 @@ fn read(file_path: &String) -> Option<String> {
 }
 
 pub fn delete_save(save_name: &str) {
-    if !ENABLE_SAVES {
-        return;
-    }
 
     #[cfg(not(target_arch = "wasm32"))]
     {

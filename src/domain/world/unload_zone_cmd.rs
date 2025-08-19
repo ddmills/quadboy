@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::Zone,
+    domain::{GameSettings, Zone},
     engine::{EntitySerializer, SerializableComponentRegistry, save_zone},
 };
 
@@ -36,7 +36,13 @@ impl Command<Result> for UnloadZoneCommand {
         let mut zone_save = zone.to_save();
         zone_save.entities = ent_data;
 
-        save_zone(&zone_save);
+        let Some(settings) = world.get_resource::<GameSettings>() else {
+            return Err("GameSettings resource not found".into());
+        };
+
+        if settings.enable_saves {
+            save_zone(&zone_save, &settings.save_name);
+        }
 
         world.despawn(zone_e);
 

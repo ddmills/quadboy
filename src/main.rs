@@ -13,7 +13,7 @@ use ui::UiLayout;
 
 use crate::{
     cfg::WINDOW_SIZE,
-    domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones},
+    domain::{GameSettings, LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones},
     engine::{
         App, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
         update_mouse,
@@ -87,6 +87,7 @@ async fn main() {
         .init_resource::<UiLayout>()
         .init_resource::<CrtShader>()
         .init_resource::<Zones>()
+        .init_resource::<GameSettings>()
         .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
         .add_systems(
             ScheduleType::Update,

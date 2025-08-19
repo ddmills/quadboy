@@ -2,8 +2,8 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
 use crate::{
-    cfg::{CAMERA_MODE, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32},
-    domain::Player,
+    cfg::{TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32},
+    domain::{GameSettings, Player},
     engine::Time,
     rendering::{
         Position, get_screen_size_texels, world_to_zone_local, zone_center_world,
@@ -51,6 +51,7 @@ pub fn update_camera(
     mut camera: ResMut<GameCamera>,
     q_player: Query<&Position, With<Player>>,
     time: Res<Time>,
+    settings: Res<GameSettings>,
 ) {
     let player = q_player.single().unwrap();
     let a = time.overstep_fraction();
@@ -120,7 +121,7 @@ pub fn update_camera(
     let mode = if camera_pos.distance_squared(target) < 0.001 {
         CameraMode::Snap
     } else {
-        CAMERA_MODE
+        settings.camera_mode
     };
 
     match mode {
