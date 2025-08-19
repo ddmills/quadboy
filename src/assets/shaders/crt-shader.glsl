@@ -14,6 +14,7 @@ uniform int u_scanline;
 uniform int u_film_grain;
 uniform int u_flicker;
 uniform int u_vignette;
+uniform int u_chromatic_ab;
 
 vec2 CRTCurveUV(vec2 uv) {
     uv = uv * 2.0 - 1.0;
@@ -135,9 +136,13 @@ void main() {
         discard;
     }
 
-    // float separation = 0.001;
-    float separation = 0.0; // TODO: this needs to be pixel based. need to have a uniform for screen size
-    vec3 texColor = DrawRGBSeparation(Texture, crtUV, separation);
+    vec3 texColor;
+    if(u_chromatic_ab != 0) {
+        float separation = 1.0 / u_resolution.x;
+        texColor = DrawRGBSeparation(Texture, crtUV, separation);
+    } else {
+        texColor = texture2D(Texture, crtUV).rgb;
+    }
     vec4 tex = vec4(texColor, texture2D(Texture, crtUV).a);
 
     if(tex.a == 0.0) {
