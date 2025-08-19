@@ -1,5 +1,4 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 use crate::{
     cfg::ZONE_SIZE,
