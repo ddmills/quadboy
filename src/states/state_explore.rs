@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
-    domain::{player_input, render_player_debug, PlayerDebug},
+    domain::{PlayerDebug, player_input, render_player_debug},
     engine::{App, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Position, RenderLayer, Text},
-    states::{cleanup_system, GameStatePlugin},
+    states::{GameStatePlugin, cleanup_system},
 };
 
 use super::GameState;
@@ -85,10 +85,7 @@ fn on_leave_explore() {
 #[derive(Component)]
 struct CursorGlyph;
 
-fn render_cursor(
-    mouse: Res<Mouse>,
-    mut q_cursor: Query<&mut Position, With<CursorGlyph>>
-) {
+fn render_cursor(mouse: Res<Mouse>, mut q_cursor: Query<&mut Position, With<CursorGlyph>>) {
     let Ok(mut cursor) = q_cursor.single_mut() else {
         return;
     };

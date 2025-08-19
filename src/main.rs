@@ -14,10 +14,15 @@ use ui::UiLayout;
 use crate::{
     cfg::WINDOW_SIZE,
     domain::{LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones},
-    engine::{update_mouse, App, Mouse, ExitAppPlugin, FpsDisplay, ScheduleType, SerializableComponentRegistry},
-    rendering::{update_visibility, CrtShader, Glyph, TrackZone},
+    engine::{
+        App, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
+        update_mouse,
+    },
+    rendering::{CrtShader, Glyph, TrackZone, update_visibility},
     states::{
-        update_app_states, update_game_states, CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState, ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin
+        CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
+        ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin,
+        update_app_states, update_game_states,
     },
 };
 
@@ -90,7 +95,7 @@ async fn main() {
                 update_mouse,
                 render_fps,
                 render_text,
-                render_glyphs
+                render_glyphs,
             ),
         )
         .add_systems(ScheduleType::PostUpdate, update_visibility)

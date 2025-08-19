@@ -1,6 +1,25 @@
 use bevy_ecs::resource::Resource;
 use macroquad::prelude::*;
 
+#[derive(Debug, Clone, Copy)]
+pub enum CrtCurvature {
+    Off,
+    Curve(f32, f32),
+}
+
+impl CrtCurvature {
+    pub fn is_enabled(&self) -> bool {
+        !matches!(self, CrtCurvature::Off)
+    }
+
+    pub fn get_values(&self) -> (f32, f32) {
+        match self {
+            CrtCurvature::Off => (0.0, 0.0),
+            CrtCurvature::Curve(x, y) => (*x, *y),
+        }
+    }
+}
+
 const CRT_FRAGMENT_SHADER: &str = include_str!("../assets/shaders/crt-shader.glsl");
 const CRT_VERTEX_SHADER: &str = "#version 100
 precision highp float;
@@ -36,8 +55,14 @@ impl Default for CrtShader {
             },
             MaterialParams {
                 uniforms: vec![
-                    UniformDesc::new("iResolution", UniformType::Float2),
-                    UniformDesc::new("iTime", UniformType::Float1),
+                    UniformDesc::new("u_resolution", UniformType::Float2),
+                    UniformDesc::new("u_time", UniformType::Float1),
+                    UniformDesc::new("u_crt_curve", UniformType::Float2),
+                    UniformDesc::new("u_crt", UniformType::Int1),
+                    UniformDesc::new("u_scanline", UniformType::Int1),
+                    UniformDesc::new("u_film_grain", UniformType::Int1),
+                    UniformDesc::new("u_flicker", UniformType::Int1),
+                    UniformDesc::new("u_vignette", UniformType::Int1),
                 ],
                 ..Default::default()
             },

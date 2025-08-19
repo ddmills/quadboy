@@ -2,7 +2,10 @@ use bevy_ecs::prelude::*;
 use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 
 use crate::{
-    cfg::{TEXEL_SIZE_F32, TILE_SIZE},
+    cfg::{
+        CRT_CURVATURE, CRT_FILM_GRAIN, CRT_FLICKER, CRT_SCANLINE, CRT_VIGNETTE, TEXEL_SIZE_F32,
+        TILE_SIZE,
+    },
     common::{MacroquadColorable, Palette},
     rendering::CrtShader,
 };
@@ -75,9 +78,24 @@ pub fn render_all(
     // draw final texture as double size
     let dest_size: macroquad::prelude::Vec2 = target_size.as_vec2() * TEXEL_SIZE_F32;
 
-    crt.mat.set_uniform("iTime", get_time() as f32);
+    crt.mat.set_uniform("u_time", get_time() as f32);
     crt.mat
-        .set_uniform("iResolution", (dest_size.x, dest_size.y));
+        .set_uniform("u_resolution", vec2(dest_size.x, dest_size.y));
+
+    let curve_values = CRT_CURVATURE.get_values();
+    crt.mat
+        .set_uniform("u_crt_curve", vec2(curve_values.0, curve_values.1));
+    crt.mat
+        .set_uniform("u_crt", if CRT_CURVATURE.is_enabled() { 1 } else { 0 });
+    crt.mat
+        .set_uniform("u_scanline", if CRT_SCANLINE { 1 } else { 0 });
+    crt.mat
+        .set_uniform("u_film_grain", if CRT_FILM_GRAIN { 1 } else { 0 });
+    crt.mat
+        .set_uniform("u_flicker", if CRT_FLICKER { 1 } else { 0 });
+    crt.mat
+        .set_uniform("u_vignette", if CRT_VIGNETTE { 1 } else { 0 });
+
     gl_use_material(&crt.mat);
 
     let x = (screen.width - target_size.x) as f32;

@@ -4,7 +4,11 @@ use bevy_ecs::prelude::*;
 use macroquad::input::mouse_position;
 use macroquad::prelude::*;
 
-use crate::{cfg::{MAP_SIZE, TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE}, rendering::{GameCamera, ScreenSize}, ui::UiLayout};
+use crate::{
+    cfg::{CRT_CURVATURE, MAP_SIZE, TEXEL_SIZE_F32, TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE},
+    rendering::{GameCamera, ScreenSize},
+    ui::UiLayout,
+};
 
 #[derive(Resource, Default)]
 pub struct Mouse {
@@ -15,16 +19,18 @@ pub struct Mouse {
 }
 
 fn crt_curve_uv(uv: (f32, f32)) -> (f32, f32) {
-    let curvature = Vec2::new(9.0, 9.0);
+    if !CRT_CURVATURE.is_enabled() {
+        return uv;
+    }
+
+    let curve_values = CRT_CURVATURE.get_values();
+    let curvature = Vec2::new(curve_values.0, curve_values.1);
     let input = Vec2::new(uv.0, uv.1);
     let mut out = input * 2.0 - 1.0;
     let offset = out.yx().abs() / curvature;
     out = out + out * offset * offset;
     out = out * 0.5 + 0.5;
-    (
-        out.x.clamp(0., 1.),
-        out.y.clamp(0., 1.),
-    )
+    (out.x.clamp(0., 1.), out.y.clamp(0., 1.))
 }
 
 pub fn update_mouse(
@@ -38,16 +44,15 @@ pub fn update_mouse(
         (screen.tile_h * TILE_SIZE.1) as u32,
     );
 
-    let screen_offset = (
-        screen.width - target_size.0,
-        screen.height - target_size.1,
-    );
+    let screen_offset = (screen.width - target_size.0, screen.height - target_size.1);
 
     let mouse = mouse_position();
 
     let px_flat = (
-        ((mouse.0 - screen_offset.0 as f32) / TEXEL_SIZE_F32).clamp(0., target_size.0 as f32) as usize,
-        ((mouse.1 - screen_offset.1 as f32) / TEXEL_SIZE_F32).clamp(0., target_size.1 as f32) as usize,
+        ((mouse.0 - screen_offset.0 as f32) / TEXEL_SIZE_F32).clamp(0., target_size.0 as f32)
+            as usize,
+        ((mouse.1 - screen_offset.1 as f32) / TEXEL_SIZE_F32).clamp(0., target_size.1 as f32)
+            as usize,
     );
 
     let flat_uv = (
@@ -67,8 +72,10 @@ pub fn update_mouse(
     );
 
     let world = (
-        (camera.x + local.0 - layout.game_panel.x as f32).clamp(0., (MAP_SIZE.0 * ZONE_SIZE.0 - 1) as f32 + 0.99),
-        (camera.y + local.1 - layout.game_panel.y as f32).clamp(0., (MAP_SIZE.1 * ZONE_SIZE.1 - 1) as f32 + 0.99),
+        (camera.x + local.0 - layout.game_panel.x as f32)
+            .clamp(0., (MAP_SIZE.0 * ZONE_SIZE.0 - 1) as f32 + 0.99),
+        (camera.y + local.1 - layout.game_panel.y as f32)
+            .clamp(0., (MAP_SIZE.1 * ZONE_SIZE.1 - 1) as f32 + 0.99),
     );
 
     cursor.px = px;

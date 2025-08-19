@@ -1,4 +1,4 @@
-use crate::rendering::CameraMode;
+use crate::rendering::{CameraMode, CrtCurvature};
 
 pub const TILE_SIZE: (usize, usize) = (16, 24);
 pub const TILE_SIZE_F32: (f32, f32) = (TILE_SIZE.0 as f32, TILE_SIZE.1 as f32);
@@ -22,3 +22,9 @@ pub const ENABLE_SAVES: bool = true;
 pub const SAVE_NAME: &str = "test";
 
 pub const CAMERA_MODE: CameraMode = CameraMode::Smooth(0.04);
+
+pub const CRT_CURVATURE: CrtCurvature = CrtCurvature::Curve(9.0, 7.0);
+pub const CRT_SCANLINE: bool = true;
+pub const CRT_FILM_GRAIN: bool = true;
+pub const CRT_FLICKER: bool = true;
+pub const CRT_VIGNETTE: bool = true;
