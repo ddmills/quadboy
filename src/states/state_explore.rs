@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
-    domain::{PlayerDebug, player_input, render_player_debug},
-    engine::{App, Plugin, SerializableComponent},
-    rendering::{Position, Text},
-    states::{GameStatePlugin, cleanup_system},
+    domain::{player_input, render_player_debug, PlayerDebug},
+    engine::{App, Mouse, Plugin, SerializableComponent},
+    rendering::{Glyph, Position, RenderLayer, Text},
+    states::{cleanup_system, GameStatePlugin},
 };
 
 use super::GameState;
@@ -17,8 +17,8 @@ pub struct ExploreStatePlugin;
 impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Explore)
-            .on_enter(app, render_explore_hud)
-            .on_update(app, (player_input, render_player_debug))
+            .on_enter(app, on_enter_explore)
+            .on_update(app, (player_input, render_player_debug, render_cursor))
             .on_leave(
                 app,
                 (on_leave_explore, cleanup_system::<CleanupStateExplore>).chain(),
@@ -29,13 +29,22 @@ impl Plugin for ExploreStatePlugin {
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct CleanupStateExplore;
 
-fn render_explore_hud(mut cmds: Commands) {
+fn on_enter_explore(mut cmds: Commands) {
     trace!("EnterGameState::<Explore>");
 
     cmds.spawn((
         Text::new("123").bg(Palette::Black),
         Position::new_f32(6., 0., 0.),
         PlayerDebug,
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
+        Glyph::new(0, Palette::Orange, Palette::Orange)
+            .bg(Palette::Orange)
+            .layer(RenderLayer::Actors),
+        Position::new_f32(0., 0., 0.),
+        CursorGlyph,
         CleanupStateExplore,
     ));
 
@@ -71,4 +80,19 @@ fn render_explore_hud(mut cmds: Commands) {
 
 fn on_leave_explore() {
     trace!("LeaveGameState::<Explore>");
+}
+
+#[derive(Component)]
+struct CursorGlyph;
+
+fn render_cursor(
+    mouse: Res<Mouse>,
+    mut q_cursor: Query<&mut Position, With<CursorGlyph>>
+) {
+    let Ok(mut cursor) = q_cursor.single_mut() else {
+        return;
+    };
+
+    cursor.x = mouse.world.0.floor();
+    cursor.y = mouse.world.1.floor();
 }
