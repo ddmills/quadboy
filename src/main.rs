@@ -14,7 +14,8 @@ use ui::UiLayout;
 use crate::{
     cfg::WINDOW_SIZE,
     domain::{
-        GameSettings, LoadZoneEvent, PlayerMovedEvent, SetZoneStatusEvent, UnloadZoneEvent, Zones,
+        GameSettings, LoadGameResult, LoadZoneEvent, NewGameResult, PlayerMovedEvent,
+        SaveGameResult, SetZoneStatusEvent, UnloadZoneEvent, Zones,
     },
     engine::{
         App, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -23,8 +24,9 @@ use crate::{
     rendering::{CrtShader, Glyph, TrackZone, update_visibility},
     states::{
         CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
-        ExploreStatePlugin, MainMenuStatePlugin, PauseStatePlugin, PlayStatePlugin,
-        update_app_states, update_game_states,
+        ExploreStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin,
+        PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin, update_app_states,
+        update_game_states,
     },
 };
 
@@ -68,13 +70,19 @@ async fn main() {
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)
+        .add_plugin(SettingsStatePlugin)
         .add_plugin(PlayStatePlugin)
+        .add_plugin(NewGameStatePlugin)
+        .add_plugin(LoadGameStatePlugin)
         .add_plugin(ExploreStatePlugin)
         .add_plugin(PauseStatePlugin)
+        .register_event::<LoadGameResult>()
         .register_event::<LoadZoneEvent>()
+        .register_event::<NewGameResult>()
         .register_event::<UnloadZoneEvent>()
         .register_event::<SetZoneStatusEvent>()
         .register_event::<PlayerMovedEvent>()
+        .register_event::<SaveGameResult>()
         .insert_resource(tilesets)
         .insert_resource(reg)
         .init_resource::<Mouse>()

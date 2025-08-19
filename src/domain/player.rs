@@ -7,7 +7,7 @@ use crate::{
     domain::GameSettings,
     engine::{InputRate, KeyInput, Mouse, Time},
     rendering::{Glyph, Position, RenderLayer, Text, TrackZone, zone_xyz},
-    states::{AppState, CleanupStatePlay, CurrentAppState, CurrentGameState, GameState},
+    states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
 #[derive(Component)]
@@ -27,7 +27,6 @@ pub fn player_input(
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
     mut e_player_moved: EventWriter<PlayerMovedEvent>,
-    mut app_state: ResMut<CurrentAppState>,
     mut game_state: ResMut<CurrentGameState>,
     settings: Res<GameSettings>,
 ) {
@@ -39,8 +38,6 @@ pub fn player_input(
     let (x, y, z) = position.world();
 
     if keys.is_pressed(KeyCode::Escape) {
-        app_state.next = AppState::MainMenu;
-    } else if keys.is_pressed(KeyCode::P) {
         game_state.next = GameState::Pause;
     }
 

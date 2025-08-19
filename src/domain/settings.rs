@@ -1,5 +1,6 @@
-use crate::rendering::{CameraMode, CrtCurvature};
+use crate::rendering::{CameraMode, CrtCurvature, Position};
 use bevy_ecs::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Resource, Clone)]
 pub struct GameSettings {
@@ -30,6 +31,26 @@ impl Default for GameSettings {
             crt_flicker: true,
             crt_vignette: true,
             crt_chromatic_ab: true,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PlayerSaveData {
+    pub position: Position,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct GameSaveData {
+    pub player: PlayerSaveData,
+    pub save_timestamp: f64,
+}
+
+impl GameSaveData {
+    pub fn new(player: PlayerSaveData, save_timestamp: f64) -> Self {
+        Self {
+            player,
+            save_timestamp,
         }
     }
 }

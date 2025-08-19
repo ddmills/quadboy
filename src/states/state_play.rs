@@ -3,16 +3,12 @@ use macroquad::prelude::trace;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::Palette,
     domain::{
-        Player, PlayerMovedEvent, activate_zones_by_player, load_nearby_zones, on_load_zone,
-        on_set_zone_status, on_unload_zone,
+        activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status,
+        on_unload_zone,
     },
     engine::{App, Plugin, SerializableComponent},
-    rendering::{
-        Glyph, Position, RenderLayer, ScreenSize, on_zone_status_change, update_camera,
-        update_entity_pos,
-    },
+    rendering::{ScreenSize, on_zone_status_change, update_camera, update_entity_pos},
     states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system},
     ui::{UiLayout, draw_ui_panels, update_ui_layout},
 };
@@ -22,7 +18,10 @@ pub struct PlayStatePlugin;
 impl Plugin for PlayStatePlugin {
     fn build(&self, app: &mut App) {
         AppStatePlugin::new(AppState::Play)
-            .on_enter(app, (update_ui_layout, draw_ui_panels, spawn_stuff).chain())
+            .on_enter(
+                app,
+                (update_ui_layout, draw_ui_panels, on_enter_play_state).chain(),
+            )
             .on_update(
                 app,
                 (
@@ -51,23 +50,10 @@ impl Plugin for PlayStatePlugin {
 #[derive(Component, Serialize, SerializableComponent, Deserialize, Clone)]
 pub struct CleanupStatePlay;
 
-fn spawn_stuff(
-    mut cmds: Commands,
-    mut e_player_moved: EventWriter<PlayerMovedEvent>,
-    mut game_state: ResMut<CurrentGameState>,
-) {
+fn on_enter_play_state(mut game_state: ResMut<CurrentGameState>) {
     trace!("EnterAppState::<Play>");
-
-    cmds.spawn((
-        Position::new(56, 56, 0),
-        Glyph::new(147, Palette::Yellow, Palette::Blue).layer(RenderLayer::Actors),
-        Player,
-        // StoreZonePosition,
-        CleanupStatePlay,
-    ));
-
-    e_player_moved.write(PlayerMovedEvent { x: 56, y: 56, z: 0 });
-
+    // Player spawning is now handled by NewGameCommand or LoadGameCommand
+    // Set the game state to Explore
     game_state.next = GameState::Explore;
 }
 

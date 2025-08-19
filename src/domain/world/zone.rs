@@ -42,7 +42,10 @@ pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEve
 
 pub fn on_unload_zone(mut cmds: Commands, mut e_unload_zone: EventReader<UnloadZoneEvent>) {
     for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
-        cmds.queue(UnloadZoneCommand(*zone_idx));
+        cmds.queue(UnloadZoneCommand {
+            zone_idx: *zone_idx,
+            despawn_entities: true,
+        });
     }
 }
 

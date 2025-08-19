@@ -9,7 +9,7 @@ use web_sys;
 
 use macroquad::prelude::{error, warn};
 
-use crate::domain::ZoneSaveData;
+use crate::domain::{GameSaveData, ZoneSaveData};
 
 pub fn save_zone(zone: &ZoneSaveData, save_name: &str) {
     let Ok(save_data) = serde_json::to_string(zone) else {
@@ -171,4 +171,33 @@ fn delete_save_wasm(save_name: &str) {
     } else {
         warn!("No save files found for save: {}", save_name);
     }
+}
+
+pub fn save_game(game_data: &GameSaveData, save_name: &str) {
+    let Ok(save_data) = serde_json::to_string(game_data) else {
+        error!("could not serialize game data!");
+        return;
+    };
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        fs::create_dir_all(format!("saves/{}", save_name))
+            .expect("Error while creating save directory");
+    }
+
+    let file_path = format!("saves/{}/game.json", save_name);
+
+    store(file_path, save_data);
+}
+
+pub fn try_load_game(save_name: &str) -> Option<GameSaveData> {
+    let file_path = format!("saves/{}/game.json", save_name);
+    let contents = read(&file_path)?;
+
+    let Ok(game_data) = serde_json::from_str::<GameSaveData>(&contents) else {
+        warn!("Could not deserialize game save! corrupt? {}", file_path);
+        return None;
+    };
+
+    Some(game_data)
 }

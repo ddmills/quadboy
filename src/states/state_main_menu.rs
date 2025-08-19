@@ -2,10 +2,11 @@ use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
-    domain::GameSettings,
-    engine::{App, ExitAppEvent, KeyInput, Plugin, delete_save},
+    engine::{App, ExitAppEvent, KeyInput, Plugin},
     rendering::{Position, Text},
-    states::{AppState, AppStatePlugin, CurrentAppState, cleanup_system},
+    states::{
+        AppState, AppStatePlugin, CurrentAppState, CurrentGameState, GameState, cleanup_system,
+    },
 };
 
 pub struct MainMenuStatePlugin;
@@ -38,39 +39,48 @@ fn render_menu(mut cmds: Commands) {
     ));
 
     cmds.spawn((
-        Text::new("(N) NEW GAME"),
+        Text::new("({Y|N}) NEW GAME"),
         Position::new_f32(4., 4., 0.),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("(L) LOAD"),
+        Text::new("({Y|L}) LOAD"),
         Position::new_f32(4., 4.5, 0.),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("({R|Q}) QUIT"),
+        Text::new("({Y|S}) SETTINGS"),
         Position::new_f32(4., 5., 0.),
+        CleanupMainMenu,
+    ));
+
+    cmds.spawn((
+        Text::new("({R|Q}) QUIT"),
+        Position::new_f32(4., 6., 0.),
         CleanupMainMenu,
     ));
 }
 
 fn main_menu_input(
     keys: Res<KeyInput>,
-    mut state: ResMut<CurrentAppState>,
+    mut app_state: ResMut<CurrentAppState>,
+    mut game_state: ResMut<CurrentGameState>,
     mut e_exit_app: EventWriter<ExitAppEvent>,
-    settings: Res<GameSettings>,
 ) {
     if keys.is_pressed(KeyCode::N) {
-        if settings.enable_saves {
-            delete_save(&settings.save_name);
-        }
-        state.next = AppState::Play;
+        app_state.next = AppState::Play;
+        game_state.next = GameState::NewGame;
     }
 
     if keys.is_pressed(KeyCode::L) {
-        state.next = AppState::Play;
+        app_state.next = AppState::Play;
+        game_state.next = GameState::LoadGame;
+    }
+
+    if keys.is_pressed(KeyCode::S) {
+        app_state.next = AppState::Settings;
     }
 
     if keys.is_pressed(KeyCode::Q) {

@@ -13,6 +13,7 @@ pub struct CurrentAppState {
 pub enum AppState {
     #[default]
     MainMenu,
+    Settings,
     Play,
 }
 
@@ -44,6 +45,8 @@ pub struct CurrentGameState {
 pub enum GameState {
     #[default]
     None,
+    LoadGame,
+    NewGame,
     Explore,
     Pause,
 }

@@ -1,16 +1,17 @@
 use bevy_ecs::{
-    change_detection::DetectChanges,
     component::Component,
+    event::EventReader,
     query::With,
-    system::{Commands, Query, Res, ResMut},
+    system::{Commands, Local, Query, Res, ResMut},
 };
 use macroquad::input::KeyCode;
 
 use crate::{
-    domain::GameSettings,
-    engine::{KeyInput, Plugin},
-    rendering::{CrtCurvature, Position, Text},
-    states::{CurrentGameState, GameStatePlugin, cleanup_system},
+    common::Palette,
+    domain::{GameSettings, SaveGameCommand, SaveGameResult},
+    engine::{KeyInput, Plugin, Time},
+    rendering::{Position, Text},
+    states::{AppState, CurrentAppState, CurrentGameState, GameStatePlugin, cleanup_system},
 };
 
 use super::GameState;
@@ -21,7 +22,14 @@ impl Plugin for PauseStatePlugin {
     fn build(&self, app: &mut crate::engine::App) {
         GameStatePlugin::new(GameState::Pause)
             .on_enter(app, on_enter_pause)
-            .on_update(app, (listen_for_inputs, update_curvature_display))
+            .on_update(
+                app,
+                (
+                    listen_for_inputs,
+                    update_save_status_display,
+                    handle_save_result,
+                ),
+            )
             .on_leave(app, cleanup_system::<CleanupStatePause>);
     }
 }
@@ -30,86 +38,110 @@ impl Plugin for PauseStatePlugin {
 pub struct CleanupStatePause;
 
 #[derive(Component)]
-pub struct CrtCurvatureDisplay;
+pub struct SaveStatusDisplay;
 
-fn on_enter_pause(mut cmds: Commands, settings: Res<GameSettings>) {
+fn on_enter_pause(mut cmds: Commands) {
     cmds.spawn((
-        Text::new("PAUSED"),
-        Position::new_f32(12., 1., 0.),
+        Text::new("PAUSED").bg(Palette::Black),
+        Position::new_f32(4., 2., 0.),
         CleanupStatePause,
     ));
 
     cmds.spawn((
-        Text::new("Use {G|UP}/{G|DOWN} arrows to adjust CRT curvature"),
-        Position::new_f32(4., 3., 0.),
+        Text::new("({Y|ESC}) CONTINUE").bg(Palette::Black),
+        Position::new_f32(4., 3.5, 0.),
         CleanupStatePause,
     ));
 
-    let curvature_text = match settings.crt_curvature {
-        CrtCurvature::Off => "CRT Curvature: OFF".to_string(),
-        CrtCurvature::Curve(x, y) => format!("CRT Curvature: {:.1}, {:.1}", x, y),
-    };
-
     cmds.spawn((
-        Text::new(&curvature_text),
+        Text::new("({Y|S}) SAVE GAME").bg(Palette::Black),
         Position::new_f32(4., 4., 0.),
         CleanupStatePause,
-        CrtCurvatureDisplay,
+    ));
+
+    cmds.spawn((
+        Text::new("({R|Q}) QUIT TO MAIN MENU").bg(Palette::Black),
+        Position::new_f32(4., 5., 0.),
+        CleanupStatePause,
+    ));
+
+    cmds.spawn((
+        Text::new("").bg(Palette::Black),
+        Position::new_f32(4., 6., 0.),
+        CleanupStatePause,
+        SaveStatusDisplay,
     ));
 }
 
 fn listen_for_inputs(
+    mut cmds: Commands,
     keys: Res<KeyInput>,
+    mut app_state: ResMut<CurrentAppState>,
     mut game_state: ResMut<CurrentGameState>,
-    mut settings: ResMut<GameSettings>,
+    settings: Res<GameSettings>,
+    mut q_save_status: Query<&mut Text, With<SaveStatusDisplay>>,
 ) {
-    if keys.is_pressed(KeyCode::P) {
+    if keys.is_pressed(KeyCode::Escape) {
         game_state.next = GameState::Explore;
     }
 
-    if keys.is_pressed(KeyCode::Left) {
-        settings.crt_curvature = CrtCurvature::Off;
+    if keys.is_pressed(KeyCode::S) {
+        save_game(&mut cmds, &settings, &mut q_save_status);
     }
 
-    if keys.is_pressed(KeyCode::Right) {
-        settings.crt_curvature = CrtCurvature::Curve(8., 8.);
-    }
-
-    if keys.is_pressed(KeyCode::Up) {
-        adjust_crt_curvature(&mut settings, 0.25);
-    }
-
-    if keys.is_pressed(KeyCode::Down) {
-        adjust_crt_curvature(&mut settings, -0.25);
+    if keys.is_pressed(KeyCode::Q) {
+        app_state.next = AppState::MainMenu;
     }
 }
 
-fn adjust_crt_curvature(settings: &mut GameSettings, delta: f32) {
-    match settings.crt_curvature {
-        CrtCurvature::Off => {
-            if delta > 0.0 {
-                settings.crt_curvature = CrtCurvature::Curve(1.0, 1.0);
-            }
-        }
-        CrtCurvature::Curve(x, y) => {
-            let new_x = (x + delta).clamp(2.0, 10.0);
-            let new_y = (y + delta).clamp(2.0, 10.0);
-
-            settings.crt_curvature = CrtCurvature::Curve(new_x, new_y);
-        }
-    }
-}
-
-fn update_curvature_display(
-    mut q_display: Query<&mut Text, With<CrtCurvatureDisplay>>,
-    settings: Res<GameSettings>,
+fn save_game(
+    cmds: &mut Commands,
+    settings: &GameSettings,
+    q_save_status: &mut Query<&mut Text, With<SaveStatusDisplay>>,
 ) {
-    if settings.is_changed()
-        && let Ok(mut text) = q_display.single_mut()
+    if !settings.enable_saves {
+        if let Ok(mut text) = q_save_status.single_mut() {
+            text.value = "Save disabled in settings".to_string();
+        }
+        return;
+    }
+
+    cmds.queue(SaveGameCommand);
+
+    if let Ok(mut text) = q_save_status.single_mut() {
+        text.value = format!("Saving game to '{}'...", settings.save_name);
+    }
+}
+
+fn update_save_status_display(
+    mut q_save_status: Query<&mut Text, With<SaveStatusDisplay>>,
+    mut save_message_timer: Local<Option<f64>>,
+    time: Res<Time>,
+) {
+    if let Ok(text) = q_save_status.single()
+        && !text.value.is_empty()
+        && save_message_timer.is_none()
     {
-        text.value = match settings.crt_curvature {
-            CrtCurvature::Off => "CRT Curvature: OFF".to_string(),
-            CrtCurvature::Curve(x, y) => format!("CRT Curvature: {:.1}, {:.1}", x, y),
-        };
+        *save_message_timer = Some(time.elapsed + 3.0); // Clear after 3 seconds
+    }
+
+    if let Some(clear_time) = *save_message_timer
+        && time.elapsed >= clear_time
+    {
+        if let Ok(mut text) = q_save_status.single_mut() {
+            text.value.clear();
+        }
+        *save_message_timer = None;
+    }
+}
+
+fn handle_save_result(
+    mut e_save_result: EventReader<SaveGameResult>,
+    mut q_save_status: Query<&mut Text, With<SaveStatusDisplay>>,
+) {
+    for result in e_save_result.read() {
+        if let Ok(mut text) = q_save_status.single_mut() {
+            text.value = result.message.clone();
+        }
     }
 }

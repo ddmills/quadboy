@@ -5,11 +5,14 @@ use crate::{
     engine::{EntitySerializer, SerializableComponentRegistry, save_zone},
 };
 
-pub struct UnloadZoneCommand(pub usize);
+pub struct UnloadZoneCommand {
+    pub zone_idx: usize,
+    pub despawn_entities: bool,
+}
 
 impl Command<Result> for UnloadZoneCommand {
     fn apply(self, world: &mut World) -> Result {
-        let zone_idx = self.0;
+        let zone_idx = self.zone_idx;
 
         let mut q_zones = world.query::<(Entity, &Zone)>();
 
@@ -44,10 +47,12 @@ impl Command<Result> for UnloadZoneCommand {
             save_zone(&zone_save, &settings.save_name);
         }
 
-        world.despawn(zone_e);
+        if self.despawn_entities {
+            world.despawn(zone_e);
 
-        for e in despawns.iter() {
-            world.despawn(*e);
+            for e in despawns.iter() {
+                world.despawn(*e);
+            }
         }
 
         Ok(())
