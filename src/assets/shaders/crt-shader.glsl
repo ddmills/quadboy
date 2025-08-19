@@ -6,13 +6,18 @@ varying vec4 color;
 varying vec2 uv;
 
 uniform sampler2D Texture;
-uniform float iTime;
-uniform vec2 iResolution;
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_crt_curve;
+uniform int u_crt;
+uniform int u_scanline;
+uniform int u_film_grain;
+uniform int u_flicker;
+uniform int u_vignette;
 
 vec2 CRTCurveUV(vec2 uv) {
-    vec2 curvature = vec2(9.0, 9.0);
     uv = uv * 2.0 - 1.0;
-    vec2 offset = abs(uv.yx) / vec2(curvature.x, curvature.y);
+    vec2 offset = abs(uv.yx) / vec2(u_crt_curve.x, u_crt_curve.y);
     uv = uv + uv * offset * offset;
     uv = uv * 0.5 + 0.5;
     return uv;
@@ -38,12 +43,12 @@ void DrawVignette(inout vec3 color, vec2 uv) {
 
 void DrawScanline(inout vec3 color, vec2 uv) {
     float width = 3.0;
-    float phase = iTime / 100.0;
+    float phase = u_time / 100.0;
     float thickness = 2.6;
     float opacity = 0.2;
     vec3 lineColor = vec3(0.26);
 
-    float v = 0.5 * (sin((uv.y + phase) * 3.14159 / width * iResolution.y) + 1.0);
+    float v = 0.5 * (sin((uv.y + phase) * 3.14159 / width * u_resolution.y) + 1.0);
     color.rgb -= (lineColor - color.rgb) * (pow(v, thickness) - 1.0) * opacity;
 }
 
@@ -55,8 +60,8 @@ void DrawFilmGrain(inout vec3 color, vec2 uv) {
     float intensity = 0.03;
     float speed = 10.0;
 
-    vec2 noiseCoord = uv * iResolution.xy * 0.5;
-    float timeOffset = floor(iTime * speed) * 0.01;
+    vec2 noiseCoord = uv * u_resolution.xy * 0.5;
+    float timeOffset = floor(u_time * speed) * 0.01;
 
     float noise = random(noiseCoord + timeOffset);
 
@@ -94,7 +99,7 @@ void DrawColorTemperature(inout vec3 color) {
 
 void DrawShadowMask(inout vec3 color, vec2 uv) {
     float intensity = 0.25;
-    vec2 maskCoord = uv * iResolution.xy;
+    vec2 maskCoord = uv * u_resolution.xy;
 
     vec3 mask = vec3(1.0);
     float x = mod(maskCoord.x, 3.0);
@@ -114,13 +119,17 @@ void DrawFlicker(inout vec3 color) {
     float flickerIntensity = 0.01;
     float flickerSpeed = 15.0;
 
-    float flicker = 1.0 + sin(iTime * flickerSpeed + random(vec2(iTime * 0.1))) * flickerIntensity;
+    float flicker = 1.0 + sin(u_time * flickerSpeed + random(vec2(u_time * 0.1))) * flickerIntensity;
     color *= flicker;
 }
 
 void main() {
-    vec2 crtUV = CRTCurveUV(uv);
-    // vec2 crtUV = uv;
+    vec2 crtUV;
+    if(u_crt != 0) {
+        crtUV = CRTCurveUV(uv);
+    } else {
+        crtUV = uv;
+    }
 
     if(crtUV.x < 0.0 || crtUV.x > 1.0 || crtUV.y < 0.0 || crtUV.y > 1.0) {
         discard;
@@ -139,11 +148,19 @@ void main() {
 
     // DrawBloom(res, crtUV);
     // DrawColorTemperature(res);
-    // DrawScanline(res, crtUV);
-    DrawShadowMask(res, crtUV);
-    // DrawFilmGrain(res, crtUV);
-    DrawFlicker(res);
-    DrawVignette(res, crtUV);
+    if(u_scanline != 0) {
+        DrawScanline(res, crtUV);
+        DrawShadowMask(res, crtUV);
+    }
+    if(u_film_grain != 0) {
+        DrawFilmGrain(res, crtUV);
+    }
+    if(u_flicker != 0) {
+        DrawFlicker(res);
+    }
+    if(u_vignette != 0) {
+        DrawVignette(res, crtUV);
+    }
 
     gl_FragColor = vec4(res, 1.0);
 }
