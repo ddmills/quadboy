@@ -28,3 +28,4 @@ pub const CRT_SCANLINE: bool = true;
 pub const CRT_FILM_GRAIN: bool = true;
 pub const CRT_FLICKER: bool = true;
 pub const CRT_VIGNETTE: bool = true;
+pub const CRT_CHROMATIC_AB: bool = true;

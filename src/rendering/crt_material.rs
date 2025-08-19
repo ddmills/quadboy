@@ -63,6 +63,7 @@ impl Default for CrtShader {
                     UniformDesc::new("u_film_grain", UniformType::Int1),
                     UniformDesc::new("u_flicker", UniformType::Int1),
                     UniformDesc::new("u_vignette", UniformType::Int1),
+                    UniformDesc::new("u_chromatic_ab", UniformType::Int1),
                 ],
                 ..Default::default()
             },

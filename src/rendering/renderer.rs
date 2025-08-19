@@ -3,7 +3,7 @@ use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 
 use crate::{
     cfg::{
-        CRT_CURVATURE, CRT_FILM_GRAIN, CRT_FLICKER, CRT_SCANLINE, CRT_VIGNETTE, TEXEL_SIZE_F32,
+        CRT_CHROMATIC_AB, CRT_CURVATURE, CRT_FILM_GRAIN, CRT_FLICKER, CRT_SCANLINE, CRT_VIGNETTE, TEXEL_SIZE_F32,
         TILE_SIZE,
     },
     common::{MacroquadColorable, Palette},
@@ -95,6 +95,8 @@ pub fn render_all(
         .set_uniform("u_flicker", if CRT_FLICKER { 1 } else { 0 });
     crt.mat
         .set_uniform("u_vignette", if CRT_VIGNETTE { 1 } else { 0 });
+    crt.mat
+        .set_uniform("u_chromatic_ab", if CRT_CHROMATIC_AB { 1 } else { 0 });
 
     gl_use_material(&crt.mat);
 
