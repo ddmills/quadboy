@@ -74,6 +74,16 @@ pub struct ZoneContinuity {
     pub down: Vec<ZoneConstraintType>,
 }
 
+impl ZoneContinuity {
+    pub fn empty() -> Self {
+        Self {
+            south: vec![],
+            west: vec![],
+            down: vec![],
+        }
+    }
+}
+
 pub struct ZoneConstraints {
     pub idx: usize,
     pub south: Vec<ZoneConstraintType>,
@@ -89,6 +99,7 @@ pub enum ZoneConstraintType {
     None,
     River,
     Path,
+    StairDown,
 }
 
 #[derive(Resource, Default)]
@@ -97,11 +108,7 @@ pub struct Map;
 impl Map {
     fn get_continuity(&self, x: usize, y: usize, z: usize) -> ZoneContinuity {
         if is_zone_oob(x, y, z) {
-            return ZoneContinuity {
-                south: vec![],
-                west: vec![],
-                down: vec![],
-            };
+            return ZoneContinuity::empty();
         }
 
         let idx = zone_idx(x, y, z);
@@ -138,10 +145,17 @@ impl Map {
             }
         }
 
+        let mut down = vec![ZoneConstraintType::None; ZONE_SIZE.0];
+
+        if z < crate::cfg::MAP_SIZE.2 - 1 {
+            let stair_x = rand.range_n(0, ZONE_SIZE.0 as i32) as usize;
+            down[stair_x] = ZoneConstraintType::StairDown;
+        }
+
         ZoneContinuity {
             south: south.to_vec(),
             west: west.to_vec(),
-            down: vec![],
+            down: down.to_vec(),
         }
     }
 
@@ -151,7 +165,11 @@ impl Map {
         let own = self.get_continuity(x, y, z);
         let east = self.get_continuity(x + 1, y, z);
         let north = self.get_continuity(x, y + 1, z);
-        let up = self.get_continuity(x, y, z + 1);
+        let up = if z > 0 {
+            self.get_continuity(x, y, z - 1)
+        } else {
+            ZoneContinuity::empty()
+        };
 
         ZoneConstraints {
             idx,

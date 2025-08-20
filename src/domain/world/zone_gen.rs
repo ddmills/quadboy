@@ -10,14 +10,22 @@ use crate::{
 
 fn collect_constraint_positions(
     constraints: &crate::domain::ZoneConstraints,
-) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+) -> (
+    Vec<(usize, usize)>,
+    Vec<(usize, usize)>,
+    Vec<(usize, usize)>,
+    Vec<(usize, usize)>,
+) {
     let mut river_positions = Vec::new();
     let mut path_positions = Vec::new();
+    let mut stair_down_positions = Vec::new();
+    let mut stair_up_positions = Vec::new();
 
     for (x, constraint_type) in constraints.south.iter().enumerate() {
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((x, 0)),
             ZoneConstraintType::Path => path_positions.push((x, 0)),
+            ZoneConstraintType::StairDown => {} //stair_down_positions.push((x, 0)),
             ZoneConstraintType::None => {}
         }
     }
@@ -26,6 +34,7 @@ fn collect_constraint_positions(
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((x, ZONE_SIZE.1 - 1)),
             ZoneConstraintType::Path => path_positions.push((x, ZONE_SIZE.1 - 1)),
+            ZoneConstraintType::StairDown => {} //stair_down_positions.push((x, ZONE_SIZE.1 - 1)),
             ZoneConstraintType::None => {}
         }
     }
@@ -34,6 +43,7 @@ fn collect_constraint_positions(
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((0, y)),
             ZoneConstraintType::Path => path_positions.push((0, y)),
+            ZoneConstraintType::StairDown => {} //stair_down_positions.push((0, y)),
             ZoneConstraintType::None => {}
         }
     }
@@ -42,11 +52,31 @@ fn collect_constraint_positions(
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((ZONE_SIZE.0 - 1, y)),
             ZoneConstraintType::Path => path_positions.push((ZONE_SIZE.0 - 1, y)),
+            ZoneConstraintType::StairDown => {} //stair_down_positions.push((ZONE_SIZE.0 - 1, y)),
             ZoneConstraintType::None => {}
         }
     }
 
-    (river_positions, path_positions)
+    for (x, constraint_type) in constraints.up.iter().enumerate() {
+        match constraint_type {
+            ZoneConstraintType::StairDown => stair_up_positions.push((x, ZONE_SIZE.1 / 2)),
+            _ => {}
+        }
+    }
+
+    for (x, constraint_type) in constraints.down.iter().enumerate() {
+        match constraint_type {
+            ZoneConstraintType::StairDown => stair_down_positions.push((x, ZONE_SIZE.1 / 2)),
+            _ => {}
+        }
+    }
+
+    (
+        river_positions,
+        path_positions,
+        stair_down_positions,
+        stair_up_positions,
+    )
 }
 
 fn generate_rivers(
@@ -138,6 +168,20 @@ fn generate_rivers(
                     best_cost = result.cost;
                     best_to = to_idx;
                 } else if !result.is_success {
+                    use macroquad::prelude::warn;
+                    warn!(
+                        "A* failed for river from {:?} to {:?} in zone {}",
+                        from_pos, to_pos, zone_idx
+                    );
+                    warn!(
+                        "  Positions count: {}, Distance: {}",
+                        positions.len(),
+                        Distance::manhattan(
+                            [from_pos.0 as i32, from_pos.1 as i32, 0],
+                            [to_pos.0 as i32, to_pos.1 as i32, 0]
+                        )
+                    );
+
                     let fallback_path = bresenham_line(from_pos, to_pos);
                     let filtered_path: Vec<(usize, usize)> = fallback_path
                         .into_iter()
@@ -174,7 +218,7 @@ fn ensure_edge_connections(positions: &[(usize, usize)], terrain: &mut Grid<Terr
     }
 }
 
-fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
+fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>, zone_idx: usize) {
     if positions.len() < 2 {
         return;
     }
@@ -202,10 +246,10 @@ fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
                     start: from_pos,
                     is_goal: |pos| pos == to_pos,
                     cost: |_from, to| {
-                        if let Some(existing_terrain) = terrain.get(to.0, to.1) {
-                            if *existing_terrain == Terrain::River {
-                                return f32::INFINITY;
-                            }
+                        if let Some(existing_terrain) = terrain.get(to.0, to.1)
+                            && *existing_terrain == Terrain::River
+                        {
+                            return 3.0;
                         }
                         1.0
                     },
@@ -234,7 +278,7 @@ fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
 
                         neighbors
                     },
-                    max_depth: 1000,
+                    max_depth: 2000,
                     max_cost: Some(ZONE_SIZE.0 as f32 * 1.5),
                 };
 
@@ -243,6 +287,20 @@ fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
                     best_path = Some(result.path);
                     best_cost = result.cost;
                     best_to = to_idx;
+                } else if !result.is_success {
+                    use macroquad::prelude::warn;
+                    warn!(
+                        "A* failed for path from {:?} to {:?} in zone {}",
+                        from_pos, to_pos, zone_idx
+                    );
+                    warn!(
+                        "  Positions count: {}, Distance: {}",
+                        positions.len(),
+                        Distance::manhattan(
+                            [from_pos.0 as i32, from_pos.1 as i32, 0],
+                            [to_pos.0 as i32, to_pos.1 as i32, 0]
+                        )
+                    );
                 }
             }
         }
@@ -261,15 +319,24 @@ fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
     }
 }
 
+fn generate_stairs(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
+    for &(x, y) in positions {
+        terrain.insert(x, y, Terrain::Dirt);
+    }
+}
+
 pub fn gen_zone(world: &mut World, zone_idx: usize) {
     let mut rand = Rand::seed(zone_idx as u64);
     let map = world.resource::<Map>();
     let constraints = map.get_zone_constraints(zone_idx);
     let mut terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| Terrain::Grass);
-    let (river_positions, _path_positions) = collect_constraint_positions(&constraints);
+    let (river_positions, path_positions, stair_down_positions, stair_up_positions) =
+        collect_constraint_positions(&constraints);
 
     generate_rivers(&river_positions, &mut terrain, &mut rand, zone_idx);
-    generate_paths(&_path_positions, &mut terrain);
+    generate_paths(&path_positions, &mut terrain, zone_idx);
+    generate_stairs(&stair_down_positions, &mut terrain);
+    generate_stairs(&stair_up_positions, &mut terrain);
 
     let zone_entity_id = world.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
 
@@ -304,6 +371,30 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             CleanupStatePlay,
         ));
     });
+
+    for &(x, y) in &stair_down_positions {
+        let wpos = zone_local_to_world(zone_idx, x, y);
+        world.spawn((
+            Position::new(wpos.0, wpos.1, wpos.2),
+            Glyph::new(107, Palette::White, Palette::Gray).layer(RenderLayer::Actors),
+            ChildOf(zone_entity_id),
+            ZoneStatus::Dormant,
+            TrackZone,
+            CleanupStatePlay,
+        ));
+    }
+
+    for &(x, y) in &stair_up_positions {
+        let wpos = zone_local_to_world(zone_idx, x, y);
+        world.spawn((
+            Position::new(wpos.0, wpos.1, wpos.2),
+            Glyph::new(108, Palette::White, Palette::Gray).layer(RenderLayer::Actors),
+            ChildOf(zone_entity_id),
+            ZoneStatus::Dormant,
+            TrackZone,
+            CleanupStatePlay,
+        ));
+    }
 
     world
         .entity_mut(zone_entity_id)
