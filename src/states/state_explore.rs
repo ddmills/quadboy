@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
-    domain::{PlayerDebug, player_input, render_player_debug},
+    domain::{player_input, render_player_debug, Player, PlayerDebug, PlayerMovedEvent},
     engine::{App, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Position, RenderLayer, Text},
-    states::{GameStatePlugin, cleanup_system},
+    states::{cleanup_system, GameStatePlugin},
 };
 
 use super::GameState;
@@ -17,7 +17,7 @@ pub struct ExploreStatePlugin;
 impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Explore)
-            .on_enter(app, on_enter_explore)
+            .on_enter(app, (on_enter_explore, center_camera_on_player))
             .on_update(app, (player_input, render_player_debug, render_cursor))
             .on_leave(
                 app,
@@ -92,4 +92,9 @@ fn render_cursor(mouse: Res<Mouse>, mut q_cursor: Query<&mut Position, With<Curs
 
     cursor.x = mouse.world.0.floor();
     cursor.y = mouse.world.1.floor();
+}
+
+fn center_camera_on_player(mut e_player_moved: EventWriter<PlayerMovedEvent>, q_player: Query<&Position, With<Player>>) {
+    let p = q_player.single().expect("Expect Player").world();
+    e_player_moved.write(PlayerMovedEvent { x: p.0, y: p.1, z: p.2 });
 }
