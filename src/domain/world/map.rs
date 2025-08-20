@@ -36,7 +36,7 @@ impl Terrain {
 
     pub fn colors(&self) -> (Option<u32>, Option<u32>) {
         match self {
-            Terrain::Grass => (None, Some(Palette::DarkBrown.into())),
+            Terrain::Grass => (None, Some(Palette::DarkGreen.into())),
             Terrain::Dirt => (None, Some(Palette::Brown.into())),
             Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
         }

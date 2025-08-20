@@ -42,7 +42,9 @@ pub struct GlyphStyle {
 }
 
 pub const TRANSPARENT: Vec4 = Vec4::splat(0.);
-pub const SHROUD_COLOR: Vec4 = Vec4::new(0.227, 0.243, 0.247, 1.0);
+pub const SHROUD_FG_COLOR: u32 = 0x8F8F8F;
+pub const SHROUD_BG_COLOR: u32 = 0x535353;
+pub const SHROUD_OUTLINE_COLOR: u32 = 0x1F1F1F;
 
 #[allow(dead_code)]
 impl Glyph {
@@ -115,10 +117,16 @@ impl Glyph {
     pub fn get_style(&self) -> GlyphStyle {
         if self.is_dormant {
             return GlyphStyle {
-                bg: TRANSPARENT,
-                fg1: SHROUD_COLOR,
-                fg2: SHROUD_COLOR,
-                outline: self.outline.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
+                bg: self
+                    .bg
+                    .map(|_| SHROUD_BG_COLOR.to_vec4_a(1.0))
+                    .unwrap_or(TRANSPARENT),
+                fg1: SHROUD_FG_COLOR.to_vec4_a(1.),
+                fg2: SHROUD_FG_COLOR.to_vec4_a(1.),
+                outline: self
+                    .outline
+                    .map(|_| SHROUD_OUTLINE_COLOR.to_vec4_a(1.))
+                    .unwrap_or(TRANSPARENT),
             };
         }
 
