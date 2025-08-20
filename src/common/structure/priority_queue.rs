@@ -14,12 +14,13 @@ impl<T, A: Ord + PartialEq + Eq + PartialOrd> PartialEq for PriorityQueueItem<T,
 }
 impl<T, A: Ord + PartialEq + Eq + PartialOrd> PartialOrd for PriorityQueueItem<T, A> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cost.cmp(&other.cost))
+        Some(self.cmp(other))
     }
 }
 impl<T, A: Ord + PartialEq + Eq + PartialOrd> Ord for PriorityQueueItem<T, A> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.cost.cmp(&other.cost)
+        // Invert ordering for min-heap behavior (BinaryHeap is max-heap by default)
+        other.cost.cmp(&self.cost)
     }
 }
 

@@ -17,6 +17,7 @@ bevy_serializable_derive = { version = "=0.1.0", path = "./bevy_serializable_der
 serde_json = "1.0.142"
 web-sys = { version = "0.3.77", features = ["Window", "Storage"] }
 ordered-float = "5.0.0"
+fastnoise-lite = "1.1.1"
 
 [patch.crates-io]
 macroquad = { git = "https://github.com/not-fl3/macroquad" }

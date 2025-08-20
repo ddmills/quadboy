@@ -2,7 +2,7 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 
 use crate::{
     cfg::ZONE_SIZE,
-    common::{AStarSettings, Distance, Grid, Palette, Rand, astar},
+    common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
     domain::{Map, Terrain, Zone, ZoneConstraintType, ZoneStatus},
     rendering::{Glyph, Position, RenderLayer, TrackZone, zone_local_to_world},
     states::CleanupStatePlay,
@@ -49,12 +49,131 @@ fn collect_constraint_positions(
     (river_positions, path_positions)
 }
 
-fn connect_positions_with_astar(
+fn generate_rivers(
     positions: &[(usize, usize)],
     terrain: &mut Grid<Terrain>,
-    target_terrain: Terrain,
-    respect_rivers: bool,
+    _rand: &mut Rand,
+    zone_idx: usize,
 ) {
+    if positions.len() < 2 {
+        return;
+    }
+
+    let mut perlin = Perlin::new(42, 0.05, 3, 2.0);
+
+    let mut connected = vec![false; positions.len()];
+    connected[0] = true;
+    let mut connections_made = 1;
+
+    while connections_made < positions.len() {
+        let mut best_path = None;
+        let mut best_cost = f32::INFINITY;
+        let mut best_to = 0;
+
+        for (from_idx, &from_pos) in positions.iter().enumerate() {
+            if !connected[from_idx] {
+                continue;
+            }
+
+            for (to_idx, &to_pos) in positions.iter().enumerate() {
+                if connected[to_idx] {
+                    continue;
+                }
+
+                let noise_cache = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
+                    let (world_x, world_y, _world_z) = zone_local_to_world(zone_idx, x, y);
+                    perlin.get(world_x as f32, world_y as f32)
+                });
+
+                let settings = AStarSettings {
+                    start: from_pos,
+                    is_goal: |pos| pos == to_pos,
+                    cost: move |from, to| {
+                        let base_cost = 1.0;
+                        let noise_val = noise_cache.get(to.0, to.1).unwrap_or(&0.5);
+                        let noise_factor = 0.8 + (noise_val * 0.4);
+                        let dx = (from.0 as i32 - to.0 as i32).abs();
+                        let dy = (from.1 as i32 - to.1 as i32).abs();
+                        let diagonal_bonus = if dx > 0 && dy > 0 { 0.85 } else { 1.0 };
+                        base_cost * noise_factor * diagonal_bonus
+                    },
+                    heuristic: |pos| {
+                        Distance::manhattan(
+                            [pos.0 as i32, pos.1 as i32, 0],
+                            [to_pos.0 as i32, to_pos.1 as i32, 0],
+                        ) * 0.7
+                    },
+                    neighbors: |pos| {
+                        let mut neighbors = Vec::new();
+                        let (x, y) = pos;
+
+                        for dx in -1..=1 {
+                            for dy in -1..=1 {
+                                if dx == 0 && dy == 0 {
+                                    continue;
+                                }
+
+                                let nx = x as i32 + dx;
+                                let ny = y as i32 + dy;
+
+                                if nx >= 0
+                                    && nx < ZONE_SIZE.0 as i32
+                                    && ny >= 0
+                                    && ny < ZONE_SIZE.1 as i32
+                                {
+                                    neighbors.push((nx as usize, ny as usize));
+                                }
+                            }
+                        }
+
+                        neighbors
+                    },
+                    max_depth: 4000,
+                };
+
+                let result = astar(settings);
+                if result.is_success && result.cost < best_cost {
+                    best_path = Some(result.path);
+                    best_cost = result.cost;
+                    best_to = to_idx;
+                } else if !result.is_success {
+                    let fallback_path = bresenham_line(from_pos, to_pos);
+                    let filtered_path: Vec<(usize, usize)> = fallback_path
+                        .into_iter()
+                        .filter(|(x, y)| *x < ZONE_SIZE.0 && *y < ZONE_SIZE.1)
+                        .collect();
+
+                    let fallback_cost = filtered_path.len() as f32;
+                    if fallback_cost < best_cost {
+                        best_path = Some(filtered_path);
+                        best_cost = fallback_cost;
+                        best_to = to_idx;
+                    }
+                }
+            }
+        }
+
+        if let Some(path) = best_path {
+            for &(x, y) in &path {
+                terrain.insert(x, y, Terrain::River);
+            }
+            connected[best_to] = true;
+            connections_made += 1;
+        } else {
+            break;
+        }
+    }
+
+    ensure_edge_connections(positions, terrain);
+}
+
+fn ensure_edge_connections(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
+    for &(x, y) in positions {
+        terrain.insert(x, y, Terrain::River);
+    }
+}
+
+fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
     if positions.len() < 2 {
         return;
     }
@@ -66,7 +185,6 @@ fn connect_positions_with_astar(
     while connections_made < positions.len() {
         let mut best_path = None;
         let mut best_cost = f32::INFINITY;
-        let mut _best_from = 0;
         let mut best_to = 0;
 
         for (from_idx, &from_pos) in positions.iter().enumerate() {
@@ -83,12 +201,10 @@ fn connect_positions_with_astar(
                     start: from_pos,
                     is_goal: |pos| pos == to_pos,
                     cost: |_from, to| {
-                        if respect_rivers
-                            && let Some(existing_terrain) = terrain.get(to.0, to.1)
-                            && *existing_terrain == Terrain::River
-                            && target_terrain != Terrain::River
-                        {
-                            return f32::INFINITY; // Prevent paths from overwriting rivers
+                        if let Some(existing_terrain) = terrain.get(to.0, to.1) {
+                            if *existing_terrain == Terrain::River {
+                                return f32::INFINITY;
+                            }
                         }
                         1.0
                     },
@@ -102,7 +218,6 @@ fn connect_positions_with_astar(
                         let mut neighbors = Vec::new();
                         let (x, y) = pos;
 
-                        // Add 4-directional neighbors within bounds
                         if x > 0 {
                             neighbors.push((x - 1, y));
                         }
@@ -125,7 +240,6 @@ fn connect_positions_with_astar(
                 if result.is_success && result.cost < best_cost {
                     best_path = Some(result.path);
                     best_cost = result.cost;
-                    _best_from = from_idx;
                     best_to = to_idx;
                 }
             }
@@ -133,8 +247,8 @@ fn connect_positions_with_astar(
 
         if let Some(path) = best_path {
             for &(x, y) in &path {
-                if !respect_rivers || terrain.get(x, y) != Some(&Terrain::River) {
-                    terrain.insert(x, y, target_terrain);
+                if terrain.get(x, y) != Some(&Terrain::River) {
+                    terrain.insert(x, y, Terrain::Dirt);
                 }
             }
             connected[best_to] = true;
@@ -147,17 +261,13 @@ fn connect_positions_with_astar(
 
 pub fn gen_zone(world: &mut World, zone_idx: usize) {
     let mut rand = Rand::seed(zone_idx as u64);
-
     let map = world.resource::<Map>();
     let constraints = map.get_zone_constraints(zone_idx);
-
     let mut terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| Terrain::Grass);
+    let (river_positions, _path_positions) = collect_constraint_positions(&constraints);
 
-    let (river_positions, path_positions) = collect_constraint_positions(&constraints);
-
-    connect_positions_with_astar(&river_positions, &mut terrain, Terrain::River, false);
-
-    connect_positions_with_astar(&path_positions, &mut terrain, Terrain::Dirt, true);
+    generate_rivers(&river_positions, &mut terrain, &mut rand, zone_idx);
+    generate_paths(&_path_positions, &mut terrain);
 
     let zone_entity_id = world.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
 

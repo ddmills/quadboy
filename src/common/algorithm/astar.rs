@@ -52,8 +52,8 @@ where
         return result;
     }
 
-    open.put(settings.start, OrderedFloat(0.));
-    costs.insert(settings.start, OrderedFloat(0.));
+    open.put(settings.start, OrderedFloat(0.0));
+    costs.insert(settings.start, OrderedFloat(0.0));
 
     while !open.is_empty() {
         depth += 1;
@@ -63,7 +63,10 @@ where
             break;
         }
 
-        let current = open.pop().unwrap();
+        let current = match open.pop() {
+            Some(node) => node,
+            None => break,
+        };
 
         if (settings.is_goal)(current) {
             result.is_success = true;
@@ -84,15 +87,21 @@ where
                 continue;
             }
 
-            let new_cost = costs.get(&current).unwrap() + cost;
+            let current_cost = match costs.get(&current) {
+                Some(cost) => *cost,
+                None => continue,
+            };
+            let new_cost = current_cost + cost;
 
-            if !costs.contains_key(&next) || new_cost < *costs.get(&next).unwrap() {
+            let should_update = match costs.get(&next) {
+                Some(existing_cost) => new_cost < *existing_cost,
+                None => true,
+            };
+
+            if should_update {
                 costs.insert(next, new_cost);
-
-                // todo: use a min priority queue and remove hard-coded float
-                let priority = OrderedFloat(100000.0) - (new_cost + (settings.heuristic)(next));
-
-                open.put(next, priority);
+                let f_cost = *new_cost + (settings.heuristic)(next);
+                open.put(next, OrderedFloat(f_cost));
                 from.insert(next, current);
             }
         }
@@ -102,16 +111,22 @@ where
         return result;
     }
 
-    let g = goal.unwrap();
+    let g = match goal {
+        Some(goal_node) => goal_node,
+        None => return result,
+    };
+
     result.path.push(g);
-    result.cost = **costs.get(&g).unwrap();
+    result.cost = match costs.get(&g) {
+        Some(cost) => **cost,
+        None => 0.0,
+    };
 
     let mut previous_pos = &g;
 
-    while from.contains_key(previous_pos) {
-        let f = from.get(previous_pos).unwrap();
-        result.path.push(*f);
-        previous_pos = f;
+    while let Some(parent) = from.get(previous_pos) {
+        result.path.push(*parent);
+        previous_pos = parent;
     }
 
     // note: path is returned in reverse order
