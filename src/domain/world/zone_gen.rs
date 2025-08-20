@@ -129,6 +129,7 @@ fn generate_rivers(
                         neighbors
                     },
                     max_depth: 4000,
+                    max_cost: Some(ZONE_SIZE.0 as f32 * 2.0),
                 };
 
                 let result = astar(settings);
@@ -234,6 +235,7 @@ fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
                         neighbors
                     },
                     max_depth: 1000,
+                    max_cost: Some(ZONE_SIZE.0 as f32 * 1.5),
                 };
 
                 let result = astar(settings);

@@ -1,6 +1,6 @@
 use macroquad::prelude::warn;
 use ordered_float::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::common::PriorityQueue;
 
@@ -19,6 +19,7 @@ where
     pub heuristic: H,
     pub neighbors: N,
     pub max_depth: u32,
+    pub max_cost: Option<f32>,
 }
 
 pub struct AStarResult<T> {
@@ -39,6 +40,7 @@ where
     let mut open = PriorityQueue::new();
     let mut from = HashMap::new();
     let mut costs = HashMap::new();
+    let mut closed = HashSet::new();
     let mut goal: Option<T> = None;
 
     let mut result = AStarResult {
@@ -67,6 +69,11 @@ where
             Some(node) => node,
             None => break,
         };
+
+        if closed.contains(&current) {
+            continue;
+        }
+        closed.insert(current);
 
         if (settings.is_goal)(current) {
             result.is_success = true;
@@ -101,6 +108,13 @@ where
             if should_update {
                 costs.insert(next, new_cost);
                 let f_cost = *new_cost + (settings.heuristic)(next);
+
+                if let Some(max_cost) = settings.max_cost
+                    && f_cost > max_cost
+                {
+                    continue;
+                }
+
                 open.put(next, OrderedFloat(f_cost));
                 from.insert(next, current);
             }
