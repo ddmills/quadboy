@@ -1,4 +1,4 @@
-use macroquad::math::Vec4;
+use macroquad::{math::Vec4, prelude::trace};
 
 use crate::{
     common::cp437_idx,
@@ -143,6 +143,8 @@ enum PaletteSequenceType {
     Repeat,
     Stretch,
     Border,
+    Scroll,
+    ScrollFast,
 }
 
 impl PaletteSequenceType {
@@ -152,6 +154,8 @@ impl PaletteSequenceType {
             "repeat" => Self::Repeat,
             "stretch" => Self::Stretch,
             "border" => Self::Border,
+            "scroll" => Self::Scroll,
+            "scrollf" => Self::ScrollFast,
             _ => Self::Solid,
         }
     }
@@ -185,7 +189,7 @@ impl PaletteSequence {
         }
     }
 
-    pub fn apply_to(&mut self, value: String, text: &Text) -> Vec<Glyph> {
+    pub fn apply_to(&mut self, value: String, text: &Text, tick: usize) -> Vec<Glyph> {
         let color_len = self.seq_colors.len();
         let value_len = value.len();
 
@@ -207,6 +211,12 @@ impl PaletteSequence {
                         } else {
                             *self.seq_colors.get(1 % color_len).unwrap()
                         }
+                    }
+                    PaletteSequenceType::Scroll => {
+                        *self.seq_colors.get((idx + tick / 2) % color_len).unwrap()
+                    }
+                    PaletteSequenceType::ScrollFast => {
+                        *self.seq_colors.get((idx + tick) % color_len).unwrap()
                     }
                 };
 

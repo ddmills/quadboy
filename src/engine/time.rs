@@ -75,7 +75,7 @@ pub fn render_fps(time: Res<Time>, mut q_fps: Query<&mut Text, With<FpsDisplay>>
     let smoothed = time.get_smooth_avg().to_string();
 
     for mut text in q_fps.iter_mut() {
-        text.value = format!("{{R-O-Y-G-B-P stretch|QUADBOY}} {}", smoothed);
+        text.value = format!("{{R-O-Y-G-B-P scroll|QUADBOY}} {}", smoothed);
     }
 }
 

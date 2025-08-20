@@ -117,7 +117,7 @@ async fn main() {
                 render_all,
                 update_app_states,
                 update_game_states,
-                // render_profiler,
+                // crate::engine::render_profiler,
             )
                 .chain(),),
         );

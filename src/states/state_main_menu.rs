@@ -27,13 +27,13 @@ fn render_menu(mut cmds: Commands) {
     trace!("EnterAppState::<MainMenu>");
 
     cmds.spawn((
-        Text::new("Welcome to...   {R-O-Y-G-B-P stretch|QUADBOY}"),
+        Text::new("Welcome to..."),
         Position::new_f32(4., 2., 0.),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("A cowboy adventure."),
+        Text::new("a cowboy adventure. With a {W-Y-W-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C scrollf|shiny revolver}"),
         Position::new_f32(4., 2.5, 0.),
         CleanupMainMenu,
     ));

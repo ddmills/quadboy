@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
-    domain::{player_input, render_player_debug, Player, PlayerDebug, PlayerMovedEvent},
+    domain::{Player, PlayerDebug, PlayerMovedEvent, player_input, render_player_debug},
     engine::{App, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Position, RenderLayer, Text},
-    states::{cleanup_system, GameStatePlugin},
+    states::{GameStatePlugin, cleanup_system},
 };
 
 use super::GameState;
@@ -94,7 +94,14 @@ fn render_cursor(mouse: Res<Mouse>, mut q_cursor: Query<&mut Position, With<Curs
     cursor.y = mouse.world.1.floor();
 }
 
-fn center_camera_on_player(mut e_player_moved: EventWriter<PlayerMovedEvent>, q_player: Query<&Position, With<Player>>) {
+fn center_camera_on_player(
+    mut e_player_moved: EventWriter<PlayerMovedEvent>,
+    q_player: Query<&Position, With<Player>>,
+) {
     let p = q_player.single().expect("Expect Player").world();
-    e_player_moved.write(PlayerMovedEvent { x: p.0, y: p.1, z: p.2 });
+    e_player_moved.write(PlayerMovedEvent {
+        x: p.0,
+        y: p.1,
+        z: p.2,
+    });
 }

@@ -1,7 +1,9 @@
 use bevy_ecs::prelude::*;
+use macroquad::telemetry;
 
 use crate::{
     common::{END_SEQ, FLAG_SEQ, Palette, PaletteSequence, START_SEQ, cp437_idx},
+    engine::Time,
     rendering::{GlyphTextureId, Visibility},
 };
 
@@ -55,7 +57,7 @@ impl Text {
         self
     }
 
-    pub fn get_glyphs(&self) -> Vec<Glyph> {
+    pub fn get_glyphs(&self, tick: usize) -> Vec<Glyph> {
         let mut in_seq = false;
         let mut in_flags = false;
         let mut seq_setting = String::new();
@@ -75,7 +77,7 @@ impl Text {
                     in_flags = false;
 
                     let mut seq = PaletteSequence::new(seq_setting.clone());
-                    let glyphs = seq.apply_to(seq_value.clone(), self);
+                    let glyphs = seq.apply_to(seq_value.clone(), self, tick);
 
                     seq_setting = String::new();
                     seq_value = String::new();
@@ -116,18 +118,30 @@ impl Text {
 
 pub fn render_text(
     mut cmds: Commands,
-    mut q_text: Query<
-        (Entity, &mut Text, &Position, &Visibility),
-        Or<(Changed<Text>, Changed<Visibility>)>,
-    >,
+    mut q_text: ParamSet<(
+        Query<Entity, Or<(Changed<Text>, Changed<Visibility>)>>,
+        Query<(Entity, &mut Text, &Position, &Visibility)>,
+    )>,
+    time: Res<Time>,
 ) {
-    for (entity, mut text, position, visibility) in q_text.iter_mut() {
+    telemetry::begin_zone("render_text");
+    let tick = (time.fixed_t * 25.).floor() as usize;
+
+    let changed = q_text.p0().iter().collect::<Vec<_>>();
+
+    for (entity, mut text, position, visibility) in q_text.p1().iter_mut() {
+        let is_scroller = text.value.contains("scroll");
+
+        if !(is_scroller || changed.contains(&entity)) {
+            continue;
+        }
+
         for glyph_id in text.glyphs.iter() {
             cmds.entity(*glyph_id).despawn();
         }
 
         text.glyphs = text
-            .get_glyphs()
+            .get_glyphs(tick)
             .iter()
             .enumerate()
             .map(|(i, g)| {
@@ -141,4 +155,6 @@ pub fn render_text(
             })
             .collect();
     }
+
+    telemetry::end_zone();
 }

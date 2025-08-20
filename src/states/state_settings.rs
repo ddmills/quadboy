@@ -30,7 +30,13 @@ impl Plugin for SettingsStatePlugin {
         AppStatePlugin::new(AppState::Settings)
             .on_enter(app, render_settings_menu)
             .on_update(app, (settings_input, update_settings_display))
-            .on_leave(app, (cleanup_system::<CleanupSettings>, remove_settings_ui_resource));
+            .on_leave(
+                app,
+                (
+                    cleanup_system::<CleanupSettings>,
+                    remove_settings_ui_resource,
+                ),
+            );
     }
 }
 
@@ -53,41 +59,53 @@ fn render_settings_menu(mut cmds: Commands) {
         CleanupSettings,
     ));
 
-    let curvature = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 4.5, 0.),
-        CleanupSettings,
-    )).id();
+    let curvature = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 4.5, 0.),
+            CleanupSettings,
+        ))
+        .id();
 
-    let scanlines = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 5., 0.),
-        CleanupSettings,
-    )).id();
+    let scanlines = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 5., 0.),
+            CleanupSettings,
+        ))
+        .id();
 
-    let film_grain = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 5.5, 0.),
-        CleanupSettings,
-    )).id();
+    let film_grain = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 5.5, 0.),
+            CleanupSettings,
+        ))
+        .id();
 
-    let flicker = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 6., 0.),
-        CleanupSettings,
-    )).id();
+    let flicker = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 6., 0.),
+            CleanupSettings,
+        ))
+        .id();
 
-    let vignette = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 6.5, 0.),
-        CleanupSettings,
-    )).id();
+    let vignette = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 6.5, 0.),
+            CleanupSettings,
+        ))
+        .id();
 
-    let chromatic_ab = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 7., 0.),
-        CleanupSettings,
-    )).id();
+    let chromatic_ab = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 7., 0.),
+            CleanupSettings,
+        ))
+        .id();
 
     // Camera Settings Section
     cmds.spawn((
@@ -96,11 +114,13 @@ fn render_settings_menu(mut cmds: Commands) {
         CleanupSettings,
     ));
 
-    let camera_mode = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 9., 0.),
-        CleanupSettings,
-    )).id();
+    let camera_mode = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 9., 0.),
+            CleanupSettings,
+        ))
+        .id();
 
     // Save Settings Section
     cmds.spawn((
@@ -109,17 +129,21 @@ fn render_settings_menu(mut cmds: Commands) {
         CleanupSettings,
     ));
 
-    let saves_enabled = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 11., 0.),
-        CleanupSettings,
-    )).id();
+    let saves_enabled = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 11., 0.),
+            CleanupSettings,
+        ))
+        .id();
 
-    let save_name = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 11.5, 0.),
-        CleanupSettings,
-    )).id();
+    let save_name = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 11.5, 0.),
+            CleanupSettings,
+        ))
+        .id();
 
     // Input Settings Section
     cmds.spawn((
@@ -128,17 +152,21 @@ fn render_settings_menu(mut cmds: Commands) {
         CleanupSettings,
     ));
 
-    let input_rate = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 13.5, 0.),
-        CleanupSettings,
-    )).id();
+    let input_rate = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 13.5, 0.),
+            CleanupSettings,
+        ))
+        .id();
 
-    let input_delay = cmds.spawn((
-        Text::new(""),
-        Position::new_f32(6., 14., 0.),
-        CleanupSettings,
-    )).id();
+    let input_delay = cmds
+        .spawn((
+            Text::new(""),
+            Position::new_f32(6., 14., 0.),
+            CleanupSettings,
+        ))
+        .id();
 
     // Controls
     cmds.spawn((
@@ -239,13 +267,13 @@ fn update_settings_display(
     settings: Res<GameSettings>,
     ui_entities: Option<Res<SettingsUIEntities>>,
 ) {
-    if !settings.is_changed() {
-        return;
-    }
-
     let Some(ui_entities) = ui_entities else {
         return;
     };
+
+    if !settings.is_changed() && !ui_entities.is_changed() {
+        return;
+    }
 
     // Update curvature
     if let Ok(mut text) = q_text.get_mut(ui_entities.curvature) {
@@ -259,7 +287,11 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.scanlines) {
         text.value = format!(
             "({{Y|2}}) Scanlines: {}",
-            if settings.crt_scanline { "{G|ON}" } else { "{R|OFF}" }
+            if settings.crt_scanline {
+                "{G|ON}"
+            } else {
+                "{R|OFF}"
+            }
         );
     }
 
@@ -267,7 +299,11 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.film_grain) {
         text.value = format!(
             "({{Y|3}}) Film Grain: {}",
-            if settings.crt_film_grain { "{G|ON}" } else { "{R|OFF}" }
+            if settings.crt_film_grain {
+                "{G|ON}"
+            } else {
+                "{R|OFF}"
+            }
         );
     }
 
@@ -275,7 +311,11 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.flicker) {
         text.value = format!(
             "({{Y|4}}) Flicker: {}",
-            if settings.crt_flicker { "{G|ON}" } else { "{R|OFF}" }
+            if settings.crt_flicker {
+                "{G|ON}"
+            } else {
+                "{R|OFF}"
+            }
         );
     }
 
@@ -283,7 +323,11 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.vignette) {
         text.value = format!(
             "({{Y|5}}) Vignette: {}",
-            if settings.crt_vignette { "{G|ON}" } else { "{R|OFF}" }
+            if settings.crt_vignette {
+                "{G|ON}"
+            } else {
+                "{R|OFF}"
+            }
         );
     }
 
@@ -291,7 +335,11 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.chromatic_ab) {
         text.value = format!(
             "({{Y|6}}) Chromatic Aberration: {}",
-            if settings.crt_chromatic_ab { "{G|ON}" } else { "{R|OFF}" }
+            if settings.crt_chromatic_ab {
+                "{G|ON}"
+            } else {
+                "{R|OFF}"
+            }
         );
     }
 
@@ -299,7 +347,9 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.camera_mode) {
         text.value = match settings.camera_mode {
             CameraMode::Snap => "({Y|7}) Camera Mode: {G|SNAP}".to_string(),
-            CameraMode::Smooth(speed) => format!("({{Y|7}}) Camera Mode: {{G|SMOOTH ({:.3})}}", speed),
+            CameraMode::Smooth(speed) => {
+                format!("({{Y|7}}) Camera Mode: {{G|SMOOTH ({:.3})}}", speed)
+            }
         };
     }
 
@@ -307,7 +357,11 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.saves_enabled) {
         text.value = format!(
             "({{Y|8}}) Saves Enabled: {}",
-            if settings.enable_saves { "{G|ON}" } else { "{R|OFF}" }
+            if settings.enable_saves {
+                "{G|ON}"
+            } else {
+                "{R|OFF}"
+            }
         );
     }
 
