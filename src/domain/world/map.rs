@@ -29,7 +29,7 @@ impl Terrain {
     pub fn tile(&self) -> usize {
         match self {
             Terrain::Grass => 1,
-            Terrain::Dirt => 18,
+            Terrain::Dirt => 19,
             Terrain::River => 34,
         }
     }
@@ -37,7 +37,7 @@ impl Terrain {
     pub fn colors(&self) -> (Option<u32>, Option<u32>) {
         match self {
             Terrain::Grass => (None, Some(Palette::DarkCyan.into())),
-            Terrain::Dirt => (None, Some(Palette::Brown.into())),
+            Terrain::Dirt => (Some(Palette::Brown.into()), Some(Palette::Brown.into())),
             Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
         }
     }
@@ -98,7 +98,7 @@ pub struct ZoneConstraints {
 pub enum ZoneConstraintType {
     None,
     River,
-    Path,
+    Footpath,
     StairDown,
 }
 
@@ -124,10 +124,10 @@ impl Map {
                 south[r] = ZoneConstraintType::River;
             }
 
-            // path
+            // footpath
             if x.is_multiple_of(4) {
                 let r = rand.range_n(1, ZONE_SIZE.0 as i32 - 1) as usize;
-                south[r] = ZoneConstraintType::Path;
+                south[r] = ZoneConstraintType::Footpath;
             }
         }
 
@@ -141,7 +141,7 @@ impl Map {
             // footpaths
             if y.is_multiple_of(2) {
                 let r = rand.range_n(1, ZONE_SIZE.1 as i32 - 1) as usize;
-                west[r] = ZoneConstraintType::Path;
+                west[r] = ZoneConstraintType::Footpath;
             }
         }
 

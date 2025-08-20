@@ -24,7 +24,7 @@ fn collect_constraint_positions(
     for (x, constraint_type) in constraints.south.iter().enumerate() {
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((x, 0)),
-            ZoneConstraintType::Path => path_positions.push((x, 0)),
+            ZoneConstraintType::Footpath => path_positions.push((x, 0)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((x, 0)),
             ZoneConstraintType::None => {}
         }
@@ -33,7 +33,7 @@ fn collect_constraint_positions(
     for (x, constraint_type) in constraints.north.iter().enumerate() {
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((x, ZONE_SIZE.1 - 1)),
-            ZoneConstraintType::Path => path_positions.push((x, ZONE_SIZE.1 - 1)),
+            ZoneConstraintType::Footpath => path_positions.push((x, ZONE_SIZE.1 - 1)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((x, ZONE_SIZE.1 - 1)),
             ZoneConstraintType::None => {}
         }
@@ -42,7 +42,7 @@ fn collect_constraint_positions(
     for (y, constraint_type) in constraints.west.iter().enumerate() {
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((0, y)),
-            ZoneConstraintType::Path => path_positions.push((0, y)),
+            ZoneConstraintType::Footpath => path_positions.push((0, y)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((0, y)),
             ZoneConstraintType::None => {}
         }
@@ -51,7 +51,7 @@ fn collect_constraint_positions(
     for (y, constraint_type) in constraints.east.iter().enumerate() {
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((ZONE_SIZE.0 - 1, y)),
-            ZoneConstraintType::Path => path_positions.push((ZONE_SIZE.0 - 1, y)),
+            ZoneConstraintType::Footpath => path_positions.push((ZONE_SIZE.0 - 1, y)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((ZONE_SIZE.0 - 1, y)),
             ZoneConstraintType::None => {}
         }
@@ -59,14 +59,20 @@ fn collect_constraint_positions(
 
     for (x, constraint_type) in constraints.up.iter().enumerate() {
         match constraint_type {
-            ZoneConstraintType::StairDown => stair_up_positions.push((x, ZONE_SIZE.1 / 2)),
+            ZoneConstraintType::StairDown => {
+                let stair_pos = (x, ZONE_SIZE.1 / 2);
+                stair_up_positions.push(stair_pos);
+            }
             _ => {}
         }
     }
 
     for (x, constraint_type) in constraints.down.iter().enumerate() {
         match constraint_type {
-            ZoneConstraintType::StairDown => stair_down_positions.push((x, ZONE_SIZE.1 / 2)),
+            ZoneConstraintType::StairDown => {
+                let stair_pos = (x, ZONE_SIZE.1 / 2);
+                stair_down_positions.push(stair_pos);
+            }
             _ => {}
         }
     }
@@ -290,7 +296,7 @@ fn generate_paths(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>, zon
                 } else if !result.is_success {
                     use macroquad::prelude::warn;
                     warn!(
-                        "A* failed for path from {:?} to {:?} in zone {}",
+                        "A* failed for footpath from {:?} to {:?} in zone {}",
                         from_pos, to_pos, zone_idx
                     );
                     warn!(
@@ -325,6 +331,84 @@ fn generate_stairs(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
     }
 }
 
+fn connect_stairs_to_footpaths(stair_positions: &[(usize, usize)], terrain: &mut Grid<Terrain>, zone_idx: usize) {
+    for &stair_pos in stair_positions {
+        // Find nearest existing footpath (Dirt terrain)
+        let mut nearest_footpath = None;
+        let mut shortest_distance = f32::INFINITY;
+        
+        for x in 0..ZONE_SIZE.0 {
+            for y in 0..ZONE_SIZE.1 {
+                if let Some(existing_terrain) = terrain.get(x, y) {
+                    if *existing_terrain == Terrain::Dirt && x != stair_pos.0 && y != stair_pos.1 {
+                        let distance = Distance::manhattan(
+                            [stair_pos.0 as i32, stair_pos.1 as i32, 0],
+                            [x as i32, y as i32, 0]
+                        );
+                        if distance < shortest_distance {
+                            shortest_distance = distance;
+                            nearest_footpath = Some((x, y));
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Connect stair to nearest footpath using A*
+        if let Some(footpath_pos) = nearest_footpath {
+            let settings = AStarSettings {
+                start: stair_pos,
+                is_goal: |pos| pos == footpath_pos,
+                cost: |_from, to| {
+                    if let Some(existing_terrain) = terrain.get(to.0, to.1) {
+                        if *existing_terrain == Terrain::River {
+                            return 3.0;
+                        }
+                    }
+                    1.0
+                },
+                heuristic: |pos| {
+                    Distance::manhattan(
+                        [pos.0 as i32, pos.1 as i32, 0],
+                        [footpath_pos.0 as i32, footpath_pos.1 as i32, 0]
+                    )
+                },
+                neighbors: |pos| {
+                    let mut neighbors = Vec::new();
+                    let (x, y) = pos;
+                    
+                    if x > 0 { neighbors.push((x - 1, y)); }
+                    if x < ZONE_SIZE.0 - 1 { neighbors.push((x + 1, y)); }
+                    if y > 0 { neighbors.push((x, y - 1)); }
+                    if y < ZONE_SIZE.1 - 1 { neighbors.push((x, y + 1)); }
+                    
+                    neighbors
+                },
+                max_depth: 1000,
+                max_cost: Some(ZONE_SIZE.0 as f32 * 1.5),
+            };
+            
+            let result = astar(settings);
+            if result.is_success {
+                // Create footpath connection to stair
+                for &(x, y) in &result.path {
+                    if terrain.get(x, y) != Some(&Terrain::River) {
+                        terrain.insert(x, y, Terrain::Dirt);
+                    }
+                }
+            } else {
+                // Fallback: direct line to footpath
+                let fallback_path = bresenham_line(stair_pos, footpath_pos);
+                for &(x, y) in &fallback_path {
+                    if x < ZONE_SIZE.0 && y < ZONE_SIZE.1 && terrain.get(x, y) != Some(&Terrain::River) {
+                        terrain.insert(x, y, Terrain::Dirt);
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub fn gen_zone(world: &mut World, zone_idx: usize) {
     let mut rand = Rand::seed(zone_idx as u64);
     let map = world.resource::<Map>();
@@ -337,6 +421,10 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
     generate_paths(&path_positions, &mut terrain, zone_idx);
     generate_stairs(&stair_down_positions, &mut terrain);
     generate_stairs(&stair_up_positions, &mut terrain);
+    
+    // Connect stairs to nearest footpaths after footpath network is established
+    connect_stairs_to_footpaths(&stair_down_positions, &mut terrain, zone_idx);
+    connect_stairs_to_footpaths(&stair_up_positions, &mut terrain, zone_idx);
 
     let zone_entity_id = world.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
 
