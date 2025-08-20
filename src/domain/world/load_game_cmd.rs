@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::Player,
+    domain::{Map, Player},
     engine::try_load_game,
     rendering::{Glyph, RenderLayer},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -43,6 +43,8 @@ impl LoadGameCommand {
             Player,
             CleanupStatePlay,
         ));
+
+        world.init_resource::<Map>();
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {
             game_state.next = GameState::Explore;

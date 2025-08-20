@@ -16,6 +16,10 @@ pub fn zone_xyz(zone_idx: usize) -> (usize, usize, usize) {
     )
 }
 
+pub fn is_zone_oob(x: usize, y: usize, z: usize) -> bool {
+    x >= MAP_SIZE.0 || y >= MAP_SIZE.1 || z >= MAP_SIZE.2
+}
+
 // convert local zone coordinates to world coordinates
 #[inline]
 pub fn zone_local_to_world(zone_idx: usize, x: usize, y: usize) -> (usize, usize, usize) {

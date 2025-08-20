@@ -1,10 +1,13 @@
+use std::vec;
+
 use bevy_ecs::{component::Component, entity::Entity, resource::Resource};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, HashGrid, Palette},
+    common::{Grid, HashGrid, Palette, Rand},
     domain::ZoneSaveData,
+    rendering::{is_zone_oob, zone_idx, zone_xyz},
 };
 
 #[derive(Resource, Default)]
@@ -61,6 +64,103 @@ impl Zone {
             idx: self.idx,
             terrain: self.terrain.clone(),
             entities: vec![],
+        }
+    }
+}
+
+pub struct ZoneContinuity {
+    pub south: Vec<ZoneConstraintType>,
+    pub west: Vec<ZoneConstraintType>,
+    pub down: Vec<ZoneConstraintType>,
+}
+
+pub struct ZoneConstraints {
+    pub idx: usize,
+    pub south: Vec<ZoneConstraintType>,
+    pub west: Vec<ZoneConstraintType>,
+    pub east: Vec<ZoneConstraintType>,
+    pub north: Vec<ZoneConstraintType>,
+    pub up: Vec<ZoneConstraintType>,
+    pub down: Vec<ZoneConstraintType>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ZoneConstraintType {
+    None,
+    River,
+    Path,
+}
+
+#[derive(Resource, Default)]
+pub struct Map;
+
+impl Map {
+    fn get_continuity(&self, x: usize, y: usize, z: usize) -> ZoneContinuity {
+        if is_zone_oob(x, y, z) {
+            return ZoneContinuity {
+                south: vec![],
+                west: vec![],
+                down: vec![],
+            };
+        }
+
+        let idx = zone_idx(x, y, z);
+        let mut rand = Rand::seed(idx as u64);
+
+        let mut south = [ZoneConstraintType::None; ZONE_SIZE.0];
+        let mut west = [ZoneConstraintType::None; ZONE_SIZE.1];
+
+        if y > 0 {
+            // river
+            if x.is_multiple_of(3) {
+                let r = rand.range_n(1, ZONE_SIZE.0 as i32 - 1) as usize;
+                south[r] = ZoneConstraintType::River;
+            }
+
+            // path
+            if x.is_multiple_of(4) {
+                let r = rand.range_n(1, ZONE_SIZE.0 as i32 - 1) as usize;
+                south[r] = ZoneConstraintType::Path;
+            }
+        }
+
+        if x > 0 {
+            // river
+            if y.is_multiple_of(2) {
+                let r = rand.range_n(1, ZONE_SIZE.1 as i32 - 1) as usize;
+                west[r] = ZoneConstraintType::River;
+            }
+
+            // footpaths
+            if y.is_multiple_of(2) {
+                let r = rand.range_n(1, ZONE_SIZE.1 as i32 - 1) as usize;
+                west[r] = ZoneConstraintType::Path;
+            }
+        }
+
+        ZoneContinuity {
+            south: south.to_vec(),
+            west: west.to_vec(),
+            down: vec![],
+        }
+    }
+
+    pub fn get_zone_constraints(&self, idx: usize) -> ZoneConstraints {
+        let (x, y, z) = zone_xyz(idx);
+
+        let own = self.get_continuity(x, y, z);
+        let east = self.get_continuity(x + 1, y, z);
+        let north = self.get_continuity(x, y + 1, z);
+        let up = self.get_continuity(x, y, z + 1);
+
+        ZoneConstraints {
+            idx,
+            north: north.south,
+            south: own.south,
+            east: east.west,
+            west: own.west,
+            up: up.down,
+            down: own.down,
         }
     }
 }

@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{GameSaveData, Player, PlayerMovedEvent, PlayerSaveData},
+    domain::{GameSaveData, Map, Player, PlayerSaveData},
     engine::{delete_save, save_game},
     rendering::{Glyph, Position, RenderLayer},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -39,6 +39,8 @@ impl NewGameCommand {
             Player,
             CleanupStatePlay,
         ));
+
+        world.init_resource::<Map>();
 
         let player_save_data = PlayerSaveData {
             position: starting_position,
