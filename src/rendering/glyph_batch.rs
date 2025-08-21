@@ -14,8 +14,9 @@ pub struct GlyphBatch {
     pipeline: Pipeline,
     bindings: Bindings,
 
-    vertices: Vec<Vertex>,
-    indices: Vec<u32>,
+    quad_vertices: [Vertex; 4],
+    quad_indices: [u32; 6],
+    instances: Vec<InstanceData>,
 
     max_size: usize,
     size: usize,
@@ -26,6 +27,13 @@ pub struct GlyphBatch {
 struct Vertex {
     pos: Vec2,
     uv: Vec2,
+}
+
+#[derive(Default)]
+#[repr(C)]
+struct InstanceData {
+    instance_pos: Vec2,
+    instance_size: Vec2,
     idx: f32,
     tex_idx: f32,
     fg1: Vec4,
@@ -41,10 +49,13 @@ pub struct BaseShaderUniforms {
 
 impl GlyphBatch {
     fn update_bindings(&mut self, ctx: &mut dyn RenderingBackend) {
-        let vsource = BufferSource::slice(self.vertices.as_slice());
-        let isource = BufferSource::slice(self.indices.as_slice());
+        let used_instances = self.size;
+        let vsource = BufferSource::slice(&self.quad_vertices);
+        let isource = BufferSource::slice(&self.quad_indices);
+        let instance_source = BufferSource::slice(&self.instances[..used_instances]);
 
         ctx.buffer_update(self.bindings.vertex_buffers[0], vsource);
+        ctx.buffer_update(self.bindings.vertex_buffers[1], instance_source);
         ctx.buffer_update(self.bindings.index_buffer, isource);
     }
 
@@ -54,24 +65,30 @@ impl GlyphBatch {
         target_type: RenderTargetType,
         max_size: usize,
     ) -> GlyphBatch {
-        let v_count = 4 * max_size;
-        let i_count = ((v_count + 3) >> 2) * 6;
+        let quad_vertices = [
+            Vertex {
+                pos: Vec2::new(0.0, 0.0),
+                uv: Vec2::new(0.0, 0.0),
+            }, // top left
+            Vertex {
+                pos: Vec2::new(1.0, 0.0),
+                uv: Vec2::new(1.0, 0.0),
+            }, // top right
+            Vertex {
+                pos: Vec2::new(1.0, 1.0),
+                uv: Vec2::new(1.0, 1.0),
+            }, // bottom right
+            Vertex {
+                pos: Vec2::new(0.0, 1.0),
+                uv: Vec2::new(0.0, 1.0),
+            }, // bottom left
+        ];
 
-        let mut vertices = Vec::<Vertex>::with_capacity(v_count);
-        let mut indices = Vec::<u32>::with_capacity(i_count);
+        let quad_indices = [0, 1, 2, 0, 2, 3];
 
-        for i in 0..(i_count / 6) {
-            let k = (i << 2) as u32;
-            indices.push(k);
-            indices.push(k + 1);
-            indices.push(k + 2);
-            indices.push(k);
-            indices.push(k + 2);
-            indices.push(k + 3);
-        }
-
-        for _ in 0..v_count {
-            vertices.push(Vertex::default());
+        let mut instances = Vec::<InstanceData>::with_capacity(max_size);
+        for _ in 0..max_size {
+            instances.push(InstanceData::default());
         }
 
         let ctx = unsafe { get_internal_gl().quad_context };
@@ -92,31 +109,53 @@ impl GlyphBatch {
             .unwrap();
 
         let pipeline = ctx.new_pipeline(
-            &[BufferLayout::default()],
             &[
-                VertexAttribute::new("in_pos", VertexFormat::Float2),
-                VertexAttribute::new("in_uv", VertexFormat::Float2),
-                VertexAttribute::new("in_idx", VertexFormat::Float1),
-                VertexAttribute::new("in_tex_idx", VertexFormat::Float1),
-                VertexAttribute::new("in_fg1", VertexFormat::Float4),
-                VertexAttribute::new("in_fg2", VertexFormat::Float4),
-                VertexAttribute::new("in_bg", VertexFormat::Float4),
-                VertexAttribute::new("in_outline", VertexFormat::Float4),
+                BufferLayout {
+                    step_func: VertexStep::PerVertex,
+                    step_rate: 1,
+                    stride: std::mem::size_of::<Vertex>() as i32,
+                },
+                BufferLayout {
+                    step_func: VertexStep::PerInstance,
+                    step_rate: 1,
+                    stride: std::mem::size_of::<InstanceData>() as i32,
+                },
+            ],
+            &[
+                // Vertex attributes (per vertex) - buffer 0
+                VertexAttribute::with_buffer("in_pos", VertexFormat::Float2, 0),
+                VertexAttribute::with_buffer("in_uv", VertexFormat::Float2, 0),
+                // Instance attributes (per instance) - buffer 1
+                VertexAttribute::with_buffer("in_instance_pos", VertexFormat::Float2, 1),
+                VertexAttribute::with_buffer("in_instance_size", VertexFormat::Float2, 1),
+                VertexAttribute::with_buffer("in_idx", VertexFormat::Float1, 1),
+                VertexAttribute::with_buffer("in_tex_idx", VertexFormat::Float1, 1),
+                VertexAttribute::with_buffer("in_fg1", VertexFormat::Float4, 1),
+                VertexAttribute::with_buffer("in_fg2", VertexFormat::Float4, 1),
+                VertexAttribute::with_buffer("in_bg", VertexFormat::Float4, 1),
+                VertexAttribute::with_buffer("in_outline", VertexFormat::Float4, 1),
             ],
             shader,
             Default::default(),
         );
 
         let bindings = Bindings {
-            vertex_buffers: vec![ctx.new_buffer(
-                BufferType::VertexBuffer,
-                BufferUsage::Immutable,
-                BufferSource::slice(vertices.as_slice()),
-            )],
+            vertex_buffers: vec![
+                ctx.new_buffer(
+                    BufferType::VertexBuffer,
+                    BufferUsage::Immutable,
+                    BufferSource::slice(&quad_vertices),
+                ),
+                ctx.new_buffer(
+                    BufferType::VertexBuffer,
+                    BufferUsage::Stream,
+                    BufferSource::slice(instances.as_slice()),
+                ),
+            ],
             index_buffer: ctx.new_buffer(
                 BufferType::IndexBuffer,
                 BufferUsage::Immutable,
-                BufferSource::slice(indices.as_slice()),
+                BufferSource::slice(&quad_indices),
             ),
             images: vec![texture_id_1, texture_id_2],
         };
@@ -125,8 +164,9 @@ impl GlyphBatch {
             target_type,
             bindings,
             pipeline,
-            vertices,
-            indices,
+            quad_vertices,
+            quad_indices,
+            instances,
             max_size,
             size: 0,
         }
@@ -138,60 +178,29 @@ impl GlyphBatch {
             return;
         }
 
-        self.size += 1;
+        self.instances[self.size] = InstanceData {
+            instance_pos: Vec2::new(r.x, r.y),
+            instance_size: Vec2::new(r.w, r.h),
+            idx: r.idx as f32,
+            tex_idx: r.tex_idx as f32,
+            fg1: r.fg1,
+            fg2: r.fg2,
+            bg: r.bg,
+            outline: r.outline,
+        };
 
-        self.vertices.push(Vertex {
-            // top left
-            pos: Vec2::new(r.x, r.y),
-            uv: Vec2::new(0., 0.),
-            idx: r.idx as f32,
-            tex_idx: r.tex_idx as f32,
-            fg1: r.fg1,
-            fg2: r.fg2,
-            bg: r.bg,
-            outline: r.outline,
-        });
-        self.vertices.push(Vertex {
-            // top right
-            pos: Vec2::new(r.x + r.w, r.y),
-            uv: Vec2::new(1.0, 0.),
-            idx: r.idx as f32,
-            tex_idx: r.tex_idx as f32,
-            fg1: r.fg1,
-            fg2: r.fg2,
-            bg: r.bg,
-            outline: r.outline,
-        });
-        self.vertices.push(Vertex {
-            // bottom right
-            pos: Vec2::new(r.x + r.w, r.y + r.h),
-            uv: Vec2::new(1., 1.),
-            idx: r.idx as f32,
-            tex_idx: r.tex_idx as f32,
-            fg1: r.fg1,
-            fg2: r.fg2,
-            bg: r.bg,
-            outline: r.outline,
-        });
-        self.vertices.push(Vertex {
-            // bottom left
-            pos: Vec2::new(r.x, r.y + r.h),
-            uv: Vec2::new(0., 1.),
-            idx: r.idx as f32,
-            tex_idx: r.tex_idx as f32,
-            fg1: r.fg1,
-            fg2: r.fg2,
-            bg: r.bg,
-            outline: r.outline,
-        });
+        self.size += 1;
     }
 
     pub fn clear(&mut self) {
-        self.vertices.clear();
         self.size = 0;
     }
 
     pub fn render(&mut self) {
+        if self.size == 0 {
+            return;
+        }
+
         let mut gl = unsafe { get_internal_gl() };
 
         self.update_bindings(gl.quad_context);
@@ -207,9 +216,7 @@ impl GlyphBatch {
         gl.quad_context
             .apply_uniforms(UniformsSource::table(&BaseShaderUniforms { projection }));
 
-        let n = self.size * 6;
-
-        gl.quad_context.draw(0, n as i32, 1);
+        gl.quad_context.draw(0, 6, self.size as i32);
         gl.flush();
     }
 }
@@ -217,10 +224,15 @@ impl GlyphBatch {
 pub const VERTEX: &str = "#version 100
 uniform mat4 projection;
 
-attribute float in_idx;
-attribute float in_tex_idx;
+// Vertex attributes (per vertex)
 attribute vec2 in_pos;
 attribute vec2 in_uv;
+
+// Instance attributes (per glyph)
+attribute vec2 in_instance_pos;
+attribute vec2 in_instance_size;
+attribute float in_idx;
+attribute float in_tex_idx;
 attribute vec4 in_fg1;
 attribute vec4 in_fg2;
 attribute vec4 in_bg;
@@ -235,7 +247,10 @@ varying vec4 bg;
 varying vec4 outline;
 
 void main() {
-    gl_Position = projection * vec4(in_pos, 0.0, 1.0);
+    // Calculate world position by scaling unit quad and translating
+    vec2 world_pos = in_instance_pos + in_pos * in_instance_size;
+    gl_Position = projection * vec4(world_pos, 0.0, 1.0);
+    
     uv = in_uv;
     idx = in_idx;
     tex_idx = in_tex_idx;
