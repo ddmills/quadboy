@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{GameSaveData, Map, Player, PlayerSaveData},
+    domain::{GameSaveData, Map, Name, Player, PlayerSaveData},
     engine::{delete_save, save_game},
     rendering::{Glyph, Position, RenderLayer},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -37,6 +37,7 @@ impl NewGameCommand {
             starting_position.clone(),
             Glyph::new(147, Palette::Yellow, Palette::Blue).layer(RenderLayer::Actors),
             Player,
+            Name::new("Cowboy"),
             CleanupStatePlay,
         ));
 

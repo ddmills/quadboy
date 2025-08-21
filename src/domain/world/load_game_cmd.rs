@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{Map, Player},
+    domain::{Map, Name, Player},
     engine::try_load_game,
     rendering::{Glyph, RenderLayer},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -41,6 +41,7 @@ impl LoadGameCommand {
             game_data.player.position,
             Glyph::new(147, Palette::Yellow, Palette::Blue).layer(RenderLayer::Actors),
             Player,
+            Name::new("Cowboy"),
             CleanupStatePlay,
         ));
 

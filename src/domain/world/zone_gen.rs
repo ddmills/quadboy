@@ -3,7 +3,7 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
-    domain::{Map, Terrain, Zone, ZoneConstraintType, ZoneStatus},
+    domain::{Map, Name, Terrain, Zone, ZoneConstraintType, ZoneStatus},
     rendering::{Glyph, Position, RenderLayer, TrackZone, zone_local_to_world},
     states::CleanupStatePlay,
 };
@@ -440,6 +440,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             world.spawn((
                 Position::new(wpos.0, wpos.1, wpos.2),
                 Glyph::new(64, Palette::DarkCyan, Palette::Orange).layer(RenderLayer::Actors),
+                Name::new("Tree"),
                 ChildOf(zone_entity_id),
                 ZoneStatus::Dormant,
                 TrackZone,
@@ -465,6 +466,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         world.spawn((
             Position::new(wpos.0, wpos.1, wpos.2),
             Glyph::new(107, Palette::White, Palette::Gray).layer(RenderLayer::Actors),
+            Name::new("Stairs Down"),
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
             TrackZone,
@@ -477,6 +479,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         world.spawn((
             Position::new(wpos.0, wpos.1, wpos.2),
             Glyph::new(108, Palette::White, Palette::Gray).layer(RenderLayer::Actors),
+            Name::new("Stairs Up"),
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
             TrackZone,

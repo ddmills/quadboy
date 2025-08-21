@@ -14,7 +14,7 @@ use ui::UiLayout;
 use crate::{
     cfg::WINDOW_SIZE,
     domain::{
-        GameSettings, LoadGameResult, LoadZoneEvent, NewGameResult, PlayerMovedEvent,
+        GameSettings, LoadGameResult, LoadZoneEvent, Name, NewGameResult, PlayerMovedEvent,
         SaveGameResult, SetZoneStatusEvent, UnloadZoneEvent, Zones,
     },
     engine::{
@@ -67,6 +67,7 @@ async fn main() {
     reg.register::<Glyph>();
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
+    reg.register::<Name>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)
