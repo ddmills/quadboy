@@ -97,7 +97,7 @@ impl FromWorld for Layers {
             .map(|l| {
                 (
                     *l,
-                    GlyphBatch::new(texture_glyph, texture_body_text, l.get_target_type(), 8000),
+                    GlyphBatch::new(texture_glyph, texture_body_text, l.get_target_type(), 4000),
                 )
             })
             .collect::<HashMap<_, _>>();
