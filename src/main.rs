@@ -15,7 +15,7 @@ use crate::{
     cfg::WINDOW_SIZE,
     domain::{
         GameSettings, LoadGameResult, LoadZoneEvent, Name, NewGameResult, PlayerMovedEvent,
-        SaveGameResult, SetZoneStatusEvent, UnloadZoneEvent, Zones,
+        SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, UnloadZoneEvent, Zones,
     },
     engine::{
         App, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -68,6 +68,8 @@ async fn main() {
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
     reg.register::<Name>();
+    reg.register::<StairDown>();
+    reg.register::<StairUp>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

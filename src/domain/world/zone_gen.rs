@@ -3,7 +3,7 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
-    domain::{Map, Name, Terrain, Zone, ZoneConstraintType, ZoneStatus},
+    domain::{Map, Name, Terrain, Zone, ZoneConstraintType, ZoneStatus, StairDown, StairUp},
     rendering::{Glyph, Layer, Position, TrackZone, zone_local_to_world},
     states::CleanupStatePlay,
 };
@@ -471,6 +471,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             Position::new(wpos.0, wpos.1, wpos.2),
             Glyph::new(107, Palette::White, Palette::Gray).layer(Layer::Actors),
             Name::new("Stairs Down"),
+            StairDown,
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
             TrackZone,
@@ -484,6 +485,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             Position::new(wpos.0, wpos.1, wpos.2),
             Glyph::new(108, Palette::White, Palette::Gray).layer(Layer::Actors),
             Name::new("Stairs Up"),
+            StairUp,
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
             TrackZone,

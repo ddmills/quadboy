@@ -4,7 +4,7 @@ use macroquad::input::KeyCode;
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::Palette,
-    domain::GameSettings,
+    domain::{GameSettings, StairDown, StairUp, Zone},
     engine::{InputRate, KeyInput, Mouse, Time},
     rendering::{Glyph, Layer, Position, Text, TrackZone, zone_xyz},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -44,6 +44,9 @@ pub struct PlayerMovedEvent {
 pub fn player_input(
     mut cmds: Commands,
     mut q_player: Query<&mut Position, With<Player>>,
+    _q_zones: Query<&Zone>,
+    q_stairs_down: Query<&Position, (With<StairDown>, Without<Player>)>,
+    q_stairs_up: Query<&Position, (With<StairUp>, Without<Player>)>,
     keys: Res<KeyInput>,
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
@@ -100,15 +103,12 @@ pub fn player_input(
         moved = true;
     }
 
-    if z > 0 && keys.is_down(KeyCode::E) && input_rate.try_key(KeyCode::E, now, rate, delay) {
+    if z > 0 && keys.is_down(KeyCode::E) && input_rate.try_key(KeyCode::E, now, rate, delay) && is_on_stair_up(x, y, z, &q_stairs_up) {
         position.z -= 1.;
         moved = true;
     }
 
-    if z < MAP_SIZE.2 - 1
-        && keys.is_down(KeyCode::Q)
-        && input_rate.try_key(KeyCode::Q, now, rate, delay)
-    {
+    if z < MAP_SIZE.2 - 1 && keys.is_down(KeyCode::Q) && input_rate.try_key(KeyCode::Q, now, rate, delay) && is_on_stair_down(x, y, z, &q_stairs_down) {
         position.z += 1.;
         moved = true;
     }
@@ -162,4 +162,26 @@ pub fn render_player_debug(
         cursor.world.0.floor(),
         cursor.world.1.floor()
     );
+}
+
+fn is_on_stair_down(player_x: usize, player_y: usize, player_z: usize, stairs: &Query<&Position, (With<StairDown>, Without<Player>)>) -> bool {
+    for stair_pos in stairs.iter() {
+        if stair_pos.x.floor() as usize == player_x 
+            && stair_pos.y.floor() as usize == player_y 
+            && stair_pos.z.floor() as usize == player_z {
+            return true;
+        }
+    }
+    false
+}
+
+fn is_on_stair_up(player_x: usize, player_y: usize, player_z: usize, stairs: &Query<&Position, (With<StairUp>, Without<Player>)>) -> bool {
+    for stair_pos in stairs.iter() {
+        if stair_pos.x.floor() as usize == player_x 
+            && stair_pos.y.floor() as usize == player_y 
+            && stair_pos.z.floor() as usize == player_z {
+            return true;
+        }
+    }
+    false
 }
