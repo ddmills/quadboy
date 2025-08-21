@@ -58,22 +58,16 @@ fn collect_constraint_positions(
     }
 
     for (x, constraint_type) in constraints.up.iter().enumerate() {
-        match constraint_type {
-            ZoneConstraintType::StairDown => {
-                let stair_pos = (x, ZONE_SIZE.1 / 2);
-                stair_up_positions.push(stair_pos);
-            }
-            _ => {}
+        if constraint_type == &ZoneConstraintType::StairDown {
+            let stair_pos = (x, ZONE_SIZE.1 / 2);
+            stair_up_positions.push(stair_pos);
         }
     }
 
     for (x, constraint_type) in constraints.down.iter().enumerate() {
-        match constraint_type {
-            ZoneConstraintType::StairDown => {
-                let stair_pos = (x, ZONE_SIZE.1 / 2);
-                stair_down_positions.push(stair_pos);
-            }
-            _ => {}
+        if constraint_type == &ZoneConstraintType::StairDown {
+            let stair_pos = (x, ZONE_SIZE.1 / 2);
+            stair_down_positions.push(stair_pos);
         }
     }
 
@@ -343,8 +337,8 @@ fn connect_stairs_to_footpaths(
 
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
-                if let Some(existing_terrain) = terrain.get(x, y) {
-                    if *existing_terrain == Terrain::Dirt && x != stair_pos.0 && y != stair_pos.1 {
+                if let Some(existing_terrain) = terrain.get(x, y)
+                    && *existing_terrain == Terrain::Dirt && x != stair_pos.0 && y != stair_pos.1 {
                         let distance = Distance::manhattan(
                             [stair_pos.0 as i32, stair_pos.1 as i32, 0],
                             [x as i32, y as i32, 0],
@@ -354,7 +348,6 @@ fn connect_stairs_to_footpaths(
                             nearest_footpath = Some((x, y));
                         }
                     }
-                }
             }
         }
 
@@ -364,11 +357,10 @@ fn connect_stairs_to_footpaths(
                 start: stair_pos,
                 is_goal: |pos| pos == footpath_pos,
                 cost: |_from, to| {
-                    if let Some(existing_terrain) = terrain.get(to.0, to.1) {
-                        if *existing_terrain == Terrain::River {
+                    if let Some(existing_terrain) = terrain.get(to.0, to.1)
+                        && *existing_terrain == Terrain::River {
                             return 3.0;
                         }
-                    }
                     1.0
                 },
                 heuristic: |pos| {

@@ -1,4 +1,4 @@
-use macroquad::{math::Vec4, prelude::trace};
+use macroquad::math::Vec4;
 
 use crate::{
     common::cp437_idx,
