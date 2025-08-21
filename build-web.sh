@@ -141,59 +141,18 @@ progress "Cleaning dist directory..."
 rm -rf dist
 success "Cleaned dist directory"
 
-HTML=$(
-	cat <<-END
-		<html lang="en">
-		<head>
-			<meta charset="utf-8">
-			<title>${PROJECT_NAME}</title>
-			<style>
-				html,
-				body,
-				canvas {
-					margin: 0px;
-					padding: 0px;
-					width: 100%;
-					height: 100%;
-					overflow: hidden;
-					position: absolute;
-					z-index: 0;
-					image-rendering: pixelated;
-					background-color: black;
-				}
-			</style>
-		</head>
-		<body style="margin: 0; padding: 0; height: 100vh; width: 100vw;">
-			<canvas id="glcanvas" tabindex='1' hidden></canvas>
-			<script src="./mq_js_bundle.js"></script>
-			<script type="module">
-				console.log('%c ${PROJECT_NAME} - [${GIT_SHA} ${BUILD_MODE}] ${BUILD_TIME} ', 'background: #111411; color: #e9e548;');
+# Read HTML template and substitute variables
+if [[ ! -f "index.html" ]]; then
+	die "HTML file not found: index.html"
+fi
 
-				import init, { set_wasm } from "./${PROJECT_NAME}.js";
-				async function impl_run() {
-					let wbg = await init();
-					miniquad_add_plugin({
-						register_plugin: (a) => (a.wbg = wbg),
-						on_init: () => set_wasm(wasm_exports),
-						version: "0.0.1",
-						name: "wbg",
-					});
-					load("./${PROJECT_NAME}_bg.wasm");
-				}
-				window.run = function() {
-					document.getElementById("run-container").remove();
-					document.getElementById("glcanvas").removeAttribute("hidden");
-					document.getElementById("glcanvas").focus();
-					impl_run();
-				}
-			</script>
-			<div id="run-container" style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column;">
-				<button onclick="run()">Run Game</button>
-			</div>
-		</body>
-		</html>
-	END
-)
+# Use envsubst if available, otherwise use sed for variable substitution
+if command -v envsubst &> /dev/null; then
+	export PROJECT_NAME GIT_SHA BUILD_MODE BUILD_TIME
+	HTML=$(envsubst < index.html)
+else
+	HTML=$(sed "s/\${PROJECT_NAME}/$PROJECT_NAME/g; s/\${GIT_SHA}/$GIT_SHA/g; s/\${BUILD_MODE}/$BUILD_MODE/g; s/\${BUILD_TIME}/$BUILD_TIME/g" index.html)
+fi
 
 # Build Rust project
 TARGET_DIR="target/wasm32-unknown-unknown"
@@ -305,9 +264,4 @@ if [[ -n "$SERVE" ]]; then
 	success "Server starting at http://localhost:8000"
 	echo "Press Ctrl+C to stop the server"
 	basic-http-server --addr 127.0.0.1:8000
-else
-	echo
-	echo "To test your build:"
-	echo "  cd dist && basic-http-server ."
-	echo "Then open http://localhost:8000"
 fi
