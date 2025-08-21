@@ -144,7 +144,7 @@ pub fn render_glyphs(
     ui: Res<UiLayout>,
     player: Query<&Position, With<Player>>,
 ) {
-    layers.for_each(|layer| {
+    layers.iter_mut().for_each(|layer| {
         layer.clear();
     });
 

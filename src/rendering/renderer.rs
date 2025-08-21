@@ -63,7 +63,7 @@ pub fn render_all(
     clear_background(Color::from_hex(0x0E0505));
 
     start_pass(&ren.world);
-    layers.for_each(|l| {
+    layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::World {
             l.render();
         }
@@ -71,7 +71,7 @@ pub fn render_all(
     end_pass();
 
     start_pass(&ren.screen);
-    layers.for_each(|l| {
+    layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::Screen {
             l.render();
         }

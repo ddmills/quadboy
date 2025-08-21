@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -68,6 +66,21 @@ impl Layer {
         ]
     }
 
+    #[inline]
+    pub fn as_index(&self) -> usize {
+        match self {
+            Self::Terrain => 0,
+            Self::GroundOverlay => 1,
+            Self::Objects => 2,
+            Self::Actors => 3,
+            Self::Overlay => 4,
+            Self::UiPanels => 5,
+            Self::Ui => 6,
+        }
+    }
+
+    pub const COUNT: usize = 7;
+
     pub fn get_target_type(&self) -> RenderTargetType {
         match self {
             Self::Terrain => RenderTargetType::World,
@@ -83,7 +96,7 @@ impl Layer {
 
 #[derive(Resource)]
 pub struct Layers {
-    pub all: HashMap<Layer, GlyphBatch>,
+    pub all: [GlyphBatch; Layer::COUNT],
 }
 
 impl FromWorld for Layers {
@@ -93,14 +106,20 @@ impl FromWorld for Layers {
         let texture_body_text = textures.font_body_texture.raw_miniquad_id();
 
         let all = Layer::get_all()
-            .iter()
-            .map(|l| {
-                (
-                    *l,
-                    GlyphBatch::new(texture_glyph, texture_body_text, l.get_target_type(), 4000),
+            .into_iter()
+            .map(|layer| {
+                GlyphBatch::new(
+                    texture_glyph,
+                    texture_body_text,
+                    layer.get_target_type(),
+                    4000,
                 )
             })
-            .collect::<HashMap<_, _>>();
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap_or_else(|v: Vec<_>| {
+                panic!("Expected {} layers, got {}", Layer::COUNT, v.len())
+            });
 
         Self { all }
     }
@@ -109,18 +128,10 @@ impl FromWorld for Layers {
 impl Layers {
     #[inline]
     pub fn get_mut(&mut self, layer: Layer) -> &mut GlyphBatch {
-        self.all
-            .get_mut(&layer)
-            .expect("Expected render layer to exist!")
+        &mut self.all[layer.as_index()]
     }
 
-    pub fn for_each<F>(&mut self, mut f: F)
-    where
-        F: FnMut(&mut GlyphBatch),
-    {
-        for layer in Layer::get_all() {
-            let batch = self.all.get_mut(&layer).expect("Expected render layer to exist!");
-            f(batch);
-        }
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GlyphBatch> {
+        self.all.iter_mut()
     }
 }
