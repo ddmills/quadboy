@@ -13,6 +13,27 @@ use crate::{
 #[derive(Component)]
 pub struct Player;
 
+#[derive(Resource, Default, Clone)]
+pub struct PlayerPosition {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+impl PlayerPosition {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
+        Self { x, y, z }
+    }
+
+    pub fn from_position(pos: &Position) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y,
+            z: pos.z,
+        }
+    }
+}
+
 #[derive(Event)]
 pub struct PlayerMovedEvent {
     pub x: usize,
@@ -107,6 +128,17 @@ pub fn player_input(
 
 #[derive(Component)]
 pub struct PlayerDebug;
+
+pub fn update_player_position_resource(
+    mut e_player_moved: EventReader<PlayerMovedEvent>,
+    mut player_pos: ResMut<PlayerPosition>,
+) {
+    for e in e_player_moved.read() {
+        player_pos.x = e.x as f32;
+        player_pos.y = e.y as f32;
+        player_pos.z = e.z as f32;
+    }
+}
 
 pub fn render_player_debug(
     q_player: Query<&Position, With<Player>>,

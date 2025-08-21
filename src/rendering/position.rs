@@ -58,20 +58,20 @@ pub fn update_entity_pos(
         let new_zone_idx = pos.zone_idx();
         let old_zone_idx = pos.prev_zone_idx;
 
-        if new_zone_idx != old_zone_idx {
-            if let Some((mut old_zone, _)) = q_zones.iter_mut().find(|(x, _)| x.idx == old_zone_idx)
+        if new_zone_idx != old_zone_idx
+            && let Some((mut old_zone, _)) = q_zones.iter_mut().find(|(x, _)| x.idx == old_zone_idx)
             {
                 old_zone.entities.remove(&e);
             }
 
-            if let Some((mut new_zone, new_zone_status)) =
-                q_zones.iter_mut().find(|(x, _)| x.idx == new_zone_idx)
-            {
-                let (local_x, local_y) = world_to_zone_local(pos.x as usize, pos.y as usize);
-                new_zone.entities.insert(local_x, local_y, e);
-                pos.prev_zone_idx = new_zone_idx;
-                cmds.entity(e).insert(*new_zone_status);
-            }
+        if let Some((mut zone, zone_status)) =
+            q_zones.iter_mut().find(|(x, _)| x.idx == new_zone_idx)
+        {
+            let (local_x, local_y) = world_to_zone_local(pos.x as usize, pos.y as usize);
+            zone.entities.remove(&e);
+            zone.entities.insert(local_x, local_y, e);
+            pos.prev_zone_idx = new_zone_idx;
+            cmds.entity(e).insert(*zone_status);
         }
     }
 }

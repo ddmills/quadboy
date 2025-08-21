@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
-    domain::{Player, PlayerDebug, PlayerMovedEvent, player_input, render_player_debug},
+    domain::{Name, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone, player_input, render_player_debug, update_player_position_resource},
     engine::{App, Mouse, Plugin, SerializableComponent},
-    rendering::{Glyph, Position, RenderLayer, Text},
+    rendering::{Glyph, Position, RenderLayer, Text, Visibility, world_to_zone_idx, world_to_zone_local},
     states::{GameStatePlugin, cleanup_system},
 };
 
@@ -18,7 +18,7 @@ impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Explore)
             .on_enter(app, (on_enter_explore, center_camera_on_player))
-            .on_update(app, (player_input, render_player_debug, render_cursor))
+            .on_update(app, (player_input, update_player_position_resource, render_player_debug, render_cursor, display_entity_names_at_mouse))
             .on_leave(
                 app,
                 (on_leave_explore, cleanup_system::<CleanupStateExplore>).chain(),
@@ -29,8 +29,11 @@ impl Plugin for ExploreStatePlugin {
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct CleanupStateExplore;
 
-fn on_enter_explore(mut cmds: Commands) {
+fn on_enter_explore(mut cmds: Commands, q_player: Query<&Position, With<Player>>) {
     trace!("EnterGameState::<Explore>");
+
+    let player_pos = q_player.single().unwrap();
+    cmds.insert_resource(PlayerPosition::from_position(player_pos));
 
     cmds.spawn((
         Text::new("123").bg(Palette::Black),
@@ -47,6 +50,14 @@ fn on_enter_explore(mut cmds: Commands) {
         CursorGlyph,
         CleanupStateExplore,
     ));
+
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).bg(Palette::Black).layer(RenderLayer::Actors),
+        Position::new_f32(0., 0., 0.),
+        Visibility::Hidden,
+        MouseHoverText,
+        CleanupStateExplore,
+    ));
 }
 
 fn on_leave_explore() {
@@ -56,13 +67,66 @@ fn on_leave_explore() {
 #[derive(Component)]
 struct CursorGlyph;
 
-fn render_cursor(mouse: Res<Mouse>, mut q_cursor: Query<&mut Position, With<CursorGlyph>>) {
+#[derive(Component)]
+struct MouseHoverText;
+
+fn render_cursor(
+    mouse: Res<Mouse>,
+    mut q_cursor: Query<&mut Position, With<CursorGlyph>>,
+    player_pos: Res<PlayerPosition>,
+) {
     let Ok(mut cursor) = q_cursor.single_mut() else {
         return;
     };
 
     cursor.x = mouse.world.0.floor();
     cursor.y = mouse.world.1.floor();
+    cursor.z = player_pos.z.floor();
+}
+
+fn display_entity_names_at_mouse(
+    mouse: Res<Mouse>,
+    player_pos: Res<PlayerPosition>,
+    q_zones: Query<&Zone>,
+    q_names: Query<&Name>,
+    mut q_hover_text: Query<(&mut Text, &mut Position, &mut Visibility), With<MouseHoverText>>,
+) {
+    let mouse_x = mouse.world.0.floor() as usize;
+    let mouse_y = mouse.world.1.floor() as usize;
+    let mouse_z = player_pos.z as usize;
+    let mut names: Vec<String> = Vec::new();
+
+    let zone_idx = world_to_zone_idx(mouse_x, mouse_y, mouse_z);
+    let (local_x, local_y) = world_to_zone_local(mouse_x, mouse_y);
+
+    let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) else {
+        return;
+    };
+
+    let Some(entities) = zone.entities.get(local_x, local_y) else {
+        return;
+    };
+
+    for entity in entities {
+        if let Ok(name) = q_names.get(*entity) {
+            names.push(name.get().to_string());
+        }
+    }
+
+    let Ok((mut text, mut text_pos, mut visibility)) = q_hover_text.single_mut() else {
+        return;
+    };
+
+    if names.is_empty() {
+        *visibility = Visibility::Hidden;
+        text.value = String::new();
+    } else {
+        *visibility = Visibility::Visible;
+        text.value = names.join(", ");
+        text_pos.x = mouse_x as f32 + 1.0;
+        text_pos.y = mouse_y as f32;
+        text_pos.z = mouse_z as f32;
+    }
 }
 
 fn center_camera_on_player(

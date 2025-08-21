@@ -2,9 +2,9 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{GameSaveData, Map, Name, Player, PlayerSaveData},
+    domain::{GameSaveData, Map, Name, Player, PlayerPosition, PlayerSaveData},
     engine::{delete_save, save_game},
-    rendering::{Glyph, Position, RenderLayer},
+    rendering::{Glyph, Position, RenderLayer, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -37,10 +37,12 @@ impl NewGameCommand {
             starting_position.clone(),
             Glyph::new(147, Palette::Yellow, Palette::Blue).layer(RenderLayer::Actors),
             Player,
-            Name::new("Cowboy"),
+            Name::new("{Y-y repeat|Cowboy}"),
+            TrackZone,
             CleanupStatePlay,
         ));
 
+        world.insert_resource(PlayerPosition::from_position(&starting_position));
         world.init_resource::<Map>();
 
         let player_save_data = PlayerSaveData {

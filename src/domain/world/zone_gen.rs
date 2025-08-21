@@ -440,7 +440,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             world.spawn((
                 Position::new(wpos.0, wpos.1, wpos.2),
                 Glyph::new(64, Palette::DarkCyan, Palette::Orange).layer(RenderLayer::Actors),
-                Name::new("Tree"),
+                Name::new("Pine Tree"),
                 ChildOf(zone_entity_id),
                 ZoneStatus::Dormant,
                 TrackZone,
