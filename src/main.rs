@@ -107,11 +107,8 @@ async fn main() {
                 update_mouse,
                 update_crt_uniforms,
                 render_fps,
-                (
-                    render_glyphs,
-                    render_text,
-                ).chain()
-            )
+                (render_glyphs, render_text).chain(),
+            ),
         )
         .add_systems(ScheduleType::PostUpdate, update_visibility)
         .add_systems(

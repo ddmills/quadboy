@@ -4,7 +4,7 @@ use crate::{
     common::Palette,
     domain::{Map, Name, Player},
     engine::try_load_game,
-    rendering::{Glyph, RenderLayer, TrackZone},
+    rendering::{Glyph, Layer, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -39,7 +39,7 @@ impl LoadGameCommand {
 
         world.spawn((
             game_data.player.position,
-            Glyph::new(147, Palette::Yellow, Palette::Blue).layer(RenderLayer::Actors),
+            Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
             Player,
             Name::new("{Y-y repeat|Cowboy}"),
             TrackZone,

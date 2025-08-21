@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     cfg::TILE_SIZE_F32,
     common::Palette,
-    rendering::{GameCamera, Glyph, Position, RenderLayer, ScreenSize},
+    rendering::{GameCamera, Glyph, Layer, Position, ScreenSize},
     states::CleanupStatePlay,
 };
 
@@ -61,9 +61,7 @@ pub fn draw_ui_panels(mut cmds: Commands, mut ui: ResMut<UiLayout>) {
                 .spawn((
                     CleanupStatePlay,
                     Position::new(x, y, 0),
-                    Glyph::new(0, color, color)
-                        .bg(color)
-                        .layer(RenderLayer::UiPanels),
+                    Glyph::new(0, color, color).bg(color).layer(Layer::UiPanels),
                 ))
                 .id();
 

@@ -210,6 +210,7 @@ impl GlyphBatch {
         let n = self.size * 6;
 
         gl.quad_context.draw(0, n as i32, 1);
+        gl.flush();
     }
 }
 

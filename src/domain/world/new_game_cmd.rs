@@ -4,7 +4,7 @@ use crate::{
     common::Palette,
     domain::{GameSaveData, Map, Name, Player, PlayerPosition, PlayerSaveData},
     engine::{delete_save, save_game},
-    rendering::{Glyph, Position, RenderLayer, TrackZone},
+    rendering::{Glyph, Layer, Position, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -35,7 +35,7 @@ impl NewGameCommand {
         let starting_position = Position::new(56, 56, 0);
         world.spawn((
             starting_position.clone(),
-            Glyph::new(147, Palette::Yellow, Palette::Blue).layer(RenderLayer::Actors),
+            Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
             Player,
             Name::new("{Y-y repeat|Cowboy}"),
             TrackZone,

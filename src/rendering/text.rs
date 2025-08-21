@@ -7,7 +7,7 @@ use crate::{
     rendering::{GlyphTextureId, Visibility},
 };
 
-use super::{Glyph, Position, RenderLayer};
+use super::{Glyph, Layer, Position};
 
 #[derive(Component)]
 #[require(Visibility)]
@@ -17,7 +17,7 @@ pub struct Text {
     pub fg1: Option<u32>,
     pub fg2: Option<u32>,
     pub outline: Option<u32>,
-    pub layer_id: RenderLayer,
+    pub layer_id: Layer,
     pub glyphs: Vec<Entity>,
     pub texture_id: GlyphTextureId,
 }
@@ -31,13 +31,13 @@ impl Text {
             fg1: Some(Palette::White.into()),
             fg2: None,
             outline: None,
-            layer_id: RenderLayer::Ui,
+            layer_id: Layer::Ui,
             glyphs: vec![],
             texture_id: GlyphTextureId::BodyFont,
         }
     }
 
-    pub fn layer(mut self, layer_id: RenderLayer) -> Self {
+    pub fn layer(mut self, layer_id: Layer) -> Self {
         self.layer_id = layer_id;
         self
     }

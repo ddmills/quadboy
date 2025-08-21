@@ -6,7 +6,7 @@ use crate::{
     common::Palette,
     domain::GameSettings,
     engine::{InputRate, KeyInput, Mouse, Time},
-    rendering::{Glyph, Position, RenderLayer, Text, TrackZone, zone_xyz},
+    rendering::{Glyph, Layer, Position, Text, TrackZone, zone_xyz},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -66,7 +66,7 @@ pub fn player_input(
         cmds.spawn((
             Position::new(x, y, z),
             Glyph::new(4, Palette::Orange, Palette::Green)
-                .layer(RenderLayer::Actors)
+                .layer(Layer::Actors)
                 .bg(Palette::White)
                 .outline(Palette::Red),
             TrackZone,

@@ -1,3 +1,5 @@
+use std::collections::{HashMap, hash_map::ValuesMut};
+
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -7,15 +9,6 @@ use crate::{
 };
 
 use super::{GlyphBatch, TilesetTextures};
-
-#[derive(Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RenderLayer {
-    #[default]
-    Ground,
-    Actors,
-    UiPanels,
-    Ui,
-}
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum GlyphTextureId {
@@ -50,12 +43,47 @@ impl GlyphTextureId {
     }
 }
 
+#[derive(Default, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Layer {
+    Terrain,
+    GroundOverlay,
+    #[default]
+    Objects,
+    Actors,
+    Overlay,
+    UiPanels,
+    Ui,
+}
+
+impl Layer {
+    pub fn get_all() -> Vec<Layer> {
+        vec![
+            Self::Terrain,
+            Self::GroundOverlay,
+            Self::Objects,
+            Self::Actors,
+            Self::Overlay,
+            Self::UiPanels,
+            Self::Ui,
+        ]
+    }
+
+    pub fn get_target_type(&self) -> RenderTargetType {
+        match self {
+            Self::Terrain => RenderTargetType::World,
+            Self::GroundOverlay => RenderTargetType::World,
+            Self::Objects => RenderTargetType::World,
+            Self::Actors => RenderTargetType::World,
+            Self::Overlay => RenderTargetType::World,
+            Self::UiPanels => RenderTargetType::Screen,
+            Self::Ui => RenderTargetType::Screen,
+        }
+    }
+}
+
 #[derive(Resource)]
 pub struct Layers {
-    pub ground: GlyphBatch,
-    pub actors: GlyphBatch,
-    pub panels: GlyphBatch,
-    pub ui: GlyphBatch,
+    pub all: HashMap<Layer, GlyphBatch>,
 }
 
 impl FromWorld for Layers {
@@ -64,52 +92,29 @@ impl FromWorld for Layers {
         let texture_glyph = textures.glyph_texture.raw_miniquad_id();
         let texture_body_text = textures.font_body_texture.raw_miniquad_id();
 
-        Self {
-            ground: GlyphBatch::new(
-                texture_glyph,
-                texture_body_text,
-                RenderTargetType::World,
-                8000,
-            ),
-            actors: GlyphBatch::new(
-                texture_glyph,
-                texture_body_text,
-                RenderTargetType::World,
-                8000,
-            ),
-            panels: GlyphBatch::new(
-                texture_glyph,
-                texture_body_text,
-                RenderTargetType::Screen,
-                8000,
-            ),
-            ui: GlyphBatch::new(
-                texture_glyph,
-                texture_body_text,
-                RenderTargetType::Screen,
-                8000,
-            ),
-        }
+        let all = Layer::get_all()
+            .iter()
+            .map(|l| {
+                (
+                    *l,
+                    GlyphBatch::new(texture_glyph, texture_body_text, l.get_target_type(), 8000),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
+        Self { all }
     }
 }
 
 impl Layers {
     #[inline]
-    pub fn get_layer(&mut self, layer: RenderLayer) -> &mut GlyphBatch {
-        match layer {
-            RenderLayer::Ground => &mut self.ground,
-            RenderLayer::Actors => &mut self.actors,
-            RenderLayer::Ui => &mut self.ui,
-            RenderLayer::UiPanels => &mut self.panels,
-        }
+    pub fn get_mut(&mut self, layer: Layer) -> &mut GlyphBatch {
+        self.all
+            .get_mut(&layer)
+            .expect("Expected render layer to exist!")
     }
 
-    pub fn get_all(&mut self) -> Vec<&mut GlyphBatch> {
-        vec![
-            &mut self.ui,
-            &mut self.panels,
-            &mut self.ground,
-            &mut self.actors,
-        ]
+    pub fn iter_mut(&mut self) -> ValuesMut<'_, Layer, GlyphBatch> {
+        self.all.values_mut()
     }
 }

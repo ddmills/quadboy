@@ -4,7 +4,7 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
     domain::{Map, Name, Terrain, Zone, ZoneConstraintType, ZoneStatus},
-    rendering::{Glyph, Position, RenderLayer, TrackZone, zone_local_to_world},
+    rendering::{Glyph, Layer, Position, TrackZone, zone_local_to_world},
     states::CleanupStatePlay,
 };
 
@@ -331,19 +331,23 @@ fn generate_stairs(positions: &[(usize, usize)], terrain: &mut Grid<Terrain>) {
     }
 }
 
-fn connect_stairs_to_footpaths(stair_positions: &[(usize, usize)], terrain: &mut Grid<Terrain>, zone_idx: usize) {
+fn connect_stairs_to_footpaths(
+    stair_positions: &[(usize, usize)],
+    terrain: &mut Grid<Terrain>,
+    zone_idx: usize,
+) {
     for &stair_pos in stair_positions {
         // Find nearest existing footpath (Dirt terrain)
         let mut nearest_footpath = None;
         let mut shortest_distance = f32::INFINITY;
-        
+
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
                 if let Some(existing_terrain) = terrain.get(x, y) {
                     if *existing_terrain == Terrain::Dirt && x != stair_pos.0 && y != stair_pos.1 {
                         let distance = Distance::manhattan(
                             [stair_pos.0 as i32, stair_pos.1 as i32, 0],
-                            [x as i32, y as i32, 0]
+                            [x as i32, y as i32, 0],
                         );
                         if distance < shortest_distance {
                             shortest_distance = distance;
@@ -353,7 +357,7 @@ fn connect_stairs_to_footpaths(stair_positions: &[(usize, usize)], terrain: &mut
                 }
             }
         }
-        
+
         // Connect stair to nearest footpath using A*
         if let Some(footpath_pos) = nearest_footpath {
             let settings = AStarSettings {
@@ -370,24 +374,32 @@ fn connect_stairs_to_footpaths(stair_positions: &[(usize, usize)], terrain: &mut
                 heuristic: |pos| {
                     Distance::manhattan(
                         [pos.0 as i32, pos.1 as i32, 0],
-                        [footpath_pos.0 as i32, footpath_pos.1 as i32, 0]
+                        [footpath_pos.0 as i32, footpath_pos.1 as i32, 0],
                     )
                 },
                 neighbors: |pos| {
                     let mut neighbors = Vec::new();
                     let (x, y) = pos;
-                    
-                    if x > 0 { neighbors.push((x - 1, y)); }
-                    if x < ZONE_SIZE.0 - 1 { neighbors.push((x + 1, y)); }
-                    if y > 0 { neighbors.push((x, y - 1)); }
-                    if y < ZONE_SIZE.1 - 1 { neighbors.push((x, y + 1)); }
-                    
+
+                    if x > 0 {
+                        neighbors.push((x - 1, y));
+                    }
+                    if x < ZONE_SIZE.0 - 1 {
+                        neighbors.push((x + 1, y));
+                    }
+                    if y > 0 {
+                        neighbors.push((x, y - 1));
+                    }
+                    if y < ZONE_SIZE.1 - 1 {
+                        neighbors.push((x, y + 1));
+                    }
+
                     neighbors
                 },
                 max_depth: 1000,
                 max_cost: Some(ZONE_SIZE.0 as f32 * 1.5),
             };
-            
+
             let result = astar(settings);
             if result.is_success {
                 // Create footpath connection to stair
@@ -400,7 +412,10 @@ fn connect_stairs_to_footpaths(stair_positions: &[(usize, usize)], terrain: &mut
                 // Fallback: direct line to footpath
                 let fallback_path = bresenham_line(stair_pos, footpath_pos);
                 for &(x, y) in &fallback_path {
-                    if x < ZONE_SIZE.0 && y < ZONE_SIZE.1 && terrain.get(x, y) != Some(&Terrain::River) {
+                    if x < ZONE_SIZE.0
+                        && y < ZONE_SIZE.1
+                        && terrain.get(x, y) != Some(&Terrain::River)
+                    {
                         terrain.insert(x, y, Terrain::Dirt);
                     }
                 }
@@ -421,7 +436,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
     generate_paths(&path_positions, &mut terrain, zone_idx);
     generate_stairs(&stair_down_positions, &mut terrain);
     generate_stairs(&stair_up_positions, &mut terrain);
-    
+
     // Connect stairs to nearest footpaths after footpath network is established
     connect_stairs_to_footpaths(&stair_down_positions, &mut terrain, zone_idx);
     connect_stairs_to_footpaths(&stair_up_positions, &mut terrain, zone_idx);
@@ -439,7 +454,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         if rand.bool(0.05) && *terrain == Terrain::Grass {
             world.spawn((
                 Position::new(wpos.0, wpos.1, wpos.2),
-                Glyph::new(64, Palette::DarkCyan, Palette::Orange).layer(RenderLayer::Actors),
+                Glyph::new(64, Palette::DarkCyan, Palette::Orange).layer(Layer::Objects),
                 Name::new("Pine Tree"),
                 ChildOf(zone_entity_id),
                 ZoneStatus::Dormant,
@@ -451,10 +466,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         // Add terrain tiles
         world.spawn((
             Position::new(wpos.0, wpos.1, wpos.2),
-            Glyph::idx(idx)
-                .bg_opt(bg)
-                .fg1_opt(fg)
-                .layer(RenderLayer::Ground),
+            Glyph::idx(idx).bg_opt(bg).fg1_opt(fg).layer(Layer::Terrain),
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
             CleanupStatePlay,
@@ -465,7 +477,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         let wpos = zone_local_to_world(zone_idx, x, y);
         world.spawn((
             Position::new(wpos.0, wpos.1, wpos.2),
-            Glyph::new(107, Palette::White, Palette::Gray).layer(RenderLayer::Actors),
+            Glyph::new(107, Palette::White, Palette::Gray).layer(Layer::Actors),
             Name::new("Stairs Down"),
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
@@ -478,7 +490,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         let wpos = zone_local_to_world(zone_idx, x, y);
         world.spawn((
             Position::new(wpos.0, wpos.1, wpos.2),
-            Glyph::new(108, Palette::White, Palette::Gray).layer(RenderLayer::Actors),
+            Glyph::new(108, Palette::White, Palette::Gray).layer(Layer::Actors),
             Name::new("Stairs Up"),
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,

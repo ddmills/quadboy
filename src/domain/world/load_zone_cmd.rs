@@ -5,7 +5,7 @@ use crate::{
     common::Grid,
     domain::{GameSettings, Terrain, Zone, gen_zone},
     engine::{EntitySerializer, try_load_zone},
-    rendering::{Glyph, Position, RenderLayer, zone_local_to_world},
+    rendering::{Glyph, Layer, Position, zone_local_to_world},
     states::CleanupStatePlay,
 };
 
@@ -52,10 +52,7 @@ impl Command<Result> for LoadZoneCommand {
             world
                 .spawn((
                     Position::new(wpos.0, wpos.1, wpos.2),
-                    Glyph::idx(idx)
-                        .bg_opt(bg)
-                        .fg1_opt(fg)
-                        .layer(RenderLayer::Ground),
+                    Glyph::idx(idx).bg_opt(bg).fg1_opt(fg).layer(Layer::Terrain),
                     ChildOf(zone_entity_id),
                     ZoneStatus::Dormant,
                     CleanupStatePlay,

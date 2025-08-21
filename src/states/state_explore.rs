@@ -4,9 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
-    domain::{Name, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone, player_input, render_player_debug, update_player_position_resource},
+    domain::{
+        Name, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone, player_input,
+        render_player_debug, update_player_position_resource,
+    },
     engine::{App, Mouse, Plugin, SerializableComponent},
-    rendering::{Glyph, Position, RenderLayer, Text, Visibility, world_to_zone_idx, world_to_zone_local},
+    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
     states::{GameStatePlugin, cleanup_system},
 };
 
@@ -18,7 +21,16 @@ impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Explore)
             .on_enter(app, (on_enter_explore, center_camera_on_player))
-            .on_update(app, (player_input, update_player_position_resource, render_player_debug, render_cursor, display_entity_names_at_mouse))
+            .on_update(
+                app,
+                (
+                    player_input,
+                    update_player_position_resource,
+                    render_player_debug,
+                    render_cursor,
+                    display_entity_names_at_mouse,
+                ),
+            )
             .on_leave(
                 app,
                 (on_leave_explore, cleanup_system::<CleanupStateExplore>).chain(),
@@ -45,14 +57,17 @@ fn on_enter_explore(mut cmds: Commands, q_player: Query<&Position, With<Player>>
     cmds.spawn((
         Glyph::new(0, Palette::Orange, Palette::Orange)
             .bg(Palette::Orange)
-            .layer(RenderLayer::Actors),
+            .layer(Layer::GroundOverlay),
         Position::new_f32(0., 0., 0.),
         CursorGlyph,
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Text::new("").fg1(Palette::White).bg(Palette::Black).layer(RenderLayer::Actors),
+        Text::new("")
+            .fg1(Palette::White)
+            .bg(Palette::Black)
+            .layer(Layer::Overlay),
         Position::new_f32(0., 0., 0.),
         Visibility::Hidden,
         MouseHoverText,

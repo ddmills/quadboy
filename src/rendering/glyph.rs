@@ -13,7 +13,7 @@ use macroquad::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{GameCamera, Layers, Position, RenderLayer, Renderable, ScreenSize};
+use super::{GameCamera, Layer, Layers, Position, Renderable, ScreenSize};
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, SerializableComponent)]
 #[require(Visibility)]
@@ -23,7 +23,7 @@ pub struct Glyph {
     pub fg2: Option<u32>,
     pub bg: Option<u32>,
     pub outline: Option<u32>,
-    pub layer_id: RenderLayer,
+    pub layer_id: Layer,
     pub texture_id: GlyphTextureId,
     pub is_dormant: bool,
 }
@@ -55,7 +55,7 @@ impl Glyph {
             fg2: None,
             bg: None,
             outline: Some(Palette::Clear.into()),
-            layer_id: RenderLayer::default(),
+            layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
         }
@@ -68,13 +68,13 @@ impl Glyph {
             fg2: Some(fg2.into()),
             bg: None,
             outline: Some(Palette::Clear.into()),
-            layer_id: RenderLayer::default(),
+            layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
         }
     }
 
-    pub fn layer(mut self, layer_id: RenderLayer) -> Self {
+    pub fn layer(mut self, layer_id: Layer) -> Self {
         self.layer_id = layer_id;
         self
     }
@@ -147,7 +147,7 @@ pub fn render_glyphs(
     ui: Res<UiLayout>,
     player: Query<&Position, With<Player>>,
 ) {
-    for layer in layers.get_all().iter_mut() {
+    for layer in layers.iter_mut() {
         layer.clear();
     }
 
@@ -168,7 +168,7 @@ pub fn render_glyphs(
         let mut y = (pos.y * TILE_SIZE_F32.1).floor();
         let w = texture_id.get_glyph_width();
         let h = texture_id.get_glyph_height();
-        let layer = layers.get_layer(glyph.layer_id);
+        let layer = layers.get_mut(glyph.layer_id);
 
         if layer.target_type == RenderTargetType::World {
             if pos.z.floor() != player_z {

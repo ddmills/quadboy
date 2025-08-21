@@ -63,13 +63,19 @@ pub fn render_all(
     clear_background(Color::from_hex(0x0E0505));
 
     start_pass(&ren.world);
-    layers.ground.render();
-    layers.actors.render();
+    for l in layers.iter_mut() {
+        if l.target_type == RenderTargetType::World {
+            l.render();
+        }
+    }
     end_pass();
 
     start_pass(&ren.screen);
-    layers.panels.render();
-    layers.ui.render();
+    for l in layers.iter_mut() {
+        if l.target_type == RenderTargetType::Screen {
+            l.render();
+        }
+    }
     end_pass();
 
     // draw final texture as double size
