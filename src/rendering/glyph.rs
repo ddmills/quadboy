@@ -7,10 +7,7 @@ use crate::{
     ui::UiLayout,
 };
 use bevy_ecs::prelude::*;
-use macroquad::{
-    prelude::*,
-    telemetry::{self},
-};
+use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
 
 use super::{GameCamera, Layer, Layers, Position, Renderable, ScreenSize};
@@ -147,25 +144,29 @@ pub fn render_glyphs(
     ui: Res<UiLayout>,
     player: Query<&Position, With<Player>>,
 ) {
-    for layer in layers.iter_mut() {
+    layers.for_each(|layer| {
         layer.clear();
-    }
+    });
 
     telemetry::begin_zone("render_glyphs");
 
     let screen_w = screen.width as f32;
     let screen_h = screen.height as f32;
-
-    let cam_x = (camera.x * TILE_SIZE_F32.0).floor();
-    let cam_y = (camera.y * TILE_SIZE_F32.1).floor();
-
+    let tile_w = TILE_SIZE_F32.0;
+    let tile_h = TILE_SIZE_F32.1;
+    let cam_x = (camera.x * tile_w).floor();
+    let cam_y = (camera.y * tile_h).floor();
+    let camera_width = camera.width;
+    let camera_height = camera.height;
+    let ui_panel_x = (ui.game_panel.x as f32) * tile_w;
+    let ui_panel_y = (ui.game_panel.y as f32) * tile_h;
     let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
 
     q_glyphs.iter().for_each(|(glyph, pos)| {
         let texture_id = glyph.texture_id;
 
-        let mut x = (pos.x * TILE_SIZE_F32.0).floor();
-        let mut y = (pos.y * TILE_SIZE_F32.1).floor();
+        let mut x = (pos.x * tile_w).floor();
+        let mut y = (pos.y * tile_h).floor();
         let w = texture_id.get_glyph_width();
         let h = texture_id.get_glyph_height();
         let layer = layers.get_mut(glyph.layer_id);
@@ -178,12 +179,12 @@ pub fn render_glyphs(
             x -= cam_x;
             y -= cam_y;
 
-            if x + w < 0. || x - w > camera.width || y + h < 0. || y - h > camera.height {
+            if x + w < 0. || x - w > camera_width || y + h < 0. || y - h > camera_height {
                 return;
             }
 
-            x += (ui.game_panel.x as f32) * TILE_SIZE_F32.0;
-            y += (ui.game_panel.y as f32) * TILE_SIZE_F32.1;
+            x += ui_panel_x;
+            y += ui_panel_y;
         } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
             return;
         }

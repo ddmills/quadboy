@@ -1,4 +1,4 @@
-use std::collections::{HashMap, hash_map::ValuesMut};
+use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -114,7 +114,13 @@ impl Layers {
             .expect("Expected render layer to exist!")
     }
 
-    pub fn iter_mut(&mut self) -> ValuesMut<'_, Layer, GlyphBatch> {
-        self.all.values_mut()
+    pub fn for_each<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&mut GlyphBatch),
+    {
+        for layer in Layer::get_all() {
+            let batch = self.all.get_mut(&layer).expect("Expected render layer to exist!");
+            f(batch);
+        }
     }
 }
