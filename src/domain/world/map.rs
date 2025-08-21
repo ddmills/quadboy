@@ -29,7 +29,7 @@ impl Terrain {
     pub fn tile(&self) -> usize {
         match self {
             Terrain::Grass => 1,
-            Terrain::Dirt => 19,
+            Terrain::Dirt => 129,
             Terrain::River => 34,
         }
     }
@@ -37,7 +37,7 @@ impl Terrain {
     pub fn colors(&self) -> (Option<u32>, Option<u32>) {
         match self {
             Terrain::Grass => (None, Some(Palette::DarkCyan.into())),
-            Terrain::Dirt => (Some(Palette::Brown.into()), Some(Palette::Brown.into())),
+            Terrain::Dirt => (None, Some(Palette::Brown.into())),
             Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
         }
     }
