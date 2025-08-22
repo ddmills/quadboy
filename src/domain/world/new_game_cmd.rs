@@ -4,7 +4,7 @@ use crate::{
     common::Palette,
     domain::{Collider, Energy, GameSaveData, Label, Map, Player, PlayerPosition, PlayerSaveData},
     engine::{Clock, delete_save, save_game},
-    rendering::{Glyph, Layer, Position, TrackZone},
+    rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -40,7 +40,7 @@ impl NewGameCommand {
             Collider,
             Energy::new(0),
             Label::new("{Y-y repeat|Cowboy}"),
-            TrackZone,
+            RecordZonePosition,
             CleanupStatePlay,
         ));
 

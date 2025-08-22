@@ -1,10 +1,9 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 use crate::{
     cfg::CARDINALS_OFFSET,
     domain::Zone,
-    rendering::{Glyph, Position, TrackZone},
+    rendering::{Glyph, Position, RecordZonePosition},
 };
 
 #[derive(Clone, Copy)]
@@ -60,7 +59,7 @@ pub struct BitmaskGlyph {
 }
 
 pub fn on_bitmask_spawn(
-    q_bitmasks_new: Query<(Entity, &Position), (Added<BitmaskGlyph>, With<TrackZone>)>,
+    q_bitmasks_new: Query<(Entity, &Position), (Added<BitmaskGlyph>, With<RecordZonePosition>)>,
     q_zones: Query<&Zone>,
     mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {

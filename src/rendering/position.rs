@@ -47,11 +47,11 @@ impl Position {
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
-pub struct TrackZone;
+pub struct RecordZonePosition;
 
 pub fn update_entity_pos(
     mut cmds: Commands,
-    mut q_moved: Query<(Entity, &mut Position), (Changed<Position>, With<TrackZone>)>,
+    mut q_moved: Query<(Entity, &mut Position), (Changed<Position>, With<RecordZonePosition>)>,
     mut q_zones: Query<(Entity, &mut Zone, &ZoneStatus)>,
 ) {
     for (e, mut pos) in q_moved.iter_mut() {

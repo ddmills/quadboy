@@ -6,10 +6,10 @@ use crate::{
     common::Palette,
     domain::{
         BitmaskGlyph, Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label,
-        StairDown, StairUp, TurnState, Zone, ZoneStatus,
+        SaveFlag, StairDown, StairUp, TurnState, Zone, ZoneStatus,
     },
     engine::{InputRate, KeyInput, Mouse, Time},
-    rendering::{Glyph, Layer, Position, Text, TrackZone, zone_xyz},
+    rendering::{Glyph, Layer, Position, RecordZonePosition, Text, zone_xyz},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -24,10 +24,6 @@ pub struct PlayerPosition {
 }
 
 impl PlayerPosition {
-    pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Self { x, y, z }
-    }
-
     pub fn from_position(pos: &Position) -> Self {
         Self {
             x: pos.x,
@@ -83,7 +79,8 @@ pub fn player_input(
             },
             ZoneStatus::Dormant,
             Collider,
-            TrackZone,
+            RecordZonePosition,
+            SaveFlag,
             CleanupStatePlay,
         ));
     }

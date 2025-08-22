@@ -1,7 +1,6 @@
 use std::vec;
 
 use bevy_ecs::{component::Component, entity::Entity, resource::Resource, system::Query};
-use macroquad::prelude::trace;
 use serde::{Deserialize, Serialize};
 
 use crate::{

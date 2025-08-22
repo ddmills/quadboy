@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     domain::{
         Map, activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status,
-        on_unload_zone,
+        on_unload_zone, register_game_systems,
     },
     engine::{App, Plugin, SerializableComponent},
     rendering::{ScreenSize, on_zone_status_change, update_camera},
@@ -20,7 +20,13 @@ impl Plugin for PlayStatePlugin {
         AppStatePlugin::new(AppState::Play)
             .on_enter(
                 app,
-                (update_ui_layout, draw_ui_panels, on_enter_play_state).chain(),
+                (
+                    update_ui_layout,
+                    draw_ui_panels,
+                    on_enter_play_state,
+                    register_game_systems,
+                )
+                    .chain(),
             )
             .on_update(
                 app,

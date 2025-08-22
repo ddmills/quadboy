@@ -5,6 +5,9 @@ use crate::{
     engine::{EntitySerializer, SerializableComponentRegistry, save_zone},
 };
 
+#[derive(Component)]
+pub struct SaveFlag;
+
 pub struct UnloadZoneCommand {
     pub zone_idx: usize,
     pub despawn_entities: bool,
@@ -15,6 +18,10 @@ impl Command<Result> for UnloadZoneCommand {
         let zone_idx = self.zone_idx;
 
         let mut q_zones = world.query::<(Entity, &Zone)>();
+        let q_save_flag = world.query::<&SaveFlag>();
+
+        let lc = world.last_change_tick();
+        let t = world.change_tick();
 
         let Some((zone_e, zone)) = q_zones.iter(world).find(|(_, c)| c.idx == zone_idx) else {
             return Err("Zone not found".into());
@@ -30,9 +37,11 @@ impl Command<Result> for UnloadZoneCommand {
         for v in zone.entities.iter() {
             for e in v {
                 despawns.push(*e);
-                let mut e_save = EntitySerializer::serialize(*e, world, registry);
 
-                ent_data.append(&mut e_save);
+                if q_save_flag.contains(*e, world, t, lc) {
+                    let mut e_save = EntitySerializer::serialize(*e, world, registry);
+                    ent_data.append(&mut e_save);
+                }
             }
         }
 

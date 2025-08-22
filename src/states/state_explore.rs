@@ -6,7 +6,7 @@ use crate::{
     common::Palette,
     domain::{
         Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop,
-        player_input, register_game_systems, render_player_debug, update_player_position_resource,
+        player_input, render_player_debug, update_player_position_resource,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
@@ -20,15 +20,7 @@ pub struct ExploreStatePlugin;
 impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Explore)
-            .on_enter(
-                app,
-                (
-                    register_game_systems,
-                    on_enter_explore,
-                    center_camera_on_player,
-                )
-                    .chain(),
-            )
+            .on_enter(app, (on_enter_explore, center_camera_on_player).chain())
             .on_update(
                 app,
                 (
@@ -51,11 +43,8 @@ impl Plugin for ExploreStatePlugin {
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct CleanupStateExplore;
 
-fn on_enter_explore(mut cmds: Commands, q_player: Query<&Position, With<Player>>) {
+fn on_enter_explore(mut cmds: Commands) {
     trace!("EnterGameState::<Explore>");
-
-    let player_pos = q_player.single().unwrap();
-    cmds.insert_resource(PlayerPosition::from_position(player_pos));
 
     cmds.spawn((
         Text::new("123").bg(Palette::Black),

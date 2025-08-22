@@ -23,7 +23,7 @@ use crate::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
         update_mouse,
     },
-    rendering::{CrtShader, Glyph, TrackZone, update_visibility},
+    rendering::{CrtShader, Glyph, RecordZonePosition, update_visibility},
     states::{
         CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
         ExploreStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin,
@@ -65,7 +65,7 @@ async fn main() {
 
     let mut reg = SerializableComponentRegistry::new();
     reg.register::<Position>();
-    reg.register::<TrackZone>();
+    reg.register::<RecordZonePosition>();
     reg.register::<Glyph>();
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();

@@ -4,10 +4,10 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
     domain::{
-        Collider, Energy, Label, Map, StairDown, StairUp, Terrain, Zone, ZoneConstraintType,
-        ZoneStatus,
+        Collider, Energy, Label, Map, SaveFlag, StairDown, StairUp, Terrain, Zone,
+        ZoneConstraintType, ZoneStatus,
     },
-    rendering::{Glyph, Layer, Position, TrackZone, zone_local_to_world},
+    rendering::{Glyph, Layer, Position, RecordZonePosition, zone_local_to_world},
     states::CleanupStatePlay,
 };
 
@@ -458,7 +458,8 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
                 Collider,
                 ChildOf(zone_entity_id),
                 ZoneStatus::Dormant,
-                TrackZone,
+                RecordZonePosition,
+                SaveFlag,
                 CleanupStatePlay,
             ));
         } else if rand.bool(0.005) {
@@ -470,7 +471,8 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
                 ChildOf(zone_entity_id),
                 Energy::new(-100),
                 Label::new("{R|Bandit}"),
-                TrackZone,
+                RecordZonePosition,
+                SaveFlag,
                 CleanupStatePlay,
             ));
         }
@@ -492,9 +494,10 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             Glyph::new(107, Palette::White, Palette::Gray).layer(Layer::Actors),
             Label::new("Stairs Down"),
             StairDown,
+            SaveFlag,
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
-            TrackZone,
+            RecordZonePosition,
             CleanupStatePlay,
         ));
     }
@@ -506,9 +509,10 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             Glyph::new(108, Palette::White, Palette::Gray).layer(Layer::Actors),
             Label::new("Stairs Up"),
             StairUp,
+            SaveFlag,
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
-            TrackZone,
+            RecordZonePosition,
             CleanupStatePlay,
         ));
     }
