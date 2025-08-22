@@ -1,11 +1,9 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    common::Palette,
-    domain::{Collider, Energy, Label, Map, Player, PlayerPosition},
-    engine::{Clock, try_load_game},
-    rendering::{Glyph, Layer, RecordZonePosition},
-    states::{CleanupStatePlay, CurrentGameState, GameState},
+    domain::{Map, PlayerPosition},
+    engine::{Clock, deserialize, try_load_game},
+    states::{CurrentGameState, GameState},
 };
 
 pub struct LoadGameCommand {
@@ -40,18 +38,8 @@ impl LoadGameCommand {
         world.init_resource::<Map>();
         world.insert_resource(PlayerPosition::from_position(&game_data.player.position));
 
-        world.spawn((
-            game_data.player.position,
-            Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
-            Player,
-            Collider,
-            Energy::new(1000),
-            Label::new("{Y-y repeat|Cowboy}"),
-            RecordZonePosition,
-            CleanupStatePlay,
-        ));
+        deserialize(game_data.player.entity, world);
 
-        // Restore the clock tick
         if let Some(mut clock) = world.get_resource_mut::<Clock>() {
             clock.set_tick(game_data.tick);
         }

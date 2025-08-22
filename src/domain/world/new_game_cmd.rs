@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Palette,
     domain::{Collider, Energy, GameSaveData, Label, Map, Player, PlayerPosition, PlayerSaveData},
-    engine::{Clock, delete_save, save_game},
+    engine::{Clock, delete_save, save_game, serialize},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
@@ -33,23 +33,28 @@ impl NewGameCommand {
         delete_save(&self.save_name);
 
         let starting_position = Position::new(56, 56, 0);
-        world.spawn((
-            starting_position.clone(),
-            Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
-            Player,
-            Collider,
-            Energy::new(0),
-            Label::new("{Y-y repeat|Cowboy}"),
-            RecordZonePosition,
-            CleanupStatePlay,
-        ));
+        let player_entity = world
+            .spawn((
+                starting_position.clone(),
+                Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
+                Player,
+                Collider,
+                Energy::new(0),
+                Label::new("{Y-y repeat|Cowboy}"),
+                RecordZonePosition,
+                CleanupStatePlay,
+            ))
+            .id();
 
         world.insert_resource(PlayerPosition::from_position(&starting_position));
         world.insert_resource(Map);
         world.insert_resource(Clock::default());
 
+        let serialized_player = serialize(player_entity, world);
+
         let player_save_data = PlayerSaveData {
             position: starting_position,
+            entity: serialized_player,
         };
         let game_save_data = GameSaveData::new(player_save_data, 0.0, 0);
         save_game(&game_save_data, &self.save_name);

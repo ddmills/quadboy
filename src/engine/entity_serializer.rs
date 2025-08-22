@@ -242,3 +242,19 @@ fn deser(
 
     entity
 }
+
+pub fn serialize(entity: Entity, world: &World) -> SerializedEntity {
+    let registry = world
+        .get_resource::<SerializableComponentRegistry>()
+        .unwrap();
+    let serialized = EntitySerializer::serialize(entity, world, registry);
+    serialized.into_iter().next().unwrap()
+}
+
+pub fn deserialize_all(data: &Vec<SerializedEntity>, world: &mut World) -> Vec<Entity> {
+    EntitySerializer::deserialize(world, data)
+}
+
+pub fn deserialize(data: SerializedEntity, world: &mut World) -> Entity {
+    EntitySerializer::deserialize_entity(world, data)
+}

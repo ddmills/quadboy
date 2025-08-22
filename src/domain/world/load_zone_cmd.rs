@@ -4,7 +4,7 @@ use crate::{
     cfg::ZONE_SIZE,
     common::Grid,
     domain::{GameSettings, Terrain, Zone, gen_zone},
-    engine::{EntitySerializer, try_load_zone},
+    engine::{deserialize_all, try_load_zone},
     rendering::{Glyph, Layer, Position, zone_local_to_world},
     states::CleanupStatePlay,
 };
@@ -60,7 +60,7 @@ impl Command<Result> for LoadZoneCommand {
                 .id()
         });
 
-        EntitySerializer::deserialize(world, &zone_data.entities);
+        deserialize_all(&zone_data.entities, world);
 
         world
             .entity_mut(zone_entity_id)

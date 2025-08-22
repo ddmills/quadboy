@@ -3,7 +3,7 @@ use macroquad::prelude::get_time;
 
 use crate::{
     domain::{GameSaveData, GameSettings, Player, PlayerSaveData, UnloadZoneCommand, Zones},
-    engine::{Clock, save_game},
+    engine::{Clock, save_game, serialize},
     rendering::Position,
 };
 
@@ -57,17 +57,15 @@ impl SaveGameCommand {
             };
         }
 
-        // Clone what we need before the mutable borrows
         let active_zones = zones.active.clone();
         let zone_count = active_zones.len();
         let save_name = settings.save_name.clone();
 
-        // Get player position
-        let player_position = {
-            let mut q_player = world.query_filtered::<&Position, With<Player>>();
+        let (player_entity, player_position) = {
+            let mut q_player = world.query_filtered::<(Entity, &Position), With<Player>>();
 
-            if let Some(position) = q_player.iter(world).next() {
-                position.clone()
+            if let Some((entity, position)) = q_player.iter(world).next() {
+                (entity, position.clone())
             } else {
                 return SaveGameResult {
                     success: false,
@@ -78,20 +76,20 @@ impl SaveGameCommand {
             }
         };
 
-        // Get current tick from Clock
         let current_tick = world
             .get_resource::<Clock>()
             .map(|clock| clock.current_tick())
             .unwrap_or(0);
 
-        // Save game data (player position, timestamp, tick, etc.)
+        let serialized_player = serialize(player_entity, world);
+
         let player_save = PlayerSaveData {
             position: player_position,
+            entity: serialized_player,
         };
         let game_data = GameSaveData::new(player_save, get_time(), current_tick);
         save_game(&game_data, &save_name);
 
-        // Save all active zones without despawning them
         for zone_idx in active_zones {
             let save_cmd = UnloadZoneCommand {
                 zone_idx,

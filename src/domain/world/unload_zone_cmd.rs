@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{GameSettings, Zone},
-    engine::{EntitySerializer, SerializableComponentRegistry, save_zone},
+    engine::{save_zone, serialize},
 };
 
 #[derive(Component)]
@@ -27,10 +27,6 @@ impl Command<Result> for UnloadZoneCommand {
             return Err("Zone not found".into());
         };
 
-        let Some(registry) = world.get_resource::<SerializableComponentRegistry>() else {
-            return Err("Entity registry not found".into());
-        };
-
         let mut ent_data = vec![];
         let mut despawns = vec![];
 
@@ -39,8 +35,8 @@ impl Command<Result> for UnloadZoneCommand {
                 despawns.push(*e);
 
                 if q_save_flag.contains(*e, world, t, lc) {
-                    let mut e_save = EntitySerializer::serialize(*e, world, registry);
-                    ent_data.append(&mut e_save);
+                    let e_save = serialize(*e, world);
+                    ent_data.push(e_save);
                 }
             }
         }

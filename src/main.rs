@@ -15,7 +15,7 @@ use crate::{
     cfg::WINDOW_SIZE,
     domain::{
         Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings, Label, LoadGameResult,
-        LoadZoneEvent, NewGameResult, PlayerMovedEvent, RefreshBitmask, SaveGameResult,
+        LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, RefreshBitmask, SaveGameResult,
         SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Zones,
         on_bitmask_spawn, on_refresh_bitmask,
     },
@@ -74,6 +74,7 @@ async fn main() {
     reg.register::<Energy>();
     reg.register::<StairDown>();
     reg.register::<StairUp>();
+    reg.register::<Player>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

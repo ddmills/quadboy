@@ -1,5 +1,6 @@
 use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
@@ -8,12 +9,12 @@ use crate::{
         BitmaskGlyph, Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label,
         SaveFlag, StairDown, StairUp, TurnState, Zone, ZoneStatus,
     },
-    engine::{InputRate, KeyInput, Mouse, Time},
+    engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Layer, Position, RecordZonePosition, Text, zone_xyz},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Player;
 
 #[derive(Resource, Default, Clone)]

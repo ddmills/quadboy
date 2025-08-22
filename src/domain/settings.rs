@@ -1,4 +1,7 @@
-use crate::rendering::{CameraMode, CrtCurvature, Position};
+use crate::{
+    engine::SerializedEntity,
+    rendering::{CameraMode, CrtCurvature, Position},
+};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +41,7 @@ impl Default for GameSettings {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PlayerSaveData {
     pub position: Position,
+    pub entity: SerializedEntity,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

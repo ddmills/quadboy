@@ -49,12 +49,14 @@ The game uses Bevy ECS with a custom serialization system. Components must be re
 
 ### Rendering System
 - Text-based rendering using custom glyph system
+- Text glyphs have half-height (0.5f) of game glyphs (1.0f)
+- Glyphs are batch rendered in layers
+- Some Layers are in the world space and some are UI space
 - CRT shader for retro aesthetic
-- Multiple render layers and targets
 - Asset loading for tilesets and textures located in `src/assets/`
 
 ### Zone/World System
-The game implements a zone-based world system where different areas can be loaded/unloaded dynamically. Events like `LoadZoneEvent` and `UnloadZoneEvent` manage this system.
+The game implements a zone-based world system where different areas can be loaded/unloaded dynamically. Commands like `LoadZoneCommand` and `UnloadZoneCommand` manage this system.
 
 ### Build Notes
 - Web builds require `wasm32-unknown-unknown` target and `wasm-bindgen`
