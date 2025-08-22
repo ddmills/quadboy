@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     domain::{
         Map, activate_zones_by_player, load_nearby_zones, on_load_zone, on_set_zone_status,
-        on_unload_zone, process_energy_consumption,
+        on_unload_zone,
     },
     engine::{App, Plugin, SerializableComponent},
-    rendering::{ScreenSize, on_zone_status_change, update_camera, update_entity_pos},
+    rendering::{ScreenSize, on_zone_status_change, update_camera},
     states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system},
     ui::{UiLayout, draw_ui_panels, update_ui_layout},
 };

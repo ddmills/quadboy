@@ -1,8 +1,7 @@
 use bevy_ecs::prelude::*;
-use bevy_ecs::system::RunSystemOnce;
 
 use crate::{
-    domain::{Energy, Player, ai_turn},
+    domain::{Energy, Player},
     engine::Clock,
 };
 

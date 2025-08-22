@@ -1,12 +1,12 @@
 use bevy_ecs::{
     resource::Resource,
-    system::{RunSystemOnce, SystemId},
+    system::SystemId,
     world::World,
 };
 use macroquad::telemetry;
 
 use crate::{
-    domain::{TurnState, ai_turn, player_input, process_energy_consumption, turn_scheduler},
+    domain::{TurnState, ai_turn, process_energy_consumption, turn_scheduler},
     rendering::update_entity_pos,
 };
 

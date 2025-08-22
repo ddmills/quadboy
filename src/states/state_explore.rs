@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop,
-        game_systems, player_input, register_game_systems, render_player_debug,
+        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop, player_input, register_game_systems, render_player_debug,
         update_player_position_resource,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},

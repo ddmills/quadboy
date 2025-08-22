@@ -89,39 +89,33 @@ pub fn player_input(
         return;
     }
 
-    if x > 0 && keys.is_down(KeyCode::A) && input_rate.try_key(KeyCode::A, now, rate, delay) {
-        if !has_collider_at(x - 1, y, z, &q_colliders) {
+    if x > 0 && keys.is_down(KeyCode::A) && input_rate.try_key(KeyCode::A, now, rate, delay)
+        && !has_collider_at(x - 1, y, z, &q_colliders) {
             position.x -= 1.;
             moved = true;
         }
-    }
 
     if x < (MAP_SIZE.0 * ZONE_SIZE.0) - 1
         && keys.is_down(KeyCode::D)
         && input_rate.try_key(KeyCode::D, now, rate, delay)
-    {
-        if !has_collider_at(x + 1, y, z, &q_colliders) {
+        && !has_collider_at(x + 1, y, z, &q_colliders) {
             position.x += 1.;
             moved = true;
         }
-    }
 
-    if y > 0 && keys.is_down(KeyCode::W) && input_rate.try_key(KeyCode::W, now, rate, delay) {
-        if !has_collider_at(x, y - 1, z, &q_colliders) {
+    if y > 0 && keys.is_down(KeyCode::W) && input_rate.try_key(KeyCode::W, now, rate, delay)
+        && !has_collider_at(x, y - 1, z, &q_colliders) {
             position.y -= 1.;
             moved = true;
         }
-    }
 
     if y < (MAP_SIZE.1 * ZONE_SIZE.1) - 1
         && keys.is_down(KeyCode::S)
         && input_rate.try_key(KeyCode::S, now, rate, delay)
-    {
-        if !has_collider_at(x, y + 1, z, &q_colliders) {
+        && !has_collider_at(x, y + 1, z, &q_colliders) {
             position.y += 1.;
             moved = true;
         }
-    }
 
     if z > 0
         && keys.is_down(KeyCode::E)
