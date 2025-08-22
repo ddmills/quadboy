@@ -14,9 +14,10 @@ use ui::UiLayout;
 use crate::{
     cfg::WINDOW_SIZE,
     domain::{
-        Collider, ConsumeEnergyEvent, Energy, GameSettings, Label, LoadGameResult, LoadZoneEvent,
-        NewGameResult, PlayerMovedEvent, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp,
-        TurnState, UnloadZoneEvent, Zones,
+        Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings, Label, LoadGameResult,
+        LoadZoneEvent, NewGameResult, PlayerMovedEvent, RefreshBitmask, SaveGameResult,
+        SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Zones,
+        on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -90,6 +91,7 @@ async fn main() {
         .register_event::<PlayerMovedEvent>()
         .register_event::<SaveGameResult>()
         .register_event::<ConsumeEnergyEvent>()
+        .register_event::<RefreshBitmask>()
         .insert_resource(tilesets)
         .insert_resource(reg)
         .init_resource::<Mouse>()
@@ -107,6 +109,7 @@ async fn main() {
         .init_resource::<GameSettings>()
         .init_resource::<TurnState>()
         .init_resource::<Clock>()
+        .init_resource::<Bitmasker>()
         .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
         .add_systems(
             ScheduleType::Update,
@@ -115,7 +118,13 @@ async fn main() {
                 update_mouse,
                 update_crt_uniforms,
                 render_fps,
-                (render_glyphs, render_text).chain(),
+                (
+                    on_bitmask_spawn,
+                    on_refresh_bitmask,
+                    render_glyphs,
+                    render_text,
+                )
+                    .chain(),
             ),
         )
         .add_systems(ScheduleType::PostUpdate, update_visibility)

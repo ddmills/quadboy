@@ -1,13 +1,14 @@
 use std::vec;
 
-use bevy_ecs::{component::Component, entity::Entity, resource::Resource};
+use bevy_ecs::{component::Component, entity::Entity, resource::Resource, system::Query};
+use macroquad::prelude::trace;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cfg::ZONE_SIZE,
+    cfg::{CARDINALS_OFFSET, ZONE_SIZE},
     common::{Grid, HashGrid, Palette, Rand},
     domain::ZoneSaveData,
-    rendering::{is_zone_oob, zone_idx, zone_xyz},
+    rendering::{is_zone_oob, world_to_zone_idx, world_to_zone_local, zone_idx, zone_xyz},
 };
 
 #[derive(Resource, Default)]
@@ -65,6 +66,42 @@ impl Zone {
             terrain: self.terrain.clone(),
             entities: vec![],
         }
+    }
+
+    pub fn get_at(world_pos: (usize, usize, usize), q_zones: &Query<&Zone>) -> Vec<Entity> {
+        let (x, y, z) = world_pos;
+        let zone_idx = world_to_zone_idx(x, y, z);
+
+        let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) else {
+            return vec![];
+        };
+
+        let local = world_to_zone_local(x, y);
+
+        let Some(entities) = zone.entities.get(local.0, local.1) else {
+            return vec![];
+        };
+
+        entities.to_vec()
+    }
+
+    pub fn get_neighbors(
+        world_pos: (usize, usize, usize),
+        q_zones: &Query<&Zone>,
+    ) -> Vec<Vec<Entity>> {
+        let (x, y, z) = world_pos;
+
+        let mut neighbors = Vec::with_capacity(4);
+
+        for (dx, dy) in CARDINALS_OFFSET.iter() {
+            let neighbor_x = (x as i32 + dx) as usize;
+            let neighbor_y = (y as i32 + dy) as usize;
+
+            let entities = Self::get_at((neighbor_x, neighbor_y, z), q_zones);
+            neighbors.push(entities);
+        }
+
+        neighbors
     }
 }
 

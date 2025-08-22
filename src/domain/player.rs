@@ -5,8 +5,8 @@ use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::Palette,
     domain::{
-        Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label, StairDown, StairUp,
-        TurnState, Zone, ZoneStatus,
+        BitmaskGlyph, Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label,
+        StairDown, StairUp, TurnState, Zone, ZoneStatus,
     },
     engine::{InputRate, KeyInput, Mouse, Time},
     rendering::{Glyph, Layer, Position, Text, TrackZone, zone_xyz},
@@ -58,6 +58,7 @@ pub fn player_input(
     mut game_state: ResMut<CurrentGameState>,
     turn_state: Res<TurnState>,
     settings: Res<GameSettings>,
+    q_zone: Query<&Zone>,
 ) {
     let now = time.elapsed;
     let rate = settings.input_rate;
@@ -77,6 +78,9 @@ pub fn player_input(
                 .layer(Layer::Actors)
                 .outline(Palette::Clear),
             Label::new("Rock wall"),
+            BitmaskGlyph {
+                style: super::BitmaskStyle::Wall,
+            },
             ZoneStatus::Dormant,
             Collider,
             TrackZone,
@@ -91,7 +95,7 @@ pub fn player_input(
     if x > 0
         && keys.is_down(KeyCode::A)
         && input_rate.try_key(KeyCode::A, now, rate, delay)
-        && !has_collider_at(x - 1, y, z, &q_colliders)
+        && !has_collider_at((x - 1, y, z), &q_colliders, &q_zone)
     {
         position.x -= 1.;
         moved = true;
@@ -100,7 +104,7 @@ pub fn player_input(
     if x < (MAP_SIZE.0 * ZONE_SIZE.0) - 1
         && keys.is_down(KeyCode::D)
         && input_rate.try_key(KeyCode::D, now, rate, delay)
-        && !has_collider_at(x + 1, y, z, &q_colliders)
+        && !has_collider_at((x + 1, y, z), &q_colliders, &q_zone)
     {
         position.x += 1.;
         moved = true;
@@ -109,7 +113,7 @@ pub fn player_input(
     if y > 0
         && keys.is_down(KeyCode::W)
         && input_rate.try_key(KeyCode::W, now, rate, delay)
-        && !has_collider_at(x, y - 1, z, &q_colliders)
+        && !has_collider_at((x, y - 1, z), &q_colliders, &q_zone)
     {
         position.y -= 1.;
         moved = true;
@@ -118,7 +122,7 @@ pub fn player_input(
     if y < (MAP_SIZE.1 * ZONE_SIZE.1) - 1
         && keys.is_down(KeyCode::S)
         && input_rate.try_key(KeyCode::S, now, rate, delay)
-        && !has_collider_at(x, y + 1, z, &q_colliders)
+        && !has_collider_at((x, y + 1, z), &q_colliders, &q_zone)
     {
         position.y += 1.;
         moved = true;
@@ -200,18 +204,13 @@ pub fn render_player_debug(
 }
 
 fn has_collider_at(
-    x: usize,
-    y: usize,
-    z: usize,
+    world_pos: (usize, usize, usize),
     colliders: &Query<&Position, (With<Collider>, Without<Player>)>,
+    q_zones: &Query<&Zone>,
 ) -> bool {
-    for pos in colliders.iter() {
-        if pos.x.floor() as usize == x && pos.y.floor() as usize == y && pos.z.floor() as usize == z
-        {
-            return true;
-        }
-    }
-    false
+    Zone::get_at(world_pos, q_zones)
+        .iter()
+        .any(|e| colliders.contains(*e))
 }
 
 fn is_on_stair_down(
