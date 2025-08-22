@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, player_input,
-        render_player_debug, update_player_position_resource,
+        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop,
+        game_systems, player_input, register_game_systems, render_player_debug,
+        update_player_position_resource,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
@@ -20,16 +21,25 @@ pub struct ExploreStatePlugin;
 impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Explore)
-            .on_enter(app, (on_enter_explore, center_camera_on_player))
+            .on_enter(
+                app,
+                (
+                    register_game_systems,
+                    on_enter_explore,
+                    center_camera_on_player,
+                )
+                    .chain(),
+            )
             .on_update(
                 app,
                 (
-                    player_input,
                     update_player_position_resource,
                     render_player_debug,
                     render_tick_display,
                     render_cursor,
                     display_entity_names_at_mouse,
+                    game_loop,
+                    player_input,
                 ),
             )
             .on_leave(

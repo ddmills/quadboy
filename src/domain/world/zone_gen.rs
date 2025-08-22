@@ -2,11 +2,12 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 
 use crate::{
     cfg::ZONE_SIZE,
-    common::{astar, bresenham_line, AStarSettings, Distance, Grid, Palette, Perlin, Rand},
+    common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
     domain::{
-        Collider, Energy, Label, Map, StairDown, StairUp, Terrain, Zone, ZoneConstraintType, ZoneStatus
+        Collider, Energy, Label, Map, StairDown, StairUp, Terrain, Zone, ZoneConstraintType,
+        ZoneStatus,
     },
-    rendering::{zone_local_to_world, Glyph, Layer, Position, TrackZone},
+    rendering::{Glyph, Layer, Position, TrackZone, zone_local_to_world},
     states::CleanupStatePlay,
 };
 

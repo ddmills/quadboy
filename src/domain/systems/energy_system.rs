@@ -1,7 +1,8 @@
 use bevy_ecs::prelude::*;
+use bevy_ecs::system::RunSystemOnce;
 
 use crate::{
-    domain::{Energy, Player},
+    domain::{Energy, Player, ai_turn},
     engine::Clock,
 };
 
@@ -31,7 +32,7 @@ impl ConsumeEnergyEvent {
     }
 }
 
-pub fn energy_tick_system(
+pub fn turn_scheduler(
     mut q_energy: Query<(Entity, &mut Energy)>,
     mut turn_state: ResMut<TurnState>,
     mut clock: ResMut<Clock>,

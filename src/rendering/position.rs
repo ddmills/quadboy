@@ -59,7 +59,8 @@ pub fn update_entity_pos(
         let old_zone_idx = pos.prev_zone_idx;
 
         if new_zone_idx != old_zone_idx
-            && let Some((_, mut old_zone, _)) = q_zones.iter_mut().find(|(_, x, _)| x.idx == old_zone_idx)
+            && let Some((_, mut old_zone, _)) =
+                q_zones.iter_mut().find(|(_, x, _)| x.idx == old_zone_idx)
         {
             old_zone.entities.remove(&e);
         }
