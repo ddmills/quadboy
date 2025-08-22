@@ -52,26 +52,27 @@ pub struct TrackZone;
 pub fn update_entity_pos(
     mut cmds: Commands,
     mut q_moved: Query<(Entity, &mut Position), (Changed<Position>, With<TrackZone>)>,
-    mut q_zones: Query<(&mut Zone, &ZoneStatus)>,
+    mut q_zones: Query<(Entity, &mut Zone, &ZoneStatus)>,
 ) {
     for (e, mut pos) in q_moved.iter_mut() {
         let new_zone_idx = pos.zone_idx();
         let old_zone_idx = pos.prev_zone_idx;
 
         if new_zone_idx != old_zone_idx
-            && let Some((mut old_zone, _)) = q_zones.iter_mut().find(|(x, _)| x.idx == old_zone_idx)
+            && let Some((_, mut old_zone, _)) = q_zones.iter_mut().find(|(_, x, _)| x.idx == old_zone_idx)
         {
             old_zone.entities.remove(&e);
         }
 
-        if let Some((mut zone, zone_status)) =
-            q_zones.iter_mut().find(|(x, _)| x.idx == new_zone_idx)
+        if let Some((zone_e, mut zone, zone_status)) =
+            q_zones.iter_mut().find(|(_, x, _)| x.idx == new_zone_idx)
         {
             let (local_x, local_y) = world_to_zone_local(pos.x as usize, pos.y as usize);
+
             zone.entities.remove(&e);
             zone.entities.insert(local_x, local_y, e);
             pos.prev_zone_idx = new_zone_idx;
-            cmds.entity(e).insert(*zone_status);
+            cmds.entity(e).insert(*zone_status).insert(ChildOf(zone_e));
         }
     }
 }

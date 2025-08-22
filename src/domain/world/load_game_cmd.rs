@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{Collider, Energy, Map, Name, Player},
+    domain::{Collider, Energy, Label, Map, Player},
     engine::{Clock, try_load_game},
     rendering::{Glyph, Layer, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -43,7 +43,7 @@ impl LoadGameCommand {
             Player,
             Collider,
             Energy::new(1000),
-            Name::new("{Y-y repeat|Cowboy}"),
+            Label::new("{Y-y repeat|Cowboy}"),
             TrackZone,
             CleanupStatePlay,
         ));

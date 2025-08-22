@@ -2,11 +2,11 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 
 use crate::{
     cfg::ZONE_SIZE,
-    common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
+    common::{astar, bresenham_line, AStarSettings, Distance, Grid, Palette, Perlin, Rand},
     domain::{
-        Collider, Map, Name, StairDown, StairUp, Terrain, Zone, ZoneConstraintType, ZoneStatus,
+        Collider, Energy, Label, Map, StairDown, StairUp, Terrain, Zone, ZoneConstraintType, ZoneStatus
     },
-    rendering::{Glyph, Layer, Position, TrackZone, zone_local_to_world},
+    rendering::{zone_local_to_world, Glyph, Layer, Position, TrackZone},
     states::CleanupStatePlay,
 };
 
@@ -453,10 +453,22 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             world.spawn((
                 Position::new(wpos.0, wpos.1, wpos.2),
                 Glyph::new(64, Palette::DarkCyan, Palette::Orange).layer(Layer::Objects),
-                Name::new("Pine Tree"),
+                Label::new("Pine Tree"),
                 Collider,
                 ChildOf(zone_entity_id),
                 ZoneStatus::Dormant,
+                TrackZone,
+                CleanupStatePlay,
+            ));
+        } else if rand.bool(0.005) {
+            // bandit enemy
+            world.spawn((
+                Position::new(wpos.0, wpos.1, wpos.2),
+                Glyph::new(145, Palette::White, Palette::Red).layer(Layer::Actors),
+                Collider,
+                ChildOf(zone_entity_id),
+                Energy::new(-100),
+                Label::new("{R|Bandit}"),
                 TrackZone,
                 CleanupStatePlay,
             ));
@@ -477,7 +489,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         world.spawn((
             Position::new(wpos.0, wpos.1, wpos.2),
             Glyph::new(107, Palette::White, Palette::Gray).layer(Layer::Actors),
-            Name::new("Stairs Down"),
+            Label::new("Stairs Down"),
             StairDown,
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,
@@ -491,7 +503,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
         world.spawn((
             Position::new(wpos.0, wpos.1, wpos.2),
             Glyph::new(108, Palette::White, Palette::Gray).layer(Layer::Actors),
-            Name::new("Stairs Up"),
+            Label::new("Stairs Up"),
             StairUp,
             ChildOf(zone_entity_id),
             ZoneStatus::Dormant,

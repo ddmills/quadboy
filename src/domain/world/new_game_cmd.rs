@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{Collider, Energy, GameSaveData, Map, Name, Player, PlayerPosition, PlayerSaveData},
+    domain::{Collider, Energy, GameSaveData, Label, Map, Player, PlayerPosition, PlayerSaveData},
     engine::{Clock, delete_save, save_game},
     rendering::{Glyph, Layer, Position, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -39,18 +39,7 @@ impl NewGameCommand {
             Player,
             Collider,
             Energy::new(0),
-            Name::new("{Y-y repeat|Cowboy}"),
-            TrackZone,
-            CleanupStatePlay,
-        ));
-
-        // bandit enemy
-        world.spawn((
-            Position::new(52, 56, 0),
-            Glyph::new(145, Palette::White, Palette::Red).layer(Layer::Actors),
-            Collider,
-            Energy::new(-1200),
-            Name::new("{R|Bandit}"),
+            Label::new("{Y-y repeat|Cowboy}"),
             TrackZone,
             CleanupStatePlay,
         ));

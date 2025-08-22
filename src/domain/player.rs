@@ -5,11 +5,11 @@ use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::Palette,
     domain::{
-        Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, StairDown, StairUp,
-        TurnState, Zone,
+        Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label, StairDown, StairUp,
+        TurnState, Zone, ZoneStatus,
     },
     engine::{InputRate, KeyInput, Mouse, Time},
-    rendering::{Glyph, Layer, Position, Text, TrackZone, zone_xyz},
+    rendering::{zone_xyz, Glyph, Layer, Position, Text, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -74,10 +74,12 @@ pub fn player_input(
     if keys.is_pressed(KeyCode::G) {
         cmds.spawn((
             Position::new(x, y, z),
-            Glyph::new(4, Palette::Orange, Palette::Green)
+            Glyph::new(241, Palette::DarkBlue, Palette::Clear)
                 .layer(Layer::Actors)
-                .bg(Palette::White)
-                .outline(Palette::Red),
+                .outline(Palette::Clear),
+            Label::new("Rock wall"),
+            ZoneStatus::Dormant,
+            Collider,
             TrackZone,
             CleanupStatePlay,
         ));

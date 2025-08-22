@@ -3,11 +3,11 @@ use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
-pub struct Name {
+pub struct Label {
     value: String,
 }
 
-impl Name {
+impl Label {
     pub fn new<S: Into<String>>(value: S) -> Self {
         Self {
             value: value.into(),

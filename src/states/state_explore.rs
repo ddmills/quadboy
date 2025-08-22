@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Name, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, player_input,
+        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, player_input,
         render_player_debug, update_player_position_resource,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
@@ -114,7 +114,7 @@ fn display_entity_names_at_mouse(
     mouse: Res<Mouse>,
     player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
-    q_names: Query<&Name>,
+    q_names: Query<&Label>,
     mut q_hover_text: Query<(&mut Text, &mut Position, &mut Visibility), With<MouseHoverText>>,
 ) {
     let mouse_x = mouse.world.0.floor() as usize;
@@ -136,6 +136,8 @@ fn display_entity_names_at_mouse(
     for entity in entities {
         if let Ok(name) = q_names.get(*entity) {
             names.push(name.get().to_string());
+        } else {
+            names.push("Unknown".to_owned());
         }
     }
 

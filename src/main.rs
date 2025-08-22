@@ -14,7 +14,7 @@ use ui::UiLayout;
 use crate::{
     cfg::WINDOW_SIZE,
     domain::{
-        Collider, ConsumeEnergyEvent, Energy, GameSettings, LoadGameResult, LoadZoneEvent, Name,
+        Collider, ConsumeEnergyEvent, Energy, GameSettings, Label, LoadGameResult, LoadZoneEvent,
         NewGameResult, PlayerMovedEvent, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp,
         TurnState, UnloadZoneEvent, Zones,
     },
@@ -68,7 +68,7 @@ async fn main() {
     reg.register::<Glyph>();
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
-    reg.register::<Name>();
+    reg.register::<Label>();
     reg.register::<Collider>();
     reg.register::<Energy>();
     reg.register::<StairDown>();
