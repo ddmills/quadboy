@@ -3,7 +3,9 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
-    domain::{Map, Name, Terrain, Zone, ZoneConstraintType, ZoneStatus, StairDown, StairUp},
+    domain::{
+        Collider, Map, Name, StairDown, StairUp, Terrain, Zone, ZoneConstraintType, ZoneStatus,
+    },
     rendering::{Glyph, Layer, Position, TrackZone, zone_local_to_world},
     states::CleanupStatePlay,
 };
@@ -338,16 +340,19 @@ fn connect_stairs_to_footpaths(
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
                 if let Some(existing_terrain) = terrain.get(x, y)
-                    && *existing_terrain == Terrain::Dirt && x != stair_pos.0 && y != stair_pos.1 {
-                        let distance = Distance::manhattan(
-                            [stair_pos.0 as i32, stair_pos.1 as i32, 0],
-                            [x as i32, y as i32, 0],
-                        );
-                        if distance < shortest_distance {
-                            shortest_distance = distance;
-                            nearest_footpath = Some((x, y));
-                        }
+                    && *existing_terrain == Terrain::Dirt
+                    && x != stair_pos.0
+                    && y != stair_pos.1
+                {
+                    let distance = Distance::manhattan(
+                        [stair_pos.0 as i32, stair_pos.1 as i32, 0],
+                        [x as i32, y as i32, 0],
+                    );
+                    if distance < shortest_distance {
+                        shortest_distance = distance;
+                        nearest_footpath = Some((x, y));
                     }
+                }
             }
         }
 
@@ -358,9 +363,10 @@ fn connect_stairs_to_footpaths(
                 is_goal: |pos| pos == footpath_pos,
                 cost: |_from, to| {
                     if let Some(existing_terrain) = terrain.get(to.0, to.1)
-                        && *existing_terrain == Terrain::River {
-                            return 3.0;
-                        }
+                        && *existing_terrain == Terrain::River
+                    {
+                        return 3.0;
+                    }
                     1.0
                 },
                 heuristic: |pos| {
@@ -448,6 +454,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
                 Position::new(wpos.0, wpos.1, wpos.2),
                 Glyph::new(64, Palette::DarkCyan, Palette::Orange).layer(Layer::Objects),
                 Name::new("Pine Tree"),
+                Collider,
                 ChildOf(zone_entity_id),
                 ZoneStatus::Dormant,
                 TrackZone,

@@ -2,8 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{Map, Name, Player},
-    engine::try_load_game,
+    domain::{Collider, Energy, Map, Name, Player},
+    engine::{Clock, try_load_game},
     rendering::{Glyph, Layer, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
@@ -41,12 +41,19 @@ impl LoadGameCommand {
             game_data.player.position,
             Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
             Player,
+            Collider,
+            Energy::new(1000),
             Name::new("{Y-y repeat|Cowboy}"),
             TrackZone,
             CleanupStatePlay,
         ));
 
         world.init_resource::<Map>();
+
+        // Restore the clock tick
+        if let Some(mut clock) = world.get_resource_mut::<Clock>() {
+            clock.set_tick(game_data.tick);
+        }
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {
             game_state.next = GameState::Explore;

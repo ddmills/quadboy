@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Name, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone, player_input,
+        Name, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, player_input,
         render_player_debug, update_player_position_resource,
     },
-    engine::{App, Mouse, Plugin, SerializableComponent},
+    engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
     states::{GameStatePlugin, cleanup_system},
 };
@@ -27,6 +27,7 @@ impl Plugin for ExploreStatePlugin {
                     player_input,
                     update_player_position_resource,
                     render_player_debug,
+                    render_tick_display,
                     render_cursor,
                     display_entity_names_at_mouse,
                 ),
@@ -51,6 +52,13 @@ fn on_enter_explore(mut cmds: Commands, q_player: Query<&Position, With<Player>>
         Text::new("123").bg(Palette::Black),
         Position::new_f32(6., 0., 0.),
         PlayerDebug,
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
+        Text::new("Tick: 0").bg(Palette::Black),
+        Position::new_f32(0., 0.5, 0.),
+        TickDisplay,
         CleanupStateExplore,
     ));
 
@@ -84,6 +92,9 @@ struct CursorGlyph;
 
 #[derive(Component)]
 struct MouseHoverText;
+
+#[derive(Component)]
+struct TickDisplay;
 
 fn render_cursor(
     mouse: Res<Mouse>,
@@ -142,6 +153,22 @@ fn display_entity_names_at_mouse(
         text_pos.y = mouse_y as f32;
         text_pos.z = mouse_z as f32;
     }
+}
+
+fn render_tick_display(
+    clock: Res<Clock>,
+    mut q_tick_display: Query<&mut Text, With<TickDisplay>>,
+    turn_state: Res<TurnState>,
+) {
+    let Ok(mut text) = q_tick_display.single_mut() else {
+        return;
+    };
+
+    text.value = format!(
+        "Tick: {{C|{}}} {}",
+        clock.current_tick(),
+        turn_state.is_players_turn
+    );
 }
 
 fn center_camera_on_player(

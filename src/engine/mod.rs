@@ -1,4 +1,5 @@
 mod app;
+mod clock;
 mod entity_serializer;
 mod exit;
 mod input;
@@ -7,6 +8,7 @@ mod save;
 mod time;
 
 pub use app::*;
+pub use clock::*;
 pub use entity_serializer::*;
 pub use exit::*;
 pub use input::*;

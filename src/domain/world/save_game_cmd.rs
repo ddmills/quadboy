@@ -3,7 +3,7 @@ use macroquad::prelude::get_time;
 
 use crate::{
     domain::{GameSaveData, GameSettings, Player, PlayerSaveData, UnloadZoneCommand, Zones},
-    engine::save_game,
+    engine::{Clock, save_game},
     rendering::Position,
 };
 
@@ -78,11 +78,17 @@ impl SaveGameCommand {
             }
         };
 
-        // Save game data (player position, timestamp, etc.)
+        // Get current tick from Clock
+        let current_tick = world
+            .get_resource::<Clock>()
+            .map(|clock| clock.current_tick())
+            .unwrap_or(0);
+
+        // Save game data (player position, timestamp, tick, etc.)
         let player_save = PlayerSaveData {
             position: player_position,
         };
-        let game_data = GameSaveData::new(player_save, get_time());
+        let game_data = GameSaveData::new(player_save, get_time(), current_tick);
         save_game(&game_data, &save_name);
 
         // Save all active zones without despawning them

@@ -14,11 +14,12 @@ use ui::UiLayout;
 use crate::{
     cfg::WINDOW_SIZE,
     domain::{
-        GameSettings, LoadGameResult, LoadZoneEvent, Name, NewGameResult, PlayerMovedEvent,
-        SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, UnloadZoneEvent, Zones,
+        Collider, ConsumeEnergyEvent, Energy, GameSettings, LoadGameResult, LoadZoneEvent, Name,
+        NewGameResult, PlayerMovedEvent, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp,
+        TurnState, UnloadZoneEvent, Zones,
     },
     engine::{
-        App, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
+        App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
         update_mouse,
     },
     rendering::{CrtShader, Glyph, TrackZone, update_visibility},
@@ -68,6 +69,8 @@ async fn main() {
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
     reg.register::<Name>();
+    reg.register::<Collider>();
+    reg.register::<Energy>();
     reg.register::<StairDown>();
     reg.register::<StairUp>();
 
@@ -86,6 +89,7 @@ async fn main() {
         .register_event::<SetZoneStatusEvent>()
         .register_event::<PlayerMovedEvent>()
         .register_event::<SaveGameResult>()
+        .register_event::<ConsumeEnergyEvent>()
         .insert_resource(tilesets)
         .insert_resource(reg)
         .init_resource::<Mouse>()
@@ -101,6 +105,8 @@ async fn main() {
         .init_resource::<CrtShader>()
         .init_resource::<Zones>()
         .init_resource::<GameSettings>()
+        .init_resource::<TurnState>()
+        .init_resource::<Clock>()
         .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
         .add_systems(
             ScheduleType::Update,
@@ -119,7 +125,7 @@ async fn main() {
                 render_all,
                 update_app_states,
                 update_game_states,
-                crate::engine::render_profiler,
+                // crate::engine::render_profiler,
             )
                 .chain(),),
         );

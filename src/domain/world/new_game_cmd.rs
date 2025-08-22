@@ -2,8 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{GameSaveData, Map, Name, Player, PlayerPosition, PlayerSaveData},
-    engine::{delete_save, save_game},
+    domain::{Collider, Energy, GameSaveData, Map, Name, Player, PlayerPosition, PlayerSaveData},
+    engine::{Clock, delete_save, save_game},
     rendering::{Glyph, Layer, Position, TrackZone},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
@@ -37,18 +37,32 @@ impl NewGameCommand {
             starting_position.clone(),
             Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
             Player,
+            Collider,
+            Energy::new(0),
             Name::new("{Y-y repeat|Cowboy}"),
             TrackZone,
             CleanupStatePlay,
         ));
 
+        // bandit enemy
+        world.spawn((
+            Position::new(52, 56, 0),
+            Glyph::new(145, Palette::White, Palette::Red).layer(Layer::Actors),
+            Collider,
+            Energy::new(-1200),
+            Name::new("{R|Bandit}"),
+            TrackZone,
+            CleanupStatePlay,
+        ));
+
         world.insert_resource(PlayerPosition::from_position(&starting_position));
-        world.init_resource::<Map>();
+        world.insert_resource(Map);
+        world.insert_resource(Clock::default());
 
         let player_save_data = PlayerSaveData {
             position: starting_position,
         };
-        let game_save_data = GameSaveData::new(player_save_data, 0.0);
+        let game_save_data = GameSaveData::new(player_save_data, 0.0, 0);
         save_game(&game_save_data, &self.save_name);
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {
