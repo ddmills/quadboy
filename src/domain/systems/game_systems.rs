@@ -1,8 +1,4 @@
-use bevy_ecs::{
-    resource::Resource,
-    system::SystemId,
-    world::World,
-};
+use bevy_ecs::{resource::Resource, system::SystemId, world::World};
 use macroquad::telemetry;
 
 use crate::{
@@ -41,12 +37,20 @@ fn exec_game_systems(world: &mut World) {
 
 pub fn game_loop(world: &mut World) {
     telemetry::begin_zone("game_loop");
+    let mut iterations = 0;
+    const MAX_ITERATIONS: u32 = 100;
+
     loop {
         exec_game_systems(world);
         let Some(turn) = world.get_resource::<TurnState>() else {
             return;
         };
         if turn.is_players_turn {
+            break;
+        }
+
+        iterations += 1;
+        if iterations >= MAX_ITERATIONS {
             break;
         }
     }

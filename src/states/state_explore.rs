@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop, player_input, register_game_systems, render_player_debug,
-        update_player_position_resource,
+        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop,
+        player_input, register_game_systems, render_player_debug, update_player_position_resource,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},

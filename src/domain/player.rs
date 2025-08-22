@@ -47,7 +47,6 @@ pub struct PlayerMovedEvent {
 pub fn player_input(
     mut cmds: Commands,
     mut q_player: Query<(Entity, &mut Position), With<Player>>,
-    _q_zones: Query<&Zone>,
     q_colliders: Query<&Position, (With<Collider>, Without<Player>)>,
     q_stairs_down: Query<&Position, (With<StairDown>, Without<Player>)>,
     q_stairs_up: Query<&Position, (With<StairUp>, Without<Player>)>,
@@ -89,33 +88,41 @@ pub fn player_input(
         return;
     }
 
-    if x > 0 && keys.is_down(KeyCode::A) && input_rate.try_key(KeyCode::A, now, rate, delay)
-        && !has_collider_at(x - 1, y, z, &q_colliders) {
-            position.x -= 1.;
-            moved = true;
-        }
+    if x > 0
+        && keys.is_down(KeyCode::A)
+        && input_rate.try_key(KeyCode::A, now, rate, delay)
+        && !has_collider_at(x - 1, y, z, &q_colliders)
+    {
+        position.x -= 1.;
+        moved = true;
+    }
 
     if x < (MAP_SIZE.0 * ZONE_SIZE.0) - 1
         && keys.is_down(KeyCode::D)
         && input_rate.try_key(KeyCode::D, now, rate, delay)
-        && !has_collider_at(x + 1, y, z, &q_colliders) {
-            position.x += 1.;
-            moved = true;
-        }
+        && !has_collider_at(x + 1, y, z, &q_colliders)
+    {
+        position.x += 1.;
+        moved = true;
+    }
 
-    if y > 0 && keys.is_down(KeyCode::W) && input_rate.try_key(KeyCode::W, now, rate, delay)
-        && !has_collider_at(x, y - 1, z, &q_colliders) {
-            position.y -= 1.;
-            moved = true;
-        }
+    if y > 0
+        && keys.is_down(KeyCode::W)
+        && input_rate.try_key(KeyCode::W, now, rate, delay)
+        && !has_collider_at(x, y - 1, z, &q_colliders)
+    {
+        position.y -= 1.;
+        moved = true;
+    }
 
     if y < (MAP_SIZE.1 * ZONE_SIZE.1) - 1
         && keys.is_down(KeyCode::S)
         && input_rate.try_key(KeyCode::S, now, rate, delay)
-        && !has_collider_at(x, y + 1, z, &q_colliders) {
-            position.y += 1.;
-            moved = true;
-        }
+        && !has_collider_at(x, y + 1, z, &q_colliders)
+    {
+        position.y += 1.;
+        moved = true;
+    }
 
     if z > 0
         && keys.is_down(KeyCode::E)
