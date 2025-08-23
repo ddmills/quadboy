@@ -8,9 +8,20 @@ varying vec4 fg1;
 varying vec4 fg2;
 varying vec4 bg;
 varying vec4 outline;
+varying float is_shrouded;
 
 uniform sampler2D tex_1;
 uniform sampler2D tex_2;
+
+vec4 apply_shroud(vec4 color) {
+    if (color.a == 0.0) return color;
+    
+    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    vec3 desaturated = mix(color.rgb, vec3(gray), 0.9);
+    vec3 darkened = desaturated * 0.5;
+    
+    return vec4(darkened, color.a);
+}
 
 void main() {
     vec2 uv_scaled = uv / 16.0; // atlas is 16x16
@@ -37,9 +48,16 @@ void main() {
     } else if (v.r == 1.0 && v.g == 1.0 && v.b == 1.0 && fg2.a > 0.0) { // White (Secondary)
         gl_FragColor = fg2;
     } else if (v.r == 1.0 && v.g == 0.0 && v.b == 0.0 && outline.a > 0.0) { // Red (Outline)
+        if (is_shrouded > 0.5) {
+            gl_FragColor = bg;
+        }
         gl_FragColor = outline;
     } else { // debug
         gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+    }
+
+    if (is_shrouded > 0.5 && !(v.r == 1.0 && v.g == 0.0 && v.b == 0.0)) {
+        gl_FragColor = apply_shroud(gl_FragColor);
     }
 
     if (gl_FragColor.a == 0.0) {

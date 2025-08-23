@@ -2,7 +2,7 @@ use crate::engine::SerializableComponent;
 use crate::{
     cfg::TILE_SIZE_F32,
     common::{MacroquadColorable, Palette},
-    domain::{ApplyVisibilityEffects, IsVisible, Player, ZoneStatus},
+    domain::{ApplyVisibilityEffects, IsExplored, IsVisible, Player, ZoneStatus},
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
     ui::UiLayout,
 };
@@ -141,6 +141,7 @@ pub fn render_glyphs(
         &Glyph,
         &Position,
         Option<&IsVisible>,
+        Option<&IsExplored>,
         Option<&ApplyVisibilityEffects>,
     )>,
     mut layers: ResMut<Layers>,
@@ -167,9 +168,8 @@ pub fn render_glyphs(
     let ui_panel_y = (ui.game_panel.y as f32) * tile_h;
     let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
 
-    q_glyphs
-        .iter()
-        .for_each(|(glyph, pos, is_visible, apply_visibility_effects)| {
+    q_glyphs.iter().for_each(
+        |(glyph, pos, is_visible, is_explored, apply_visibility_effects)| {
             let texture_id = glyph.texture_id;
 
             let mut x = (pos.x * tile_w).floor();
@@ -183,8 +183,8 @@ pub fn render_glyphs(
                     return;
                 }
 
-                // Skip rendering if glyph has ApplyVisibilityEffects but is not visible
-                if apply_visibility_effects.is_some() && is_visible.is_none() {
+                // Skip rendering if glyph has ApplyVisibilityEffects but is not explored
+                if apply_visibility_effects.is_some() && is_explored.is_none() {
                     return;
                 }
 
@@ -203,6 +203,9 @@ pub fn render_glyphs(
 
             let style = glyph.get_style();
 
+            let is_shrouded =
+                apply_visibility_effects.is_some() && is_explored.is_some() && is_visible.is_none();
+
             layer.add(Renderable {
                 idx: glyph.idx,
                 fg1: style.fg1,
@@ -214,8 +217,10 @@ pub fn render_glyphs(
                 w,
                 h,
                 tex_idx: texture_id.get_texture_idx(),
+                is_shrouded: is_shrouded as u32,
             });
-        });
+        },
+    );
 
     telemetry::end_zone();
 }

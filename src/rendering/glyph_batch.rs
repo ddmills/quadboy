@@ -40,6 +40,7 @@ struct InstanceData {
     fg2: Vec4,
     bg: Vec4,
     outline: Vec4,
+    is_shrouded: f32,
 }
 
 #[repr(C)]
@@ -134,6 +135,7 @@ impl GlyphBatch {
                 VertexAttribute::with_buffer("in_fg2", VertexFormat::Float4, 1),
                 VertexAttribute::with_buffer("in_bg", VertexFormat::Float4, 1),
                 VertexAttribute::with_buffer("in_outline", VertexFormat::Float4, 1),
+                VertexAttribute::with_buffer("in_is_shrouded", VertexFormat::Float1, 1),
             ],
             shader,
             Default::default(),
@@ -187,6 +189,7 @@ impl GlyphBatch {
             fg2: r.fg2,
             bg: r.bg,
             outline: r.outline,
+            is_shrouded: r.is_shrouded as f32,
         };
 
         self.size += 1;
@@ -237,6 +240,7 @@ attribute vec4 in_fg1;
 attribute vec4 in_fg2;
 attribute vec4 in_bg;
 attribute vec4 in_outline;
+attribute float in_is_shrouded;
 
 varying lowp float idx;
 varying lowp float tex_idx;
@@ -245,6 +249,7 @@ varying vec4 fg1;
 varying vec4 fg2;
 varying vec4 bg;
 varying vec4 outline;
+varying lowp float is_shrouded;
 
 void main() {
     // Calculate world position by scaling unit quad and translating
@@ -258,6 +263,7 @@ void main() {
     fg2 = in_fg2;
     bg = in_bg;
     outline = in_outline;
+    is_shrouded = in_is_shrouded;
 }";
 
 const FRAGMENT: &str = include_str!("../assets/shaders/glyph-shader.glsl");

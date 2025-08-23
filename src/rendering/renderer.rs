@@ -41,6 +41,7 @@ pub struct Renderable {
     pub y: f32,
     pub w: f32,
     pub h: f32,
+    pub is_shrouded: u32,
 }
 
 pub fn render_all(
