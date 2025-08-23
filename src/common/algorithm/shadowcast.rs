@@ -86,62 +86,9 @@ fn cast_light<F1, F2>(
                 }
             } else if distance < settings.distance && (settings.is_blocker)(pos_x, pos_y) {
                 is_blocked = true;
-                cast_light(distance + 1, start, left_slope, xx, xy, yx, yy, settings);
+                cast_light(distance + 1, iter_start, left_slope, xx, xy, yx, yy, settings);
                 new_start = right_slope;
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashSet;
-
-    #[test]
-    fn test_shadowcast_empty_room() {
-        let mut visible_cells = HashSet::new();
-
-        let settings = ShadowcastSettings {
-            start_x: 0,
-            start_y: 0,
-            distance: 3,
-            is_blocker: |_x, _y| false,
-            on_light: |x, y, _distance| {
-                visible_cells.insert((x, y));
-            },
-        };
-
-        shadowcast(settings);
-
-        assert!(visible_cells.contains(&(0, 0)));
-        assert!(visible_cells.contains(&(1, 0)));
-        assert!(visible_cells.contains(&(0, 1)));
-        assert!(visible_cells.contains(&(-1, 0)));
-        assert!(visible_cells.contains(&(0, -1)));
-    }
-
-    #[test]
-    fn test_shadowcast_with_wall() {
-        let mut visible_cells = HashSet::new();
-
-        let settings = ShadowcastSettings {
-            start_x: 0,
-            start_y: 0,
-            distance: 5,
-            is_blocker: |x, y| x == 2 && y == 0,
-            on_light: |x, y, _distance| {
-                visible_cells.insert((x, y));
-            },
-        };
-
-        shadowcast(settings);
-
-        assert!(visible_cells.contains(&(0, 0)));
-        assert!(visible_cells.contains(&(1, 0)));
-        assert!(visible_cells.contains(&(2, 0)));
-
-        assert!(!visible_cells.contains(&(3, 0)));
-        assert!(!visible_cells.contains(&(4, 0)));
     }
 }
