@@ -2,12 +2,9 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 
 use crate::{
     cfg::ZONE_SIZE,
-    common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
-    domain::{
-        BitmaskGlyph, BitmaskStyle, Collider, Energy, Label, Map, SaveFlag, StairDown, StairUp,
-        Terrain, Zone, ZoneConstraintType, ZoneStatus,
-    },
-    rendering::{Glyph, Layer, Position, RecordZonePosition, zone_local_to_world},
+    common::{AStarSettings, Distance, Grid, Perlin, Rand, astar, bresenham_line},
+    domain::{Map, PrefabId, Prefabs, SpawnConfig, Terrain, Zone, ZoneConstraintType, ZoneStatus},
+    rendering::{Glyph, Layer, Position, zone_local_to_world},
     states::CleanupStatePlay,
 };
 
@@ -485,30 +482,12 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
                 && *terrain_type == Terrain::Grass
                 && occupied_positions.get(x, y) == Some(&false)
             {
-                world.spawn((
-                    Position::new(wpos.0, wpos.1, wpos.2),
-                    Glyph::new(64, Palette::DarkCyan, Palette::Orange).layer(Layer::Objects),
-                    Label::new("Pine Tree"),
-                    Collider,
-                    ChildOf(zone_entity_id),
-                    ZoneStatus::Dormant,
-                    RecordZonePosition,
-                    SaveFlag,
-                    CleanupStatePlay,
-                ));
+                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+                Prefabs::spawn_world(world, PrefabId::PineTree, config);
                 occupied_positions.insert(x, y, true);
             } else if rand.bool(0.002) && occupied_positions.get(x, y) == Some(&false) {
-                world.spawn((
-                    Position::new(wpos.0, wpos.1, wpos.2),
-                    Glyph::new(145, Palette::White, Palette::Red).layer(Layer::Actors),
-                    Collider,
-                    ChildOf(zone_entity_id),
-                    Energy::new(-100),
-                    Label::new("{R|Bandit}"),
-                    RecordZonePosition,
-                    SaveFlag,
-                    CleanupStatePlay,
-                ));
+                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+                Prefabs::spawn_world(world, PrefabId::Bandit, config);
                 occupied_positions.insert(x, y, true);
             }
 
@@ -524,50 +503,20 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
 
     for &(x, y) in &stair_down_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        world.spawn((
-            Position::new(wpos.0, wpos.1, wpos.2),
-            Glyph::new(107, Palette::White, Palette::Gray).layer(Layer::Objects),
-            Label::new("Stairs Down"),
-            StairDown,
-            SaveFlag,
-            ChildOf(zone_entity_id),
-            ZoneStatus::Dormant,
-            RecordZonePosition,
-            CleanupStatePlay,
-        ));
+        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+        let _ = Prefabs::spawn_world(world, PrefabId::StairDown, config);
     }
 
     for &(x, y) in &stair_up_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        world.spawn((
-            Position::new(wpos.0, wpos.1, wpos.2),
-            Glyph::new(108, Palette::White, Palette::Gray).layer(Layer::Objects),
-            Label::new("Stairs Up"),
-            StairUp,
-            SaveFlag,
-            ChildOf(zone_entity_id),
-            ZoneStatus::Dormant,
-            RecordZonePosition,
-            CleanupStatePlay,
-        ));
+        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+        let _ = Prefabs::spawn_world(world, PrefabId::StairUp, config);
     }
 
     for &(x, y) in &rock_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        world.spawn((
-            Position::new(wpos.0, wpos.1, wpos.2),
-            Glyph::new(240, Palette::Gray, Palette::Clear).layer(Layer::Objects),
-            Label::new("Boulder"),
-            BitmaskGlyph {
-                style: BitmaskStyle::Wall,
-            },
-            ZoneStatus::Dormant,
-            Collider,
-            RecordZonePosition,
-            SaveFlag,
-            CleanupStatePlay,
-            ChildOf(zone_entity_id),
-        ));
+        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+        let _ = Prefabs::spawn_world(world, PrefabId::Boulder, config);
     }
 
     world

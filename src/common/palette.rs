@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[repr(u32)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Palette {
     White = 0xFFF1E8,
     Black = 0x0F0E0F,

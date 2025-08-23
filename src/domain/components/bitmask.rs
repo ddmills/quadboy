@@ -58,6 +58,12 @@ pub struct BitmaskGlyph {
     pub style: BitmaskStyle,
 }
 
+impl BitmaskGlyph {
+    pub fn new(style: BitmaskStyle) -> Self {
+        Self { style }
+    }
+}
+
 pub fn on_bitmask_spawn(
     q_bitmasks_new: Query<(Entity, &Position), (Added<BitmaskGlyph>, With<RecordZonePosition>)>,
     q_zones: Query<&Zone>,

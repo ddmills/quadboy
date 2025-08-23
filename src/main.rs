@@ -13,10 +13,11 @@ use ui::UiLayout;
 
 use crate::{
     cfg::WINDOW_SIZE,
+    common::Rand,
     domain::{
         Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings, Label, LoadGameResult,
-        LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, RefreshBitmask, SaveGameResult,
-        SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Zones,
+        LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask,
+        SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Zones,
         on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
@@ -111,6 +112,8 @@ async fn main() {
         .init_resource::<TurnState>()
         .init_resource::<Clock>()
         .init_resource::<Bitmasker>()
+        .init_resource::<Prefabs>()
+        .init_resource::<Rand>()
         .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
         .add_systems(
             ScheduleType::Update,

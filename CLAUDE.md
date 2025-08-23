@@ -111,6 +111,17 @@ Important serializable components:
 - Use `Zone::get_neighbors()` to get entities in cardinal directions
 - Always check if a zone is loaded before allowing entity movement into it
 
+## Prefab System
+The game uses a command-based prefab system for entity spawning:
+- `PrefabId` enum defines available prefab types (PineTree, Boulder, Bandit, StairUp, StairDown)
+- `SpawnConfig` configures spawn parameters: position as (usize, usize, usize), zone entity, variants, custom labels/colors
+- `SpawnPrefabCommand` provides deferred entity spawning through Commands
+- `Prefabs` resource manages function registry for spawn functions
+- Two spawn methods: `spawn()` for Commands-based (deferred), `spawn_world()` for World-based (immediate)
+- Spawn functions signature: `fn(Entity, &mut World, SpawnConfig)` - modify entity in-place
+- Located in `src/domain/world/prefabs/` with separate files per prefab type
+- Usage: `let config = SpawnConfig::new((x, y, z), zone_entity); Prefabs::spawn_world(world, PrefabId::PineTree, config)`
+
 ## Save System Architecture
 - GameSaveData contains: player data, timestamp, and clock tick
 - PlayerSaveData contains: position and serialized entity
@@ -171,7 +182,9 @@ Important serializable components:
 ## Code style
 - Query system parameters should be prefixed with `q_`, for example, `q_position: Query<&Position>`. 
 - Event Reader/Reader system parameters should be prefixed with `e_`, for example: `mut e_refresh_bitmask: EventWriter<RefreshBitmask>`
+- bevy `Commands` parameters should be named `cmds`
 - Leave very few, if any, comments
+- prefer importing bevy prelude over individual parts. eg `use bevy_ecs::prelude::*;`
 
 ### Formatting Text Glyphs in game
 - Text can be stylized in the game, for example: `{R-G-B-y repeat|Hello World}` will output the text "Hello World" in Red, Green, Blue, and Dark Yellow colors, repeating.

@@ -7,7 +7,7 @@ use crate::rendering::{world_to_zone_idx, world_to_zone_local};
 
 use crate::engine::SerializableComponent;
 
-#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent, Debug)]
 pub struct Position {
     pub x: f32,
     pub y: f32,
@@ -17,6 +17,15 @@ pub struct Position {
 }
 
 impl Position {
+    pub fn new_world(world_pos: (usize, usize, usize)) -> Self {
+        Self {
+            x: world_pos.0 as f32,
+            y: world_pos.1 as f32,
+            z: world_pos.2 as f32,
+            prev_zone_idx: 9999999,
+        }
+    }
+
     pub fn new(x: usize, y: usize, z: usize) -> Self {
         Self {
             x: x as f32,

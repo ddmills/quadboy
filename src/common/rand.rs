@@ -46,3 +46,9 @@ impl Rand {
         self.random() < chance
     }
 }
+
+impl Default for Rand {
+    fn default() -> Self {
+        Self::new()
+    }
+}
