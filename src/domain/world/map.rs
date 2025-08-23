@@ -19,10 +19,12 @@ pub struct Zones {
 #[repr(u8)]
 #[derive(Clone, Hash, Copy, Default, Deserialize, Serialize, PartialEq, Eq, Debug)]
 pub enum Terrain {
+    OpenAir = 1,
     #[default]
-    Grass = 1,
-    Dirt = 2,
-    River = 3,
+    Grass = 2,
+    Dirt = 3,
+    River = 4,
+    Sand = 5,
 }
 
 impl Terrain {
@@ -30,7 +32,9 @@ impl Terrain {
         match self {
             Terrain::Grass => 1,
             Terrain::Dirt => 129,
+            Terrain::Sand => 33,
             Terrain::River => 34,
+            Terrain::OpenAir => 0,
         }
     }
 
@@ -38,7 +42,9 @@ impl Terrain {
         match self {
             Terrain::Grass => (None, Some(Palette::DarkCyan.into())),
             Terrain::Dirt => (None, Some(Palette::Brown.into())),
+            Terrain::Sand => (None, Some(Palette::Red.into())),
             Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
+            Terrain::OpenAir => (None, None),
         }
     }
 }
@@ -87,10 +93,6 @@ impl Zone {
         };
 
         entities.to_vec()
-    }
-
-    pub fn get_terrain(&self, x: usize, y: usize) -> Option<Terrain> {
-        self.terrain.get(x, y).copied()
     }
 
     pub fn get_neighbors(

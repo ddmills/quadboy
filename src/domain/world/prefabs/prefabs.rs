@@ -1,6 +1,6 @@
 use super::{
-    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_pine_tree, spawn_stair_down,
-    spawn_stair_up, spawn_terrain_tile,
+    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_pine_tree,
+    spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
 };
 use crate::domain::Terrain;
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
@@ -75,6 +75,7 @@ impl Prefabs {
         self.register(PrefabId::TerrainTile(Terrain::Grass), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::River), spawn_terrain_tile);
+        self.register(PrefabId::TerrainTile(Terrain::Sand), spawn_terrain_tile);
     }
 
     pub fn register(&mut self, id: PrefabId, spawn_fn: SpawnFunction) {

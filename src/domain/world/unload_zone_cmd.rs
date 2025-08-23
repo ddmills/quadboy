@@ -1,21 +1,25 @@
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{GameSettings, Zone},
-    engine::{save_zone, serialize},
+    engine::{SerializableComponent, save_zone, serialize},
 };
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct SaveFlag;
 
 pub struct UnloadZoneCommand {
     pub zone_idx: usize,
-    pub despawn_entities: bool,
+    pub despawn: bool,
 }
 
 impl Command<Result> for UnloadZoneCommand {
     fn apply(self, world: &mut World) -> Result {
         let zone_idx = self.zone_idx;
+
+        trace!("unloading {} ({})", zone_idx, self.despawn);
 
         let mut q_zones = world.query::<(Entity, &Zone)>();
         let q_save_flag = world.query::<&SaveFlag>();
@@ -52,7 +56,7 @@ impl Command<Result> for UnloadZoneCommand {
             save_zone(&zone_save, &settings.save_name);
         }
 
-        if self.despawn_entities {
+        if self.despawn {
             world.despawn(zone_e);
 
             for e in despawns.iter() {

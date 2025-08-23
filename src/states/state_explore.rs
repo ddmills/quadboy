@@ -134,8 +134,6 @@ fn display_entity_names_at_mouse(
     for entity in entities {
         if let Ok(name) = q_names.get(*entity) {
             names.push(name.get().to_string());
-        } else {
-            names.push("Unknown".to_owned());
         }
     }
 
@@ -155,11 +153,7 @@ fn display_entity_names_at_mouse(
     }
 }
 
-fn render_tick_display(
-    clock: Res<Clock>,
-    mut q_tick_display: Query<&mut Text, With<TickDisplay>>,
-    turn_state: Res<TurnState>,
-) {
+fn render_tick_display(clock: Res<Clock>, mut q_tick_display: Query<&mut Text, With<TickDisplay>>) {
     let Ok(mut text) = q_tick_display.single_mut() else {
         return;
     };

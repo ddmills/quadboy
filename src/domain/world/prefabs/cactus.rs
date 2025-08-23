@@ -12,7 +12,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_cactus(entity: Entity, world: &mut World, config: SpawnConfig) {
     let mut rand = world.get_resource_mut::<Rand>().unwrap();
     let glyph_idx = rand.pick(&[67, 68]);
-    
+
     world.entity_mut(entity).insert((
         Position::new_world(config.pos),
         Glyph::idx(glyph_idx)

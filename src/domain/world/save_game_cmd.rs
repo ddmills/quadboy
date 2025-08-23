@@ -2,7 +2,9 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::get_time;
 
 use crate::{
-    domain::{GameSaveData, GameSettings, Map, Player, PlayerSaveData, UnloadZoneCommand, Zones},
+    domain::{
+        GameSaveData, GameSettings, Map, Player, PlayerSaveData, UnloadZoneCommand, Zone, Zones,
+    },
     engine::{Clock, save_game, serialize},
     rendering::Position,
 };
@@ -30,15 +32,6 @@ impl Command<()> for SaveGameCommand {
 
 impl SaveGameCommand {
     fn execute_save(&self, world: &mut World) -> SaveGameResult {
-        let Some(zones) = world.get_resource::<Zones>() else {
-            return SaveGameResult {
-                success: false,
-                zone_count: 0,
-                save_name: String::new(),
-                message: "Zones resource not found".to_string(),
-            };
-        };
-
         let Some(settings) = world.get_resource::<GameSettings>() else {
             return SaveGameResult {
                 success: false,
@@ -57,8 +50,6 @@ impl SaveGameCommand {
             };
         }
 
-        let active_zones = zones.active.clone();
-        let zone_count = active_zones.len();
         let save_name = settings.save_name.clone();
 
         let (player_entity, player_position) = {
@@ -95,11 +86,18 @@ impl SaveGameCommand {
         let game_data = GameSaveData::new(player_save, get_time(), current_tick, seed);
         save_game(&game_data, &save_name);
 
-        for zone_idx in active_zones {
+        let mut q_zones = world.query::<&Zone>();
+        let zone_indicies = q_zones.iter(world).map(|z| z.idx).collect::<Vec<_>>();
+        let mut zone_count = 0;
+
+        for zone_idx in zone_indicies {
+            zone_count += 1;
+
             let save_cmd = UnloadZoneCommand {
                 zone_idx,
-                despawn_entities: false,
+                despawn: false,
             };
+
             if let Err(e) = save_cmd.apply(world) {
                 return SaveGameResult {
                     success: false,

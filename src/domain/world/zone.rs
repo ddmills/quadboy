@@ -1,12 +1,18 @@
+use std::collections::hash_map;
+
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cfg::MAP_SIZE,
-    common::Grid,
-    domain::{LoadZoneCommand, PlayerMovedEvent, Terrain, UnloadZoneCommand, Zone, Zones},
+    cfg::{MAP_SIZE, ZONE_SIZE},
+    common::{Grid, Rand},
+    domain::{
+        LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
+        UnloadZoneCommand, Zone, Zones,
+    },
     engine::SerializedEntity,
-    rendering::{world_to_zone_idx, zone_idx, zone_xyz},
+    rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz},
+    states::CleanupStatePlay,
 };
 
 #[derive(Component, PartialEq, Eq, Clone, Copy)]
@@ -45,7 +51,7 @@ pub fn on_unload_zone(mut cmds: Commands, mut e_unload_zone: EventReader<UnloadZ
     for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
         cmds.queue(UnloadZoneCommand {
             zone_idx: *zone_idx,
-            despawn_entities: true,
+            despawn: true,
         });
     }
 }
@@ -231,5 +237,33 @@ pub fn load_nearby_zones(
             idx: *idx,
             status: ZoneStatus::Dormant,
         });
+    }
+}
+
+pub fn spawn_zone(world: &mut World, zone_idx: usize) {
+    let terrain = Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, Terrain::Sand);
+
+    let zone_entity = world
+        .spawn((
+            Zone::new(zone_idx, terrain.clone()),
+            ZoneStatus::Dormant,
+            CleanupStatePlay,
+        ))
+        .id();
+
+    let mut rand = Rand::seed(zone_idx as u64);
+
+    for (x, y, t) in terrain.iter_xy() {
+        let wpos = zone_local_to_world(zone_idx, x, y);
+        let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
+        let terrain_entity = Prefabs::spawn_world(world, config);
+
+        world
+            .entity_mut(terrain_entity)
+            .insert(ChildOf(zone_entity));
+
+        if rand.bool(0.005) {
+            Prefabs::spawn_world(world, SpawnConfig::new(PrefabId::Cactus, wpos));
+        }
     }
 }

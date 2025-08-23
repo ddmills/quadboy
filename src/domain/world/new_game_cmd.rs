@@ -1,6 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
+    cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
         ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, Map, Player, PlayerPosition,
@@ -35,7 +36,7 @@ impl NewGameCommand {
     fn execute_new_game(&self, world: &mut World) -> NewGameResult {
         delete_save(&self.save_name);
 
-        let starting_position = Position::new(45, 56, 0);
+        let starting_position = Position::new(45, 56, SURFACE_LEVEL_Z);
         let player_entity = world
             .spawn((
                 starting_position.clone(),

@@ -17,7 +17,7 @@ use crate::{
     domain::{
         ApplyVisibilityEffects, Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings,
         HideWhenNotVisible, IsExplored, IsVisible, Label, LoadGameResult, LoadZoneEvent,
-        NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveGameResult,
+        NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
         SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Vision, VisionBlocker,
         Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
@@ -69,6 +69,7 @@ async fn main() {
     reg.register::<Position>();
     reg.register::<RecordZonePosition>();
     reg.register::<Glyph>();
+    reg.register::<SaveFlag>();
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
     reg.register::<Label>();
