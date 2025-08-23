@@ -119,6 +119,13 @@ impl<T> Grid<T> {
         self.data.iter()
     }
 
+    pub fn iter_xy(&self) -> impl Iterator<Item = (usize, usize, &T)> {
+        self.data.iter().enumerate().map(move |(idx, value)| {
+            let (x, y) = self.xy(idx);
+            (x, y, value)
+        })
+    }
+
     pub fn fill<F>(&mut self, fill_fn: F)
     where
         F: Fn(usize, usize) -> T,

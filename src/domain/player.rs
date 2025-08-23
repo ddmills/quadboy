@@ -71,15 +71,14 @@ pub fn player_input(
     }
 
     if keys.is_pressed(KeyCode::G) {
-        prefabs.spawn(&mut cmds, PrefabId::Boulder, SpawnConfig::new((x, y, z)));
+        prefabs.spawn(&mut cmds, SpawnConfig::new(PrefabId::Boulder, (x, y, z)));
     }
 
     if !turn_state.is_players_turn {
         return;
     }
 
-    // Wait action - player deliberately waits/rests
-    if keys.is_pressed(KeyCode::T) {
+    if keys.is_down(KeyCode::T) && input_rate.try_key(KeyCode::T, now, rate, delay) {
         e_consume_energy.write(ConsumeEnergyEvent::new(
             player_entity,
             EnergyActionType::Wait,

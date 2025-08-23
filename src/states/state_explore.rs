@@ -54,7 +54,7 @@ fn on_enter_explore(mut cmds: Commands) {
     ));
 
     cmds.spawn((
-        Text::new("Tick: 0").bg(Palette::Black),
+        Text::new("Turn: 0.000").bg(Palette::Black),
         Position::new_f32(0., 0.5, 0.),
         TickDisplay,
         CleanupStateExplore,
@@ -165,9 +165,9 @@ fn render_tick_display(
     };
 
     text.value = format!(
-        "Tick: {{C|{}}} {}",
-        clock.current_tick(),
-        turn_state.is_players_turn
+        "{{G|{}}}.{{g|{:03}}}",
+        clock.current_turn(),
+        clock.sub_turn(),
     );
 }
 

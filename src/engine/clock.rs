@@ -10,7 +10,7 @@ impl Clock {
     pub fn new() -> Self {
         Self {
             tick: 0,
-            tick_delta: 0,
+            tick_delta: 1,
         }
     }
 
@@ -33,5 +33,13 @@ impl Clock {
 
     pub fn set_tick(&mut self, value: u32) {
         self.tick = value;
+    }
+
+    pub fn current_turn(&self) -> u32 {
+        self.tick / 1000
+    }
+
+    pub fn sub_turn(&self) -> u32 {
+        self.tick % 1000
     }
 }

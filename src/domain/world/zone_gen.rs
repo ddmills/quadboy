@@ -4,10 +4,10 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Perlin, Rand, astar, bresenham_line},
     domain::{
-        ApplyVisibilityEffects, Map, PrefabId, Prefabs, SpawnConfig, Terrain, Zone,
+        Map, PrefabId, Prefabs, SpawnConfig, Terrain, Zone,
         ZoneConstraintType, ZoneStatus,
     },
-    rendering::{Glyph, Layer, Position, zone_local_to_world},
+    rendering::zone_local_to_world,
     states::CleanupStatePlay,
 };
 
@@ -480,49 +480,44 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             let wpos = zone_local_to_world(zone_idx, x, y);
             let terrain_type = terrain.get(x, y).unwrap_or(&Terrain::Dirt);
 
-            let idx = terrain_type.tile();
-            let (bg, fg) = terrain_type.colors();
-
             if rand.bool(0.05)
                 && *terrain_type == Terrain::Grass
                 && occupied_positions.get(x, y) == Some(&false)
             {
-                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
-                Prefabs::spawn_world(world, PrefabId::PineTree, config);
+                let config = SpawnConfig::new(PrefabId::PineTree, (wpos.0, wpos.1, wpos.2));
+                Prefabs::spawn_world(world, config);
                 occupied_positions.insert(x, y, true);
             } else if rand.bool(0.002) && occupied_positions.get(x, y) == Some(&false) {
-                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
-                Prefabs::spawn_world(world, PrefabId::Bandit, config);
+                let config = SpawnConfig::new(PrefabId::Bandit, (wpos.0, wpos.1, wpos.2));
+                Prefabs::spawn_world(world, config);
                 occupied_positions.insert(x, y, true);
             }
 
-            world.spawn((
-                Position::new(wpos.0, wpos.1, wpos.2),
-                Glyph::idx(idx).bg_opt(bg).fg1_opt(fg).layer(Layer::Terrain),
-                ApplyVisibilityEffects,
-                ChildOf(zone_entity_id),
-                ZoneStatus::Dormant,
-                CleanupStatePlay,
-            ));
+            let terrain_config = SpawnConfig::new(PrefabId::TerrainTile(*terrain_type), wpos);
+            let terrain_entity = Prefabs::spawn_world(world, terrain_config);
+
+            world
+                .entity_mut(terrain_entity)
+                .insert(ChildOf(zone_entity_id));
         }
     }
 
     for &(x, y) in &stair_down_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
-        let _ = Prefabs::spawn_world(world, PrefabId::StairDown, config);
+        let config = SpawnConfig::new(PrefabId::StairDown, (wpos.0, wpos.1, wpos.2));
+        let _ = Prefabs::spawn_world(world, config);
     }
 
     for &(x, y) in &stair_up_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
-        let _ = Prefabs::spawn_world(world, PrefabId::StairUp, config);
+        let config = SpawnConfig::new(PrefabId::StairUp, (wpos.0, wpos.1, wpos.2));
+        let _ = Prefabs::spawn_world(world, config);
     }
 
     for &(x, y) in &rock_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
-        let _ = Prefabs::spawn_world(world, PrefabId::Boulder, config);
+        let config = SpawnConfig::new(PrefabId::Boulder, (wpos.0, wpos.1, wpos.2));
+        let _ = Prefabs::spawn_world(world, config);
     }
 
     world

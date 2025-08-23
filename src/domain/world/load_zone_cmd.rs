@@ -1,11 +1,9 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    cfg::ZONE_SIZE,
-    common::Grid,
-    domain::{ApplyVisibilityEffects, GameSettings, Terrain, Zone, gen_zone},
+    domain::{GameSettings, PrefabId, Prefabs, SpawnConfig, Zone, gen_zone},
     engine::{deserialize_all, try_load_zone},
-    rendering::{Glyph, Layer, Position, zone_local_to_world},
+    rendering::zone_local_to_world,
     states::CleanupStatePlay,
 };
 
@@ -42,31 +40,27 @@ impl Command<Result> for LoadZoneCommand {
         // Create the zone entity
         let zone_entity_id = world.spawn((ZoneStatus::Dormant, CleanupStatePlay)).id();
 
-        Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-            let wpos = zone_local_to_world(zone_data.idx, x, y);
-            let terrain = zone_data.terrain.get(x, y).unwrap_or(&Terrain::Dirt);
-
-            let idx = terrain.tile();
-            let (bg, fg) = terrain.colors();
-
-            world
-                .spawn((
-                    Position::new(wpos.0, wpos.1, wpos.2),
-                    Glyph::idx(idx).bg_opt(bg).fg1_opt(fg).layer(Layer::Terrain),
-                    ApplyVisibilityEffects,
-                    ChildOf(zone_entity_id),
-                    ZoneStatus::Dormant,
-                    CleanupStatePlay,
-                ))
-                .id()
-        });
-
-        deserialize_all(&zone_data.entities, world);
-
         let mut zone = Zone::new(zone_data.idx, zone_data.terrain);
         zone.explored = zone_data.explored;
 
         world.entity_mut(zone_entity_id).insert(zone);
+
+        // Query back for the zone and collect terrain data
+        let terrain_tiles: Vec<_> = {
+            let zone = world.entity(zone_entity_id).get::<Zone>().unwrap();
+            zone.terrain.iter_xy().map(|(x, y, t)| (x, y, *t)).collect()
+        };
+
+        for (x, y, t) in terrain_tiles {
+            let wpos = zone_local_to_world(zone_data.idx, x, y);
+            let config = SpawnConfig::new(PrefabId::TerrainTile(t), wpos);
+            let terrain_entity = Prefabs::spawn_world(world, config);
+            world
+                .entity_mut(terrain_entity)
+                .insert(ChildOf(zone_entity_id));
+        }
+
+        deserialize_all(&zone_data.entities, world);
 
         Ok(())
     }

@@ -17,7 +17,7 @@ pub struct Zones {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Hash, Copy, Default, Deserialize, Serialize, PartialEq, Eq, Debug)]
 pub enum Terrain {
     #[default]
     Grass = 1,
@@ -87,6 +87,10 @@ impl Zone {
         };
 
         entities.to_vec()
+    }
+
+    pub fn get_terrain(&self, x: usize, y: usize) -> Option<Terrain> {
+        self.terrain.get(x, y).copied()
     }
 
     pub fn get_neighbors(

@@ -1,19 +1,14 @@
-use super::{PrefabId, Prefabs, SpawnConfig};
+use super::{Prefabs, SpawnConfig};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub struct SpawnPrefabCommand {
     pub entity: Entity,
-    pub prefab_id: PrefabId,
     pub config: SpawnConfig,
 }
 
 impl SpawnPrefabCommand {
-    pub fn new(entity: Entity, prefab_id: PrefabId, config: SpawnConfig) -> Self {
-        Self {
-            entity,
-            prefab_id,
-            config,
-        }
+    pub fn new(entity: Entity, config: SpawnConfig) -> Self {
+        Self { entity, config }
     }
 
     pub fn execute(self, world: &mut World) -> Result<(), String> {
@@ -24,8 +19,8 @@ impl SpawnPrefabCommand {
 
             *prefabs
                 .spawn_functions
-                .get(&self.prefab_id)
-                .ok_or_else(|| format!("Unknown prefab type: {:?}", self.prefab_id))?
+                .get(&self.config.prefab_id)
+                .ok_or_else(|| format!("Unknown prefab type: {:?}", self.config.prefab_id))?
         };
 
         spawn_fn(self.entity, world, self.config);

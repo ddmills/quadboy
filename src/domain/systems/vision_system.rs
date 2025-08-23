@@ -41,16 +41,6 @@ pub fn update_player_vision(
 
     let player_world_pos = player_pos.world();
 
-    // Early exit: check if vision needs to be recomputed
-    if let (Some(last_pos), Some(last_range)) =
-        (vision_cache.last_player_pos, vision_cache.last_vision_range)
-        && last_pos == player_world_pos
-        && last_range == vision.range
-    {
-        telemetry::end_zone();
-        return; // No need to recompute
-    }
-
     // Clear all visible grids before recomputing
     for mut zone in q_zones.iter_mut() {
         zone.visible.fill(|_, _| false);
