@@ -482,11 +482,11 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
                 && *terrain_type == Terrain::Grass
                 && occupied_positions.get(x, y) == Some(&false)
             {
-                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
                 Prefabs::spawn_world(world, PrefabId::PineTree, config);
                 occupied_positions.insert(x, y, true);
             } else if rand.bool(0.002) && occupied_positions.get(x, y) == Some(&false) {
-                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+                let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
                 Prefabs::spawn_world(world, PrefabId::Bandit, config);
                 occupied_positions.insert(x, y, true);
             }
@@ -503,19 +503,19 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
 
     for &(x, y) in &stair_down_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
         let _ = Prefabs::spawn_world(world, PrefabId::StairDown, config);
     }
 
     for &(x, y) in &stair_up_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
         let _ = Prefabs::spawn_world(world, PrefabId::StairUp, config);
     }
 
     for &(x, y) in &rock_positions {
         let wpos = zone_local_to_world(zone_idx, x, y);
-        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2), zone_entity_id);
+        let config = SpawnConfig::new((wpos.0, wpos.1, wpos.2));
         let _ = Prefabs::spawn_world(world, PrefabId::Boulder, config);
     }
 

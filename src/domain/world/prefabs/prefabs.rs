@@ -18,7 +18,6 @@ pub enum PrefabId {
 #[derive(Clone, Debug)]
 pub struct SpawnConfig {
     pub pos: (usize, usize, usize),
-    pub zone_entity: Entity,
     pub metadata: HashMap<String, SpawnValue>,
 }
 
@@ -31,10 +30,9 @@ pub enum SpawnValue {
 }
 
 impl SpawnConfig {
-    pub fn new(pos: (usize, usize, usize), zone_entity: Entity) -> Self {
+    pub fn new(pos: (usize, usize, usize)) -> Self {
         Self {
             pos,
-            zone_entity,
             metadata: HashMap::new(),
         }
     }

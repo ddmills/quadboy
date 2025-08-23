@@ -6,13 +6,15 @@ use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::Palette,
     domain::{
-        BitmaskGlyph, Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label,
+        BitmaskGlyph, Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label, Prefabs,
         SaveFlag, StairDown, StairUp, TurnState, Zone, ZoneStatus,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Layer, Position, RecordZonePosition, Text, zone_xyz},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
+
+use super::{PrefabId, SpawnConfig};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Player;
@@ -56,6 +58,7 @@ pub fn player_input(
     turn_state: Res<TurnState>,
     settings: Res<GameSettings>,
     q_zone: Query<&Zone>,
+    prefabs: Res<Prefabs>,
 ) {
     let now = time.elapsed;
     let rate = settings.input_rate;
@@ -69,21 +72,7 @@ pub fn player_input(
     }
 
     if keys.is_pressed(KeyCode::G) {
-        cmds.spawn((
-            Position::new(x, y, z),
-            Glyph::new(241, Palette::DarkBlue, Palette::Clear)
-                .layer(Layer::Actors)
-                .outline(Palette::Clear),
-            Label::new("Rock wall"),
-            BitmaskGlyph {
-                style: super::BitmaskStyle::Wall,
-            },
-            ZoneStatus::Dormant,
-            Collider,
-            RecordZonePosition,
-            SaveFlag,
-            CleanupStatePlay,
-        ));
+        prefabs.spawn(&mut cmds, PrefabId::Boulder, SpawnConfig::new((x, y, z)));
     }
 
     if !turn_state.is_players_turn {
