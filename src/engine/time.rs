@@ -12,9 +12,9 @@ pub struct Time {
     pub elapsed: f64,
     pub frames: VecDeque<i32>,
     pub frames_count: usize,
-    pub fixed_t: f32,
-    pub fixed_overstep: f32,
-    pub fixed_timestep: f32,
+    pub fixed_t: f64,
+    pub fixed_overstep: f64,
+    pub fixed_timestep: f64,
 }
 
 impl Default for Time {
@@ -43,7 +43,7 @@ impl Time {
     }
 
     #[inline]
-    pub fn overstep_fraction(&self) -> f32 {
+    pub fn overstep_fraction(&self) -> f64 {
         self.fixed_overstep / self.fixed_timestep
     }
 }
@@ -60,7 +60,7 @@ pub fn update_time(mut time: ResMut<Time>) {
         time.frames.pop_front();
     }
     time.frames.push_back(fps);
-    time.fixed_overstep += dt;
+    time.fixed_overstep += dt as f64;
 
     while time.fixed_overstep >= time.fixed_timestep {
         time.fixed_t += time.fixed_timestep;

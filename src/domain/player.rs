@@ -9,7 +9,7 @@ use crate::{
         TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
-    rendering::{Position, Text, zone_xyz},
+    rendering::{Position, Text, world_to_zone_idx, zone_xyz},
     states::{CurrentGameState, GameState},
 };
 
@@ -59,7 +59,7 @@ pub fn player_input(
     q_zone: Query<&Zone>,
     prefabs: Res<Prefabs>,
 ) {
-    let now = time.elapsed;
+    let now = time.fixed_t;
     let rate = settings.input_rate;
     let delay = settings.input_initial_delay;
     let (player_entity, mut position) = q_player.single_mut().unwrap();
@@ -88,7 +88,16 @@ pub fn player_input(
 
     if x > 0
         && keys.is_down(KeyCode::A)
-        && input_rate.try_key(KeyCode::A, now, rate, delay)
+        && can_move_with_boundary_check(
+            KeyCode::A,
+            (x, y, z),
+            (x - 1, y, z),
+            &mut input_rate,
+            now,
+            rate,
+            delay,
+            &settings,
+        )
         && !has_collider_at((x - 1, y, z), &q_colliders, &q_zone)
     {
         position.x -= 1.;
@@ -97,7 +106,16 @@ pub fn player_input(
 
     if x < (MAP_SIZE.0 * ZONE_SIZE.0) - 1
         && keys.is_down(KeyCode::D)
-        && input_rate.try_key(KeyCode::D, now, rate, delay)
+        && can_move_with_boundary_check(
+            KeyCode::D,
+            (x, y, z),
+            (x + 1, y, z),
+            &mut input_rate,
+            now,
+            rate,
+            delay,
+            &settings,
+        )
         && !has_collider_at((x + 1, y, z), &q_colliders, &q_zone)
     {
         position.x += 1.;
@@ -106,7 +124,16 @@ pub fn player_input(
 
     if y > 0
         && keys.is_down(KeyCode::W)
-        && input_rate.try_key(KeyCode::W, now, rate, delay)
+        && can_move_with_boundary_check(
+            KeyCode::W,
+            (x, y, z),
+            (x, y - 1, z),
+            &mut input_rate,
+            now,
+            rate,
+            delay,
+            &settings,
+        )
         && !has_collider_at((x, y - 1, z), &q_colliders, &q_zone)
     {
         position.y -= 1.;
@@ -115,7 +142,16 @@ pub fn player_input(
 
     if y < (MAP_SIZE.1 * ZONE_SIZE.1) - 1
         && keys.is_down(KeyCode::S)
-        && input_rate.try_key(KeyCode::S, now, rate, delay)
+        && can_move_with_boundary_check(
+            KeyCode::S,
+            (x, y, z),
+            (x, y + 1, z),
+            &mut input_rate,
+            now,
+            rate,
+            delay,
+            &settings,
+        )
         && !has_collider_at((x, y + 1, z), &q_colliders, &q_zone)
     {
         position.y += 1.;
@@ -239,4 +275,37 @@ fn is_on_stair_up(
         }
     }
     false
+}
+
+fn would_cross_zone_boundary(
+    from_pos: (usize, usize, usize),
+    to_pos: (usize, usize, usize),
+) -> bool {
+    let from_zone = world_to_zone_idx(from_pos.0, from_pos.1, from_pos.2);
+    let to_zone = world_to_zone_idx(to_pos.0, to_pos.1, to_pos.2);
+    from_zone != to_zone
+}
+
+fn can_move_with_boundary_check(
+    key: KeyCode,
+    from_pos: (usize, usize, usize),
+    to_pos: (usize, usize, usize),
+    input_rate: &mut InputRate,
+    now: f64,
+    rate: f64,
+    delay: f64,
+    settings: &GameSettings,
+) -> bool {
+    let crosses_boundary = would_cross_zone_boundary(from_pos, to_pos);
+
+    if crosses_boundary && settings.zone_boundary_move_delay > 0.0 {
+        input_rate.try_key(
+            key,
+            now,
+            settings.zone_boundary_move_delay,
+            settings.zone_boundary_move_delay,
+        )
+    } else {
+        input_rate.try_key(key, now, rate, delay)
+    }
 }

@@ -27,8 +27,8 @@ impl KeyInput {
 
 #[derive(Default)]
 pub struct KeyState {
-    time: f64,
-    delayed: bool,
+    pub time: f64,
+    pub delayed: bool,
 }
 
 #[derive(Default)]

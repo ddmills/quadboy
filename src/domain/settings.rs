@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct GameSettings {
     pub input_rate: f64,
     pub input_initial_delay: f64,
+    pub zone_boundary_move_delay: f64,
     pub enable_saves: bool,
     pub save_name: String,
     pub camera_mode: CameraMode,
@@ -24,7 +25,8 @@ impl Default for GameSettings {
     fn default() -> Self {
         Self {
             input_rate: 0.035,
-            input_initial_delay: 0.15,
+            input_initial_delay: 0.25,
+            zone_boundary_move_delay: 0.2,
             enable_saves: true,
             save_name: "test".to_string(),
             camera_mode: CameraMode::Smooth(0.04),
