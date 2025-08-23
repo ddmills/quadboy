@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
@@ -8,7 +10,7 @@ use crate::{
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 use bevy_ecs::prelude::*;
-use macroquad::{prelude::trace, telemetry};
+use macroquad::telemetry;
 
 #[derive(Resource, Default)]
 pub struct VisionCache {
@@ -46,8 +48,7 @@ pub fn update_player_vision(
     }
 
     // Build vision blocker cache for faster lookups
-    let mut blocker_cache: std::collections::HashMap<(i32, i32, i32), bool> =
-        std::collections::HashMap::new();
+    let mut blocker_cache: HashMap<(i32, i32, i32), bool> = HashMap::new();
     for blocker_pos in q_vision_blockers.iter() {
         let world_pos = blocker_pos.world();
         blocker_cache.insert(
