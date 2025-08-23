@@ -4,14 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
-    common::Palette,
     domain::{
-        BitmaskGlyph, Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Label, Prefabs,
-        SaveFlag, StairDown, StairUp, TurnState, Zone, ZoneStatus,
+        Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Prefabs, StairDown, StairUp, TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
-    rendering::{Glyph, Layer, Position, RecordZonePosition, Text, zone_xyz},
-    states::{CleanupStatePlay, CurrentGameState, GameState},
+    rendering::{Position, Text, zone_xyz},
+    states::{CurrentGameState, GameState},
 };
 
 use super::{PrefabId, SpawnConfig};

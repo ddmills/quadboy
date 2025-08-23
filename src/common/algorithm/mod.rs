@@ -6,4 +6,3 @@ pub mod shadowcast;
 pub use astar::*;
 pub use bresenham::*;
 pub use distance::*;
-pub use shadowcast::*;

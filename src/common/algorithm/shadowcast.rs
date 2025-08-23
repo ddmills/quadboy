@@ -86,7 +86,16 @@ fn cast_light<F1, F2>(
                 }
             } else if distance < settings.distance && (settings.is_blocker)(pos_x, pos_y) {
                 is_blocked = true;
-                cast_light(distance + 1, iter_start, left_slope, xx, xy, yx, yy, settings);
+                cast_light(
+                    distance + 1,
+                    iter_start,
+                    left_slope,
+                    xx,
+                    xy,
+                    yx,
+                    yy,
+                    settings,
+                );
                 new_start = right_slope;
             }
         }

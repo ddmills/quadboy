@@ -2,7 +2,6 @@ use super::{
     SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_pine_tree, spawn_stair_down,
     spawn_stair_up,
 };
-use crate::common::Palette;
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
 use std::collections::HashMap;
 
