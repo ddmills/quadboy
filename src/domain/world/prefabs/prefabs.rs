@@ -35,32 +35,8 @@ impl SpawnConfig {
         Self {
             pos,
             zone_entity,
-            variant: None,
-            level: None,
-            custom_label: None,
-            custom_color: None,
             metadata: HashMap::new(),
         }
-    }
-
-    pub fn with_variant(mut self, variant: String) -> Self {
-        self.variant = Some(variant);
-        self
-    }
-
-    pub fn with_level(mut self, level: u32) -> Self {
-        self.level = Some(level);
-        self
-    }
-
-    pub fn with_custom_label(mut self, label: String) -> Self {
-        self.custom_label = Some(label);
-        self
-    }
-
-    pub fn with_custom_color(mut self, color: Palette) -> Self {
-        self.custom_color = Some(color);
-        self
     }
 
     pub fn with_metadata(mut self, key: String, value: SpawnValue) -> Self {
