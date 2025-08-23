@@ -32,7 +32,7 @@ impl NewGameCommand {
     fn execute_new_game(&self, world: &mut World) -> NewGameResult {
         delete_save(&self.save_name);
 
-        let starting_position = Position::new(56, 56, 0);
+        let starting_position = Position::new(45, 56, 0);
         let player_entity = world
             .spawn((
                 starting_position.clone(),

@@ -197,46 +197,54 @@ impl Map {
             down[stair_x] = ZoneConstraintType::StairDown;
         }
 
-        let mut perlin = Perlin::new(idx as u32, 0.1, 3, 2.0);
+        let mut perlin = Perlin::new(idx as u32, 0.15, 2, 2.0); // Increased frequency, reduced octaves
 
         if y > 0 {
-            let wall_threshold = 0.6; // Noise value above this creates walls
+            let wall_threshold = 0.65; // Increased threshold for smaller clusters
+            let max_wall_length = 8; // Maximum consecutive wall tiles
             let mut in_wall_section = false;
+            let mut current_wall_length = 0;
 
             for i in 0..ZONE_SIZE.0 {
                 let noise_value = perlin.get(x as f32 + i as f32 * 0.1, y as f32);
 
-                if noise_value > wall_threshold {
+                if noise_value > wall_threshold && current_wall_length < max_wall_length {
                     if !in_wall_section {
                         in_wall_section = true;
                     }
-                    // Only set if it's not already something else (preserve rivers/footpaths)
+
                     if south[i] == ZoneConstraintType::None {
                         south[i] = ZoneConstraintType::RockWall;
+                        current_wall_length += 1;
                     }
                 } else {
                     in_wall_section = false;
+                    current_wall_length = 0;
                 }
             }
         }
 
         if x > 0 {
-            let wall_threshold = 0.6;
+            let wall_threshold = 0.65;
+            let max_wall_length = 8;
             let mut in_wall_section = false;
+            let mut current_wall_length = 0;
 
             for i in 0..ZONE_SIZE.1 {
                 let noise_value = perlin.get(x as f32, y as f32 + i as f32 * 0.1);
 
-                if noise_value > wall_threshold {
+                if noise_value > wall_threshold && current_wall_length < max_wall_length {
                     if !in_wall_section {
                         in_wall_section = true;
                     }
-                    // Only set if it's not already something else
+
                     if west[i] == ZoneConstraintType::None {
                         west[i] = ZoneConstraintType::RockWall;
+                        current_wall_length += 1;
                     }
                 } else {
                     in_wall_section = false;
+                    current_wall_length = 0;
                 }
             }
         }
