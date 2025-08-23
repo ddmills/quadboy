@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::get_time;
 
 use crate::{
-    domain::{GameSaveData, GameSettings, Player, PlayerSaveData, UnloadZoneCommand, Zones},
+    domain::{GameSaveData, GameSettings, Map, Player, PlayerSaveData, UnloadZoneCommand, Zones},
     engine::{Clock, save_game, serialize},
     rendering::Position,
 };
@@ -81,13 +81,18 @@ impl SaveGameCommand {
             .map(|clock| clock.current_tick())
             .unwrap_or(0);
 
+        let seed = world
+            .get_resource::<Map>()
+            .map(|map| map.seed)
+            .unwrap_or(12345);
+
         let serialized_player = serialize(player_entity, world);
 
         let player_save = PlayerSaveData {
             position: player_position,
             entity: serialized_player,
         };
-        let game_data = GameSaveData::new(player_save, get_time(), current_tick);
+        let game_data = GameSaveData::new(player_save, get_time(), current_tick, seed);
         save_game(&game_data, &save_name);
 
         for zone_idx in active_zones {

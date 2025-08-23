@@ -35,7 +35,9 @@ impl LoadGameCommand {
             };
         };
 
-        world.init_resource::<Map>();
+        world.insert_resource(Map {
+            seed: game_data.seed,
+        });
         world.insert_resource(PlayerPosition::from_position(&game_data.player.position));
 
         deserialize(game_data.player.entity, world);

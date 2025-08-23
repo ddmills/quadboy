@@ -49,14 +49,16 @@ pub struct GameSaveData {
     pub player: PlayerSaveData,
     pub save_timestamp: f64,
     pub tick: u32,
+    pub seed: u64,
 }
 
 impl GameSaveData {
-    pub fn new(player: PlayerSaveData, save_timestamp: f64, tick: u32) -> Self {
+    pub fn new(player: PlayerSaveData, save_timestamp: f64, tick: u32, seed: u64) -> Self {
         Self {
             player,
             save_timestamp,
             tick,
+            seed,
         }
     }
 }

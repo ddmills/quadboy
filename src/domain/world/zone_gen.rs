@@ -444,8 +444,10 @@ fn connect_stairs_to_footpaths(stair_positions: &[(usize, usize)], terrain: &mut
 }
 
 pub fn gen_zone(world: &mut World, zone_idx: usize) {
-    let mut rand = Rand::seed(zone_idx as u64);
     let map = world.resource::<Map>();
+    // Combine map seed with zone index for consistent generation
+    let zone_seed = map.seed.wrapping_add(zone_idx as u64);
+    let mut rand = Rand::seed(zone_seed);
     let constraints = map.get_zone_constraints(zone_idx);
     let mut terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| Terrain::Grass);
     let (

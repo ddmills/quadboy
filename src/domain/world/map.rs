@@ -153,7 +153,9 @@ pub enum ZoneConstraintType {
 }
 
 #[derive(Resource, Default)]
-pub struct Map;
+pub struct Map {
+    pub seed: u64,
+}
 
 impl Map {
     fn get_continuity(&self, x: usize, y: usize, z: usize) -> ZoneContinuity {

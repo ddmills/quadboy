@@ -44,7 +44,7 @@ impl NewGameCommand {
                 Vision::new(20),
                 ApplyVisibilityEffects,
                 Collider,
-                Energy::new(0),
+                Energy::new(-10),
                 Label::new("{Y-y repeat|Cowboy}"),
                 RecordZonePosition,
                 CleanupStatePlay,
@@ -52,7 +52,7 @@ impl NewGameCommand {
             .id();
 
         world.insert_resource(PlayerPosition::from_position(&starting_position));
-        world.insert_resource(Map);
+        world.insert_resource(Map { seed: 12345 });
         world.insert_resource(Clock::default());
 
         let serialized_player = serialize(player_entity, world);
@@ -61,7 +61,7 @@ impl NewGameCommand {
             position: starting_position,
             entity: serialized_player,
         };
-        let game_save_data = GameSaveData::new(player_save_data, 0.0, 0);
+        let game_save_data = GameSaveData::new(player_save_data, 0.0, 0, 12345);
         save_game(&game_save_data, &self.save_name);
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {

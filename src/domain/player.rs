@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Prefabs, StairDown, StairUp, TurnState, Zone,
+        Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Prefabs, StairDown, StairUp,
+        TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Position, Text, zone_xyz},
