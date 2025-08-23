@@ -78,6 +78,15 @@ pub fn player_input(
         return;
     }
 
+    // Wait action - player deliberately waits/rests
+    if keys.is_pressed(KeyCode::T) {
+        e_consume_energy.write(ConsumeEnergyEvent::new(
+            player_entity,
+            EnergyActionType::Wait,
+        ));
+        return;
+    }
+
     if x > 0
         && keys.is_down(KeyCode::A)
         && input_rate.try_key(KeyCode::A, now, rate, delay)

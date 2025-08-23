@@ -16,9 +16,9 @@ use crate::{
     common::Rand,
     domain::{
         ApplyVisibilityEffects, Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings,
-        Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        RefreshBitmask, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState,
-        UnloadZoneEvent, Vision, Zones, on_bitmask_spawn, on_refresh_bitmask,
+        HideWhenNotVisible, Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player,
+        PlayerMovedEvent, Prefabs, RefreshBitmask, SaveGameResult, SetZoneStatusEvent, StairDown,
+        StairUp, TurnState, UnloadZoneEvent, Vision, Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -78,6 +78,7 @@ async fn main() {
     reg.register::<Player>();
     reg.register::<Vision>();
     reg.register::<ApplyVisibilityEffects>();
+    reg.register::<HideWhenNotVisible>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

@@ -24,3 +24,6 @@ pub struct IsExplored;
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct ApplyVisibilityEffects;
+
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+pub struct HideWhenNotVisible;

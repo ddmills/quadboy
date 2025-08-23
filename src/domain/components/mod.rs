@@ -10,4 +10,6 @@ pub use collider::Collider;
 pub use energy::Energy;
 pub use label::Label;
 pub use stairs::{StairDown, StairUp};
-pub use vision::{ApplyVisibilityEffects, IsExplored, IsVisible, Vision, VisionBlocker};
+pub use vision::{
+    ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Vision, VisionBlocker,
+};

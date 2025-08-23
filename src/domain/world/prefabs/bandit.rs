@@ -1,7 +1,7 @@
 use super::SpawnConfig;
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Collider, Energy, Label, SaveFlag},
+    domain::{ApplyVisibilityEffects, Collider, Energy, HideWhenNotVisible, Label, SaveFlag},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
@@ -18,6 +18,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: SpawnConfig) {
         Collider,
         RecordZonePosition,
         ApplyVisibilityEffects,
+        HideWhenNotVisible,
         SaveFlag,
         CleanupStatePlay,
     ));

@@ -2,7 +2,9 @@ use crate::engine::SerializableComponent;
 use crate::{
     cfg::TILE_SIZE_F32,
     common::{MacroquadColorable, Palette},
-    domain::{ApplyVisibilityEffects, IsExplored, IsVisible, Player, ZoneStatus},
+    domain::{
+        ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Player, ZoneStatus,
+    },
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
     ui::UiLayout,
 };
@@ -143,6 +145,7 @@ pub fn render_glyphs(
         Option<&IsVisible>,
         Option<&IsExplored>,
         Option<&ApplyVisibilityEffects>,
+        Option<&HideWhenNotVisible>,
     )>,
     mut layers: ResMut<Layers>,
     camera: Res<GameCamera>,
@@ -169,7 +172,7 @@ pub fn render_glyphs(
     let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
 
     q_glyphs.iter().for_each(
-        |(glyph, pos, is_visible, is_explored, apply_visibility_effects)| {
+        |(glyph, pos, is_visible, is_explored, apply_visibility_effects, hide_when_not_visible)| {
             let texture_id = glyph.texture_id;
 
             let mut x = (pos.x * tile_w).floor();
@@ -183,9 +186,17 @@ pub fn render_glyphs(
                     return;
                 }
 
-                // Skip rendering if glyph has ApplyVisibilityEffects but is not explored
-                if apply_visibility_effects.is_some() && is_explored.is_none() {
-                    return;
+                // Handle visibility logic
+                if hide_when_not_visible.is_some() {
+                    // Entities that hide when not visible: only render if directly visible
+                    if is_visible.is_none() {
+                        return;
+                    }
+                } else if apply_visibility_effects.is_some() {
+                    // Regular entities: render if explored (visible or shrouded)
+                    if is_explored.is_none() {
+                        return;
+                    }
                 }
 
                 x -= cam_x;

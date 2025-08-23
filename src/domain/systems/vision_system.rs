@@ -1,6 +1,9 @@
 use crate::{
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
-    domain::{ApplyVisibilityEffects, IsExplored, IsVisible, Player, Vision, VisionBlocker, Zone},
+    domain::{
+        ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Player, Vision,
+        VisionBlocker, Zone,
+    },
     engine::Clock,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
@@ -108,7 +111,13 @@ pub fn update_entity_visibility_flags(
     mut cmds: Commands,
     q_zones: Query<&Zone>,
     mut q_entities: Query<
-        (Entity, &Position, Option<&IsVisible>, Option<&IsExplored>),
+        (
+            Entity,
+            &Position,
+            Option<&IsVisible>,
+            Option<&IsExplored>,
+            Option<&HideWhenNotVisible>,
+        ),
         With<ApplyVisibilityEffects>,
     >,
     clock: Res<Clock>,
@@ -120,7 +129,9 @@ pub fn update_entity_visibility_flags(
 
     telemetry::begin_zone("update_entity_visibility_flags");
 
-    for (entity, position, has_visible, has_explored) in q_entities.iter_mut() {
+    for (entity, position, has_visible, has_explored, hide_when_not_visible) in
+        q_entities.iter_mut()
+    {
         let world_pos = position.world();
         let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
 
@@ -150,13 +161,15 @@ pub fn update_entity_visibility_flags(
             _ => {} // No change needed
         }
 
-        // Update IsExplored component
-        match (is_explored, has_explored.is_some()) {
-            (true, false) => {
-                cmds.entity(entity).insert(IsExplored);
+        // Update IsExplored component (but not for entities that hide when not visible)
+        if hide_when_not_visible.is_none() {
+            match (is_explored, has_explored.is_some()) {
+                (true, false) => {
+                    cmds.entity(entity).insert(IsExplored);
+                }
+                // Note: Once explored, entities remain explored (no removal)
+                _ => {}
             }
-            // Note: Once explored, entities remain explored (no removal)
-            _ => {}
         }
     }
     telemetry::end_zone();
