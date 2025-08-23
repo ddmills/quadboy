@@ -90,6 +90,7 @@ fn listen_for_inputs(
     }
 
     if keys.is_pressed(KeyCode::Q) {
+        game_state.next = GameState::None;
         app_state.next = AppState::MainMenu;
     }
 }
