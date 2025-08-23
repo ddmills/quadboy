@@ -2,7 +2,10 @@ use bevy_ecs::{resource::Resource, system::SystemId, world::World};
 use macroquad::telemetry;
 
 use crate::{
-    domain::{TurnState, ai_turn, process_energy_consumption, turn_scheduler},
+    domain::{
+        TurnState, VisionCache, ai_turn, process_energy_consumption, turn_scheduler,
+        update_entity_visibility_flags, update_player_vision,
+    },
     rendering::update_entity_pos,
 };
 
@@ -17,9 +20,12 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(ai_turn),
         world.register_system(update_entity_pos),
         world.register_system(process_energy_consumption),
+        world.register_system(update_player_vision),
+        world.register_system(update_entity_visibility_flags),
     ];
 
     world.insert_resource(GameSystems { all: systems });
+    world.insert_resource(VisionCache::default());
 }
 
 fn exec_game_systems(world: &mut World) {

@@ -37,6 +37,8 @@ pub fn turn_scheduler(
     mut clock: ResMut<Clock>,
     q_player: Query<Entity, With<Player>>,
 ) {
+    // Clear tick delta at the start of each turn scheduling cycle
+    clock.clear_tick_delta();
     let Some((highest_entity, highest_energy)) =
         q_energy.iter().max_by_key(|(_, energy)| energy.value)
     else {

@@ -48,6 +48,8 @@ pub struct Zone {
     pub idx: usize,
     pub terrain: Grid<Terrain>,
     pub entities: HashGrid<Entity>,
+    pub visible: Grid<bool>,
+    pub explored: Grid<bool>,
 }
 
 impl Zone {
@@ -56,6 +58,8 @@ impl Zone {
             idx,
             terrain,
             entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
+            visible: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
+            explored: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
         }
     }
 
@@ -64,6 +68,7 @@ impl Zone {
             idx: self.idx,
             terrain: self.terrain.clone(),
             entities: vec![],
+            explored: self.explored.clone(),
         }
     }
 

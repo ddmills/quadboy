@@ -15,16 +15,16 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings, Label, LoadGameResult,
-        LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask,
-        SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Zones,
-        on_bitmask_spawn, on_refresh_bitmask,
+        ApplyVisibilityEffects, Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings,
+        Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        RefreshBitmask, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState,
+        UnloadZoneEvent, Vision, Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
         update_mouse,
     },
-    rendering::{CrtShader, Glyph, RecordZonePosition, update_visibility},
+    rendering::{CrtShader, Glyph, RecordZonePosition},
     states::{
         CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
         ExploreStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin,
@@ -76,6 +76,8 @@ async fn main() {
     reg.register::<StairDown>();
     reg.register::<StairUp>();
     reg.register::<Player>();
+    reg.register::<Vision>();
+    reg.register::<ApplyVisibilityEffects>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)
@@ -131,14 +133,13 @@ async fn main() {
                     .chain(),
             ),
         )
-        .add_systems(ScheduleType::PostUpdate, update_visibility)
         .add_systems(
             ScheduleType::FrameFinal,
             ((
                 render_all,
                 update_app_states,
                 update_game_states,
-                // crate::engine::render_profiler,
+                crate::engine::render_profiler,
             )
                 .chain(),),
         );

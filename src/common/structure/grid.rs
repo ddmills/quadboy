@@ -97,6 +97,16 @@ impl<T> Grid<T> {
     }
 
     #[inline]
+    pub fn set(&mut self, x: usize, y: usize, value: T) {
+        self.data[x * self.height + y] = value;
+    }
+
+    #[inline]
+    pub fn set_at(&mut self, idx: usize, value: T) {
+        self.data[idx] = value;
+    }
+
+    #[inline]
     pub fn clear(&mut self, value: T)
     where
         T: Clone,

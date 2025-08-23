@@ -20,6 +20,7 @@ pub struct ZoneSaveData {
     pub idx: usize,
     pub terrain: Grid<Terrain>,
     pub entities: Vec<SerializedEntity>,
+    pub explored: Grid<bool>,
 }
 
 #[derive(Event)]

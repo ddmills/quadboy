@@ -2,7 +2,10 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{Collider, Energy, GameSaveData, Label, Map, Player, PlayerPosition, PlayerSaveData},
+    domain::{
+        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, Map, Player, PlayerPosition,
+        PlayerSaveData, Vision,
+    },
     engine::{Clock, delete_save, save_game, serialize},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::{CleanupStatePlay, CurrentGameState, GameState},
@@ -38,6 +41,8 @@ impl NewGameCommand {
                 starting_position.clone(),
                 Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
                 Player,
+                Vision::new(20),
+                ApplyVisibilityEffects,
                 Collider,
                 Energy::new(0),
                 Label::new("{Y-y repeat|Cowboy}"),

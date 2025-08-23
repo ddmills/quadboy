@@ -2,8 +2,8 @@ use crate::engine::SerializableComponent;
 use crate::{
     cfg::TILE_SIZE_F32,
     common::{MacroquadColorable, Palette},
-    domain::{Player, ZoneStatus},
-    rendering::{GlyphTextureId, IsVisible, RenderTargetType, Visibility},
+    domain::{ApplyVisibilityEffects, IsVisible, Player, ZoneStatus},
+    rendering::{GlyphTextureId, RenderTargetType, Visibility},
     ui::UiLayout,
 };
 use bevy_ecs::prelude::*;
@@ -137,7 +137,12 @@ impl Glyph {
 }
 
 pub fn render_glyphs(
-    q_glyphs: Query<(&Glyph, &Position), With<IsVisible>>,
+    q_glyphs: Query<(
+        &Glyph,
+        &Position,
+        Option<&IsVisible>,
+        Option<&ApplyVisibilityEffects>,
+    )>,
     mut layers: ResMut<Layers>,
     camera: Res<GameCamera>,
     screen: Res<ScreenSize>,
@@ -162,48 +167,55 @@ pub fn render_glyphs(
     let ui_panel_y = (ui.game_panel.y as f32) * tile_h;
     let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
 
-    q_glyphs.iter().for_each(|(glyph, pos)| {
-        let texture_id = glyph.texture_id;
+    q_glyphs
+        .iter()
+        .for_each(|(glyph, pos, is_visible, apply_visibility_effects)| {
+            let texture_id = glyph.texture_id;
 
-        let mut x = (pos.x * tile_w).floor();
-        let mut y = (pos.y * tile_h).floor();
-        let w = texture_id.get_glyph_width();
-        let h = texture_id.get_glyph_height();
-        let layer = layers.get_mut(glyph.layer_id);
+            let mut x = (pos.x * tile_w).floor();
+            let mut y = (pos.y * tile_h).floor();
+            let w = texture_id.get_glyph_width();
+            let h = texture_id.get_glyph_height();
+            let layer = layers.get_mut(glyph.layer_id);
 
-        if layer.target_type == RenderTargetType::World {
-            if pos.z.floor() != player_z {
+            if layer.target_type == RenderTargetType::World {
+                if pos.z.floor() != player_z {
+                    return;
+                }
+
+                // Skip rendering if glyph has ApplyVisibilityEffects but is not visible
+                if apply_visibility_effects.is_some() && is_visible.is_none() {
+                    return;
+                }
+
+                x -= cam_x;
+                y -= cam_y;
+
+                if x + w < 0. || x - w > camera_width || y + h < 0. || y - h > camera_height {
+                    return;
+                }
+
+                x += ui_panel_x;
+                y += ui_panel_y;
+            } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
                 return;
             }
 
-            x -= cam_x;
-            y -= cam_y;
+            let style = glyph.get_style();
 
-            if x + w < 0. || x - w > camera_width || y + h < 0. || y - h > camera_height {
-                return;
-            }
-
-            x += ui_panel_x;
-            y += ui_panel_y;
-        } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
-            return;
-        }
-
-        let style = glyph.get_style();
-
-        layer.add(Renderable {
-            idx: glyph.idx,
-            fg1: style.fg1,
-            fg2: style.fg2,
-            bg: style.bg,
-            outline: style.outline,
-            x,
-            y,
-            w,
-            h,
-            tex_idx: texture_id.get_texture_idx(),
+            layer.add(Renderable {
+                idx: glyph.idx,
+                fg1: style.fg1,
+                fg2: style.fg2,
+                bg: style.bg,
+                outline: style.outline,
+                x,
+                y,
+                w,
+                h,
+                tex_idx: texture_id.get_texture_idx(),
+            });
         });
-    });
 
     telemetry::end_zone();
 }

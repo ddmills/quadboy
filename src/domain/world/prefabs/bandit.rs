@@ -1,11 +1,11 @@
 use super::SpawnConfig;
 use crate::{
     common::Palette,
-    domain::{Collider, Energy, Label, SaveFlag, ZoneStatus},
+    domain::{ApplyVisibilityEffects, Collider, Energy, Label, SaveFlag},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
-use bevy_ecs::{entity::Entity, hierarchy::ChildOf, world::World};
+use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_bandit(entity: Entity, world: &mut World, config: SpawnConfig) {
     let position = Position::new_world(config.pos);
@@ -17,6 +17,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: SpawnConfig) {
         Energy::new(-100),
         Collider,
         RecordZonePosition,
+        ApplyVisibilityEffects,
         SaveFlag,
         CleanupStatePlay,
     ));

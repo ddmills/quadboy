@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     cfg::ZONE_SIZE,
     common::Grid,
-    domain::{GameSettings, Terrain, Zone, gen_zone},
+    domain::{ApplyVisibilityEffects, GameSettings, Terrain, Zone, gen_zone},
     engine::{deserialize_all, try_load_zone},
     rendering::{Glyph, Layer, Position, zone_local_to_world},
     states::CleanupStatePlay,
@@ -53,6 +53,7 @@ impl Command<Result> for LoadZoneCommand {
                 .spawn((
                     Position::new(wpos.0, wpos.1, wpos.2),
                     Glyph::idx(idx).bg_opt(bg).fg1_opt(fg).layer(Layer::Terrain),
+                    ApplyVisibilityEffects,
                     ChildOf(zone_entity_id),
                     ZoneStatus::Dormant,
                     CleanupStatePlay,
@@ -62,9 +63,10 @@ impl Command<Result> for LoadZoneCommand {
 
         deserialize_all(&zone_data.entities, world);
 
-        world
-            .entity_mut(zone_entity_id)
-            .insert(Zone::new(zone_data.idx, zone_data.terrain));
+        let mut zone = Zone::new(zone_data.idx, zone_data.terrain);
+        zone.explored = zone_data.explored;
+
+        world.entity_mut(zone_entity_id).insert(zone);
 
         Ok(())
     }

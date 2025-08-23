@@ -1,11 +1,14 @@
 use super::SpawnConfig;
 use crate::{
     common::Palette,
-    domain::{BitmaskGlyph, BitmaskStyle, Collider, Label, SaveFlag, ZoneStatus},
+    domain::{
+        ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Label, SaveFlag,
+        VisionBlocker,
+    },
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
-use bevy_ecs::{entity::Entity, hierarchy::ChildOf, world::World};
+use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_boulder(entity: Entity, world: &mut World, config: SpawnConfig) {
     world.entity_mut(entity).insert((
@@ -14,6 +17,8 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: SpawnConfig) {
         BitmaskGlyph::new(BitmaskStyle::Wall),
         Label::new("Boulder"),
         Collider,
+        VisionBlocker,
+        ApplyVisibilityEffects,
         RecordZonePosition,
         SaveFlag,
         CleanupStatePlay,

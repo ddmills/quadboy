@@ -1,11 +1,11 @@
 use super::SpawnConfig;
 use crate::{
     common::Palette,
-    domain::{Label, SaveFlag, StairUp, ZoneStatus},
+    domain::{ApplyVisibilityEffects, Label, SaveFlag, StairUp},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
-use bevy_ecs::{entity::Entity, hierarchy::ChildOf, world::World};
+use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_stair_up(entity: Entity, world: &mut World, config: SpawnConfig) {
     world.entity_mut(entity).insert((
@@ -14,6 +14,7 @@ pub fn spawn_stair_up(entity: Entity, world: &mut World, config: SpawnConfig) {
         Label::new("Stairs Up"),
         StairUp,
         RecordZonePosition,
+        ApplyVisibilityEffects,
         SaveFlag,
         CleanupStatePlay,
     ));

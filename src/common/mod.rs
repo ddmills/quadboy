@@ -1,4 +1,4 @@
-mod algorithm;
+pub mod algorithm;
 mod cp437;
 mod math;
 mod palette;

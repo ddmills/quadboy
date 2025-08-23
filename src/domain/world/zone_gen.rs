@@ -3,7 +3,10 @@ use bevy_ecs::{hierarchy::ChildOf, world::World};
 use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Perlin, Rand, astar, bresenham_line},
-    domain::{Map, PrefabId, Prefabs, SpawnConfig, Terrain, Zone, ZoneConstraintType, ZoneStatus},
+    domain::{
+        ApplyVisibilityEffects, Map, PrefabId, Prefabs, SpawnConfig, Terrain, Zone,
+        ZoneConstraintType, ZoneStatus,
+    },
     rendering::{Glyph, Layer, Position, zone_local_to_world},
     states::CleanupStatePlay,
 };
@@ -494,6 +497,7 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             world.spawn((
                 Position::new(wpos.0, wpos.1, wpos.2),
                 Glyph::idx(idx).bg_opt(bg).fg1_opt(fg).layer(Layer::Terrain),
+                ApplyVisibilityEffects,
                 ChildOf(zone_entity_id),
                 ZoneStatus::Dormant,
                 CleanupStatePlay,
