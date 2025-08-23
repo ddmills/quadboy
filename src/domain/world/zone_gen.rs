@@ -4,8 +4,8 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{AStarSettings, Distance, Grid, Palette, Perlin, Rand, astar, bresenham_line},
     domain::{
-        Collider, Energy, Label, Map, SaveFlag, StairDown, StairUp, Terrain, Zone,
-        ZoneConstraintType, ZoneStatus,
+        BitmaskGlyph, BitmaskStyle, Collider, Energy, Label, Map, SaveFlag, StairDown, StairUp,
+        Terrain, Zone, ZoneConstraintType, ZoneStatus,
     },
     rendering::{Glyph, Layer, Position, RecordZonePosition, zone_local_to_world},
     states::CleanupStatePlay,
@@ -18,17 +18,20 @@ fn collect_constraint_positions(
     Vec<(usize, usize)>,
     Vec<(usize, usize)>,
     Vec<(usize, usize)>,
+    Vec<(usize, usize)>,
 ) {
     let mut river_positions = Vec::new();
     let mut path_positions = Vec::new();
     let mut stair_down_positions = Vec::new();
     let mut stair_up_positions = Vec::new();
+    let mut rock_wall_positions = Vec::new();
 
     for (x, constraint_type) in constraints.south.iter().enumerate() {
         match constraint_type {
             ZoneConstraintType::River => river_positions.push((x, 0)),
             ZoneConstraintType::Footpath => path_positions.push((x, 0)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((x, 0)),
+            ZoneConstraintType::RockWall => rock_wall_positions.push((x, 0)),
             ZoneConstraintType::None => {}
         }
     }
@@ -38,6 +41,7 @@ fn collect_constraint_positions(
             ZoneConstraintType::River => river_positions.push((x, ZONE_SIZE.1 - 1)),
             ZoneConstraintType::Footpath => path_positions.push((x, ZONE_SIZE.1 - 1)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((x, ZONE_SIZE.1 - 1)),
+            ZoneConstraintType::RockWall => rock_wall_positions.push((x, ZONE_SIZE.1 - 1)),
             ZoneConstraintType::None => {}
         }
     }
@@ -47,6 +51,7 @@ fn collect_constraint_positions(
             ZoneConstraintType::River => river_positions.push((0, y)),
             ZoneConstraintType::Footpath => path_positions.push((0, y)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((0, y)),
+            ZoneConstraintType::RockWall => rock_wall_positions.push((0, y)),
             ZoneConstraintType::None => {}
         }
     }
@@ -56,6 +61,7 @@ fn collect_constraint_positions(
             ZoneConstraintType::River => river_positions.push((ZONE_SIZE.0 - 1, y)),
             ZoneConstraintType::Footpath => path_positions.push((ZONE_SIZE.0 - 1, y)),
             ZoneConstraintType::StairDown => {} //stair_down_positions.push((ZONE_SIZE.0 - 1, y)),
+            ZoneConstraintType::RockWall => rock_wall_positions.push((ZONE_SIZE.0 - 1, y)),
             ZoneConstraintType::None => {}
         }
     }
@@ -79,6 +85,7 @@ fn collect_constraint_positions(
         path_positions,
         stair_down_positions,
         stair_up_positions,
+        rock_wall_positions,
     )
 }
 
@@ -428,8 +435,13 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
     let map = world.resource::<Map>();
     let constraints = map.get_zone_constraints(zone_idx);
     let mut terrain = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_x, _y| Terrain::Grass);
-    let (river_positions, path_positions, stair_down_positions, stair_up_positions) =
-        collect_constraint_positions(&constraints);
+    let (
+        river_positions,
+        path_positions,
+        stair_down_positions,
+        stair_up_positions,
+        rock_wall_positions,
+    ) = collect_constraint_positions(&constraints);
 
     generate_rivers(&river_positions, &mut terrain, &mut rand, zone_idx);
     generate_paths(&path_positions, &mut terrain, zone_idx);
@@ -514,6 +526,26 @@ pub fn gen_zone(world: &mut World, zone_idx: usize) {
             ZoneStatus::Dormant,
             RecordZonePosition,
             CleanupStatePlay,
+        ));
+    }
+
+    for &(x, y) in &rock_wall_positions {
+        let wpos = zone_local_to_world(zone_idx, x, y);
+        world.spawn((
+            Position::new(wpos.0, wpos.1, wpos.2),
+            Glyph::new(241, Palette::DarkBlue, Palette::Clear)
+                .layer(Layer::Actors)
+                .outline(Palette::Clear),
+            Label::new("Rock wall"),
+            BitmaskGlyph {
+                style: BitmaskStyle::Wall,
+            },
+            ZoneStatus::Dormant,
+            Collider,
+            RecordZonePosition,
+            SaveFlag,
+            CleanupStatePlay,
+            ChildOf(zone_entity_id),
         ));
     }
 
