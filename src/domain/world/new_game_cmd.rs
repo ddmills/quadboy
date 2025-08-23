@@ -4,9 +4,10 @@ use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Map, Player, PlayerPosition, PlayerSaveData, Vision
+        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Map,
+        Player, PlayerPosition, PlayerSaveData, Vision,
     },
-    engine::{delete_save, save_game, serialize, Clock},
+    engine::{Clock, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };

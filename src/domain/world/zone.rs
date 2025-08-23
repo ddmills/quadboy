@@ -10,7 +10,7 @@ use crate::{
         LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
         UnloadZoneCommand, Zone, Zones,
     },
-    engine::{deserialize_all, SerializedEntity},
+    engine::{SerializedEntity, deserialize_all},
     rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz},
     states::CleanupStatePlay,
 };

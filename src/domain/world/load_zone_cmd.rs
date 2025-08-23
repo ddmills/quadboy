@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{spawn_zone, spawn_zone_load, GameSettings, Zone},
+    domain::{GameSettings, Zone, spawn_zone, spawn_zone_load},
     engine::try_load_zone,
 };
 

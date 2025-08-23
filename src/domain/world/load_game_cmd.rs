@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{LoadZoneCommand, Map, PlayerPosition}, engine::{deserialize, try_load_game, Clock}, rendering::GameCamera, states::{CurrentGameState, GameState}
+    domain::{LoadZoneCommand, Map, PlayerPosition},
+    engine::{Clock, deserialize, try_load_game},
+    rendering::GameCamera,
+    states::{CurrentGameState, GameState},
 };
 
 pub struct LoadGameCommand {

@@ -16,8 +16,7 @@ impl Clock {
         }
     }
 
-    pub fn is_frozen(&self) -> bool
-    {
+    pub fn is_frozen(&self) -> bool {
         self.tick_delta == 0 && !self.force_update
     }
 
