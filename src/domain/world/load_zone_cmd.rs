@@ -1,12 +1,8 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    cfg::ZONE_SIZE,
-    common::{Grid, HashGrid},
-    domain::{GameSettings, PrefabId, Prefabs, SpawnConfig, Zone, spawn_zone},
-    engine::{deserialize_all, try_load_zone},
-    rendering::zone_local_to_world,
-    states::CleanupStatePlay,
+    domain::{spawn_zone, spawn_zone_load, GameSettings, Zone},
+    engine::try_load_zone,
 };
 
 pub struct LoadZoneCommand(pub usize);
@@ -37,35 +33,8 @@ impl Command<Result> for LoadZoneCommand {
             return Ok(());
         };
 
-        let zone_entity_id = world
-            .spawn((
-                ZoneStatus::Dormant,
-                CleanupStatePlay,
-                Zone {
-                    idx: zone_data.idx,
-                    terrain: zone_data.terrain.clone(),
-                    entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
-                    visible: Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, false),
-                    explored: zone_data.explored,
-                },
-            ))
-            .id();
-
-        for (x, y, t) in zone_data.terrain.iter_xy() {
-            let wpos = zone_local_to_world(zone_data.idx, x, y);
-            let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
-            let terrain_entity = Prefabs::spawn_world(world, config);
-
-            world
-                .entity_mut(terrain_entity)
-                .insert(ChildOf(zone_entity_id));
-        }
-
-        deserialize_all(&zone_data.entities, world);
+        spawn_zone_load(world, zone_data);
 
         Ok(())
     }
 }
-
-// Import the ZoneStatus enum from the zone module
-use super::zone::ZoneStatus;

@@ -8,7 +8,7 @@ use crate::{
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 use bevy_ecs::prelude::*;
-use macroquad::telemetry;
+use macroquad::{prelude::trace, telemetry};
 
 #[derive(Resource, Default)]
 pub struct VisionCache {
@@ -32,8 +32,7 @@ pub fn update_player_vision(
         return;
     };
 
-    // Early exit: if no in-game time has passed, no need to update vision
-    if clock.tick_delta() == 0 {
+    if clock.is_frozen() {
         return;
     }
 
@@ -112,8 +111,7 @@ pub fn update_entity_visibility_flags(
     >,
     clock: Res<Clock>,
 ) {
-    // Early exit: if no in-game time has passed, no need to update visibility flags
-    if clock.tick_delta() == 0 {
+    if clock.is_frozen() {
         return;
     }
 

@@ -164,6 +164,10 @@ pub struct Map {
 }
 
 impl Map {
+    pub fn new(seed: u64) -> Self {
+        Self { seed }
+    }
+
     fn get_continuity(&self, x: usize, y: usize, z: usize) -> ZoneContinuity {
         if is_zone_oob(x, y, z) {
             return ZoneContinuity::empty();

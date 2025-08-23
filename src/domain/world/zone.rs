@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
-    common::{Grid, Rand},
+    common::{Grid, HashGrid, Rand},
     domain::{
         LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
         UnloadZoneCommand, Zone, Zones,
     },
-    engine::SerializedEntity,
+    engine::{deserialize_all, SerializedEntity},
     rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz},
     states::CleanupStatePlay,
 };
@@ -266,4 +266,32 @@ pub fn spawn_zone(world: &mut World, zone_idx: usize) {
             Prefabs::spawn_world(world, SpawnConfig::new(PrefabId::Cactus, wpos));
         }
     }
+}
+
+pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
+    let zone_entity_id = world
+        .spawn((
+            ZoneStatus::Dormant,
+            CleanupStatePlay,
+            Zone {
+                idx: zone_data.idx,
+                terrain: zone_data.terrain.clone(),
+                entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
+                visible: Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, false),
+                explored: zone_data.explored,
+            },
+        ))
+        .id();
+
+    for (x, y, t) in zone_data.terrain.iter_xy() {
+        let wpos = zone_local_to_world(zone_data.idx, x, y);
+        let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
+        let terrain_entity = Prefabs::spawn_world(world, config);
+
+        world
+            .entity_mut(terrain_entity)
+            .insert(ChildOf(zone_entity_id));
+    }
+
+    deserialize_all(&zone_data.entities, world);
 }

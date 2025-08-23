@@ -4,11 +4,10 @@ use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, Map, Player, PlayerPosition,
-        PlayerSaveData, Vision,
+        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Map, Player, PlayerPosition, PlayerSaveData, Vision
     },
-    engine::{Clock, delete_save, save_game, serialize},
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
+    engine::{delete_save, save_game, serialize, Clock},
+    rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -52,9 +51,16 @@ impl NewGameCommand {
             ))
             .id();
 
+        let mut camera = world.get_resource_mut::<GameCamera>().unwrap();
+        camera.focus_on(starting_position.x, starting_position.y);
+
         world.insert_resource(PlayerPosition::from_position(&starting_position));
         world.insert_resource(Map { seed: 12345 });
-        world.insert_resource(Clock::default());
+        world.insert_resource(Clock::new());
+
+        let start_zone = starting_position.zone_idx();
+
+        let _ = LoadZoneCommand(start_zone).apply(world);
 
         let serialized_player = serialize(player_entity, world);
 

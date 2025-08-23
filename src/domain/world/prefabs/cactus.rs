@@ -1,6 +1,6 @@
 use super::SpawnConfig;
 use crate::common::Rand;
-use crate::domain::{ApplyVisibilityEffects, Label};
+use crate::domain::{ApplyVisibilityEffects, Label, VisionBlocker};
 use crate::{
     common::Palette,
     domain::{Collider, SaveFlag},
@@ -23,6 +23,7 @@ pub fn spawn_cactus(entity: Entity, world: &mut World, config: SpawnConfig) {
         Collider,
         RecordZonePosition,
         ApplyVisibilityEffects,
+        VisionBlocker,
         SaveFlag,
         CleanupStatePlay,
     ));
