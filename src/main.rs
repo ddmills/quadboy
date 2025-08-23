@@ -123,8 +123,8 @@ async fn main() {
                 update_crt_uniforms,
                 render_fps,
                 (
-                    on_bitmask_spawn,
                     on_refresh_bitmask,
+                    on_bitmask_spawn,
                     render_glyphs,
                     render_text,
                 )
