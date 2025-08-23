@@ -1,5 +1,5 @@
 use super::{
-    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_pine_tree, spawn_stair_down,
+    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_pine_tree, spawn_stair_down,
     spawn_stair_up, spawn_terrain_tile,
 };
 use crate::domain::Terrain;
@@ -10,6 +10,7 @@ use std::collections::HashMap;
 pub enum PrefabId {
     PineTree,
     Boulder,
+    Cactus,
     Bandit,
     StairDown,
     StairUp,
@@ -66,6 +67,7 @@ impl Prefabs {
     fn register_all_prefabs(&mut self) {
         self.register(PrefabId::PineTree, spawn_pine_tree);
         self.register(PrefabId::Boulder, spawn_boulder);
+        self.register(PrefabId::Cactus, spawn_cactus);
         self.register(PrefabId::Bandit, spawn_bandit);
         self.register(PrefabId::StairDown, spawn_stair_down);
         self.register(PrefabId::StairUp, spawn_stair_up);
