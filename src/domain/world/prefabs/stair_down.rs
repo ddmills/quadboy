@@ -13,8 +13,6 @@ pub fn spawn_stair_down(entity: Entity, world: &mut World, config: SpawnConfig) 
         Glyph::new(107, Palette::White, Palette::Clear).layer(Layer::Objects),
         Label::new("Stairs Down"),
         StairDown,
-        ChildOf(config.zone_entity),
-        ZoneStatus::Dormant,
         RecordZonePosition,
         SaveFlag,
         CleanupStatePlay,

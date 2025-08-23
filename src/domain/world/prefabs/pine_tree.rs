@@ -18,8 +18,6 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: SpawnConfig) {
         Glyph::new(glyph_char, Palette::DarkCyan, Palette::Red).layer(Layer::Objects),
         Label::new("Pine Tree"),
         Collider,
-        ChildOf(config.zone_entity),
-        ZoneStatus::Dormant,
         RecordZonePosition,
         SaveFlag,
         CleanupStatePlay,

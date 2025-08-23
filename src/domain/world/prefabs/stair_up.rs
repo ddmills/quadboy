@@ -13,8 +13,6 @@ pub fn spawn_stair_up(entity: Entity, world: &mut World, config: SpawnConfig) {
         Glyph::new(108, Palette::White, Palette::Clear).layer(Layer::Objects),
         Label::new("Stairs Up"),
         StairUp,
-        ChildOf(config.zone_entity),
-        ZoneStatus::Dormant,
         RecordZonePosition,
         SaveFlag,
         CleanupStatePlay,

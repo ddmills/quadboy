@@ -14,8 +14,6 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: SpawnConfig) {
         BitmaskGlyph::new(BitmaskStyle::Wall),
         Label::new("Boulder"),
         Collider,
-        ChildOf(config.zone_entity),
-        ZoneStatus::Dormant,
         RecordZonePosition,
         SaveFlag,
         CleanupStatePlay,

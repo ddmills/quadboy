@@ -16,8 +16,6 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: SpawnConfig) {
         Label::new("{R|Bandit}"),
         Energy::new(-100),
         Collider,
-        ChildOf(config.zone_entity),
-        ZoneStatus::Dormant,
         RecordZonePosition,
         SaveFlag,
         CleanupStatePlay,
