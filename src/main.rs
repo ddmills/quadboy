@@ -130,14 +130,12 @@ async fn main() {
                 update_mouse,
                 update_crt_uniforms,
                 render_fps,
-                (
-                    on_refresh_bitmask,
-                    on_bitmask_spawn,
-                    render_glyphs,
-                    render_text,
-                )
-                    .chain(),
+                (on_refresh_bitmask, on_bitmask_spawn).chain(),
             ),
+        )
+        .add_systems(
+            ScheduleType::PostUpdate,
+            (render_glyphs, render_text).chain(),
         )
         .add_systems(
             ScheduleType::FrameFinal,

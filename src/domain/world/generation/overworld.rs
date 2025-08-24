@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use bevy_ecs::resource::Resource;
 
 use crate::{common::Perlin, rendering::zone_xyz};
@@ -8,6 +10,17 @@ pub enum ZoneType {
     Forest,
     Desert,
     Cavern,
+}
+
+impl Display for ZoneType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ZoneType::OpenAir => write!(f, "OpenAir"),
+            ZoneType::Forest => write!(f, "Forest"),
+            ZoneType::Desert => write!(f, "Desert"),
+            ZoneType::Cavern => write!(f, "Cavern"),
+        }
+    }
 }
 
 pub struct OverworldZone {

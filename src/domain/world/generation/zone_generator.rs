@@ -4,7 +4,8 @@ use macroquad::prelude::trace;
 use crate::{
     common::Grid,
     domain::{
-        DesertZoneBuilder, Overworld, OverworldZone, SpawnConfig, Terrain, ZoneType, world::zone,
+        CavernZoneBuilder, DesertZoneBuilder, ForestZoneBuilder, OpenAirZoneBuilder, Overworld,
+        OverworldZone, SpawnConfig, Terrain, ZoneType,
     },
 };
 
@@ -22,20 +23,22 @@ pub struct ZoneGenerator;
 
 impl ZoneGenerator {
     pub fn generate_zone(world: &mut World, zone_idx: usize) -> ZoneData {
-        trace!("GENERATE ZONE {}", zone_idx);
         let mut overworld = world.get_resource_mut::<Overworld>().unwrap();
         let ozone = overworld.get_overworld_zone(zone_idx);
+
+        trace!("Generating zone... {}, {}", zone_idx, ozone.zone_type);
+
         let mut builder = Self::get_builder(ozone.zone_type);
 
         builder.build(ozone)
     }
 
-    fn get_builder(zone_type: ZoneType) -> impl ZoneBuilder {
+    fn get_builder(zone_type: ZoneType) -> Box<dyn ZoneBuilder> {
         match zone_type {
-            ZoneType::OpenAir => DesertZoneBuilder,
-            ZoneType::Forest => DesertZoneBuilder,
-            ZoneType::Desert => DesertZoneBuilder,
-            ZoneType::Cavern => DesertZoneBuilder,
+            ZoneType::OpenAir => Box::new(OpenAirZoneBuilder),
+            ZoneType::Forest => Box::new(ForestZoneBuilder),
+            ZoneType::Desert => Box::new(DesertZoneBuilder),
+            ZoneType::Cavern => Box::new(CavernZoneBuilder),
         }
     }
 }

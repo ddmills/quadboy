@@ -154,14 +154,10 @@ pub fn update_entity_visibility_flags(
         }
 
         // Update IsExplored component (but not for entities that hide when not visible)
-        if hide_when_not_visible.is_none() {
-            match (is_explored, has_explored.is_some()) {
-                (true, false) => {
-                    cmds.entity(entity).insert(IsExplored);
-                }
-                // Note: Once explored, entities remain explored (no removal)
-                _ => {}
-            }
+        if hide_when_not_visible.is_none()
+            && let (true, false) = (is_explored, has_explored.is_some())
+        {
+            cmds.entity(entity).insert(IsExplored);
         }
     }
     telemetry::end_zone();
