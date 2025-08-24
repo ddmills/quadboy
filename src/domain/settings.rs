@@ -26,7 +26,7 @@ impl Default for GameSettings {
         Self {
             input_rate: 0.035,
             input_initial_delay: 0.25,
-            zone_boundary_move_delay: 0.2,
+            zone_boundary_move_delay: 0.0,
             enable_saves: true,
             save_name: "test".to_string(),
             camera_mode: CameraMode::Smooth(0.1),

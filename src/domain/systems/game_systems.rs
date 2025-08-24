@@ -1,4 +1,8 @@
-use bevy_ecs::{resource::Resource, system::{RunSystemOnce, SystemId}, world::World};
+use bevy_ecs::{
+    resource::Resource,
+    system::{RunSystemOnce, SystemId},
+    world::World,
+};
 use macroquad::{prelude::trace, telemetry};
 
 use crate::{

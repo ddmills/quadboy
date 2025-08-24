@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::algorithm::shadowcast::{shadowcast, ShadowcastSettings},
+    common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
-        player, ApplyVisibilityEffects, IsExplored, IsVisible, Player, PlayerPosition, Vision, VisionBlocker, Zone, Zones
+        ApplyVisibilityEffects, IsExplored, IsVisible, Player, PlayerPosition, Vision,
+        VisionBlocker, Zone, Zones, player,
     },
     engine::Clock,
-    rendering::{world_to_zone_idx, world_to_zone_local, Position},
+    rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 use bevy_ecs::prelude::*;
 use macroquad::telemetry;

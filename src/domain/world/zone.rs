@@ -82,14 +82,18 @@ pub fn on_set_zone_status(
         }
 
         if evt.status == ZoneStatus::Active {
-            for (x, y, t) in zone.terrain.iter_xy() {
-                let wpos = zone_local_to_world(zone.idx, x, y);
-                let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
-                let terrain_entity = Prefabs::spawn(&mut cmds, config);
+            let has_terrain = children.iter().any(|child| q_terrain.contains(child));
 
-                cmds.entity(terrain_entity)
-                    .insert(ChildOf(zone_e))
-                    .insert(evt.status);
+            if !has_terrain {
+                for (x, y, t) in zone.terrain.iter_xy() {
+                    let wpos = zone_local_to_world(zone.idx, x, y);
+                    let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
+                    let terrain_entity = Prefabs::spawn(&mut cmds, config);
+
+                    cmds.entity(terrain_entity)
+                        .insert(ChildOf(zone_e))
+                        .insert(evt.status);
+                }
             }
         }
 
