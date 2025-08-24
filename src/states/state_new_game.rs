@@ -29,12 +29,6 @@ fn on_enter_new_game(mut cmds: Commands, settings: Res<GameSettings>) {
     cmds.queue(NewGameCommand {
         save_name: settings.save_name.clone(),
     });
-
-    cmds.spawn((
-        Text::new("Starting new game..."),
-        Position::new_f32(12., 10., 0.),
-        CleanupStateNewGame,
-    ));
 }
 
 fn handle_new_game_result(

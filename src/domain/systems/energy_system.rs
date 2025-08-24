@@ -94,7 +94,7 @@ pub fn process_energy_consumption(
 pub fn get_energy_cost(action: EnergyActionType) -> i32 {
     match action {
         EnergyActionType::Move => 100,
-        EnergyActionType::Wait => 50,
+        EnergyActionType::Wait => 200,
         EnergyActionType::Sleep => 1000,
         EnergyActionType::Attack => 150,
     }

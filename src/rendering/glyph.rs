@@ -11,6 +11,7 @@ use crate::{
 use bevy_ecs::prelude::*;
 use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use super::{GameCamera, Layer, Layers, Position, Renderable, ScreenSize};
 
@@ -33,6 +34,13 @@ pub struct TilesetTextures {
     pub font_body_texture: Texture2D,
 }
 
+#[derive(Resource, Default)]
+pub struct GlyphStyleCache {
+    cache: HashMap<Entity, GlyphStyle>,
+    frame_counter: u32,
+}
+
+#[derive(Clone, Copy)]
 pub struct GlyphStyle {
     pub fg1: Vec4,
     pub fg2: Vec4,
@@ -139,14 +147,16 @@ impl Glyph {
 }
 
 pub fn render_glyphs(
-    q_glyphs: Query<(
-        &Glyph,
-        &Position,
-        Option<&IsVisible>,
-        Option<&IsExplored>,
-        Option<&ApplyVisibilityEffects>,
-        Option<&HideWhenNotVisible>,
-    )>,
+    q_glyphs: Query<(Entity, &Glyph, &Position)>,
+    q_visibility: Query<
+        (
+            Option<&IsVisible>,
+            Option<&IsExplored>,
+            Option<&ApplyVisibilityEffects>,
+            Option<&HideWhenNotVisible>,
+        ),
+        With<Glyph>,
+    >,
     mut layers: ResMut<Layers>,
     camera: Res<GameCamera>,
     screen: Res<ScreenSize>,
@@ -171,67 +181,79 @@ pub fn render_glyphs(
     let ui_panel_y = (ui.game_panel.y as f32) * tile_h;
     let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
 
-    q_glyphs.iter().for_each(
-        |(glyph, pos, is_visible, is_explored, apply_visibility_effects, hide_when_not_visible)| {
-            let texture_id = glyph.texture_id;
+    let world_left = -tile_w;
+    let world_right = camera_width + tile_w;
+    let world_top = -tile_h;
+    let world_bottom = camera_height + tile_h;
 
-            let mut x = (pos.x * tile_w).floor();
-            let mut y = (pos.y * tile_h).floor();
-            let w = texture_id.get_glyph_width();
-            let h = texture_id.get_glyph_height();
-            let layer = layers.get_mut(glyph.layer_id);
+    for (entity, glyph, pos) in q_glyphs.iter() {
+        let is_world_layer = glyph.layer_id.get_target_type() == RenderTargetType::World;
 
-            if layer.target_type == RenderTargetType::World {
-                if pos.z.floor() != player_z {
-                    return;
+        if is_world_layer && pos.z.floor() != player_z {
+            continue;
+        }
+
+        let texture_id = glyph.texture_id;
+        let w = texture_id.get_glyph_width();
+        let h = texture_id.get_glyph_height();
+
+        let mut x = (pos.x * tile_w).floor();
+        let mut y = (pos.y * tile_h).floor();
+
+        let mut is_shrouded = false;
+
+        if is_world_layer {
+            let Ok((is_visible, is_explored, apply_visibility_effects, hide_when_not_visible)) =
+                q_visibility.get(entity)
+            else {
+                continue;
+            };
+
+            if is_world_layer {
+                if hide_when_not_visible.is_some() && is_visible.is_none() {
+                    continue;
                 }
-
-                // Handle visibility logic
-                if hide_when_not_visible.is_some() {
-                    // Entities that hide when not visible: only render if directly visible
-                    if is_visible.is_none() {
-                        return;
-                    }
-                } else if apply_visibility_effects.is_some() {
-                    // Regular entities: render if explored (visible or shrouded)
-                    if is_explored.is_none() {
-                        return;
-                    }
+                if apply_visibility_effects.is_some() && is_explored.is_none() {
+                    continue;
                 }
-
-                x -= cam_x;
-                y -= cam_y;
-
-                if x + w < 0. || x - w > camera_width || y + h < 0. || y - h > camera_height {
-                    return;
-                }
-
-                x += ui_panel_x;
-                y += ui_panel_y;
-            } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
-                return;
             }
 
-            let style = glyph.get_style();
+            let world_x = x - cam_x;
+            let world_y = y - cam_y;
 
-            let is_shrouded =
+            if world_x + w < world_left
+                || world_x - w > world_right
+                || world_y + h < world_top
+                || world_y - h > world_bottom
+            {
+                continue;
+            }
+
+            x = world_x + ui_panel_x;
+            y = world_y + ui_panel_y;
+
+            is_shrouded =
                 apply_visibility_effects.is_some() && is_explored.is_some() && is_visible.is_none();
+        } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
+            continue;
+        }
 
-            layer.add(Renderable {
-                idx: glyph.idx,
-                fg1: style.fg1,
-                fg2: style.fg2,
-                bg: style.bg,
-                outline: style.outline,
-                x,
-                y,
-                w,
-                h,
-                tex_idx: texture_id.get_texture_idx(),
-                is_shrouded: is_shrouded as u32,
-            });
-        },
-    );
+        let style = glyph.get_style();
+        let layer = layers.get_mut(glyph.layer_id);
+        layer.add(Renderable {
+            idx: glyph.idx,
+            fg1: style.fg1,
+            fg2: style.fg2,
+            bg: style.bg,
+            outline: style.outline,
+            x,
+            y,
+            w,
+            h,
+            tex_idx: texture_id.get_texture_idx(),
+            is_shrouded: is_shrouded as u32,
+        });
+    }
 
     telemetry::end_zone();
 }

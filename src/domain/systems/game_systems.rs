@@ -3,7 +3,7 @@ use macroquad::telemetry;
 
 use crate::{
     domain::{
-        TurnState, VisionCache, ai_turn, process_energy_consumption, turn_scheduler,
+        TurnState, ai_turn, process_energy_consumption, turn_scheduler,
         update_entity_visibility_flags, update_player_vision,
     },
     rendering::update_entity_pos,
@@ -25,7 +25,6 @@ pub fn register_game_systems(world: &mut World) {
     ];
 
     world.insert_resource(GameSystems { all: systems });
-    world.insert_resource(VisionCache::default());
 }
 
 fn exec_game_systems(world: &mut World) {
