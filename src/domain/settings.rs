@@ -29,7 +29,7 @@ impl Default for GameSettings {
             zone_boundary_move_delay: 0.2,
             enable_saves: true,
             save_name: "test".to_string(),
-            camera_mode: CameraMode::Smooth(0.04),
+            camera_mode: CameraMode::Smooth(0.1),
             crt_curvature: CrtCurvature::Curve(9.0, 7.0),
             crt_scanline: true,
             crt_film_grain: true,

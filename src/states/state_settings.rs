@@ -233,7 +233,7 @@ fn settings_input(
     // Camera Mode
     if keys.is_pressed(KeyCode::Key7) {
         settings.camera_mode = match settings.camera_mode {
-            CameraMode::Snap => CameraMode::Smooth(0.04),
+            CameraMode::Snap => CameraMode::Smooth(0.02),
             CameraMode::Smooth(_) => CameraMode::Snap,
         };
     }

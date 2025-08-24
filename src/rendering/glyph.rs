@@ -189,7 +189,7 @@ pub fn render_glyphs(
     for (entity, glyph, pos) in q_glyphs.iter() {
         let is_world_layer = glyph.layer_id.get_target_type() == RenderTargetType::World;
 
-        if is_world_layer && pos.z.floor() != player_z {
+        if glyph.is_dormant || (is_world_layer && pos.z.floor() != player_z) {
             continue;
         }
 
