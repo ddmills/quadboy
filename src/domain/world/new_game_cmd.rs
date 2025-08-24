@@ -1,11 +1,12 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, system::RunSystemOnce};
 
 use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
         ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Map,
-        Overworld, Player, PlayerPosition, PlayerSaveData, Vision, VisionCache,
+        Overworld, Player, PlayerPosition, PlayerSaveData, Vision, VisionCache, Zones,
+        load_nearby_zones,
     },
     engine::{Clock, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
@@ -37,6 +38,8 @@ impl NewGameCommand {
         delete_save(&self.save_name);
 
         let starting_position = Position::new(136, 74, SURFACE_LEVEL_Z);
+        let start_zone = starting_position.zone_idx();
+
         let player_entity = world
             .spawn((
                 starting_position.clone(),
@@ -62,8 +65,10 @@ impl NewGameCommand {
         world.insert_resource(Overworld::new(seed));
         world.insert_resource(Clock::new());
         world.insert_resource(VisionCache::default());
-
-        let start_zone = starting_position.zone_idx();
+        world.insert_resource(Zones {
+            player: start_zone,
+            active: vec![start_zone],
+        });
 
         let _ = LoadZoneCommand(start_zone).apply(world);
 

@@ -6,10 +6,13 @@ use crate::{
     common::Palette,
     domain::{
         Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop,
-        player_input, render_player_debug, update_player_position_resource,
+        on_set_zone_status, player_input, render_player_debug, update_player_position_resource,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
-    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
+    rendering::{
+        Glyph, Layer, Position, Text, Visibility, on_zone_status_change, world_to_zone_idx,
+        world_to_zone_local,
+    },
     states::{GameStatePlugin, cleanup_system},
 };
 
@@ -29,8 +32,8 @@ impl Plugin for ExploreStatePlugin {
                     render_tick_display,
                     render_cursor,
                     display_entity_names_at_mouse,
-                    game_loop,
                     player_input,
+                    game_loop,
                 ),
             )
             .on_leave(

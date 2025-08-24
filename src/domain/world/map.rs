@@ -17,7 +17,7 @@ pub struct Zones {
 }
 
 #[repr(u8)]
-#[derive(Clone, Hash, Copy, Default, Deserialize, Serialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, Copy, Default, Deserialize, Serialize, PartialEq, Eq, Debug, Component)]
 pub enum Terrain {
     OpenAir = 1,
     #[default]

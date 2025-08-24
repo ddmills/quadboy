@@ -209,13 +209,10 @@ pub fn render_glyphs(
                 continue;
             };
 
-            if is_world_layer {
-                if hide_when_not_visible.is_some() && is_visible.is_none() {
-                    continue;
-                }
-                if apply_visibility_effects.is_some() && is_explored.is_none() {
-                    continue;
-                }
+            if hide_when_not_visible.is_some() && is_visible.is_none() {
+                continue;
+            } else if apply_visibility_effects.is_some() && is_explored.is_none() {
+                continue;
             }
 
             let world_x = x - cam_x;
@@ -240,6 +237,7 @@ pub fn render_glyphs(
 
         let style = glyph.get_style();
         let layer = layers.get_mut(glyph.layer_id);
+
         layer.add(Renderable {
             idx: glyph.idx,
             fg1: style.fg1,

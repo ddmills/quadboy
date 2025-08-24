@@ -57,7 +57,6 @@ pub fn player_input(
     turn_state: Res<TurnState>,
     settings: Res<GameSettings>,
     q_zone: Query<&Zone>,
-    prefabs: Res<Prefabs>,
 ) {
     let now = time.fixed_t;
     let rate = settings.input_rate;
@@ -71,7 +70,7 @@ pub fn player_input(
     }
 
     if keys.is_pressed(KeyCode::G) {
-        prefabs.spawn(&mut cmds, SpawnConfig::new(PrefabId::Boulder, (x, y, z)));
+        Prefabs::spawn(&mut cmds, SpawnConfig::new(PrefabId::Boulder, (x, y, z)));
     }
 
     if !turn_state.is_players_turn {

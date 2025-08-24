@@ -17,6 +17,7 @@ pub fn spawn_terrain_tile(entity: Entity, world: &mut World, config: SpawnConfig
 
     world.entity_mut(entity).insert((
         Position::new_world(config.pos),
+        terrain,
         Glyph::idx(idx).bg_opt(bg).fg1_opt(fg).layer(Layer::Terrain),
         ApplyVisibilityEffects,
         ZoneStatus::Dormant,

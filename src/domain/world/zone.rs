@@ -1,11 +1,11 @@
 use std::collections::hash_map;
 
 use bevy_ecs::prelude::*;
-use macroquad::telemetry;
+use macroquad::{prelude::trace, telemetry};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cfg::{MAP_SIZE, ZONE_SIZE},
+    cfg::{MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid, Rand},
     domain::{
         LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
@@ -61,6 +61,7 @@ pub fn on_set_zone_status(
     mut e_set_zone_status: EventReader<SetZoneStatusEvent>,
     mut cmds: Commands,
     q_zones: Query<(Entity, &Zone, &Children)>,
+    q_terrain: Query<Entity, With<Terrain>>,
 ) {
     for evt in e_set_zone_status.read() {
         let Some((zone_e, zone, children)) = q_zones.iter().find(|(_, z, _)| z.idx == evt.idx)
@@ -71,12 +72,30 @@ pub fn on_set_zone_status(
         cmds.entity(zone_e).insert(evt.status);
 
         for child in children.iter() {
-            cmds.entity(child).insert(evt.status);
+            if evt.status == ZoneStatus::Dormant {
+                if q_terrain.contains(child) {
+                    cmds.entity(child).despawn();
+                }
+            } else {
+                cmds.entity(child).insert(evt.status);
+            }
+        }
+
+        if evt.status == ZoneStatus::Active {
+            for (x, y, t) in zone.terrain.iter_xy() {
+                let wpos = zone_local_to_world(zone.idx, x, y);
+                let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
+                let terrain_entity = Prefabs::spawn(&mut cmds, config);
+
+                cmds.entity(terrain_entity)
+                    .insert(ChildOf(zone_e))
+                    .insert(evt.status);
+            }
         }
 
         for v in zone.entities.iter() {
             for e in v.iter() {
-                cmds.entity(*e).insert(evt.status);
+                cmds.entity(*e).try_insert(evt.status);
             }
         }
     }
@@ -244,10 +263,12 @@ pub fn load_nearby_zones(
 pub fn spawn_zone(world: &mut World, zone_idx: usize) {
     telemetry::begin_zone("spawn_zone");
     telemetry::begin_zone("generate_zone");
+
     let data = ZoneGenerator::generate_zone(world, zone_idx);
+
     telemetry::end_zone();
 
-    let zone_entity = world
+    let zone_entity_id = world
         .spawn((
             Zone::new(zone_idx, data.terrain.clone()),
             ZoneStatus::Dormant,
@@ -255,20 +276,13 @@ pub fn spawn_zone(world: &mut World, zone_idx: usize) {
         ))
         .id();
 
-    for (x, y, t) in data.terrain.iter_xy() {
-        let wpos = zone_local_to_world(zone_idx, x, y);
-        let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
-        let terrain_entity = Prefabs::spawn_world(world, config);
-
-        world
-            .entity_mut(terrain_entity)
-            .insert(ChildOf(zone_entity));
-    }
+    spawn_terrain(world, zone_idx, zone_entity_id, data.terrain);
 
     for config in data.entities.iter().flatten() {
         // todo: Remove clone
         Prefabs::spawn_world(world, config.clone());
     }
+
     telemetry::end_zone();
 }
 
@@ -287,15 +301,36 @@ pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
         ))
         .id();
 
-    for (x, y, t) in zone_data.terrain.iter_xy() {
-        let wpos = zone_local_to_world(zone_data.idx, x, y);
-        let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
-        let terrain_entity = Prefabs::spawn_world(world, config);
-
-        world
-            .entity_mut(terrain_entity)
-            .insert(ChildOf(zone_entity_id));
-    }
+    spawn_terrain(world, zone_data.idx, zone_entity_id, zone_data.terrain);
 
     deserialize_all(&zone_data.entities, world);
+}
+
+fn spawn_terrain(
+    world: &mut World,
+    zone_idx: usize,
+    zone_entity_id: Entity,
+    terrain: Grid<Terrain>,
+) {
+    let zones = world.get_resource::<Zones>().unwrap();
+    let is_active = zones.active.contains(&zone_idx);
+
+    if is_active || RENDER_DORMANT {
+        let z_status = if is_active {
+            ZoneStatus::Active
+        } else {
+            ZoneStatus::Dormant
+        };
+
+        for (x, y, t) in terrain.iter_xy() {
+            let wpos = zone_local_to_world(zone_idx, x, y);
+            let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
+            let terrain_entity = Prefabs::spawn_world(world, config);
+
+            world
+                .entity_mut(terrain_entity)
+                .insert(z_status)
+                .insert(ChildOf(zone_entity_id));
+        }
+    }
 }

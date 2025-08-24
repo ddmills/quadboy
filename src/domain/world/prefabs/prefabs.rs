@@ -82,7 +82,7 @@ impl Prefabs {
         self.spawn_functions.insert(id, spawn_fn);
     }
 
-    pub fn spawn(&self, cmds: &mut Commands, config: SpawnConfig) -> Entity {
+    pub fn spawn(cmds: &mut Commands, config: SpawnConfig) -> Entity {
         let entity = cmds.spawn_empty().id();
 
         let command = SpawnPrefabCommand::new(entity, config);

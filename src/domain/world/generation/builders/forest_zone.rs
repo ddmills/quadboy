@@ -20,7 +20,7 @@ impl ZoneBuilder for ForestZoneBuilder {
                 return vec![SpawnConfig::new(PrefabId::PineTree, wpos)];
             }
 
-            if rand.bool(0.0005) {
+            if rand.bool(0.005) {
                 return vec![SpawnConfig::new(PrefabId::Bandit, wpos)];
             }
 

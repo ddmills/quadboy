@@ -57,8 +57,6 @@ pub struct CleanupStatePlay;
 
 fn on_enter_play_state(mut game_state: ResMut<CurrentGameState>) {
     trace!("EnterAppState::<Play>");
-    // Player spawning is now handled by NewGameCommand or LoadGameCommand
-    // Set the game state to Explore
     game_state.next = GameState::Explore;
 }
 
