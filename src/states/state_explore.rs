@@ -27,7 +27,6 @@ impl Plugin for ExploreStatePlugin {
             .on_update(
                 app,
                 (
-                    update_player_position_resource,
                     render_player_debug,
                     render_tick_display,
                     render_cursor,

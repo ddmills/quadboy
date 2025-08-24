@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy_ecs::{prelude::*, system::RunSystemOnce};
 
 use crate::{
@@ -5,8 +7,7 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Map,
-        Overworld, Player, PlayerPosition, PlayerSaveData, Vision, VisionCache, Zones,
-        load_nearby_zones,
+        Overworld, Player, PlayerPosition, PlayerSaveData, Vision, Zones,
     },
     engine::{Clock, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
@@ -64,10 +65,10 @@ impl NewGameCommand {
         world.insert_resource(Map { seed });
         world.insert_resource(Overworld::new(seed));
         world.insert_resource(Clock::new());
-        world.insert_resource(VisionCache::default());
         world.insert_resource(Zones {
             player: start_zone,
             active: vec![start_zone],
+            cache: HashMap::new(),
         });
 
         let _ = LoadZoneCommand(start_zone).apply(world);

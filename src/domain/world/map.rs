@@ -1,4 +1,4 @@
-use std::vec;
+use std::{collections::HashMap, vec};
 
 use bevy_ecs::{component::Component, entity::Entity, resource::Resource, system::Query};
 use serde::{Deserialize, Serialize};
@@ -14,6 +14,7 @@ use crate::{
 pub struct Zones {
     pub active: Vec<usize>,
     pub player: usize,
+    pub cache: HashMap<usize, Entity>,
 }
 
 #[repr(u8)]

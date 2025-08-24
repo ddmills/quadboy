@@ -1,49 +1,45 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
+    common::algorithm::shadowcast::{shadowcast, ShadowcastSettings},
     domain::{
-        ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Player, Vision,
-        VisionBlocker, Zone,
+        player, ApplyVisibilityEffects, IsExplored, IsVisible, Player, PlayerPosition, Vision, VisionBlocker, Zone, Zones
     },
     engine::Clock,
-    rendering::{Position, world_to_zone_idx, world_to_zone_local},
+    rendering::{world_to_zone_idx, world_to_zone_local, Position},
 };
 use bevy_ecs::prelude::*;
 use macroquad::telemetry;
 
-#[derive(Resource, Default)]
-pub struct VisionCache {
-    pub blockers: HashMap<(i32, i32, i32), Vec<Entity>>,
-}
-
 pub fn update_player_vision(
-    q_player: Query<(&Position, &Vision), With<Player>>,
+    q_player: Query<(&Vision), With<Player>>,
+    player_pos: Res<PlayerPosition>,
     mut q_zones: Query<&mut Zone>,
     q_vision_blockers: Query<&Position, With<VisionBlocker>>,
     clock: Res<Clock>,
+    zones: Res<Zones>,
 ) {
     telemetry::begin_zone("update_player_vision");
 
-    // Early returns for invalid states
     if clock.is_frozen() {
         telemetry::end_zone();
         return;
     }
 
-    let Ok((player_pos, vision)) = q_player.single() else {
+    let Ok((vision)) = q_player.single() else {
         telemetry::end_zone();
         return;
     };
 
     let player_world_pos = player_pos.world();
 
-    // Clear all visible grids
+    let mut vis = HashMap::new();
+
     for mut zone in q_zones.iter_mut() {
         zone.visible.clear(false);
+        vis.insert(zone.idx, vec![]);
     }
 
-    // Build vision blocker cache
     let mut blocker_cache: HashMap<(i32, i32, i32), bool> = HashMap::new();
     for blocker_pos in q_vision_blockers.iter() {
         let world_pos = blocker_pos.world();
@@ -70,21 +66,33 @@ pub fn update_player_vision(
             let world_x = x as usize;
             let world_y = y as usize;
             let world_z = player_z as usize;
-
             let zone_idx = world_to_zone_idx(world_x, world_y, world_z);
 
-            for mut zone in q_zones.iter_mut() {
-                if zone.idx == zone_idx {
-                    let (local_x, local_y) = world_to_zone_local(world_x, world_y);
-                    zone.visible.set(local_x, local_y, true);
-                    zone.explored.set(local_x, local_y, true);
-                    break;
-                }
-            }
+            let Some(c) = vis.get_mut(&zone_idx) else {
+                return;
+            };
+
+            c.push((x as usize, y as usize));
         },
     };
 
     shadowcast(settings);
+
+    for (zone_idx, world) in vis {
+        let Some(zone_entity) = zones.cache.get(&zone_idx) else {
+            continue;
+        };
+
+        let Ok(mut zone) = q_zones.get_mut(*zone_entity) else {
+            continue;
+        };
+
+        for (world_x, world_y) in world {
+            let (local_x, local_y) = world_to_zone_local(world_x, world_y);
+            zone.visible.set(local_x, local_y, true);
+            zone.explored.set(local_x, local_y, true);
+        }
+    }
 
     telemetry::end_zone();
 }
@@ -93,16 +101,11 @@ pub fn update_entity_visibility_flags(
     mut cmds: Commands,
     q_zones: Query<&Zone>,
     mut q_entities: Query<
-        (
-            Entity,
-            &Position,
-            Option<&IsVisible>,
-            Option<&IsExplored>,
-            Option<&HideWhenNotVisible>,
-        ),
+        (Entity, &Position, Option<&IsVisible>, Option<&IsExplored>),
         With<ApplyVisibilityEffects>,
     >,
     clock: Res<Clock>,
+    zones: Res<Zones>,
 ) {
     if clock.is_frozen() {
         return;
@@ -110,28 +113,28 @@ pub fn update_entity_visibility_flags(
 
     telemetry::begin_zone("update_entity_visibility_flags");
 
-    for (entity, position, has_visible, has_explored, hide_when_not_visible) in
-        q_entities.iter_mut()
-    {
+    for (entity, position, has_visible, has_explored) in q_entities.iter_mut() {
         let world_pos = position.world();
         let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
 
-        // Find the zone this entity is in
-        let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) else {
+        let Some(zone_entity) = zones.cache.get(&zone_idx) else {
+            continue;
+        };
+
+        let Ok(zone) = q_zones.get(*zone_entity) else {
             continue;
         };
 
         let (local_x, local_y) = world_to_zone_local(world_pos.0, world_pos.1);
 
-        // Check if entity should be visible
         let is_visible = zone.visible.get(local_x, local_y).copied().unwrap_or(false);
+
         let is_explored = zone
             .explored
             .get(local_x, local_y)
             .copied()
             .unwrap_or(false);
 
-        // Update IsVisible component
         match (is_visible, has_visible.is_some()) {
             (true, false) => {
                 cmds.entity(entity).insert(IsVisible);
@@ -139,13 +142,10 @@ pub fn update_entity_visibility_flags(
             (false, true) => {
                 cmds.entity(entity).remove::<IsVisible>();
             }
-            _ => {} // No change needed
+            _ => {}
         }
 
-        // Update IsExplored component (but not for entities that hide when not visible)
-        if hide_when_not_visible.is_none()
-            && let (true, false) = (is_explored, has_explored.is_some())
-        {
+        if let (true, false) = (is_explored, has_explored.is_some()) {
             cmds.entity(entity).insert(IsExplored);
         }
     }

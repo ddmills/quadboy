@@ -1,5 +1,5 @@
-use bevy_ecs::{resource::Resource, system::SystemId, world::World};
-use macroquad::telemetry;
+use bevy_ecs::{resource::Resource, system::{RunSystemOnce, SystemId}, world::World};
+use macroquad::{prelude::trace, telemetry};
 
 use crate::{
     domain::{
@@ -16,12 +16,12 @@ pub struct GameSystems {
 
 pub fn register_game_systems(world: &mut World) {
     let systems = vec![
+        world.register_system(turn_scheduler),
         world.register_system(ai_turn),
         world.register_system(update_entity_pos),
         world.register_system(process_energy_consumption),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
-        world.register_system(turn_scheduler),
     ];
 
     world.insert_resource(GameSystems { all: systems });
@@ -34,6 +34,8 @@ fn exec_game_systems(world: &mut World) {
         };
         systems.all.clone()
     };
+
+    let _ = world.run_system_once(bevy_ecs::schedule::ApplyDeferred);
 
     for id in system_ids {
         let _ = world.run_system(id);
@@ -50,12 +52,14 @@ pub fn game_loop(world: &mut World) {
         let Some(turn) = world.get_resource::<TurnState>() else {
             return;
         };
+
         if turn.is_players_turn {
             break;
         }
 
         iterations += 1;
         if iterations >= MAX_ITERATIONS {
+            trace!("hit max  iter");
             break;
         }
     }

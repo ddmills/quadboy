@@ -306,6 +306,22 @@ pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
     deserialize_all(&zone_data.entities, world);
 }
 
+pub fn manage_zone_cache(
+    mut zones: ResMut<Zones>,
+    q_zones_added: Query<(Entity, &Zone), Added<Zone>>,
+    mut removed_zones: RemovedComponents<Zone>,
+) {
+    for (entity, zone) in q_zones_added.iter() {
+        zones.cache.insert(zone.idx, entity);
+    }
+
+    for entity in removed_zones.read() {
+        zones
+            .cache
+            .retain(|_, &mut cached_entity| cached_entity != entity);
+    }
+}
+
 fn spawn_terrain(
     world: &mut World,
     zone_idx: usize,

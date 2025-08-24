@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{LoadZoneCommand, Map, Overworld, PlayerPosition, VisionCache, Zones},
+    domain::{LoadZoneCommand, Map, Overworld, PlayerPosition, Zones},
     engine::{Clock, deserialize, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
@@ -42,10 +44,10 @@ impl LoadGameCommand {
         world.insert_resource(Map::new(game_data.seed));
         world.insert_resource(Overworld::new(game_data.seed));
         world.insert_resource(PlayerPosition::from_position(&position));
-        world.insert_resource(VisionCache::default());
         world.insert_resource(Zones {
             player: zone_idx,
             active: vec![zone_idx],
+            cache: HashMap::new(),
         });
 
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();

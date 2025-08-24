@@ -33,6 +33,14 @@ impl PlayerPosition {
             z: pos.z,
         }
     }
+
+    pub fn world(&self) -> (usize, usize, usize) {
+        (
+            self.x.floor() as usize,
+            self.y.floor() as usize,
+            self.z.floor() as usize,
+        )
+    }
 }
 
 #[derive(Event)]
