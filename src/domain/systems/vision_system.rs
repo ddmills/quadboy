@@ -26,19 +26,22 @@ pub fn update_player_vision(
     mut vision_cache: ResMut<VisionCache>,
     clock: Res<Clock>,
 ) {
+    telemetry::begin_zone("update_player_vision");
+
     let Ok(player_pos) = q_player.single() else {
+        telemetry::end_zone();
         return;
     };
 
     let Ok(vision) = q_vision.single() else {
+        telemetry::end_zone();
         return;
     };
 
     if clock.is_frozen() {
+        telemetry::end_zone();
         return;
     }
-
-    telemetry::begin_zone("update_player_vision");
 
     let player_world_pos = player_pos.world();
 

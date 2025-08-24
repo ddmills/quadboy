@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{LoadZoneCommand, Map, PlayerPosition},
+    domain::{LoadZoneCommand, Map, Overworld, PlayerPosition},
     engine::{Clock, deserialize, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
@@ -39,6 +39,7 @@ impl LoadGameCommand {
         let position = game_data.player.position;
 
         world.insert_resource(Map::new(game_data.seed));
+        world.insert_resource(Overworld::new(game_data.seed));
         world.insert_resource(PlayerPosition::from_position(&position));
 
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();

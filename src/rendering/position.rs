@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::*;
+use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{Zone, ZoneStatus};
@@ -63,6 +63,7 @@ pub fn update_entity_pos(
     mut q_moved: Query<(Entity, &mut Position), (Changed<Position>, With<RecordZonePosition>)>,
     mut q_zones: Query<(Entity, &mut Zone, &ZoneStatus)>,
 ) {
+    telemetry::begin_zone("update_entity_pos");
     for (e, mut pos) in q_moved.iter_mut() {
         let new_zone_idx = pos.zone_idx();
         let old_zone_idx = pos.prev_zone_idx;
@@ -85,4 +86,5 @@ pub fn update_entity_pos(
             cmds.entity(e).insert(*zone_status).insert(ChildOf(zone_e));
         }
     }
+    telemetry::end_zone();
 }

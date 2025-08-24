@@ -1,6 +1,7 @@
 use std::collections::hash_map;
 
 use bevy_ecs::prelude::*;
+use macroquad::telemetry;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     common::{Grid, HashGrid, Rand},
     domain::{
         LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
-        UnloadZoneCommand, Zone, Zones,
+        UnloadZoneCommand, Zone, ZoneGenerator, Zones,
     },
     engine::{SerializedEntity, deserialize_all},
     rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz},
@@ -241,19 +242,20 @@ pub fn load_nearby_zones(
 }
 
 pub fn spawn_zone(world: &mut World, zone_idx: usize) {
-    let terrain = Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, Terrain::Sand);
+    telemetry::begin_zone("spawn_zone");
+    telemetry::begin_zone("generate_zone");
+    let data = ZoneGenerator::generate_zone(world, zone_idx);
+    telemetry::end_zone();
 
     let zone_entity = world
         .spawn((
-            Zone::new(zone_idx, terrain.clone()),
+            Zone::new(zone_idx, data.terrain.clone()),
             ZoneStatus::Dormant,
             CleanupStatePlay,
         ))
         .id();
 
-    let mut rand = Rand::seed(zone_idx as u64);
-
-    for (x, y, t) in terrain.iter_xy() {
+    for (x, y, t) in data.terrain.iter_xy() {
         let wpos = zone_local_to_world(zone_idx, x, y);
         let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
         let terrain_entity = Prefabs::spawn_world(world, config);
@@ -261,11 +263,13 @@ pub fn spawn_zone(world: &mut World, zone_idx: usize) {
         world
             .entity_mut(terrain_entity)
             .insert(ChildOf(zone_entity));
-
-        if rand.bool(0.005) {
-            Prefabs::spawn_world(world, SpawnConfig::new(PrefabId::Cactus, wpos));
-        }
     }
+
+    for config in data.entities.iter().flatten() {
+        // todo: Remove clone
+        Prefabs::spawn_world(world, config.clone());
+    }
+    telemetry::end_zone();
 }
 
 pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {

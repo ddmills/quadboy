@@ -9,7 +9,7 @@ use crate::{
         TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
-    rendering::{Position, Text, world_to_zone_idx, zone_xyz},
+    rendering::{Glyph, Position, Text, world_to_zone_idx, zone_xyz},
     states::{CurrentGameState, GameState},
 };
 
@@ -212,6 +212,7 @@ pub fn update_player_position_resource(
 pub fn render_player_debug(
     q_player: Query<&Position, With<Player>>,
     mut q_debug: Query<&mut Text, With<PlayerDebug>>,
+    q_glyphs: Query<&Glyph>,
     cursor: Res<Mouse>,
 ) {
     let position = q_player.single().unwrap();
@@ -220,7 +221,7 @@ pub fn render_player_debug(
     let zone_pos = zone_xyz(zone_idx);
 
     debug.value = format!(
-        "{},{},{} ({},{},{} {{Y|{}}}) [{},{}]",
+        "{},{},{} ({},{},{} {{Y|{}}}) [{},{}] glyphs={}",
         position.x,
         position.y,
         position.z,
@@ -229,7 +230,8 @@ pub fn render_player_debug(
         zone_pos.2,
         zone_idx,
         cursor.world.0.floor(),
-        cursor.world.1.floor()
+        cursor.world.1.floor(),
+        q_glyphs.iter().len()
     );
 }
 

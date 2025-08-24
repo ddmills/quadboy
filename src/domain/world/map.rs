@@ -160,11 +160,11 @@ pub enum ZoneConstraintType {
 
 #[derive(Resource, Default)]
 pub struct Map {
-    pub seed: u64,
+    pub seed: u32,
 }
 
 impl Map {
-    pub fn new(seed: u64) -> Self {
+    pub fn new(seed: u32) -> Self {
         Self { seed }
     }
 
@@ -174,7 +174,7 @@ impl Map {
         }
 
         let idx = zone_idx(x, y, z);
-        let mut rand = Rand::seed(idx as u64);
+        let mut rand = Rand::seed(idx as u32);
 
         let mut south = [ZoneConstraintType::None; ZONE_SIZE.0];
         let mut west = [ZoneConstraintType::None; ZONE_SIZE.1];

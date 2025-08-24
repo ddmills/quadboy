@@ -9,9 +9,9 @@ pub struct Rand {
 
 #[allow(dead_code)]
 impl Rand {
-    pub fn seed(seed: u64) -> Self {
+    pub fn seed(seed: u32) -> Self {
         Self {
-            r: SmallRng::seed_from_u64(seed),
+            r: SmallRng::seed_from_u64(seed as u64),
         }
     }
 

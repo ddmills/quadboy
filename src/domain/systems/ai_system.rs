@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use macroquad::telemetry;
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
@@ -14,16 +15,21 @@ pub fn ai_turn(
     q_zones: Query<&Zone>,
     q_colliders: Query<&Collider>,
 ) {
+    telemetry::begin_zone("ai_turn");
+
     // Only run AI when it's not the player's turn
     if turn_state.is_players_turn {
+        telemetry::end_zone();
         return;
     }
 
     let Some(current_entity) = turn_state.current_turn_entity else {
+        telemetry::end_zone();
         return;
     };
 
     let Ok(mut energy) = q_energy.get_mut(current_entity) else {
+        telemetry::end_zone();
         return;
     };
 
@@ -34,12 +40,14 @@ pub fn ai_turn(
     if rand.bool(0.75) {
         let cost = get_energy_cost(action);
         energy.consume_energy(cost);
+        telemetry::end_zone();
         return;
     }
 
     let Ok(mut position) = q_position.get_mut(current_entity) else {
         let cost = get_energy_cost(action);
         energy.consume_energy(cost);
+        telemetry::end_zone();
         return;
     };
 
@@ -56,6 +64,7 @@ pub fn ai_turn(
     if new_x > max_x || new_y > max_y {
         let cost = get_energy_cost(action);
         energy.consume_energy(cost);
+        telemetry::end_zone();
         return;
     }
 
@@ -64,6 +73,7 @@ pub fn ai_turn(
     let Some(zone) = q_zones.iter().find(|zone| zone.idx == dest_zone_idx) else {
         let cost = get_energy_cost(action);
         energy.consume_energy(cost);
+        telemetry::end_zone();
         return;
     };
 
@@ -74,6 +84,7 @@ pub fn ai_turn(
                 // Found a collider at this position, can't move
                 let cost = get_energy_cost(action);
                 energy.consume_energy(cost);
+                telemetry::end_zone();
                 return;
             }
         }
@@ -85,4 +96,5 @@ pub fn ai_turn(
 
     let cost = get_energy_cost(action);
     energy.consume_energy(cost);
+    telemetry::end_zone();
 }

@@ -5,7 +5,7 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Map,
-        Player, PlayerPosition, PlayerSaveData, Vision,
+        Overworld, Player, PlayerPosition, PlayerSaveData, Vision,
     },
     engine::{Clock, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
@@ -55,8 +55,11 @@ impl NewGameCommand {
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();
         camera.focus_on(starting_position.x, starting_position.y);
 
+        let seed = 12345;
+
         world.insert_resource(PlayerPosition::from_position(&starting_position));
-        world.insert_resource(Map { seed: 12345 });
+        world.insert_resource(Map { seed });
+        world.insert_resource(Overworld::new(seed));
         world.insert_resource(Clock::new());
 
         let start_zone = starting_position.zone_idx();
@@ -69,7 +72,7 @@ impl NewGameCommand {
             position: starting_position,
             entity: serialized_player,
         };
-        let game_save_data = GameSaveData::new(player_save_data, 0.0, 0, 12345);
+        let game_save_data = GameSaveData::new(player_save_data, 0.0, 0, seed);
         save_game(&game_save_data, &self.save_name);
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {

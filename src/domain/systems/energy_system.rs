@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use macroquad::telemetry;
 
 use crate::{
     domain::{Energy, Player},
@@ -37,11 +38,14 @@ pub fn turn_scheduler(
     mut clock: ResMut<Clock>,
     q_player: Query<Entity, With<Player>>,
 ) {
+    telemetry::begin_zone("turn_scheduler");
+
     // Clear tick delta at the start of each turn scheduling cycle
     clock.clear_tick_delta();
     let Some((highest_entity, highest_energy)) =
         q_energy.iter().max_by_key(|(_, energy)| energy.value)
     else {
+        telemetry::end_zone();
         return;
     };
 
@@ -59,6 +63,7 @@ pub fn turn_scheduler(
         turn_state.current_turn_entity = None;
         turn_state.is_players_turn = false;
 
+        telemetry::end_zone();
         return;
     }
 
@@ -66,11 +71,12 @@ pub fn turn_scheduler(
 
     let Ok(player_entity) = q_player.single() else {
         turn_state.is_players_turn = false;
-        // no player?
+        telemetry::end_zone();
         return;
     };
 
     turn_state.is_players_turn = highest_entity == player_entity;
+    telemetry::end_zone();
 }
 
 pub fn process_energy_consumption(
