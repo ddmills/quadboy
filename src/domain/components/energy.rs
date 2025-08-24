@@ -12,10 +12,6 @@ impl Energy {
         Self { value }
     }
 
-    pub fn has_energy(&self) -> bool {
-        self.value >= 0
-    }
-
     pub fn add_energy(&mut self, amount: u32) {
         self.value += amount as i32;
 

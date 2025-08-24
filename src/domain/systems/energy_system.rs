@@ -10,8 +10,6 @@ use crate::{
 pub enum EnergyActionType {
     Move,
     Wait,
-    Sleep,
-    Attack,
 }
 
 #[derive(Resource, Default)]
@@ -95,7 +93,5 @@ pub fn get_energy_cost(action: EnergyActionType) -> i32 {
     match action {
         EnergyActionType::Move => 100,
         EnergyActionType::Wait => 200,
-        EnergyActionType::Sleep => 1000,
-        EnergyActionType::Attack => 150,
     }
 }

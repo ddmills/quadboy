@@ -28,6 +28,7 @@ pub struct AStarResult<T> {
     pub cost: f32,
 }
 
+#[allow(dead_code)]
 pub fn astar<T, H, C, N, G>(settings: AStarSettings<T, H, C, N, G>) -> AStarResult<T>
 where
     H: Fn(T) -> f32,

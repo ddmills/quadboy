@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{LoadZoneCommand, Map, Overworld, PlayerPosition, Zones},
+    domain::{LoadZoneCommand, Overworld, PlayerPosition, Zones},
     engine::{Clock, deserialize, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
@@ -16,7 +16,6 @@ pub struct LoadGameCommand {
 #[derive(Event)]
 pub struct LoadGameResult {
     pub success: bool,
-    pub message: String,
 }
 
 impl Command<()> for LoadGameCommand {
@@ -32,16 +31,12 @@ impl Command<()> for LoadGameCommand {
 impl LoadGameCommand {
     fn execute_load(&self, world: &mut World) -> LoadGameResult {
         let Some(game_data) = try_load_game(&self.save_name) else {
-            return LoadGameResult {
-                success: false,
-                message: format!("No save found for '{}'", self.save_name),
-            };
+            return LoadGameResult { success: false };
         };
 
         let position = game_data.player.position;
         let zone_idx = position.zone_idx();
 
-        world.insert_resource(Map::new(game_data.seed));
         world.insert_resource(Overworld::new(game_data.seed));
         world.insert_resource(PlayerPosition::from_position(&position));
         world.insert_resource(Zones {
@@ -65,9 +60,6 @@ impl LoadGameCommand {
             game_state.next = GameState::Explore;
         }
 
-        LoadGameResult {
-            success: true,
-            message: format!("Loaded game from '{}'", self.save_name),
-        }
+        LoadGameResult { success: true }
     }
 }

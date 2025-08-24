@@ -1,18 +1,18 @@
-use std::collections::hash_map;
+use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
-use macroquad::{prelude::trace, telemetry};
+use macroquad::telemetry;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cfg::{MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
-    common::{Grid, HashGrid, Rand},
+    cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
+    common::{Grid, HashGrid},
     domain::{
         LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
-        UnloadZoneCommand, Zone, ZoneGenerator, Zones,
+        UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
-    rendering::{world_to_zone_idx, zone_idx, zone_local_to_world, zone_xyz},
+    rendering::{world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz},
     states::CleanupStatePlay,
 };
 
@@ -28,6 +28,87 @@ pub struct ZoneSaveData {
     pub terrain: Grid<Terrain>,
     pub entities: Vec<SerializedEntity>,
     pub explored: Grid<bool>,
+}
+
+#[derive(Resource, Default)]
+pub struct Zones {
+    pub active: Vec<usize>,
+    pub player: usize,
+    pub cache: HashMap<usize, Entity>,
+}
+
+#[derive(Component)]
+pub struct Zone {
+    pub idx: usize,
+    pub terrain: Grid<Terrain>,
+    pub entities: HashGrid<Entity>,
+    pub visible: Grid<bool>,
+    pub explored: Grid<bool>,
+}
+
+impl Zone {
+    pub fn new(idx: usize, terrain: Grid<Terrain>) -> Self {
+        Self {
+            idx,
+            terrain,
+            entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
+            visible: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
+            explored: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
+        }
+    }
+
+    pub fn to_save(&self) -> ZoneSaveData {
+        ZoneSaveData {
+            idx: self.idx,
+            terrain: self.terrain.clone(),
+            entities: vec![],
+            explored: self.explored.clone(),
+        }
+    }
+
+    pub fn get_at(world_pos: (usize, usize, usize), q_zones: &Query<&Zone>) -> Vec<Entity> {
+        let (x, y, z) = world_pos;
+        let zone_idx = world_to_zone_idx(x, y, z);
+
+        let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) else {
+            return vec![];
+        };
+
+        let local = world_to_zone_local(x, y);
+
+        let Some(entities) = zone.entities.get(local.0, local.1) else {
+            return vec![];
+        };
+
+        entities.to_vec()
+    }
+
+    pub fn get_neighbors(
+        world_pos: (usize, usize, usize),
+        q_zones: &Query<&Zone>,
+    ) -> Vec<Vec<Entity>> {
+        let (x, y, z) = world_pos;
+
+        let mut neighbors = Vec::with_capacity(4);
+
+        for (dx, dy) in CARDINALS_OFFSET.iter() {
+            let neighbor_x_i32 = x as i32 + dx;
+            let neighbor_y_i32 = y as i32 + dy;
+
+            if neighbor_x_i32 < 0 || neighbor_y_i32 < 0 {
+                neighbors.push(vec![]);
+                continue;
+            }
+
+            let neighbor_x = neighbor_x_i32 as usize;
+            let neighbor_y = neighbor_y_i32 as usize;
+
+            let entities = Self::get_at((neighbor_x, neighbor_y, z), q_zones);
+            neighbors.push(entities);
+        }
+
+        neighbors
+    }
 }
 
 #[derive(Event)]

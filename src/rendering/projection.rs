@@ -16,6 +16,8 @@ pub fn zone_xyz(zone_idx: usize) -> (usize, usize, usize) {
     )
 }
 
+#[allow(dead_code)]
+#[inline]
 pub fn is_zone_oob(x: usize, y: usize, z: usize) -> bool {
     x >= MAP_SIZE.0 || y >= MAP_SIZE.1 || z >= MAP_SIZE.2
 }

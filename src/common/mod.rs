@@ -6,7 +6,6 @@ mod perlin;
 mod rand;
 mod structure;
 
-pub use algorithm::*;
 pub use cp437::*;
 pub use math::*;
 pub use palette::*;

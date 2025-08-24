@@ -42,3 +42,37 @@ impl ZoneGenerator {
         }
     }
 }
+
+pub struct ZoneContinuity {
+    pub south: Vec<ZoneConstraintType>,
+    pub west: Vec<ZoneConstraintType>,
+    pub down: Vec<ZoneConstraintType>,
+}
+
+impl ZoneContinuity {
+    pub fn empty() -> Self {
+        Self {
+            south: vec![],
+            west: vec![],
+            down: vec![],
+        }
+    }
+}
+pub struct ZoneConstraints {
+    pub idx: usize,
+    pub south: Vec<ZoneConstraintType>,
+    pub west: Vec<ZoneConstraintType>,
+    pub east: Vec<ZoneConstraintType>,
+    pub north: Vec<ZoneConstraintType>,
+    pub up: Vec<ZoneConstraintType>,
+    pub down: Vec<ZoneConstraintType>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ZoneConstraintType {
+    None,
+    River,
+    Footpath,
+    StairDown,
+    RockWall,
+}

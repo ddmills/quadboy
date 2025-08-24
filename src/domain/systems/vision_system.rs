@@ -4,7 +4,7 @@ use crate::{
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
         ApplyVisibilityEffects, IsExplored, IsVisible, Player, PlayerPosition, Vision,
-        VisionBlocker, Zone, Zones, player,
+        VisionBlocker, Zone, Zones,
     },
     engine::Clock,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
@@ -13,7 +13,7 @@ use bevy_ecs::prelude::*;
 use macroquad::telemetry;
 
 pub fn update_player_vision(
-    q_player: Query<(&Vision), With<Player>>,
+    q_player: Query<&Vision, With<Player>>,
     player_pos: Res<PlayerPosition>,
     mut q_zones: Query<&mut Zone>,
     q_vision_blockers: Query<&Position, With<VisionBlocker>>,
@@ -27,7 +27,7 @@ pub fn update_player_vision(
         return;
     }
 
-    let Ok((vision)) = q_player.single() else {
+    let Ok(vision) = q_player.single() else {
         telemetry::end_zone();
         return;
     };

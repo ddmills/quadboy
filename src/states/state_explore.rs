@@ -5,14 +5,11 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, TurnState, Zone, game_loop,
-        on_set_zone_status, player_input, render_player_debug, update_player_position_resource,
+        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone, game_loop,
+        player_input, render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
-    rendering::{
-        Glyph, Layer, Position, Text, Visibility, on_zone_status_change, world_to_zone_idx,
-        world_to_zone_local,
-    },
+    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
     states::{GameStatePlugin, cleanup_system},
 };
 

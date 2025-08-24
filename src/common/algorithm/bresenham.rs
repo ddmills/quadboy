@@ -1,4 +1,5 @@
 /// Simple Bresenham line algorithm for creating direct paths between two points
+#[allow(dead_code)]
 pub fn bresenham_line(from: (usize, usize), to: (usize, usize)) -> Vec<(usize, usize)> {
     let mut path = Vec::new();
 

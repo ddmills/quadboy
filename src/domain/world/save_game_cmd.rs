@@ -3,7 +3,7 @@ use macroquad::prelude::get_time;
 
 use crate::{
     domain::{
-        GameSaveData, GameSettings, Map, Player, PlayerSaveData, UnloadZoneCommand, Zone, Zones,
+        GameSaveData, GameSettings, Overworld, Player, PlayerSaveData, UnloadZoneCommand, Zone,
     },
     engine::{Clock, save_game, serialize},
     rendering::Position,
@@ -14,16 +14,12 @@ pub struct SaveGameCommand;
 #[derive(Event)]
 pub struct SaveGameResult {
     pub success: bool,
-    pub zone_count: usize,
-    pub save_name: String,
-    pub message: String,
 }
 
 impl Command<()> for SaveGameCommand {
     fn apply(self, world: &mut World) {
         let result = self.execute_save(world);
 
-        // Send the result as an event
         if let Some(mut events) = world.get_resource_mut::<Events<SaveGameResult>>() {
             events.send(result);
         }
@@ -33,21 +29,11 @@ impl Command<()> for SaveGameCommand {
 impl SaveGameCommand {
     fn execute_save(&self, world: &mut World) -> SaveGameResult {
         let Some(settings) = world.get_resource::<GameSettings>() else {
-            return SaveGameResult {
-                success: false,
-                zone_count: 0,
-                save_name: String::new(),
-                message: "GameSettings resource not found".to_string(),
-            };
+            return SaveGameResult { success: false };
         };
 
         if !settings.enable_saves {
-            return SaveGameResult {
-                success: false,
-                zone_count: 0,
-                save_name: settings.save_name.clone(),
-                message: "Saves are disabled in settings".to_string(),
-            };
+            return SaveGameResult { success: false };
         }
 
         let save_name = settings.save_name.clone();
@@ -58,12 +44,7 @@ impl SaveGameCommand {
             if let Some((entity, position)) = q_player.iter(world).next() {
                 (entity, position.clone())
             } else {
-                return SaveGameResult {
-                    success: false,
-                    zone_count: 0,
-                    save_name: save_name.clone(),
-                    message: "Player not found".to_string(),
-                };
+                return SaveGameResult { success: false };
             }
         };
 
@@ -73,8 +54,8 @@ impl SaveGameCommand {
             .unwrap_or(0);
 
         let seed = world
-            .get_resource::<Map>()
-            .map(|map| map.seed)
+            .get_resource::<Overworld>()
+            .map(|overworld| overworld.seed)
             .unwrap_or(12345);
 
         let serialized_player = serialize(player_entity, world);
@@ -88,31 +69,18 @@ impl SaveGameCommand {
 
         let mut q_zones = world.query::<&Zone>();
         let zone_indicies = q_zones.iter(world).map(|z| z.idx).collect::<Vec<_>>();
-        let mut zone_count = 0;
 
         for zone_idx in zone_indicies {
-            zone_count += 1;
-
             let save_cmd = UnloadZoneCommand {
                 zone_idx,
                 despawn: false,
             };
 
-            if let Err(e) = save_cmd.apply(world) {
-                return SaveGameResult {
-                    success: false,
-                    zone_count: 0,
-                    save_name: save_name.clone(),
-                    message: format!("Failed to save zone {}: {}", zone_idx, e),
-                };
+            if save_cmd.apply(world).is_err() {
+                return SaveGameResult { success: false };
             }
         }
 
-        SaveGameResult {
-            success: true,
-            zone_count,
-            save_name: save_name.clone(),
-            message: format!("Saved {} zones to '{}'", zone_count, save_name),
-        }
+        SaveGameResult { success: true }
     }
 }

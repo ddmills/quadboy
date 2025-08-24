@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{
-        Map, activate_zones_by_player, load_nearby_zones, manage_zone_cache, on_load_zone,
+        activate_zones_by_player, load_nearby_zones, manage_zone_cache, on_load_zone,
         on_set_zone_status, on_unload_zone, register_game_systems, update_player_position_resource,
     },
     engine::{App, Plugin, SerializableComponent},
@@ -62,8 +62,7 @@ fn on_enter_play_state(mut game_state: ResMut<CurrentGameState>) {
     game_state.next = GameState::Explore;
 }
 
-fn on_leave_play_state(mut cmds: Commands, mut game_state: ResMut<CurrentGameState>) {
+fn on_leave_play_state(mut game_state: ResMut<CurrentGameState>) {
     trace!("LeaveAppState::<Play>");
-    cmds.remove_resource::<Map>();
     game_state.next = GameState::None;
 }

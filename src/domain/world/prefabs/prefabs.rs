@@ -17,6 +17,7 @@ pub enum PrefabId {
     TerrainTile(Terrain),
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct SpawnConfig {
     pub prefab_id: PrefabId,
@@ -24,6 +25,7 @@ pub struct SpawnConfig {
     pub metadata: HashMap<String, SpawnValue>,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub enum SpawnValue {
     String(String),
@@ -41,6 +43,7 @@ impl SpawnConfig {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_metadata(mut self, key: String, value: SpawnValue) -> Self {
         self.metadata.insert(key, value);
         self

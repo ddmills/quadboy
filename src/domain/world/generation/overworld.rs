@@ -31,11 +31,13 @@ pub struct OverworldZone {
 #[derive(Resource)]
 pub struct Overworld {
     perlin: Perlin,
+    pub seed: u32,
 }
 
 impl Overworld {
     pub fn new(seed: u32) -> Self {
         Self {
+            seed,
             perlin: Perlin::new(seed, 0.15, 2, 2.0),
         }
     }

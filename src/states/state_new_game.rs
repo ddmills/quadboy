@@ -7,7 +7,6 @@ use bevy_ecs::{
 use crate::{
     domain::{GameSettings, NewGameCommand, NewGameResult},
     engine::{App, Plugin},
-    rendering::{Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
 };
 
@@ -28,6 +27,7 @@ pub struct CleanupStateNewGame;
 fn on_enter_new_game(mut cmds: Commands, settings: Res<GameSettings>) {
     cmds.queue(NewGameCommand {
         save_name: settings.save_name.clone(),
+        seed: 12345,
     });
 }
 

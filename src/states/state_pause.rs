@@ -142,7 +142,11 @@ fn handle_save_result(
 ) {
     for result in e_save_result.read() {
         if let Ok(mut text) = q_save_status.single_mut() {
-            text.value = result.message.clone();
+            if result.success {
+                text.value = "Game saved.".to_owned();
+            } else {
+                text.value = "Error saving game.".to_owned();
+            }
         }
     }
 }

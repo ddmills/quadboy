@@ -11,7 +11,6 @@ use crate::{
 use bevy_ecs::prelude::*;
 use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use super::{GameCamera, Layer, Layers, Position, Renderable, ScreenSize};
 
@@ -32,12 +31,6 @@ pub struct Glyph {
 pub struct TilesetTextures {
     pub glyph_texture: Texture2D,
     pub font_body_texture: Texture2D,
-}
-
-#[derive(Resource, Default)]
-pub struct GlyphStyleCache {
-    cache: HashMap<Entity, GlyphStyle>,
-    frame_counter: u32,
 }
 
 #[derive(Clone, Copy)]

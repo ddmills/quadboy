@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use bevy_ecs::{prelude::*, system::RunSystemOnce};
+use bevy_ecs::prelude::*;
 
 use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Map,
-        Overworld, Player, PlayerPosition, PlayerSaveData, Vision, Zones,
+        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Overworld,
+        Player, PlayerPosition, PlayerSaveData, Vision, Zones,
     },
     engine::{Clock, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
@@ -16,12 +16,12 @@ use crate::{
 
 pub struct NewGameCommand {
     pub save_name: String,
+    pub seed: u32,
 }
 
 #[derive(Event)]
 pub struct NewGameResult {
     pub success: bool,
-    pub message: String,
 }
 
 impl Command<()> for NewGameCommand {
@@ -59,11 +59,8 @@ impl NewGameCommand {
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();
         camera.focus_on(starting_position.x, starting_position.y);
 
-        let seed = 12345;
-
         world.insert_resource(PlayerPosition::from_position(&starting_position));
-        world.insert_resource(Map { seed });
-        world.insert_resource(Overworld::new(seed));
+        world.insert_resource(Overworld::new(self.seed));
         world.insert_resource(Clock::new());
         world.insert_resource(Zones {
             player: start_zone,
@@ -79,16 +76,14 @@ impl NewGameCommand {
             position: starting_position,
             entity: serialized_player,
         };
-        let game_save_data = GameSaveData::new(player_save_data, 0.0, 0, seed);
+
+        let game_save_data = GameSaveData::new(player_save_data, 0.0, 0, self.seed);
         save_game(&game_save_data, &self.save_name);
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {
             game_state.next = GameState::Explore;
         }
 
-        NewGameResult {
-            success: true,
-            message: format!("Started new game with save '{}'", self.save_name),
-        }
+        NewGameResult { success: true }
     }
 }
