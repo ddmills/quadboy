@@ -8,7 +8,7 @@ use bevy_ecs::resource::Resource;
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{Perlin, PoissonDiscSampler, PoissonDiscSettings},
-    domain::{OverworldRoadGenerator, OverworldTownGenerator, ZoneConstraints},
+    domain::{get_zone_constraints, OverworldRoadGenerator, OverworldTownGenerator, ZoneConstraintType, ZoneContinuity},
     rendering::{zone_idx, zone_xyz},
 };
 
@@ -34,7 +34,7 @@ impl Display for ZoneType {
 pub struct OverworldZone {
     pub zone_idx: usize,
     pub zone_type: ZoneType,
-    pub constraints: ZoneConstraints,
+    pub constraints: ZoneContinuity,
     pub town: Option<OverworldTown>,
 }
 
@@ -45,9 +45,19 @@ pub struct OverworldTown {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum RoadType {
-    DirtPath,
-    StoneRoad,
+    Footpath,
+    Road,
     RoyalHighway,
+}
+
+impl RoadType {
+    pub fn width(self) -> usize {
+        match self {
+            RoadType::Footpath => 1,
+            RoadType::Road => 2,
+            RoadType::RoyalHighway => 3,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -94,7 +104,7 @@ impl Overworld {
         OverworldZone {
             zone_idx,
             zone_type: self.get_zone_type(zone_idx),
-            constraints: self.get_zone_constraints(zone_idx),
+            constraints: get_zone_constraints(&self, zone_idx),
             town: self.towns.get(&zone_idx).cloned(),
         }
     }
@@ -102,33 +112,21 @@ impl Overworld {
     pub fn get_zone_type(&mut self, zone_idx: usize) -> ZoneType {
         let (x, y, z) = zone_xyz(zone_idx);
 
-        if z > SURFACE_LEVEL_Z {
+        if z < SURFACE_LEVEL_Z {
             return ZoneType::OpenAir;
         }
 
-        if z < SURFACE_LEVEL_Z {
+        if z > SURFACE_LEVEL_Z {
             return ZoneType::Cavern;
         }
 
         let noise = self.perlin.get(x as f32, y as f32);
 
-        if noise < 0.4 {
+        if noise < 0.5 {
             return ZoneType::Desert;
         }
 
         ZoneType::Forest
-    }
-
-    fn get_zone_constraints(&self, zone_idx: usize) -> ZoneConstraints {
-        ZoneConstraints {
-            idx: zone_idx,
-            south: vec![],
-            west: vec![],
-            east: vec![],
-            north: vec![],
-            up: vec![],
-            down: vec![],
-        }
     }
 
     fn generate_roads(&mut self) {

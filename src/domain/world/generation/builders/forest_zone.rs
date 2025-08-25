@@ -27,10 +27,16 @@ impl ZoneBuilder for ForestZoneBuilder {
             vec![]
         });
 
-        ZoneData {
+        let mut zone_data = ZoneData {
             zone_idx,
             terrain,
             entities,
-        }
+        };
+
+        zone_data.apply_vertical_constraints(&ozone.constraints.up);
+        zone_data.apply_up_vertical_constraints(&ozone.constraints.down);
+        zone_data.apply_edge_constraints(&ozone.constraints.north, &ozone.constraints.south, &ozone.constraints.east, &ozone.constraints.west);
+
+        zone_data
     }
 }

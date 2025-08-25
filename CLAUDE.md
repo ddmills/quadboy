@@ -190,3 +190,5 @@ The game uses a command-based prefab system for entity spawning:
 - Text can be stylized in the game, for example: `{R-G-B-y repeat|Hello World}` will output the text "Hello World" in Red, Green, Blue, and Dark Yellow colors, repeating.
 - The colors are defined in `palette.rs`. `get_seq_color` is the mapping between a character and the color.
 - `PaletteSequenceType` are different ways the colors can be applied to the text.
+
+- Higher Z values go DOWN, and lower Z values go UP. There is a constant, SURFACE_LEVEL_Z that defines the surface level.
