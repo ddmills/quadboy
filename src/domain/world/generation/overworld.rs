@@ -1,11 +1,14 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
 
 use bevy_ecs::resource::Resource;
 
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{Perlin, PoissonDiscSampler, PoissonDiscSettings},
-    domain::ZoneConstraints,
+    domain::{OverworldRoadGenerator, OverworldTownGenerator, ZoneConstraints},
     rendering::{zone_idx, zone_xyz},
 };
 
@@ -40,11 +43,37 @@ pub struct OverworldTown {
     pub name: String,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum RoadType {
+    DirtPath,
+    StoneRoad,
+    RoyalHighway,
+}
+
+#[derive(Clone, Debug)]
+pub struct RoadSegment {
+    pub road_type: RoadType,
+    pub length: f32,
+}
+
+#[derive(Default)]
+pub struct RoadNetwork {
+    pub edges: HashMap<(usize, usize), RoadSegment>, // (from_zone, to_zone) -> segment
+    pub nodes: HashSet<usize>,                       // All zones with roads
+}
+
+impl RoadNetwork {
+    pub fn has_road(&self, zone_idx: usize) -> bool {
+        self.nodes.contains(&zone_idx)
+    }
+}
+
 #[derive(Resource)]
 pub struct Overworld {
     perlin: Perlin,
     pub seed: u32,
     pub towns: HashMap<usize, OverworldTown>,
+    pub road_network: RoadNetwork,
 }
 
 impl Overworld {
@@ -53,9 +82,11 @@ impl Overworld {
             seed,
             perlin: Perlin::new(seed, 0.15, 2, 2.0),
             towns: HashMap::new(),
+            road_network: RoadNetwork::default(),
         };
 
-        overworld.generate_towns();
+        overworld.towns = OverworldTownGenerator::generate_towns(seed);
+        overworld.generate_roads();
         overworld
     }
 
@@ -100,55 +131,7 @@ impl Overworld {
         }
     }
 
-    fn generate_towns(&mut self) {
-        let settings = PoissonDiscSettings {
-            width: MAP_SIZE.0,
-            height: MAP_SIZE.1,
-            radius: 6.0,
-            seed: self.seed + 1000,
-        };
-
-        let mut sampler = PoissonDiscSampler::new(settings);
-        let candidates = sampler.all();
-
-        for (x, y) in candidates {
-            let idx = zone_idx(x, y, SURFACE_LEVEL_Z);
-            let zone_type = self.get_zone_type(idx);
-
-            if matches!(zone_type, ZoneType::Forest | ZoneType::Desert) {
-                let town = OverworldTown {
-                    name: self.generate_town_name(idx),
-                };
-                self.towns.insert(idx, town);
-            }
-        }
-    }
-
-    fn generate_town_name(&self, zone_idx: usize) -> String {
-        let names = [
-            "Millbrook",
-            "Stonehaven",
-            "Greenfield",
-            "Riverside",
-            "Oakenford",
-            "Thornhill",
-            "Redrock",
-            "Goldleaf",
-            "Ironhold",
-            "Windhaven",
-            "Sundale",
-            "Moonshire",
-            "Starfall",
-            "Drakemoor",
-            "Wolfsburg",
-            "Eaglerest",
-            "Lionheart",
-            "Bearwood",
-            "Foxhollow",
-            "Ravencliff",
-        ];
-
-        let index = (zone_idx + self.seed as usize) % names.len();
-        names[index].to_string()
+    fn generate_roads(&mut self) {
+        self.road_network = OverworldRoadGenerator::generate_roads(&self.towns, self.seed);
     }
 }

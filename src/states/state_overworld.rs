@@ -72,6 +72,7 @@ fn render_overworld_map(
                 && SURFACE_LEVEL_Z == player_zone_pos.2;
 
             let has_town = ozone.town.is_some();
+            let has_road = overworld.road_network.has_road(idx);
 
             let (glyph, fg1, fg2, bg) = if has_town {
                 (
@@ -80,12 +81,16 @@ fn render_overworld_map(
                     Palette::Yellow,
                     if is_player_zone {
                         Palette::Red
+                    } else if has_road {
+                        Palette::Brown
                     } else {
                         Palette::Black
                     },
                 )
             } else if is_player_zone {
                 (zone_glyph, zone_fg1, zone_fg1, Palette::Red)
+            } else if has_road {
+                (zone_glyph, zone_fg1, zone_fg1, Palette::Brown)
             } else {
                 (zone_glyph, zone_fg1, zone_fg1, Palette::Black)
             };

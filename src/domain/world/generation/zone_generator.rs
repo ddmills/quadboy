@@ -72,7 +72,7 @@ pub struct ZoneConstraints {
 pub enum ZoneConstraintType {
     None,
     River,
-    Footpath,
+    Road,
     StairDown,
     RockWall,
 }
