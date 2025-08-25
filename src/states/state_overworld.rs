@@ -60,7 +60,7 @@ fn render_overworld_map(
             let idx = zone_idx(x, y, SURFACE_LEVEL_Z);
             let ozone = overworld.get_overworld_zone(idx);
 
-            let (glyph_char, fg1) = match ozone.zone_type {
+            let (zone_glyph, zone_fg1) = match ozone.zone_type {
                 ZoneType::OpenAir => (16, Palette::Blue),
                 ZoneType::Forest => (1, Palette::Green),
                 ZoneType::Desert => (33, Palette::Yellow),
@@ -70,16 +70,28 @@ fn render_overworld_map(
             let is_player_zone = x == player_zone_pos.0
                 && y == player_zone_pos.1
                 && SURFACE_LEVEL_Z == player_zone_pos.2;
-            let bg_color = if is_player_zone {
-                Palette::Red
+
+            let has_town = ozone.town.is_some();
+
+            let (glyph, fg1, fg2, bg) = if has_town {
+                (
+                    8,
+                    Palette::Brown,
+                    Palette::Yellow,
+                    if is_player_zone {
+                        Palette::Red
+                    } else {
+                        Palette::Black
+                    },
+                )
+            } else if is_player_zone {
+                (zone_glyph, zone_fg1, zone_fg1, Palette::Red)
             } else {
-                Palette::Black
+                (zone_glyph, zone_fg1, zone_fg1, Palette::Black)
             };
 
             cmds.spawn((
-                Glyph::new(glyph_char, fg1, fg1)
-                    .layer(Layer::Ui)
-                    .bg(bg_color),
+                Glyph::new(glyph, fg1, fg2).layer(Layer::Ui).bg(bg),
                 Position::new_f32(map_start_x + x as f32, map_start_y + y as f32, 0.),
                 OverworldMapTile,
                 CleanupStateOverworld,

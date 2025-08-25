@@ -1,8 +1,13 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use bevy_ecs::resource::Resource;
 
-use crate::{cfg::SURFACE_LEVEL_Z, common::Perlin, domain::ZoneConstraints, rendering::zone_xyz};
+use crate::{
+    cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
+    common::{Perlin, PoissonDiscSampler, PoissonDiscSettings},
+    domain::ZoneConstraints,
+    rendering::{zone_idx, zone_xyz},
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ZoneType {
@@ -27,20 +32,31 @@ pub struct OverworldZone {
     pub zone_idx: usize,
     pub zone_type: ZoneType,
     pub constraints: ZoneConstraints,
+    pub town: Option<OverworldTown>,
+}
+
+#[derive(Clone)]
+pub struct OverworldTown {
+    pub name: String,
 }
 
 #[derive(Resource)]
 pub struct Overworld {
     perlin: Perlin,
     pub seed: u32,
+    pub towns: HashMap<usize, OverworldTown>,
 }
 
 impl Overworld {
     pub fn new(seed: u32) -> Self {
-        Self {
+        let mut overworld = Self {
             seed,
             perlin: Perlin::new(seed, 0.15, 2, 2.0),
-        }
+            towns: HashMap::new(),
+        };
+
+        overworld.generate_towns();
+        overworld
     }
 
     pub fn get_overworld_zone(&mut self, zone_idx: usize) -> OverworldZone {
@@ -48,6 +64,7 @@ impl Overworld {
             zone_idx,
             zone_type: self.get_zone_type(zone_idx),
             constraints: self.get_zone_constraints(zone_idx),
+            town: self.towns.get(&zone_idx).cloned(),
         }
     }
 
@@ -81,5 +98,57 @@ impl Overworld {
             up: vec![],
             down: vec![],
         }
+    }
+
+    fn generate_towns(&mut self) {
+        let settings = PoissonDiscSettings {
+            width: MAP_SIZE.0,
+            height: MAP_SIZE.1,
+            radius: 6.0,
+            seed: self.seed + 1000,
+        };
+
+        let mut sampler = PoissonDiscSampler::new(settings);
+        let candidates = sampler.all();
+
+        for (x, y) in candidates {
+            let idx = zone_idx(x, y, SURFACE_LEVEL_Z);
+            let zone_type = self.get_zone_type(idx);
+
+            if matches!(zone_type, ZoneType::Forest | ZoneType::Desert) {
+                let town = OverworldTown {
+                    name: self.generate_town_name(idx),
+                };
+                self.towns.insert(idx, town);
+            }
+        }
+    }
+
+    fn generate_town_name(&self, zone_idx: usize) -> String {
+        let names = [
+            "Millbrook",
+            "Stonehaven",
+            "Greenfield",
+            "Riverside",
+            "Oakenford",
+            "Thornhill",
+            "Redrock",
+            "Goldleaf",
+            "Ironhold",
+            "Windhaven",
+            "Sundale",
+            "Moonshire",
+            "Starfall",
+            "Drakemoor",
+            "Wolfsburg",
+            "Eaglerest",
+            "Lionheart",
+            "Bearwood",
+            "Foxhollow",
+            "Ravencliff",
+        ];
+
+        let index = (zone_idx + self.seed as usize) % names.len();
+        names[index].to_string()
     }
 }
