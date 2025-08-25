@@ -12,7 +12,7 @@ use crate::{
 #[derive(Resource, Default)]
 pub struct Mouse {
     pub px: (usize, usize),
-    pub local: (f32, f32),
+    pub ui: (f32, f32),
     pub world: (f32, f32),
     pub uv: (f32, f32),
 }
@@ -66,20 +66,20 @@ pub fn update_mouse(
         (uv.1 * target_size.1 as f32) as usize,
     );
 
-    let local = (
+    let ui = (
         (px.0 as f32 / TILE_SIZE_F32.0).clamp(0., screen.tile_w as f32),
         (px.1 as f32 / TILE_SIZE_F32.1).clamp(0., screen.tile_w as f32),
     );
 
     let world = (
-        (camera.x + local.0 - layout.game_panel.x as f32)
+        (camera.x + ui.0 - layout.game_panel.x as f32)
             .clamp(0., (MAP_SIZE.0 * ZONE_SIZE.0 - 1) as f32 + 0.99),
-        (camera.y + local.1 - layout.game_panel.y as f32)
+        (camera.y + ui.1 - layout.game_panel.y as f32)
             .clamp(0., (MAP_SIZE.1 * ZONE_SIZE.1 - 1) as f32 + 0.99),
     );
 
     cursor.px = px;
-    cursor.local = local;
+    cursor.ui = ui;
     cursor.uv = uv;
     cursor.world = world;
 }

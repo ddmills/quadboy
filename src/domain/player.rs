@@ -240,8 +240,8 @@ pub fn render_player_debug(
         zone_pos.1,
         zone_pos.2,
         zone_idx,
-        cursor.world.0.floor(),
-        cursor.world.1.floor(),
+        cursor.ui.0,
+        cursor.ui.1,
         q_glyphs.iter().len()
     );
 }
