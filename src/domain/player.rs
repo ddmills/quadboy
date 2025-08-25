@@ -77,6 +77,10 @@ pub fn player_input(
         game_state.next = GameState::Pause;
     }
 
+    if keys.is_pressed(KeyCode::M) {
+        game_state.next = GameState::Overworld;
+    }
+
     if keys.is_pressed(KeyCode::G) {
         Prefabs::spawn(&mut cmds, SpawnConfig::new(PrefabId::Boulder, (x, y, z)));
     }

@@ -29,8 +29,8 @@ use crate::{
     states::{
         CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
         ExploreStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin,
-        PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin, update_app_states,
-        update_game_states,
+        OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin,
+        update_app_states, update_game_states,
     },
 };
 
@@ -92,6 +92,7 @@ async fn main() {
         .add_plugin(NewGameStatePlugin)
         .add_plugin(LoadGameStatePlugin)
         .add_plugin(ExploreStatePlugin)
+        .add_plugin(OverworldStatePlugin)
         .add_plugin(PauseStatePlugin)
         .register_event::<LoadGameResult>()
         .register_event::<LoadZoneEvent>()

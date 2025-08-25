@@ -46,7 +46,7 @@ impl NewGameCommand {
                 starting_position.clone(),
                 Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
                 Player,
-                Vision::new(20),
+                Vision::new(40),
                 ApplyVisibilityEffects,
                 Collider,
                 Energy::new(-10),

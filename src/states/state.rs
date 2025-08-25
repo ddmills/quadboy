@@ -49,6 +49,7 @@ pub enum GameState {
     NewGame,
     Explore,
     Pause,
+    Overworld,
 }
 
 pub fn in_game_state(state: GameState) -> impl Fn(Res<CurrentGameState>) -> bool {

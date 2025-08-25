@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use bevy_ecs::resource::Resource;
 
-use crate::{common::Perlin, rendering::zone_xyz};
+use crate::{cfg::SURFACE_LEVEL_Z, common::Perlin, domain::ZoneConstraints, rendering::zone_xyz};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ZoneType {
@@ -26,6 +26,7 @@ impl Display for ZoneType {
 pub struct OverworldZone {
     pub zone_idx: usize,
     pub zone_type: ZoneType,
+    pub constraints: ZoneConstraints,
 }
 
 #[derive(Resource)]
@@ -43,25 +44,42 @@ impl Overworld {
     }
 
     pub fn get_overworld_zone(&mut self, zone_idx: usize) -> OverworldZone {
-        let (x, y, z) = zone_xyz(zone_idx);
-
-        let zone_type = if z > 3 {
-            ZoneType::OpenAir
-        } else if z < 3 {
-            ZoneType::Cavern
-        } else {
-            let noise = self.perlin.get(x as f32, y as f32);
-
-            if noise < 0.4 {
-                ZoneType::Desert
-            } else {
-                ZoneType::Forest
-            }
-        };
-
         OverworldZone {
             zone_idx,
-            zone_type,
+            zone_type: self.get_zone_type(zone_idx),
+            constraints: self.get_zone_constraints(zone_idx),
+        }
+    }
+
+    pub fn get_zone_type(&mut self, zone_idx: usize) -> ZoneType {
+        let (x, y, z) = zone_xyz(zone_idx);
+
+        if z > SURFACE_LEVEL_Z {
+            return ZoneType::OpenAir;
+        }
+
+        if z < SURFACE_LEVEL_Z {
+            return ZoneType::Cavern;
+        }
+
+        let noise = self.perlin.get(x as f32, y as f32);
+
+        if noise < 0.4 {
+            return ZoneType::Desert;
+        }
+
+        ZoneType::Forest
+    }
+
+    fn get_zone_constraints(&self, zone_idx: usize) -> ZoneConstraints {
+        ZoneConstraints {
+            idx: zone_idx,
+            south: vec![],
+            west: vec![],
+            east: vec![],
+            north: vec![],
+            up: vec![],
+            down: vec![],
         }
     }
 }
