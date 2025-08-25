@@ -31,14 +31,14 @@ pub struct OverworldMapTile;
 
 fn on_enter_overworld(mut cmds: Commands) {
     cmds.spawn((
-        Text::new("OVERWORLD MAP").bg(Palette::Black),
+        Text::new("{Y|OVERWORLD MAP}").bg(Palette::Black),
         Position::new_f32(2., 1., 0.),
         CleanupStateOverworld,
     ));
 
     cmds.spawn((
-        Text::new("({Y|ESC}) BACK TO EXPLORE").bg(Palette::Black),
-        Position::new_f32(2., MAP_SIZE.1 as f32 + 4., 0.),
+        Text::new("({Y|M}) BACK TO EXPLORE").bg(Palette::Black),
+        Position::new_f32(2., MAP_SIZE.1 as f32 + 3., 0.),
         CleanupStateOverworld,
     ));
 }
@@ -49,7 +49,7 @@ fn render_overworld_map(
     player_pos: Res<PlayerPosition>,
 ) {
     let map_start_x = 2.0;
-    let map_start_y = 3.0;
+    let map_start_y = 2.0;
 
     let player_world = player_pos.world();
     let player_zone_idx = world_to_zone_idx(player_world.0, player_world.1, player_world.2);
@@ -89,7 +89,7 @@ fn render_overworld_map(
 }
 
 fn listen_for_inputs(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
-    if keys.is_pressed(KeyCode::Escape) {
+    if keys.is_pressed(KeyCode::M) {
         game_state.next = GameState::Explore;
     }
 }
