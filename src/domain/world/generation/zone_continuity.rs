@@ -18,7 +18,7 @@ pub struct ZoneContinuity {
 pub enum ZoneConstraintType {
     None,
     Water,
-    Road(crate::domain::RoadType),
+    Road(RoadType),
     StairDown,
     Rock,
 }

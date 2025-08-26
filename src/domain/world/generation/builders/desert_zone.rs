@@ -21,7 +21,7 @@ impl BiomeBuilder for DesertBiomeBuilder {
                     if rand.bool(0.01) {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Cactus, wpos));
                     }
-                    
+
                     if rand.bool(0.005) {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Bandit, wpos));
                     }

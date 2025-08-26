@@ -3,10 +3,7 @@ use macroquad::prelude::trace;
 
 use crate::{
     common::Grid,
-    domain::{
-        Overworld,
-        SpawnConfig, Terrain, ZoneFactory,
-    },
+    domain::{Overworld, SpawnConfig, Terrain, ZoneFactory},
 };
 
 pub trait BiomeBuilder {

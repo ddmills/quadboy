@@ -1,7 +1,8 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::Rand,
-    domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneFactory}, rendering::zone_local_to_world,
+    domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneFactory},
+    rendering::zone_local_to_world,
 };
 
 pub struct CavernBiomeBuilder;
@@ -20,7 +21,7 @@ impl BiomeBuilder for CavernBiomeBuilder {
                     if rand.bool(0.01) {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Boulder, wpos));
                     }
-                    
+
                     if rand.bool(0.005) {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Bandit, wpos));
                     }

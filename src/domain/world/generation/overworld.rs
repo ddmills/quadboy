@@ -46,7 +46,7 @@ pub struct OverworldTown {
     pub name: String,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum RoadType {
     Footpath,
     Road,
