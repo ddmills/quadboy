@@ -8,7 +8,10 @@ use bevy_ecs::resource::Resource;
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{Perlin, PoissonDiscSampler, PoissonDiscSettings},
-    domain::{get_zone_constraints, OverworldRoadGenerator, OverworldTownGenerator, ZoneConstraintType, ZoneContinuity},
+    domain::{
+        OverworldRoadGenerator, OverworldTownGenerator, ZoneConstraintType, ZoneContinuity,
+        get_zone_constraints,
+    },
     rendering::{zone_idx, zone_xyz},
 };
 
@@ -104,7 +107,7 @@ impl Overworld {
         OverworldZone {
             zone_idx,
             zone_type: self.get_zone_type(zone_idx),
-            constraints: get_zone_constraints(&self, zone_idx),
+            constraints: get_zone_constraints(self, zone_idx),
             town: self.towns.get(&zone_idx).cloned(),
         }
     }

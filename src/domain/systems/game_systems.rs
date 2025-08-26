@@ -49,7 +49,7 @@ fn exec_game_systems(world: &mut World) {
 pub fn game_loop(world: &mut World) {
     telemetry::begin_zone("game_loop");
     let mut iterations = 0;
-    const MAX_ITERATIONS: u32 = 100;
+    const MAX_ITERATIONS: u32 = 200;
 
     loop {
         exec_game_systems(world);
@@ -63,7 +63,7 @@ pub fn game_loop(world: &mut World) {
 
         iterations += 1;
         if iterations >= MAX_ITERATIONS {
-            trace!("hit max  iter");
+            trace!("hit max iter");
             break;
         }
     }

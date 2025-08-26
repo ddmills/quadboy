@@ -109,7 +109,11 @@ Important serializable components:
 - Zone::entities is a HashGrid for spatial indexing of entities
 - Use `Zone::get_at()` to get entities at world coordinates
 - Use `Zone::get_neighbors()` to get entities in cardinal directions
-- Always check if a zone is loaded before allowing entity movement into it
+- Always check if a zone is loaded before allowing entity movement into i
+- +Y is SOUTH, -Y is NORTH
+- +X is EAST, -X is WEST
+- +Z is DOWN, -Z is UP
+- SURFACE_LEVEL_Z is the z-level of the ground. above = open air, below = caverns.
 
 ## Prefab System
 The game uses a command-based prefab system for entity spawning:
@@ -190,5 +194,3 @@ The game uses a command-based prefab system for entity spawning:
 - Text can be stylized in the game, for example: `{R-G-B-y repeat|Hello World}` will output the text "Hello World" in Red, Green, Blue, and Dark Yellow colors, repeating.
 - The colors are defined in `palette.rs`. `get_seq_color` is the mapping between a character and the color.
 - `PaletteSequenceType` are different ways the colors can be applied to the text.
-
-- Higher Z values go DOWN, and lower Z values go UP. There is a constant, SURFACE_LEVEL_Z that defines the surface level.

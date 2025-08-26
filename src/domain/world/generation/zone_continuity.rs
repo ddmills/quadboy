@@ -1,4 +1,9 @@
-use crate::{cfg::{MAP_SIZE, SURFACE_LEVEL_Z, ZONE_SIZE}, common::Direction, domain::{Overworld, RoadType}, rendering::{zone_idx as calculate_zone_idx, zone_xyz}};
+use crate::{
+    cfg::{MAP_SIZE, SURFACE_LEVEL_Z, ZONE_SIZE},
+    common::Direction,
+    domain::{Overworld, RoadType},
+    rendering::{zone_idx as calculate_zone_idx, zone_xyz},
+};
 
 pub struct ZoneContinuity {
     pub north: ZoneEdgeConstraints,
@@ -20,13 +25,13 @@ pub enum ZoneConstraintType {
 
 pub fn get_zone_constraints(overworld: &Overworld, zone_idx: usize) -> ZoneContinuity {
     let (x, y, z) = zone_xyz(zone_idx);
-    
+
     let zone_above = if z > 0 {
         Some(calculate_zone_idx(x, y, z - 1))
     } else {
         None
     };
-    
+
     ZoneContinuity {
         north: ZoneEdgeConstraints(get_edge_continuity(overworld, zone_idx, Direction::North)),
         south: ZoneEdgeConstraints(get_edge_continuity(overworld, zone_idx, Direction::South)),
@@ -41,7 +46,6 @@ pub fn get_zone_constraints(overworld: &Overworld, zone_idx: usize) -> ZoneConti
     }
 }
 
-
 pub struct ZoneEdgeConstraints(pub Vec<ZoneConstraintType>);
 
 pub struct PositionalConstraint {
@@ -50,31 +54,35 @@ pub struct PositionalConstraint {
 }
 pub struct ZoneVerticalConstraints(pub Vec<PositionalConstraint>);
 
-pub fn get_edge_continuity(overworld: &Overworld, zone_idx: usize, direction: Direction) -> Vec<ZoneConstraintType> {
+pub fn get_edge_continuity(
+    overworld: &Overworld,
+    zone_idx: usize,
+    direction: Direction,
+) -> Vec<ZoneConstraintType> {
     let (x, y, z) = zone_xyz(zone_idx);
-    
+
     let neighbor_idx = match direction {
         Direction::North => {
-            if y + 1 < MAP_SIZE.1 {
-                Some(calculate_zone_idx(x, y + 1, z))
-            } else {
-                None
-            }
-        },
-        Direction::South => {
             if y > 0 {
                 Some(calculate_zone_idx(x, y - 1, z))
             } else {
                 None
             }
-        },
+        }
+        Direction::South => {
+            if y + 1 < MAP_SIZE.1 {
+                Some(calculate_zone_idx(x, y + 1, z))
+            } else {
+                None
+            }
+        }
         Direction::East => {
             if x + 1 < MAP_SIZE.0 {
                 Some(calculate_zone_idx(x + 1, y, z))
             } else {
                 None
             }
-        },
+        }
         Direction::West => {
             if x > 0 {
                 Some(calculate_zone_idx(x - 1, y, z))
@@ -83,22 +91,26 @@ pub fn get_edge_continuity(overworld: &Overworld, zone_idx: usize, direction: Di
             }
         }
     };
-    
+
     let edge_length = match direction {
         Direction::North | Direction::South => ZONE_SIZE.0,
         Direction::East | Direction::West => ZONE_SIZE.1,
     };
-    
+
     let mut edge_constraints = vec![ZoneConstraintType::None; edge_length];
-    
+
     if let Some(neighbor) = neighbor_idx {
         if overworld.road_network.has_road(zone_idx) && overworld.road_network.has_road(neighbor) {
             // Get the road type from the road network
-            if let Some(road_segment) = overworld.road_network.edges.get(&(zone_idx, neighbor))
-                .or_else(|| overworld.road_network.edges.get(&(neighbor, zone_idx))) {
+            if let Some(road_segment) = overworld
+                .road_network
+                .edges
+                .get(&(zone_idx, neighbor))
+                .or_else(|| overworld.road_network.edges.get(&(neighbor, zone_idx)))
+            {
                 let middle = edge_length / 2;
                 let width = road_segment.road_type.width();
-                
+
                 // Place road constraints based on width
                 for i in 0..width {
                     let pos = middle + i - (width / 2);
@@ -111,7 +123,7 @@ pub fn get_edge_continuity(overworld: &Overworld, zone_idx: usize, direction: Di
     } else {
         edge_constraints.fill(ZoneConstraintType::Rock);
     }
-    
+
     edge_constraints
 }
 
@@ -126,7 +138,7 @@ pub fn get_vertical_continuity(_overworld: &Overworld, zone_idx: usize) -> ZoneV
     if z + 1 < MAP_SIZE.2 {
         let below_z = z + 1;
         let below_is_cavern = below_z > SURFACE_LEVEL_Z;
-        
+
         if below_is_cavern {
             constraints.push(PositionalConstraint {
                 position: (ZONE_SIZE.0 / 2, ZONE_SIZE.1 / 2),

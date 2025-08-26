@@ -1,27 +1,31 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::Grid,
-    domain::{OverworldZone, Terrain, ZoneBuilder, ZoneData},
+    common::Rand,
+    domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneFactory}, rendering::zone_local_to_world,
 };
 
-pub struct CavernZoneBuilder;
+pub struct CavernBiomeBuilder;
 
-impl ZoneBuilder for CavernZoneBuilder {
-    fn build(&mut self, ozone: OverworldZone) -> ZoneData {
-        let zone_idx = ozone.zone_idx;
-        let terrain = Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, Terrain::Dirt);
-        let entities = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| vec![]);
+impl BiomeBuilder for CavernBiomeBuilder {
+    fn build(&mut self, zone: &mut ZoneFactory) {
+        let mut rand = Rand::seed(zone.zone_idx as u32);
 
-        let mut zone_data = ZoneData {
-            zone_idx,
-            terrain,
-            entities,
-        };
+        for x in 0..ZONE_SIZE.0 {
+            for y in 0..ZONE_SIZE.1 {
+                if !zone.is_locked_tile(x, y) {
+                    zone.set_terrain(x, y, Terrain::Dirt);
 
-        zone_data.apply_vertical_constraints(&ozone.constraints.up);
-        zone_data.apply_up_vertical_constraints(&ozone.constraints.down);
-        zone_data.apply_edge_constraints(&ozone.constraints.north, &ozone.constraints.south, &ozone.constraints.east, &ozone.constraints.west);
+                    let wpos = zone_local_to_world(zone.zone_idx, x, y);
 
-        zone_data
+                    if rand.bool(0.01) {
+                        zone.push_entity(x, y, SpawnConfig::new(PrefabId::Boulder, wpos));
+                    }
+                    
+                    if rand.bool(0.005) {
+                        zone.push_entity(x, y, SpawnConfig::new(PrefabId::Bandit, wpos));
+                    }
+                }
+            }
+        }
     }
 }

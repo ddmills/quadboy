@@ -81,22 +81,22 @@ impl OverworldRoadGenerator {
         let road_type = Self::determine_road_type(distance);
 
         let intermediate_zones = Self::find_astar_path(zone1, zone2, seed);
-        
+
         // Create a full path including start and end zones
         let mut full_path = vec![zone1];
         full_path.extend(intermediate_zones);
         full_path.push(zone2);
-        
+
         // Create edges between consecutive zones in the path
         for window in full_path.windows(2) {
             let from = window[0];
             let to = window[1];
-            
+
             let segment = RoadSegment {
                 road_type,
                 length: 1.0, // Distance between adjacent zones is always 1
             };
-            
+
             network.edges.insert((from, to), segment.clone());
             network.edges.insert((to, from), segment);
             network.nodes.insert(from);

@@ -1,27 +1,18 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::Grid,
-    domain::{OverworldZone, Terrain, ZoneBuilder, ZoneData},
+    domain::{BiomeBuilder, Terrain, ZoneFactory},
 };
 
-pub struct OpenAirZoneBuilder;
+pub struct OpenAirBiomeBuilder;
 
-impl ZoneBuilder for OpenAirZoneBuilder {
-    fn build(&mut self, ozone: OverworldZone) -> ZoneData {
-        let zone_idx = ozone.zone_idx;
-        let terrain = Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, Terrain::OpenAir);
-        let entities = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| vec![]);
-
-        let mut zone_data = ZoneData {
-            zone_idx,
-            terrain,
-            entities,
-        };
-
-        zone_data.apply_vertical_constraints(&ozone.constraints.up);
-        zone_data.apply_up_vertical_constraints(&ozone.constraints.down);
-        zone_data.apply_edge_constraints(&ozone.constraints.north, &ozone.constraints.south, &ozone.constraints.east, &ozone.constraints.west);
-
-        zone_data
+impl BiomeBuilder for OpenAirBiomeBuilder {
+    fn build(&mut self, zone: &mut ZoneFactory) {
+        for x in 0..ZONE_SIZE.0 {
+            for y in 0..ZONE_SIZE.1 {
+                if !zone.is_locked_tile(x, y) {
+                    zone.set_terrain(x, y, Terrain::OpenAir);
+                }
+            }
+        }
     }
 }
