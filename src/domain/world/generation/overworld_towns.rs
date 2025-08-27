@@ -3,63 +3,38 @@ use std::collections::HashMap;
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{PoissonDiscSampler, PoissonDiscSettings},
-    domain::{biome::BiomeType, world::generation::OverworldTown},
-    rendering::{zone_idx, zone_xyz},
+    domain::world::generation::OverworldTown,
+    rendering::zone_idx,
 };
 
 pub struct OverworldTownGenerator;
 
 impl OverworldTownGenerator {
-    pub fn generate_towns(seed: u32) -> HashMap<usize, OverworldTown> {
-        let mut towns = HashMap::new();
+    pub fn generate_towns(seed: u32) -> HashMap<usize, HashMap<usize, OverworldTown>> {
+        let mut layers = HashMap::new();
 
-        let settings = PoissonDiscSettings {
-            width: MAP_SIZE.0,
-            height: MAP_SIZE.1,
-            radius: 6.0,
-            seed: seed + 1000,
-        };
+        for z in SURFACE_LEVEL_Z..MAP_SIZE.2 {
+            let mut towns = HashMap::new();
+            let mut sampler = PoissonDiscSampler::new(PoissonDiscSettings {
+                width: MAP_SIZE.0,
+                height: MAP_SIZE.1,
+                radius: 6.0 + z as f32,
+                seed: seed + 1000 + z as u32,
+            });
+            let candidates = sampler.all();
 
-        let mut sampler = PoissonDiscSampler::new(settings);
-        let candidates = sampler.all();
-
-        for (x, y) in candidates {
-            let idx = zone_idx(x, y, SURFACE_LEVEL_Z);
-            let zone_type = Self::get_zone_type_at(idx, seed);
-
-            if matches!(zone_type, BiomeType::Forest | BiomeType::Desert) {
+            for (x, y) in candidates {
+                let idx = zone_idx(x, y, z);
                 let town = OverworldTown {
                     name: Self::generate_town_name(idx, seed),
                 };
                 towns.insert(idx, town);
             }
+
+            layers.insert(z, towns);
         }
 
-        towns
-    }
-
-    fn get_zone_type_at(zone_idx: usize, seed: u32) -> BiomeType {
-        // This duplicates the logic from Overworld::get_zone_type but with seed parameter
-        use crate::common::Perlin;
-
-        let (x, y, z) = zone_xyz(zone_idx);
-        let mut perlin = Perlin::new(seed, 0.15, 2, 2.0);
-
-        if z > SURFACE_LEVEL_Z {
-            return BiomeType::OpenAir;
-        }
-
-        if z < SURFACE_LEVEL_Z {
-            return BiomeType::Cavern;
-        }
-
-        let noise = perlin.get(x as f32, y as f32);
-
-        if noise < 0.4 {
-            return BiomeType::Desert;
-        }
-
-        BiomeType::Forest
+        layers
     }
 
     fn generate_town_name(zone_idx: usize, seed: u32) -> String {

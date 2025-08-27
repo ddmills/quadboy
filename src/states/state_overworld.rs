@@ -4,10 +4,10 @@ use macroquad::input::KeyCode;
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::Palette,
-    domain::{BiomeType, Overworld, PlayerPosition},
+    domain::{BiomeType, Overworld, PlayerPosition, RoadNetwork},
     engine::{KeyInput, Mouse, Plugin},
-    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
-    states::{CurrentGameState, GameStatePlugin, cleanup_system},
+    rendering::{world_to_zone_idx, zone_idx, zone_xyz, Glyph, Layer, Position, Text, Visibility},
+    states::{cleanup_system, CurrentGameState, GameStatePlugin},
 };
 
 use super::GameState;
@@ -33,6 +33,7 @@ pub struct OverworldMapTile;
 pub struct OverworldDebugText;
 
 fn on_enter_overworld(mut cmds: Commands) {
+    
     cmds.spawn((
         Text::new("{Y|OVERWORLD MAP}").bg(Palette::Black),
         Position::new_f32(2., 1., 0.),
@@ -40,15 +41,15 @@ fn on_enter_overworld(mut cmds: Commands) {
     ));
 
     cmds.spawn((
-        Text::new("({Y|M}) BACK TO EXPLORE").bg(Palette::Black),
-        Position::new_f32(2., MAP_SIZE.1 as f32 + 3., 0.),
+        Text::new("DEBUG").bg(Palette::Black),
+        Position::new_f32(2., 1.5, 0.),
+        OverworldDebugText,
         CleanupStateOverworld,
     ));
 
     cmds.spawn((
-        Text::new("").bg(Palette::Black),
-        Position::new_f32(2., 1.5, 0.),
-        OverworldDebugText,
+        Text::new("({Y|M}) BACK TO EXPLORE").bg(Palette::Black),
+        Position::new_f32(2., MAP_SIZE.1 as f32 + 3., 0.),
         CleanupStateOverworld,
     ));
 }
@@ -67,7 +68,7 @@ fn render_overworld_map(
 
     for x in 0..MAP_SIZE.0 {
         for y in 0..MAP_SIZE.1 {
-            let idx = zone_idx(x, y, SURFACE_LEVEL_Z);
+            let idx = zone_idx(x, y, player_world.2);
             let ozone = overworld.get_overworld_zone(idx);
 
             let (zone_glyph, zone_fg1) = match ozone.biome_type {
@@ -77,12 +78,10 @@ fn render_overworld_map(
                 BiomeType::Cavern => (129, Palette::Gray),
             };
 
-            let is_player_zone = x == player_zone_pos.0
-                && y == player_zone_pos.1
-                && SURFACE_LEVEL_Z == player_zone_pos.2;
+            let is_player_zone = x == player_zone_pos.0 && y == player_zone_pos.1;
 
             let has_town = ozone.town.is_some();
-            let has_road = overworld.road_network.has_road(idx);
+            let has_road = overworld.zone_has_road(idx);
 
             let (glyph, fg1, fg2, bg) = if has_town {
                 (
@@ -125,6 +124,7 @@ fn display_overworld_debug_at_mouse(
     mouse: Res<Mouse>,
     mut overworld: ResMut<Overworld>,
     mut q_debug_text: Query<(&mut Text, &mut Visibility), With<OverworldDebugText>>,
+    player_pos: Res<PlayerPosition>,
 ) {
     let Ok((mut text, mut visibility)) = q_debug_text.single_mut() else {
         return;
@@ -149,20 +149,12 @@ fn display_overworld_debug_at_mouse(
 
     let zone_x = mouse_map_x.floor() as usize;
     let zone_y = mouse_map_y.floor() as usize;
-    let zone_idx = zone_idx(zone_x, zone_y, SURFACE_LEVEL_Z);
+    let zone_z = player_pos.z as usize;
+    let zone_idx = zone_idx(zone_x, zone_y, zone_z);
     let ozone = overworld.get_overworld_zone(zone_idx);
 
-    let has_road = overworld.road_network.has_road(zone_idx);
-    let road_connections = if has_road {
-        overworld
-            .road_network
-            .edges
-            .iter()
-            .filter(|((from, _), _)| *from == zone_idx)
-            .count()
-    } else {
-        0
-    };
+    let has_road = overworld.zone_has_road(zone_idx);
+    let road_connections = 0;
 
     let town_value = if let Some(town) = &ozone.town {
         town.name.clone()

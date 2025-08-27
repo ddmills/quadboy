@@ -6,10 +6,10 @@ use crate::{
 };
 
 pub struct ZoneContinuity {
-    pub north: ZoneEdgeConstraints,
-    pub south: ZoneEdgeConstraints,
-    pub east: ZoneEdgeConstraints,
-    pub west: ZoneEdgeConstraints,
+    pub north: ZoneEdge,
+    pub south: ZoneEdge,
+    pub east: ZoneEdge,
+    pub west: ZoneEdge,
     pub up: ZoneVerticalConstraints,
     pub down: ZoneVerticalConstraints,
 }
@@ -33,10 +33,10 @@ pub fn get_zone_constraints(overworld: &Overworld, zone_idx: usize) -> ZoneConti
     };
 
     ZoneContinuity {
-        north: ZoneEdgeConstraints(get_edge_continuity(overworld, zone_idx, Direction::North)),
-        south: ZoneEdgeConstraints(get_edge_continuity(overworld, zone_idx, Direction::South)),
-        east: ZoneEdgeConstraints(get_edge_continuity(overworld, zone_idx, Direction::East)),
-        west: ZoneEdgeConstraints(get_edge_continuity(overworld, zone_idx, Direction::West)),
+        north: ZoneEdge(get_edge_continuity(overworld, zone_idx, Direction::North)),
+        south: ZoneEdge(get_edge_continuity(overworld, zone_idx, Direction::South)),
+        east: ZoneEdge(get_edge_continuity(overworld, zone_idx, Direction::East)),
+        west: ZoneEdge(get_edge_continuity(overworld, zone_idx, Direction::West)),
         up: get_vertical_continuity(overworld, zone_idx),
         down: if let Some(above_idx) = zone_above {
             get_vertical_continuity(overworld, above_idx)
@@ -46,7 +46,7 @@ pub fn get_zone_constraints(overworld: &Overworld, zone_idx: usize) -> ZoneConti
     }
 }
 
-pub struct ZoneEdgeConstraints(pub Vec<ZoneConstraintType>);
+pub struct ZoneEdge(pub Vec<ZoneConstraintType>);
 
 pub struct PositionalConstraint {
     pub position: (usize, usize),
@@ -100,25 +100,23 @@ pub fn get_edge_continuity(
     let mut edge_constraints = vec![ZoneConstraintType::None; edge_length];
 
     if let Some(neighbor) = neighbor_idx {
-        if overworld.road_network.has_road(zone_idx) && overworld.road_network.has_road(neighbor) {
-            // Get the road type from the road network
-            if let Some(road_segment) = overworld
-                .road_network
-                .edges
-                .get(&(zone_idx, neighbor))
-                .or_else(|| overworld.road_network.edges.get(&(neighbor, zone_idx)))
-            {
-                let middle = edge_length / 2;
-                let width = road_segment.road_type.width();
+        if overworld.zone_has_road(zone_idx) && overworld.zone_has_road(neighbor) {
+            if let Some(road_network) = overworld.get_road_network(z) {
+                if let Some(road_segment) = road_network.edges
+                    .get(&(zone_idx, neighbor))
+                    .or_else(|| road_network.edges.get(&(neighbor, zone_idx)))
+                {
+                    let middle = edge_length / 2;
+                    let width = road_segment.road_type.width();
 
-                // Place road constraints based on width
-                for i in 0..width {
-                    let pos = middle + i - (width / 2);
-                    if pos < edge_constraints.len() {
-                        edge_constraints[pos] = ZoneConstraintType::Road(road_segment.road_type);
+                    for i in 0..width {
+                        let pos = middle + i - (width / 2);
+                        if pos < edge_constraints.len() {
+                            edge_constraints[pos] = ZoneConstraintType::Road(road_segment.road_type);
+                        }
                     }
                 }
-            }
+            };
         }
     } else {
         edge_constraints.fill(ZoneConstraintType::Rock);

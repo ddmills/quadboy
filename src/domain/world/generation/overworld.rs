@@ -47,7 +47,7 @@ pub struct RoadSegment {
     pub length: f32,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct RoadNetwork {
     pub edges: HashMap<(usize, usize), RoadSegment>,
     pub nodes: HashSet<usize>,
@@ -63,8 +63,8 @@ impl RoadNetwork {
 pub struct Overworld {
     perlin: Perlin,
     pub seed: u32,
-    pub towns: HashMap<usize, OverworldTown>,
-    pub road_network: RoadNetwork,
+    pub towns: HashMap<usize, HashMap<usize, OverworldTown>>,
+    pub road_networks: HashMap<usize, RoadNetwork>,
 }
 
 impl Overworld {
@@ -73,7 +73,7 @@ impl Overworld {
             seed,
             perlin: Perlin::new(seed, 0.15, 2, 2.0),
             towns: HashMap::new(),
-            road_network: RoadNetwork::default(),
+            road_networks: HashMap::new(),
         };
 
         overworld.towns = OverworldTownGenerator::generate_towns(seed);
@@ -82,11 +82,25 @@ impl Overworld {
     }
 
     pub fn get_overworld_zone(&mut self, zone_idx: usize) -> OverworldZone {
+        let (_, _, z) = zone_xyz(zone_idx);
         OverworldZone {
             zone_idx,
             biome_type: self.get_zone_type(zone_idx),
             constraints: get_zone_constraints(self, zone_idx),
-            town: self.towns.get(&zone_idx).cloned(),
+            town: self.towns.get(&z).and_then(|v| v.get(&zone_idx).cloned()),
+        }
+    }
+
+    pub fn get_road_network(&self, z: usize) -> Option<&RoadNetwork> {
+        self.road_networks.get(&z)
+    }
+
+    pub fn zone_has_road(&self, zone_idx: usize) -> bool {
+        let (_, _, z) = zone_xyz(zone_idx);
+
+        match self.road_networks.get(&z) {
+            Some(rn) => rn.has_road(zone_idx),
+            None => false,
         }
     }
 
@@ -111,6 +125,6 @@ impl Overworld {
     }
 
     fn generate_roads(&mut self) {
-        self.road_network = OverworldRoadGenerator::generate_roads(&self.towns, self.seed);
+        self.road_networks = OverworldRoadGenerator::generate_roads(&self.towns, self.seed);
     }
 }

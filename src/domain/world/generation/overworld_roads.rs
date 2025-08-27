@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use macroquad::prelude::trace;
+
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{
@@ -13,50 +15,58 @@ use crate::{
 pub struct OverworldRoadGenerator;
 
 impl OverworldRoadGenerator {
-    pub fn generate_roads(towns: &HashMap<usize, OverworldTown>, seed: u32) -> RoadNetwork {
-        let mut network = RoadNetwork::default();
+    pub fn generate_roads(layers: &HashMap<usize, HashMap<usize, OverworldTown>>, seed: u32) -> HashMap<usize, RoadNetwork> {
+        let mut networks = HashMap::new();
 
-        if towns.is_empty() {
-            return network;
-        }
+        for z in SURFACE_LEVEL_Z..MAP_SIZE.2 {
+            let towns = layers.get(&z).unwrap();
+            let mut network = RoadNetwork::default();
 
-        let town_positions: Vec<(usize, (usize, usize, usize))> = towns
-            .keys()
-            .map(|&zone_idx| {
-                let pos = zone_xyz(zone_idx);
-                (zone_idx, pos)
-            })
-            .collect();
+            if towns.is_empty() {
+                networks.insert(z, network);
+                continue;
+            }
 
-        // Connect each town to its nearest neighbors
-        for (town_idx, town_pos) in &town_positions {
-            let mut distances: Vec<(usize, f32)> = town_positions
-                .iter()
-                .filter(|(other_idx, _)| other_idx != town_idx)
-                .map(|(other_idx, other_pos)| {
-                    let distance = Self::calculate_distance(*town_pos, *other_pos);
-                    (*other_idx, distance)
+            let town_positions: Vec<(usize, (usize, usize, usize))> = towns
+                .keys()
+                .map(|&zone_idx| {
+                    let pos = zone_xyz(zone_idx);
+                    (zone_idx, pos)
                 })
                 .collect();
 
-            distances.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+            // Connect each town to its nearest neighbors
+            for (town_idx, town_pos) in &town_positions {
+                let mut distances: Vec<(usize, f32)> = town_positions
+                    .iter()
+                    .filter(|(other_idx, _)| other_idx != town_idx)
+                    .map(|(other_idx, other_pos)| {
+                        let distance = Self::calculate_distance(*town_pos, *other_pos);
+                        (*other_idx, distance)
+                    })
+                    .collect();
 
-            let max_connections = if distances.len() <= 3 {
-                distances.len()
-            } else {
-                3
-            };
-            let max_distance = 15.0; // Maximum distance to connect towns
+                distances.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-            for (other_idx, distance) in distances.into_iter().take(max_connections) {
-                if distance <= max_distance && !Self::has_connection(&network, *town_idx, other_idx)
-                {
-                    Self::add_road_connection(&mut network, *town_idx, other_idx, distance, seed);
+                let max_connections = if distances.len() <= 3 {
+                    distances.len()
+                } else {
+                    3
+                };
+                let max_distance = 20.0; // Maximum distance to connect towns
+
+                for (other_idx, distance) in distances.into_iter().take(max_connections) {
+                    if distance <= max_distance && !Self::has_connection(&network, *town_idx, other_idx)
+                    {
+                        Self::add_road_connection(&mut network, *town_idx, other_idx, distance, seed);
+                    }
                 }
             }
+
+            networks.insert(z, network);
         }
 
-        network
+        networks
     }
 
     fn calculate_distance(pos1: (usize, usize, usize), pos2: (usize, usize, usize)) -> f32 {
@@ -185,7 +195,7 @@ impl OverworldRoadGenerator {
 
         let mut zone_path = Vec::new();
         for &(x, y) in result.path.iter().skip(1).rev().skip(1) {
-            let zone_index = zone_idx(x, y, SURFACE_LEVEL_Z);
+            let zone_index = zone_idx(x, y, pos1.2);
             zone_path.push(zone_index);
         }
 
