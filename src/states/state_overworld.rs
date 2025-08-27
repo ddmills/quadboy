@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use macroquad::input::KeyCode;
+use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
@@ -19,8 +19,15 @@ impl Plugin for OverworldStatePlugin {
         GameStatePlugin::new(GameState::Overworld)
             .on_enter(app, (on_enter_overworld, render_overworld_map).chain())
             .on_update(app, (listen_for_inputs, display_overworld_debug_at_mouse))
-            .on_leave(app, cleanup_system::<CleanupStateOverworld>);
+            .on_leave(
+                app,
+                (on_leave_overworld, cleanup_system::<CleanupStateOverworld>),
+            );
     }
+}
+
+fn on_leave_overworld() {
+    trace!("LeaveGameState::<Overworld>");
 }
 
 #[derive(Component)]

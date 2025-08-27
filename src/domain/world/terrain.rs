@@ -64,7 +64,7 @@ pub struct Style {
 impl TerrainNoise {
     pub fn new(seed: u32) -> Self {
         Self {
-            sand: Perlin::new(seed + 120, 0.1, 1, 1.5),
+            sand: Perlin::new(seed + 120, 0.2, 2, 1.5),
             grass: Perlin::new(seed + 200, 0.08, 1, 1.2),
             dirt: Perlin::new(seed + 300, 0.12, 1, 1.8),
         }
@@ -75,11 +75,11 @@ impl TerrainNoise {
         let sand_tiles = Terrain::Sand.tiles();
 
         let tile_idx = (v * sand_tiles.len() as f32) as usize;
-        let tile_idx = tile_idx.min(sand_tiles.len() - 1);
+        let tile_idx = tile_idx.min(sand_tiles.len() - 2);
 
         Style {
             idx: sand_tiles[tile_idx],
-            fg1: Palette::Red.into(),
+            fg1: Palette::Brown.into(),
             fg2: None,
             bg: None,
             outline: None,

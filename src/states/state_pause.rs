@@ -2,9 +2,10 @@ use bevy_ecs::{
     component::Component,
     event::EventReader,
     query::With,
+    schedule::IntoScheduleConfigs,
     system::{Commands, Local, Query, Res, ResMut},
 };
-use macroquad::input::KeyCode;
+use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     common::Palette,
@@ -30,8 +31,15 @@ impl Plugin for PauseStatePlugin {
                     handle_save_result,
                 ),
             )
-            .on_leave(app, cleanup_system::<CleanupStatePause>);
+            .on_leave(
+                app,
+                (on_leave_pause, cleanup_system::<CleanupStatePause>).chain(),
+            );
     }
+}
+
+fn on_leave_pause() {
+    trace!("LeaveGameState::<Pause>");
 }
 
 #[derive(Component)]

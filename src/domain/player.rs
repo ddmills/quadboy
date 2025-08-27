@@ -226,8 +226,12 @@ pub fn render_player_debug(
     q_glyphs: Query<&Glyph>,
     cursor: Res<Mouse>,
 ) {
-    let position = q_player.single().unwrap();
-    let mut debug = q_debug.single_mut().unwrap();
+    let Ok(position) = q_player.single() else {
+        return;
+    };
+    let Ok(mut debug) = q_debug.single_mut() else {
+        return;
+    };
     let zone_idx = position.zone_idx();
     let zone_pos = zone_xyz(zone_idx);
 

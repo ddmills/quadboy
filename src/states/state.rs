@@ -1,4 +1,6 @@
 use bevy_ecs::{prelude::*, system::ScheduleSystem};
+use macroquad::prelude::trace;
+use std::fmt;
 
 use crate::engine::{App, ScheduleType};
 
@@ -41,7 +43,7 @@ pub struct CurrentGameState {
     pub next: GameState,
 }
 
-#[derive(Default, PartialEq, Eq, Clone, Copy)]
+#[derive(Default, PartialEq, Eq, Clone, Copy, Debug)]
 pub enum GameState {
     #[default]
     None,
@@ -50,6 +52,19 @@ pub enum GameState {
     Explore,
     Pause,
     Overworld,
+}
+
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GameState::None => write!(f, "None"),
+            GameState::LoadGame => write!(f, "Load Game"),
+            GameState::NewGame => write!(f, "New Game"),
+            GameState::Explore => write!(f, "Explore"),
+            GameState::Pause => write!(f, "Pause"),
+            GameState::Overworld => write!(f, "Overworld"),
+        }
+    }
 }
 
 pub fn in_game_state(state: GameState) -> impl Fn(Res<CurrentGameState>) -> bool {
@@ -70,6 +85,8 @@ pub fn update_game_states(mut state: ResMut<CurrentGameState>) {
 }
 
 pub fn cleanup_system<T: Component>(mut cmds: Commands, q: Query<Entity, With<T>>) {
+    trace!("running cleanup system!");
+
     for e in q.iter() {
         cmds.entity(e).despawn();
     }
@@ -114,7 +131,7 @@ impl GameStatePlugin {
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
         app.add_systems(
-            ScheduleType::PostUpdate,
+            ScheduleType::FrameFinal,
             systems.run_if(leave_game_state(self.state)),
         );
         self
@@ -160,7 +177,7 @@ impl AppStatePlugin {
         systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
     ) -> &mut Self {
         app.add_systems(
-            ScheduleType::PostUpdate,
+            ScheduleType::FrameFinal,
             systems.run_if(leave_app_state(self.state)),
         );
         self

@@ -138,15 +138,10 @@ async fn main() {
             ScheduleType::PostUpdate,
             (render_glyphs, render_text).chain(),
         )
+        .add_systems(ScheduleType::FrameFinal, render_all)
         .add_systems(
-            ScheduleType::FrameFinal,
-            ((
-                render_all,
-                update_app_states,
-                update_game_states,
-                // crate::engine::render_profiler,
-            )
-                .chain(),),
+            ScheduleType::StateTransition,
+            (update_app_states, update_game_states).chain(),
         );
 
     let world = app.get_world_mut();

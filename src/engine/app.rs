@@ -8,6 +8,7 @@ pub enum ScheduleType {
     Update,
     PostUpdate,
     FrameFinal,
+    StateTransition,
 }
 
 pub struct App {
@@ -16,6 +17,7 @@ pub struct App {
     schedule_update: Schedule,
     schedule_post_update: Schedule,
     schedule_frame_final: Schedule,
+    schedule_state_transition: Schedule,
 }
 
 pub trait Plugin {
@@ -30,6 +32,7 @@ impl App {
             schedule_update: Schedule::default(),
             schedule_post_update: Schedule::default(),
             schedule_frame_final: Schedule::default(),
+            schedule_state_transition: Schedule::default(),
         }
     }
 
@@ -48,6 +51,10 @@ impl App {
 
         telemetry::begin_zone("schedule_frame_final");
         self.schedule_frame_final.run(&mut self.world);
+        telemetry::end_zone();
+
+        telemetry::begin_zone("schedule_state_transition");
+        self.schedule_state_transition.run(&mut self.world);
         telemetry::end_zone();
 
         let exit = self
@@ -99,6 +106,7 @@ impl App {
             ScheduleType::Update => &mut self.schedule_update,
             ScheduleType::PostUpdate => &mut self.schedule_post_update,
             ScheduleType::FrameFinal => &mut self.schedule_frame_final,
+            ScheduleType::StateTransition => &mut self.schedule_state_transition,
         }
     }
 }
