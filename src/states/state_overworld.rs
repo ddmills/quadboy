@@ -6,8 +6,8 @@ use crate::{
     common::Palette,
     domain::{BiomeType, Overworld, PlayerPosition, RoadNetwork},
     engine::{KeyInput, Mouse, Plugin},
-    rendering::{world_to_zone_idx, zone_idx, zone_xyz, Glyph, Layer, Position, Text, Visibility},
-    states::{cleanup_system, CurrentGameState, GameStatePlugin},
+    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
+    states::{CurrentGameState, GameStatePlugin, cleanup_system},
 };
 
 use super::GameState;
@@ -33,7 +33,6 @@ pub struct OverworldMapTile;
 pub struct OverworldDebugText;
 
 fn on_enter_overworld(mut cmds: Commands) {
-    
     cmds.spawn((
         Text::new("{Y|OVERWORLD MAP}").bg(Palette::Black),
         Position::new_f32(2., 1., 0.),

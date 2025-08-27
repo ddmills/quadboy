@@ -1,6 +1,6 @@
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z, ZONE_SIZE},
-    common::Direction,
+    common::{Direction, Rand},
     domain::{Overworld, RoadType},
     rendering::{zone_idx as calculate_zone_idx, zone_xyz},
 };
@@ -102,7 +102,8 @@ pub fn get_edge_continuity(
     if let Some(neighbor) = neighbor_idx {
         if overworld.zone_has_road(zone_idx) && overworld.zone_has_road(neighbor) {
             if let Some(road_network) = overworld.get_road_network(z) {
-                if let Some(road_segment) = road_network.edges
+                if let Some(road_segment) = road_network
+                    .edges
                     .get(&(zone_idx, neighbor))
                     .or_else(|| road_network.edges.get(&(neighbor, zone_idx)))
                 {
@@ -112,7 +113,8 @@ pub fn get_edge_continuity(
                     for i in 0..width {
                         let pos = middle + i - (width / 2);
                         if pos < edge_constraints.len() {
-                            edge_constraints[pos] = ZoneConstraintType::Road(road_segment.road_type);
+                            edge_constraints[pos] =
+                                ZoneConstraintType::Road(road_segment.road_type);
                         }
                     }
                 }
@@ -125,7 +127,7 @@ pub fn get_edge_continuity(
     edge_constraints
 }
 
-pub fn get_vertical_continuity(_overworld: &Overworld, zone_idx: usize) -> ZoneVerticalConstraints {
+pub fn get_vertical_continuity(overworld: &Overworld, zone_idx: usize) -> ZoneVerticalConstraints {
     let (_x, _y, z) = zone_xyz(zone_idx);
     let mut constraints = vec![];
 
@@ -138,8 +140,20 @@ pub fn get_vertical_continuity(_overworld: &Overworld, zone_idx: usize) -> ZoneV
         let below_is_cavern = below_z > SURFACE_LEVEL_Z;
 
         if below_is_cavern {
+            let mut rand = Rand::seed(overworld.seed + zone_idx as u32 + 1000);
+
+            let center_x = ZONE_SIZE.0 / 2;
+            let center_y = ZONE_SIZE.1 / 2;
+
+            let offset_range = 10.min(center_x - 5).min(center_y - 5);
+            let x_offset = rand.range_n(-(offset_range as i32), offset_range as i32 + 1);
+            let y_offset = rand.range_n(-(offset_range as i32), offset_range as i32 + 1);
+
+            let stair_x = ((center_x as i32 + x_offset).max(5) as usize).min(ZONE_SIZE.0 - 6);
+            let stair_y = ((center_y as i32 + y_offset).max(5) as usize).min(ZONE_SIZE.1 - 6);
+
             constraints.push(PositionalConstraint {
-                position: (ZONE_SIZE.0 / 2, ZONE_SIZE.1 / 2),
+                position: (stair_x, stair_y),
                 constraint: ZoneConstraintType::StairDown,
             });
         }

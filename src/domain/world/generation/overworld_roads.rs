@@ -15,7 +15,10 @@ use crate::{
 pub struct OverworldRoadGenerator;
 
 impl OverworldRoadGenerator {
-    pub fn generate_roads(layers: &HashMap<usize, HashMap<usize, OverworldTown>>, seed: u32) -> HashMap<usize, RoadNetwork> {
+    pub fn generate_roads(
+        layers: &HashMap<usize, HashMap<usize, OverworldTown>>,
+        seed: u32,
+    ) -> HashMap<usize, RoadNetwork> {
         let mut networks = HashMap::new();
 
         for z in SURFACE_LEVEL_Z..MAP_SIZE.2 {
@@ -56,9 +59,16 @@ impl OverworldRoadGenerator {
                 let max_distance = 20.0; // Maximum distance to connect towns
 
                 for (other_idx, distance) in distances.into_iter().take(max_connections) {
-                    if distance <= max_distance && !Self::has_connection(&network, *town_idx, other_idx)
+                    if distance <= max_distance
+                        && !Self::has_connection(&network, *town_idx, other_idx)
                     {
-                        Self::add_road_connection(&mut network, *town_idx, other_idx, distance, seed);
+                        Self::add_road_connection(
+                            &mut network,
+                            *town_idx,
+                            other_idx,
+                            distance,
+                            seed,
+                        );
                     }
                 }
             }
