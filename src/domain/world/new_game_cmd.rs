@@ -7,7 +7,7 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Overworld,
-        Player, PlayerPosition, PlayerSaveData, Vision, Zones,
+        Player, PlayerPosition, PlayerSaveData, TerrainNoise, Vision, Zones,
     },
     engine::{Clock, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
@@ -61,6 +61,7 @@ impl NewGameCommand {
 
         world.insert_resource(PlayerPosition::from_position(&starting_position));
         world.insert_resource(Overworld::new(self.seed));
+        world.insert_resource(TerrainNoise::new(self.seed));
         world.insert_resource(Clock::new());
         world.insert_resource(Zones {
             player: start_zone,

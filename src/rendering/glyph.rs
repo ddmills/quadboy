@@ -1,3 +1,4 @@
+use crate::domain::Style;
 use crate::engine::SerializableComponent;
 use crate::{
     cfg::TILE_SIZE_F32,
@@ -55,6 +56,19 @@ impl Glyph {
             fg2: None,
             bg: None,
             outline: Some(Palette::Clear.into()),
+            layer_id: Layer::default(),
+            texture_id: GlyphTextureId::Cowboy,
+            is_dormant: false,
+        }
+    }
+
+    pub fn new_from_style(style: Style) -> Self {
+        Self {
+            idx: style.idx,
+            fg1: style.fg1.map(|x| x.into()),
+            fg2: style.fg2.map(|x| x.into()),
+            bg: style.bg.map(|x| x.into()),
+            outline: style.outline.map(|x| x.into()),
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,

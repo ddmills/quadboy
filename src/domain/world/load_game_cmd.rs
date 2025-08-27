@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{LoadZoneCommand, Overworld, PlayerPosition, Zones},
+    domain::{LoadZoneCommand, Overworld, PlayerPosition, TerrainNoise, Zones},
     engine::{Clock, deserialize, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
@@ -38,6 +38,7 @@ impl LoadGameCommand {
         let zone_idx = position.zone_idx();
 
         world.insert_resource(Overworld::new(game_data.seed));
+        world.insert_resource(TerrainNoise::new(game_data.seed));
         world.insert_resource(PlayerPosition::from_position(&position));
         world.insert_resource(Zones {
             player: zone_idx,
