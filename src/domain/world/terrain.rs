@@ -30,7 +30,7 @@ impl Terrain {
             Terrain::Grass => vec![0, 1, 2, 3],
             Terrain::Dirt => vec![16, 17, 18, 19],
             Terrain::Sand => vec![32, 33, 34, 35],
-            Terrain::River => vec![31, 32, 33, 34],
+            Terrain::River => vec![32, 33, 34, 35],
             Terrain::OpenAir => vec![0],
         }
     }
@@ -51,6 +51,7 @@ pub struct TerrainNoise {
     pub sand: Perlin,
     pub grass: Perlin,
     pub dirt: Perlin,
+    pub river: Perlin,
 }
 
 pub struct Style {
@@ -67,6 +68,7 @@ impl TerrainNoise {
             sand: Perlin::new(seed + 120, 0.2, 2, 1.5),
             grass: Perlin::new(seed + 200, 0.08, 1, 1.2),
             dirt: Perlin::new(seed + 300, 0.12, 1, 1.8),
+            river: Perlin::new(seed + 300, 0.12, 1, 1.8),
         }
     }
 
@@ -95,7 +97,7 @@ impl TerrainNoise {
 
         Style {
             idx: grass_tiles[tile_idx],
-            fg1: Palette::DarkCyan.into(),
+            fg1: Palette::DarkGreen.into(),
             fg2: None,
             bg: None,
             outline: None,
@@ -118,6 +120,22 @@ impl TerrainNoise {
         }
     }
 
+    pub fn river(&mut self, pos: (usize, usize)) -> Style {
+        let v = self.river.get(pos.0 as f32, pos.1 as f32);
+        let river_tiles = Terrain::River.tiles();
+
+        let tile_idx = (v * river_tiles.len() as f32) as usize;
+        let tile_idx = tile_idx.min(river_tiles.len() - 1);
+
+        Style {
+            idx: river_tiles[tile_idx],
+            fg1: Palette::Blue.into(),
+            fg2: None,
+            bg: Palette::DarkBlue.into(),
+            outline: None,
+        }
+    }
+
     pub fn style(&mut self, terrain: Terrain, pos: (usize, usize)) -> Style {
         match terrain {
             Terrain::OpenAir => Style {
@@ -129,7 +147,7 @@ impl TerrainNoise {
             },
             Terrain::Grass => self.grass(pos),
             Terrain::Dirt => self.dirt(pos),
-            Terrain::River => self.sand(pos), // Using sand for river for now
+            Terrain::River => self.river(pos),
             Terrain::Sand => self.sand(pos),
         }
     }

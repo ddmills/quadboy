@@ -138,12 +138,13 @@ impl ZoneFactory {
         let mut c_road_pos = (0, 0);
         let mut c_road_width = 0;
         let mut on_road = false;
+        let road_terrain = self.ozone.biome_type.get_road_terrain();
 
         // NORTH
         for (x, constraint) in self.ozone.constraints.north.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let y = 0;
-                self.terrain.set(x, y, Terrain::Dirt);
+                self.terrain.set(x, y, road_terrain);
                 self.locked.set(x, y, true);
 
                 if !on_road {
@@ -170,7 +171,7 @@ impl ZoneFactory {
         for (x, constraint) in self.ozone.constraints.south.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let y = ZONE_SIZE.1 - 1;
-                self.terrain.set(x, y, Terrain::Dirt);
+                self.terrain.set(x, y, road_terrain);
                 self.locked.set(x, y, true);
 
                 if !on_road {
@@ -198,7 +199,7 @@ impl ZoneFactory {
         for (y, constraint) in self.ozone.constraints.east.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let x = ZONE_SIZE.0 - 1;
-                self.terrain.set(x, y, Terrain::Dirt);
+                self.terrain.set(x, y, road_terrain);
                 self.locked.set(x, y, true);
 
                 if !on_road {
@@ -225,7 +226,7 @@ impl ZoneFactory {
         for (y, constraint) in self.ozone.constraints.west.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let x = 0;
-                self.terrain.set(x, y, Terrain::Dirt);
+                self.terrain.set(x, y, road_terrain);
                 self.locked.set(x, y, true);
 
                 if !on_road {
@@ -254,11 +255,7 @@ impl ZoneFactory {
         let mut all_paths = Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, false);
         let mut grouped_bycat: HashMap<RoadCategory, Vec<RoadConnection>> = HashMap::new();
 
-        trace!("=====ROADS=====");
-
         for r in self.roads.iter() {
-            trace!("{},{} --> W={}", r.pos.0, r.pos.1, r.width);
-
             if let Some(v) = grouped_bycat.get_mut(&r.category) {
                 v.push(*r);
             } else {
@@ -320,10 +317,12 @@ impl ZoneFactory {
             }
         }
 
+        let road_terrain = self.ozone.biome_type.get_road_terrain();
+
         // stamp road grid
         for (x, y, v) in self.road_grid.iter_xy() {
             if *v {
-                self.terrain.set(x, y, Terrain::Dirt);
+                self.terrain.set(x, y, road_terrain);
                 self.locked.set(x, y, true);
             }
         }

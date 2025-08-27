@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::domain::{
-    CavernBiomeBuilder, DesertBiomeBuilder, ForestBiomeBuilder, OpenAirBiomeBuilder, ZoneFactory,
+    world::terrain, CavernBiomeBuilder, DesertBiomeBuilder, ForestBiomeBuilder, OpenAirBiomeBuilder, Terrain, ZoneFactory
 };
 
 pub trait BiomeBuilder {
@@ -23,6 +23,15 @@ impl BiomeType {
             BiomeType::Forest => ForestBiomeBuilder::build(zone_factory),
             BiomeType::Desert => DesertBiomeBuilder::build(zone_factory),
             BiomeType::Cavern => CavernBiomeBuilder::build(zone_factory),
+        }
+    }
+
+    pub fn get_road_terrain(&self) -> Terrain {
+        match self {
+            BiomeType::OpenAir => Terrain::OpenAir,
+            BiomeType::Forest => Terrain::Dirt,
+            BiomeType::Desert => Terrain::Grass,
+            BiomeType::Cavern => Terrain::River,
         }
     }
 }
