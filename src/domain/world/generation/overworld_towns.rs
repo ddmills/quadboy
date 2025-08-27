@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{PoissonDiscSampler, PoissonDiscSettings},
-    domain::world::generation::{OverworldTown, ZoneType},
+    domain::{biome::BiomeType, world::generation::OverworldTown},
     rendering::{zone_idx, zone_xyz},
 };
 
@@ -27,7 +27,7 @@ impl OverworldTownGenerator {
             let idx = zone_idx(x, y, SURFACE_LEVEL_Z);
             let zone_type = Self::get_zone_type_at(idx, seed);
 
-            if matches!(zone_type, ZoneType::Forest | ZoneType::Desert) {
+            if matches!(zone_type, BiomeType::Forest | BiomeType::Desert) {
                 let town = OverworldTown {
                     name: Self::generate_town_name(idx, seed),
                 };
@@ -38,7 +38,7 @@ impl OverworldTownGenerator {
         towns
     }
 
-    fn get_zone_type_at(zone_idx: usize, seed: u32) -> ZoneType {
+    fn get_zone_type_at(zone_idx: usize, seed: u32) -> BiomeType {
         // This duplicates the logic from Overworld::get_zone_type but with seed parameter
         use crate::common::Perlin;
 
@@ -46,20 +46,20 @@ impl OverworldTownGenerator {
         let mut perlin = Perlin::new(seed, 0.15, 2, 2.0);
 
         if z > SURFACE_LEVEL_Z {
-            return ZoneType::OpenAir;
+            return BiomeType::OpenAir;
         }
 
         if z < SURFACE_LEVEL_Z {
-            return ZoneType::Cavern;
+            return BiomeType::Cavern;
         }
 
         let noise = perlin.get(x as f32, y as f32);
 
         if noise < 0.4 {
-            return ZoneType::Desert;
+            return BiomeType::Desert;
         }
 
-        ZoneType::Forest
+        BiomeType::Forest
     }
 
     fn generate_town_name(zone_idx: usize, seed: u32) -> String {

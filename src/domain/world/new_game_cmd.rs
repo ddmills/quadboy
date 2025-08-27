@@ -38,7 +38,7 @@ impl NewGameCommand {
     fn execute_new_game(&self, world: &mut World) -> NewGameResult {
         delete_save(&self.save_name);
 
-        let starting_position = Position::new(513, 15, SURFACE_LEVEL_Z);
+        let starting_position = Position::new(847, 433, SURFACE_LEVEL_Z);
         let start_zone = starting_position.zone_idx();
 
         let player_entity = world

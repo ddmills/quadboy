@@ -46,7 +46,7 @@ impl ZoneGrid {
         Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| rand.random())
     }
 
-    pub fn bool(seed: u32) -> Grid<bool> {
+    pub fn rand_bool(seed: u32) -> Grid<bool> {
         let mut rand = Rand::seed(seed);
 
         Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| rand.bool(0.5))

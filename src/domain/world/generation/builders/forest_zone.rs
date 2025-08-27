@@ -8,7 +8,7 @@ use crate::{
 pub struct ForestBiomeBuilder;
 
 impl BiomeBuilder for ForestBiomeBuilder {
-    fn build(&mut self, zone: &mut ZoneFactory) {
+    fn build(zone: &mut ZoneFactory) {
         let mut rand = Rand::seed(zone.zone_idx as u32);
 
         for x in 0..ZONE_SIZE.0 {

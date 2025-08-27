@@ -4,7 +4,7 @@ use macroquad::input::KeyCode;
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::Palette,
-    domain::{Overworld, PlayerPosition, ZoneType},
+    domain::{BiomeType, Overworld, PlayerPosition},
     engine::{KeyInput, Mouse, Plugin},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
@@ -70,11 +70,11 @@ fn render_overworld_map(
             let idx = zone_idx(x, y, SURFACE_LEVEL_Z);
             let ozone = overworld.get_overworld_zone(idx);
 
-            let (zone_glyph, zone_fg1) = match ozone.zone_type {
-                ZoneType::OpenAir => (16, Palette::Blue),
-                ZoneType::Forest => (1, Palette::Green),
-                ZoneType::Desert => (33, Palette::Yellow),
-                ZoneType::Cavern => (129, Palette::Gray),
+            let (zone_glyph, zone_fg1) = match ozone.biome_type {
+                BiomeType::OpenAir => (16, Palette::Blue),
+                BiomeType::Forest => (1, Palette::Green),
+                BiomeType::Desert => (33, Palette::Yellow),
+                BiomeType::Cavern => (129, Palette::Gray),
             };
 
             let is_player_zone = x == player_zone_pos.0
@@ -175,7 +175,7 @@ fn display_overworld_debug_at_mouse(
         zone_x,
         zone_y,
         zone_idx,
-        ozone.zone_type,
+        ozone.biome_type,
         town_value,
         if has_road { "Yes" } else { "No" },
         road_connections

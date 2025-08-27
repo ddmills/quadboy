@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use bevy_ecs::relationship::RelationshipSourceCollection;
 use macroquad::prelude::trace;
-use rand::rand_core::le;
 
 use crate::{
     cfg::ZONE_SIZE,
@@ -12,15 +10,28 @@ use crate::{
             astar::{AStarSettings, astar},
             distance::Distance,
         },
-        remap,
     },
     domain::{
-        BiomeBuilder, CavernBiomeBuilder, DesertBiomeBuilder, ForestBiomeBuilder,
-        OpenAirBiomeBuilder, OverworldZone, PrefabId, RoadType, SpawnConfig, Terrain,
-        ZoneConstraintType, ZoneData, ZoneGrid, ZoneType,
+        OverworldZone, PrefabId, SpawnConfig, Terrain, ZoneConstraintType, ZoneData, ZoneGrid,
     },
     rendering::zone_local_to_world,
 };
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+enum RoadCategory {
+    North,
+    South,
+    East,
+    West,
+    Stairs,
+}
+
+#[derive(Clone, Copy)]
+struct RoadConnection {
+    category: RoadCategory,
+    pos: (usize, usize),
+    width: usize,
+}
 
 pub struct ZoneFactory {
     pub zone_idx: usize,
@@ -28,7 +39,8 @@ pub struct ZoneFactory {
     pub terrain: Grid<Terrain>,
     pub entities: Grid<Vec<SpawnConfig>>,
     pub locked: Grid<bool>,
-    pub roads: Vec<(usize, usize, usize)>, // x, y, width
+    pub roads: Vec<RoadConnection>,
+    pub road_grid: Grid<bool>,
 }
 
 impl ZoneFactory {
@@ -40,6 +52,7 @@ impl ZoneFactory {
             entities: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| vec![]),
             locked: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
             roads: Vec::new(),
+            road_grid: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
         }
     }
 
@@ -47,8 +60,10 @@ impl ZoneFactory {
         self.apply_edge_constraints();
         self.apply_up_vertical_constraints();
         self.apply_vertical_constraints();
-        self.connect_roads();
-        self.apply_biome();
+        self.apply_roads();
+
+        let bt = self.ozone.biome_type;
+        bt.apply_to_zone(self);
 
         self.to_zone_data()
     }
@@ -59,11 +74,6 @@ impl ZoneFactory {
             terrain: self.terrain.clone(),
             entities: self.entities.clone(),
         }
-    }
-
-    pub fn apply_biome(&mut self) {
-        let mut builder = Self::get_biome_builder(self.ozone.zone_type);
-        builder.build(self);
     }
 
     pub fn push_entity(&mut self, x: usize, y: usize, config: SpawnConfig) {
@@ -84,15 +94,6 @@ impl ZoneFactory {
         *self.locked.get(x, y).unwrap_or(&false)
     }
 
-    fn get_biome_builder(zone_type: ZoneType) -> Box<dyn BiomeBuilder> {
-        match zone_type {
-            ZoneType::OpenAir => Box::new(OpenAirBiomeBuilder),
-            ZoneType::Forest => Box::new(ForestBiomeBuilder),
-            ZoneType::Desert => Box::new(DesertBiomeBuilder),
-            ZoneType::Cavern => Box::new(CavernBiomeBuilder),
-        }
-    }
-
     pub fn apply_vertical_constraints(&mut self) {
         for constraint in self.ozone.constraints.up.0.iter() {
             if constraint.constraint == ZoneConstraintType::StairDown {
@@ -104,7 +105,11 @@ impl ZoneFactory {
                     entities_at_pos.push(stair_config);
                 }
                 self.locked.set(x, y, true);
-                self.roads.push((x, y, 1));
+                self.roads.push(RoadConnection {
+                    category: RoadCategory::Stairs,
+                    pos: (x, y),
+                    width: 1,
+                });
             }
         }
     }
@@ -120,7 +125,11 @@ impl ZoneFactory {
                     entities_at_pos.push(stair_config);
                 }
                 self.locked.set(x, y, true);
-                self.roads.push((x, y, 1));
+                self.roads.push(RoadConnection {
+                    category: RoadCategory::Stairs,
+                    pos: (x, y),
+                    width: 1,
+                });
             }
         }
     }
@@ -134,8 +143,8 @@ impl ZoneFactory {
         for (x, constraint) in self.ozone.constraints.north.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let y = 0;
-                // self.terrain.set(x, y, Terrain::Dirt);
-                // self.locked.set(x, y, true);
+                self.terrain.set(x, y, Terrain::Dirt);
+                self.locked.set(x, y, true);
 
                 if !on_road {
                     c_road_pos = (x, y);
@@ -144,7 +153,11 @@ impl ZoneFactory {
                 on_road = true;
                 c_road_width += 1;
             } else if on_road {
-                self.roads.push((c_road_pos.0, c_road_pos.1, c_road_width));
+                self.roads.push(RoadConnection {
+                    category: RoadCategory::North,
+                    pos: (c_road_pos.0, c_road_pos.1),
+                    width: c_road_width,
+                });
                 on_road = false;
                 c_road_width = 0;
             }
@@ -157,8 +170,8 @@ impl ZoneFactory {
         for (x, constraint) in self.ozone.constraints.south.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let y = ZONE_SIZE.1 - 1;
-                // self.terrain.set(x, y, Terrain::Dirt);
-                // self.locked.set(x, y, true);
+                self.terrain.set(x, y, Terrain::Dirt);
+                self.locked.set(x, y, true);
 
                 if !on_road {
                     c_road_pos = (x, y);
@@ -167,7 +180,12 @@ impl ZoneFactory {
                 on_road = true;
                 c_road_width += 1;
             } else if on_road {
-                self.roads.push((c_road_pos.0, c_road_pos.1, c_road_width));
+                self.roads.push(RoadConnection {
+                    category: RoadCategory::South,
+                    pos: (c_road_pos.0, c_road_pos.1),
+                    width: c_road_width,
+                });
+                // self.road_grid.set(c_road_pos.0, c_road_pos.1, true);
                 on_road = false;
                 c_road_width = 0;
             }
@@ -180,8 +198,8 @@ impl ZoneFactory {
         for (y, constraint) in self.ozone.constraints.east.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let x = ZONE_SIZE.0 - 1;
-                // self.terrain.set(x, y, Terrain::Dirt);
-                // self.locked.set(x, y, true);
+                self.terrain.set(x, y, Terrain::Dirt);
+                self.locked.set(x, y, true);
 
                 if !on_road {
                     c_road_pos = (x, y);
@@ -190,7 +208,11 @@ impl ZoneFactory {
                 on_road = true;
                 c_road_width += 1;
             } else if on_road {
-                self.roads.push((c_road_pos.0, c_road_pos.1, c_road_width));
+                self.roads.push(RoadConnection {
+                    category: RoadCategory::East,
+                    pos: (c_road_pos.0, c_road_pos.1),
+                    width: c_road_width,
+                });
                 on_road = false;
                 c_road_width = 0;
             }
@@ -203,8 +225,8 @@ impl ZoneFactory {
         for (y, constraint) in self.ozone.constraints.west.0.iter().enumerate() {
             if let ZoneConstraintType::Road(_) = constraint {
                 let x = 0;
-                // self.terrain.set(x, y, Terrain::Dirt);
-                // self.locked.set(x, y, true);
+                self.terrain.set(x, y, Terrain::Dirt);
+                self.locked.set(x, y, true);
 
                 if !on_road {
                     c_road_pos = (x, y);
@@ -213,77 +235,112 @@ impl ZoneFactory {
                 on_road = true;
                 c_road_width += 1;
             } else if on_road {
-                self.roads.push((c_road_pos.0, c_road_pos.1, c_road_width));
+                self.roads.push(RoadConnection {
+                    category: RoadCategory::West,
+                    pos: (c_road_pos.0, c_road_pos.1),
+                    width: c_road_width,
+                });
                 on_road = false;
                 c_road_width = 0;
             }
         }
     }
 
-    pub fn connect_roads(&mut self) {
+    pub fn apply_roads(&mut self) {
         if self.roads.is_empty() {
             return;
         }
 
         let mut all_paths = Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, false);
-        let mut grouped_by_width: HashMap<usize, Vec<(usize, usize)>> = HashMap::new();
+        let mut grouped_bycat: HashMap<RoadCategory, Vec<RoadConnection>> = HashMap::new();
 
         trace!("=====ROADS=====");
 
-        let mut biggest_width = 0;
-
         for r in self.roads.iter() {
-            trace!("{},{} --> W={}", r.0, r.1, r.2);
+            trace!("{},{} --> W={}", r.pos.0, r.pos.1, r.width);
 
-            if r.2 > biggest_width {
-                biggest_width = r.2;
-            }
-
-            if let Some(v) = grouped_by_width.get_mut(&r.2) {
-                v.push((r.0, r.1));
+            if let Some(v) = grouped_bycat.get_mut(&r.category) {
+                v.push(*r);
             } else {
-                grouped_by_width.insert(r.2, vec![(r.0, r.1)]);
+                grouped_bycat.insert(r.category, vec![*r]);
             }
         }
 
-        let Some(widest_path_endpoints) = grouped_by_width.get(&biggest_width) else {
-            return;
-        };
+        let empty_east = vec![];
+        let road_east = grouped_bycat
+            .get(&RoadCategory::East)
+            .unwrap_or(&empty_east);
 
-        for (p1_idx, p1) in widest_path_endpoints.iter().enumerate() {
-            (p1_idx..widest_path_endpoints.len()).for_each(|p2_idx| {
-                let p2 = widest_path_endpoints[p2_idx];
+        let empty_west = vec![];
+        let road_west = grouped_bycat
+            .get(&RoadCategory::West)
+            .unwrap_or(&empty_west);
 
-                if p1_idx == p2_idx {
-                    return;
-                }
+        // connect east/west, use widest road
+        for p1 in road_east.iter() {
+            for p2 in road_west.iter() {
+                let width = p1.width.max(p2.width);
 
-                trace!(
-                    "Connect wide path {}->{}. Width={}",
-                    p1_idx, p2_idx, biggest_width
-                );
-                self.connect_paths(*p1, p2, biggest_width, Terrain::Dirt);
-            });
+                self.connect_points(p1.pos, p2.pos, width);
+            }
+        }
+
+        let road_north = grouped_bycat
+            .get(&RoadCategory::North)
+            .cloned()
+            .unwrap_or_default();
+
+        let road_south = grouped_bycat
+            .get(&RoadCategory::South)
+            .cloned()
+            .unwrap_or_default();
+
+        // connect north/south, use widest road
+        for p1 in road_north.iter() {
+            for p2 in road_south.iter() {
+                let width = p1.width.max(p2.width);
+
+                self.connect_points(p1.pos, p2.pos, width);
+            }
+        }
+
+        for (cat, c) in grouped_bycat.iter() {
+            if *cat == RoadCategory::Stairs {
+                continue;
+            }
+            for i in c {
+                self.road_grid.set(i.pos.0, i.pos.1, true);
+                self.connect_nearest(i);
+            }
+        }
+
+        for stairs in grouped_bycat.get(&RoadCategory::Stairs).iter() {
+            for stair in stairs.iter() {
+                self.connect_nearest(stair);
+            }
+        }
+
+        // stamp road grid
+        for (x, y, v) in self.road_grid.iter_xy() {
+            if *v {
+                self.terrain.set(x, y, Terrain::Dirt);
+                self.locked.set(x, y, true);
+            }
         }
     }
 
-    fn connect_paths(
-        &mut self,
-        a: (usize, usize),
-        b: (usize, usize),
-        width: usize,
-        terrain: Terrain,
-    ) {
-        // TODO: these should probably be instance variables
-        let grid_buffer = ZoneGrid::edge_gradient(8, 1.);
-        let grid_bool = ZoneGrid::bool(self.zone_idx as u32);
+    fn connect_points(&mut self, a: (usize, usize), b: (usize, usize), width: usize) {
+        let grid_bool = ZoneGrid::rand_bool(self.zone_idx as u32);
 
         let result = astar(AStarSettings {
             start: [a.0, a.1],
             is_goal: |p| p[0] == b.0 && p[1] == b.1,
             cost: |_, [x, y]| {
                 let r = grid_bool.get(x, y).unwrap();
-                let e = remap(1. - grid_buffer.get(x, y).unwrap(), 0.25, 1.);
+
+                if *self.locked.get(x, y).unwrap_or(&true) {
+                    return 100.0;
+                }
 
                 let rand_cost = match r {
                     true => 10.0,
@@ -300,22 +357,44 @@ impl ZoneFactory {
             max_cost: None,
         });
 
-        // TODO: store in a grid, then stamp. avoid locked tiles.
         if result.is_success {
             for [s_x, s_y] in result.path {
-                // need to "stamp" this with a width x width stamp
                 for w1 in 0..width {
                     for w2 in 0..width {
                         let x = s_x + w1;
                         let y = s_y + w2;
 
-                        if in_zone_bounds(x, y) {
-                            self.terrain.set(x, y, terrain);
-                            self.locked.set(x, y, true);
+                        if in_zone_bounds(x, y) && !self.is_locked_tile(x, y) {
+                            self.road_grid.set(x, y, true);
                         }
                     }
                 }
             }
+        } else {
+            trace!("failed to connect road!");
+        }
+    }
+
+    fn connect_nearest(&mut self, c: &RoadConnection) {
+        let mut nearest_pos = None;
+        let mut min_distance = f32::INFINITY;
+
+        for (x, y, is_road) in self.road_grid.iter_xy() {
+            if *is_road && x != c.pos.0 && y != c.pos.1 {
+                let distance = Distance::manhattan(
+                    [c.pos.0 as i32, c.pos.1 as i32, 0],
+                    [x as i32, y as i32, 0],
+                );
+
+                if distance < min_distance {
+                    min_distance = distance;
+                    nearest_pos = Some((x, y));
+                }
+            }
+        }
+
+        if let Some(target_pos) = nearest_pos {
+            self.connect_points(c.pos, target_pos, c.width);
         }
     }
 }

@@ -6,7 +6,7 @@ use crate::{
 pub struct OpenAirBiomeBuilder;
 
 impl BiomeBuilder for OpenAirBiomeBuilder {
-    fn build(&mut self, zone: &mut ZoneFactory) {
+    fn build(zone: &mut ZoneFactory) {
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
                 if !zone.is_locked_tile(x, y) {

@@ -1,42 +1,20 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Display,
-};
+use std::collections::{HashMap, HashSet};
 
 use bevy_ecs::resource::Resource;
 
 use crate::{
-    cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
-    common::{Perlin, PoissonDiscSampler, PoissonDiscSettings},
+    cfg::SURFACE_LEVEL_Z,
+    common::Perlin,
     domain::{
-        OverworldRoadGenerator, OverworldTownGenerator, ZoneConstraintType, ZoneContinuity,
+        BiomeType, OverworldRoadGenerator, OverworldTownGenerator, ZoneContinuity,
         get_zone_constraints,
     },
-    rendering::{zone_idx, zone_xyz},
+    rendering::zone_xyz,
 };
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum ZoneType {
-    OpenAir,
-    Forest,
-    Desert,
-    Cavern,
-}
-
-impl Display for ZoneType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ZoneType::OpenAir => write!(f, "OpenAir"),
-            ZoneType::Forest => write!(f, "Forest"),
-            ZoneType::Desert => write!(f, "Desert"),
-            ZoneType::Cavern => write!(f, "Cavern"),
-        }
-    }
-}
 
 pub struct OverworldZone {
     pub zone_idx: usize,
-    pub zone_type: ZoneType,
+    pub biome_type: BiomeType,
     pub constraints: ZoneContinuity,
     pub town: Option<OverworldTown>,
 }
@@ -71,8 +49,8 @@ pub struct RoadSegment {
 
 #[derive(Default)]
 pub struct RoadNetwork {
-    pub edges: HashMap<(usize, usize), RoadSegment>, // (from_zone, to_zone) -> segment
-    pub nodes: HashSet<usize>,                       // All zones with roads
+    pub edges: HashMap<(usize, usize), RoadSegment>,
+    pub nodes: HashSet<usize>,
 }
 
 impl RoadNetwork {
@@ -106,30 +84,30 @@ impl Overworld {
     pub fn get_overworld_zone(&mut self, zone_idx: usize) -> OverworldZone {
         OverworldZone {
             zone_idx,
-            zone_type: self.get_zone_type(zone_idx),
+            biome_type: self.get_zone_type(zone_idx),
             constraints: get_zone_constraints(self, zone_idx),
             town: self.towns.get(&zone_idx).cloned(),
         }
     }
 
-    pub fn get_zone_type(&mut self, zone_idx: usize) -> ZoneType {
+    pub fn get_zone_type(&mut self, zone_idx: usize) -> BiomeType {
         let (x, y, z) = zone_xyz(zone_idx);
 
         if z < SURFACE_LEVEL_Z {
-            return ZoneType::OpenAir;
+            return BiomeType::OpenAir;
         }
 
         if z > SURFACE_LEVEL_Z {
-            return ZoneType::Cavern;
+            return BiomeType::Cavern;
         }
 
         let noise = self.perlin.get(x as f32, y as f32);
 
         if noise < 0.5 {
-            return ZoneType::Desert;
+            return BiomeType::Desert;
         }
 
-        ZoneType::Forest
+        BiomeType::Forest
     }
 
     fn generate_roads(&mut self) {
