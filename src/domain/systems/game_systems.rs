@@ -49,7 +49,7 @@ fn exec_game_systems(world: &mut World) {
 pub fn game_loop(world: &mut World) {
     telemetry::begin_zone("game_loop");
     let mut iterations = 0;
-    const MAX_ITERATIONS: u32 = 25;
+    const MAX_ITERATIONS: u32 = 200;
 
     loop {
         exec_game_systems(world);

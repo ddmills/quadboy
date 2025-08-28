@@ -8,7 +8,7 @@ use crate::{
     cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid},
     domain::{
-        LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
+        InActiveZone, LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
         UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
@@ -157,8 +157,10 @@ pub fn on_set_zone_status(
                 if q_terrain.contains(child) {
                     cmds.entity(child).despawn();
                 }
+                cmds.entity(child).remove::<InActiveZone>();
             } else {
                 cmds.entity(child).insert(evt.status);
+                cmds.entity(child).try_insert(InActiveZone);
             }
         }
 
@@ -173,7 +175,8 @@ pub fn on_set_zone_status(
 
                     cmds.entity(terrain_entity)
                         .insert(ChildOf(zone_e))
-                        .insert(evt.status);
+                        .insert(evt.status)
+                        .insert(InActiveZone);
                 }
             }
         }
@@ -181,6 +184,11 @@ pub fn on_set_zone_status(
         for v in zone.entities.iter() {
             for e in v.iter() {
                 cmds.entity(*e).try_insert(evt.status);
+                if evt.status == ZoneStatus::Active {
+                    cmds.entity(*e).try_insert(InActiveZone);
+                } else {
+                    cmds.entity(*e).remove::<InActiveZone>();
+                }
             }
         }
     }

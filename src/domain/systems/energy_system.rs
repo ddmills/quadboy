@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::telemetry;
 
 use crate::{
-    domain::{Energy, Player},
+    domain::{Energy, InActiveZone, Player},
     engine::Clock,
 };
 
@@ -31,7 +31,7 @@ impl ConsumeEnergyEvent {
 }
 
 pub fn turn_scheduler(
-    mut q_energy: Query<(Entity, &mut Energy)>,
+    mut q_energy: Query<(Entity, &mut Energy), With<InActiveZone>>,
     mut turn_state: ResMut<TurnState>,
     mut clock: ResMut<Clock>,
     q_player: Query<Entity, With<Player>>,

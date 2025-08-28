@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::{
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
-        ApplyVisibilityEffects, IsExplored, IsVisible, Player, PlayerPosition, Vision,
-        VisionBlocker, Zone, Zones,
+        ApplyVisibilityEffects, InActiveZone, IsExplored, IsVisible, Player, PlayerPosition,
+        Vision, VisionBlocker, Zone, Zones,
     },
     engine::Clock,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
@@ -16,7 +16,7 @@ pub fn update_player_vision(
     q_player: Query<&Vision, With<Player>>,
     player_pos: Res<PlayerPosition>,
     mut q_zones: Query<&mut Zone>,
-    q_vision_blockers: Query<&Position, With<VisionBlocker>>,
+    q_vision_blockers: Query<&Position, (With<VisionBlocker>, With<InActiveZone>)>,
     clock: Res<Clock>,
     zones: Res<Zones>,
 ) {

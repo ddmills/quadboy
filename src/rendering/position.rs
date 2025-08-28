@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Zone, ZoneStatus};
+use crate::domain::{InActiveZone, Zone, ZoneStatus};
 use crate::rendering::{position, world_to_zone_idx, world_to_zone_local};
 
 use crate::engine::SerializableComponent;
@@ -85,6 +85,12 @@ pub fn update_entity_pos(
             zone.entities.insert(local_x, local_y, e);
             pos.prev_zone_idx = new_zone_idx;
             cmds.entity(e).insert(*zone_status).insert(ChildOf(zone_e));
+
+            if *zone_status == ZoneStatus::Active {
+                cmds.entity(e).try_insert(InActiveZone);
+            } else {
+                cmds.entity(e).remove::<InActiveZone>();
+            }
         }
     }
 

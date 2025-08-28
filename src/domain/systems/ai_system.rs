@@ -4,14 +4,14 @@ use macroquad::{prelude::trace, telemetry};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::Rand,
-    domain::{Collider, Energy, EnergyActionType, TurnState, Zone, get_energy_cost},
+    domain::{Collider, Energy, EnergyActionType, InActiveZone, TurnState, Zone, get_energy_cost},
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 
 pub fn ai_turn(
     turn_state: Res<TurnState>,
-    mut q_energy: Query<&mut Energy>,
-    mut q_position: Query<&mut Position>,
+    mut q_energy: Query<&mut Energy, With<InActiveZone>>,
+    mut q_position: Query<&mut Position, With<InActiveZone>>,
     q_zones: Query<&Zone>,
     q_colliders: Query<&Collider>,
 ) {
