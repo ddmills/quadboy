@@ -19,8 +19,6 @@ impl Command<Result> for UnloadZoneCommand {
     fn apply(self, world: &mut World) -> Result {
         let zone_idx = self.zone_idx;
 
-        trace!("unloading {} ({})", zone_idx, self.despawn);
-
         let mut q_zones = world.query::<(Entity, &Zone)>();
         let q_save_flag = world.query::<&SaveFlag>();
 
