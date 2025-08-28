@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::{
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
-        ApplyVisibilityEffects, InActiveZone, IsExplored, IsVisible, Player, PlayerPosition,
-        Vision, VisionBlocker, Zone, Zones,
+        ApplyVisibilityEffects, BitmaskGlyph, InActiveZone, IsExplored, IsVisible, Player,
+        PlayerPosition, RefreshBitmask, Vision, VisionBlocker, Zone, Zones,
     },
     engine::Clock,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
@@ -33,7 +33,8 @@ pub fn update_player_vision(
     };
 
     let player_world_pos = player_pos.world();
-    let player_zone_idx = world_to_zone_idx(player_world_pos.0, player_world_pos.1, player_world_pos.2);
+    let player_zone_idx =
+        world_to_zone_idx(player_world_pos.0, player_world_pos.1, player_world_pos.2);
 
     let Some(zone_entity) = zones.cache.get(&player_zone_idx) else {
         telemetry::end_zone();
@@ -97,11 +98,18 @@ pub fn update_entity_visibility_flags(
     mut cmds: Commands,
     q_zones: Query<&Zone>,
     mut q_entities: Query<
-        (Entity, &Position, Option<&IsVisible>, Option<&IsExplored>),
+        (
+            Entity,
+            &Position,
+            Option<&IsVisible>,
+            Option<&IsExplored>,
+            Option<&BitmaskGlyph>,
+        ),
         (With<ApplyVisibilityEffects>, With<InActiveZone>),
     >,
     clock: Res<Clock>,
     zones: Res<Zones>,
+    mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {
     if clock.is_frozen() {
         return;
@@ -109,7 +117,7 @@ pub fn update_entity_visibility_flags(
 
     telemetry::begin_zone("update_entity_visibility_flags");
 
-    for (entity, position, has_visible, has_explored) in q_entities.iter_mut() {
+    for (entity, position, has_visible, has_explored, has_bitmask) in q_entities.iter_mut() {
         let world_pos = position.world();
         let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
 
@@ -134,6 +142,15 @@ pub fn update_entity_visibility_flags(
         match (is_visible, has_visible.is_some()) {
             (true, false) => {
                 cmds.entity(entity).insert(IsVisible);
+
+                if has_bitmask.is_some() {
+                    e_refresh_bitmask.write(RefreshBitmask(entity));
+
+                    let neighbors = Zone::get_neighbors(world_pos, &q_zones);
+                    for neighbor in neighbors.iter().flatten() {
+                        e_refresh_bitmask.write(RefreshBitmask(*neighbor));
+                    }
+                }
             }
             (false, true) => {
                 cmds.entity(entity).remove::<IsVisible>();

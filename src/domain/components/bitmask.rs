@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use macroquad::telemetry;
 
 use crate::{
     cfg::CARDINALS_OFFSET,
@@ -69,6 +70,7 @@ pub fn on_bitmask_spawn(
     q_zones: Query<&Zone>,
     mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {
+    telemetry::begin_zone("on_bitmask_spawn");
     for (e, p) in q_bitmasks_new.iter() {
         e_refresh_bitmask.write(RefreshBitmask(e));
 
@@ -78,10 +80,11 @@ pub fn on_bitmask_spawn(
             e_refresh_bitmask.write(RefreshBitmask(*neighbor));
         }
     }
+    telemetry::end_zone();
 }
 
 #[derive(Event)]
-pub struct RefreshBitmask(Entity);
+pub struct RefreshBitmask(pub Entity);
 
 pub fn on_refresh_bitmask(
     mut ev_refresh_bitmask: EventReader<RefreshBitmask>,
@@ -90,6 +93,7 @@ pub fn on_refresh_bitmask(
     mut q_glyphs: Query<&mut Glyph>,
     bitmasker: Res<Bitmasker>,
 ) {
+    telemetry::begin_zone("on_refresh_bitmask");
     for RefreshBitmask(entity) in ev_refresh_bitmask.read() {
         let Ok((bitmask, position)) = q_bitmasks.get(*entity) else {
             continue;
@@ -122,4 +126,5 @@ pub fn on_refresh_bitmask(
         let mut glyph = q_glyphs.get_mut(*entity).unwrap();
         glyph.idx = glyph_idx;
     }
+    telemetry::end_zone();
 }
