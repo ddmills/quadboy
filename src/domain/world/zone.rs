@@ -124,9 +124,13 @@ pub struct SetZoneStatusEvent {
 }
 
 pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEvent>) {
-    for LoadZoneEvent(zone_idx) in e_load_zone.read() {
-        cmds.queue(LoadZoneCommand(*zone_idx));
+    // defer loading of zones, just load first one in queue
+    if let Some(evt) = e_load_zone.read().next() {
+        cmds.queue(LoadZoneCommand(evt.0));
     }
+    // for LoadZoneEvent(zone_idx) in e_load_zone.read() {
+    //     cmds.queue(LoadZoneCommand(*zone_idx));
+    // }
 }
 
 pub fn on_unload_zone(mut cmds: Commands, mut e_unload_zone: EventReader<UnloadZoneEvent>) {
