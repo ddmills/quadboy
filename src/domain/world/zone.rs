@@ -134,12 +134,19 @@ pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEve
 }
 
 pub fn on_unload_zone(mut cmds: Commands, mut e_unload_zone: EventReader<UnloadZoneEvent>) {
-    for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
+    // defer unloading of zones, just unload first one in queue
+    if let Some(evt) = e_unload_zone.read().next() {
         cmds.queue(UnloadZoneCommand {
-            zone_idx: *zone_idx,
+            zone_idx: evt.0,
             despawn: true,
         });
     }
+    // for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
+    //     cmds.queue(UnloadZoneCommand {
+    //         zone_idx: *zone_idx,
+    //         despawn: true,
+    //     });
+    // }
 }
 
 pub fn on_set_zone_status(
