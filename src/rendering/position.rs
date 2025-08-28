@@ -60,7 +60,7 @@ pub struct RecordZonePosition;
 
 pub fn update_entity_pos(
     mut cmds: Commands,
-    mut q_moved: Query<(Entity, &mut Position), (Changed<Position>, With<RecordZonePosition>)>,
+    mut q_moved: Query<(Entity, &mut Position), (Or<(Changed<Position>, Added<Position>)>, With<RecordZonePosition>)>,
     mut q_zones: Query<(Entity, &mut Zone, &ZoneStatus)>,
 ) {
     telemetry::begin_zone("update_entity_pos");

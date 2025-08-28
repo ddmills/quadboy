@@ -5,12 +5,11 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone, game_loop,
-        player_input, render_player_debug,
+        game_loop, player_input, render_player_debug, IsExplored, Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
-    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
-    states::{GameStatePlugin, cleanup_system},
+    rendering::{world_to_zone_idx, world_to_zone_local, Glyph, Layer, Position, Text, Visibility},
+    states::{cleanup_system, GameStatePlugin},
 };
 
 use super::GameState;
@@ -111,7 +110,7 @@ fn display_entity_names_at_mouse(
     mouse: Res<Mouse>,
     player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
-    q_names: Query<&Label>,
+    q_names: Query<&Label, With<IsExplored>>,
     mut q_hover_text: Query<(&mut Text, &mut Position, &mut Visibility), With<MouseHoverText>>,
 ) {
     let mouse_x = mouse.world.0.floor() as usize;
