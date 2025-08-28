@@ -5,11 +5,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Vision {
     pub range: usize,
+    pub underground_range: usize,
 }
 
 impl Vision {
     pub fn new(range: usize) -> Self {
-        Self { range }
+        Self { 
+            range,
+            underground_range: range / 2,
+        }
+    }
+
+    pub fn with_underground_range(range: usize, underground_range: usize) -> Self {
+        Self {
+            range,
+            underground_range,
+        }
     }
 }
 

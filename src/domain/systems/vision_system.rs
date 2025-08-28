@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    cfg::SURFACE_LEVEL_Z,
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, InActiveZone, IsExplored, IsVisible, Player,
@@ -10,7 +11,7 @@ use crate::{
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 use bevy_ecs::prelude::*;
-use macroquad::telemetry;
+use macroquad::{prelude::trace, telemetry};
 
 pub fn update_player_vision(
     q_player: Query<&Vision, With<Player>>,
@@ -62,10 +63,17 @@ pub fn update_player_vision(
     let player_y = player_world_pos.1 as i32;
     let player_z = player_world_pos.2 as i32;
 
+    let is_underground = player_world_pos.2 > SURFACE_LEVEL_Z;
+    let vision_range = if is_underground {
+        vision.underground_range
+    } else {
+        vision.range
+    };
+
     let settings = ShadowcastSettings {
         start_x: player_x,
         start_y: player_y,
-        distance: vision.range as i32,
+        distance: vision_range as i32,
         is_blocker: |x: i32, y: i32| blocker_cache.contains_key(&(x, y, player_z)),
         on_light: |x: i32, y: i32, _distance: f64| {
             if x < 0 || y < 0 {

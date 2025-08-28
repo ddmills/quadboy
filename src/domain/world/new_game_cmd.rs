@@ -38,7 +38,7 @@ impl NewGameCommand {
     fn execute_new_game(&self, world: &mut World) -> NewGameResult {
         delete_save(&self.save_name);
 
-        let starting_position = Position::new(847, 433, SURFACE_LEVEL_Z);
+        let starting_position = Position::new(502, 466, SURFACE_LEVEL_Z);
         let start_zone = starting_position.zone_idx();
 
         let player_entity = world
@@ -46,7 +46,7 @@ impl NewGameCommand {
                 starting_position.clone(),
                 Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
                 Player,
-                Vision::new(40),
+                Vision::with_underground_range(40, 15),
                 ApplyVisibilityEffects,
                 Collider,
                 Energy::new(-10),

@@ -20,12 +20,12 @@ pub struct GameSystems {
 
 pub fn register_game_systems(world: &mut World) {
     let systems = vec![
-        world.register_system(turn_scheduler),
-        world.register_system(ai_turn),
         world.register_system(update_entity_pos),
-        world.register_system(process_energy_consumption),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
+        world.register_system(turn_scheduler),
+        world.register_system(ai_turn),
+        world.register_system(process_energy_consumption),
     ];
 
     world.insert_resource(GameSystems { all: systems });

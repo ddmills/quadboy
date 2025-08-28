@@ -1,5 +1,5 @@
 pub mod biome;
-pub mod builders;
+pub mod biomes;
 pub mod grid_helpers;
 pub mod overworld;
 pub mod overworld_roads;
@@ -9,7 +9,7 @@ pub mod zone_factory;
 pub mod zone_generator;
 
 pub use biome::*;
-pub use builders::*;
+pub use biomes::*;
 pub use grid_helpers::*;
 pub use overworld::*;
 pub use overworld_roads::*;
