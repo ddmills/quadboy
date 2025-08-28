@@ -104,7 +104,7 @@ impl Overworld {
         }
     }
 
-    pub fn get_zone_type(&mut self, zone_idx: usize) -> BiomeType {
+    pub fn get_zone_type(&self, zone_idx: usize) -> BiomeType {
         let (x, y, z) = zone_xyz(zone_idx);
 
         if z < SURFACE_LEVEL_Z {

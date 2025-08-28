@@ -20,7 +20,7 @@ impl Perlin {
     }
 
     // get 2d noise value, clamped to [0, 1)
-    pub fn get(&mut self, x: f32, y: f32) -> f32 {
+    pub fn get(&self, x: f32, y: f32) -> f32 {
         (self.nz.get_noise_2d(x, y) + 1.) / 2.
     }
 }

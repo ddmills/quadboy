@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
+use macroquad_profiler;
 
 use crate::rendering::Text;
 
@@ -82,6 +83,6 @@ pub fn render_fps(time: Res<Time>, mut q_fps: Query<&mut Text, With<FpsDisplay>>
 #[allow(dead_code)]
 pub fn render_profiler() {
     macroquad_profiler::profiler(macroquad_profiler::ProfilerParams {
-        fps_counter_pos: vec2(0., 0.),
+        fps_counter_pos: vec2(20., 20.),
     });
 }

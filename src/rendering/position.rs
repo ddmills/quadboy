@@ -3,7 +3,7 @@ use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{Zone, ZoneStatus};
-use crate::rendering::{world_to_zone_idx, world_to_zone_local};
+use crate::rendering::{position, world_to_zone_idx, world_to_zone_local};
 
 use crate::engine::SerializableComponent;
 
@@ -64,6 +64,7 @@ pub fn update_entity_pos(
     mut q_zones: Query<(Entity, &mut Zone, &ZoneStatus)>,
 ) {
     telemetry::begin_zone("update_entity_pos");
+
     for (e, mut pos) in q_moved.iter_mut() {
         let new_zone_idx = pos.zone_idx();
         let old_zone_idx = pos.prev_zone_idx;
@@ -86,5 +87,6 @@ pub fn update_entity_pos(
             cmds.entity(e).insert(*zone_status).insert(ChildOf(zone_e));
         }
     }
+
     telemetry::end_zone();
 }

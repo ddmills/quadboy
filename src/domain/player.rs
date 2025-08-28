@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        Collider, ConsumeEnergyEvent, EnergyActionType, GameSettings, Prefabs, StairDown, StairUp,
-        TurnState, Zone,
+        Collider, ConsumeEnergyEvent, Energy, EnergyActionType, GameSettings, Prefabs, StairDown,
+        StairUp, TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, zone_xyz},
@@ -224,6 +224,7 @@ pub fn render_player_debug(
     q_player: Query<&Position, With<Player>>,
     mut q_debug: Query<&mut Text, With<PlayerDebug>>,
     q_glyphs: Query<&Glyph>,
+    q_energy: Query<&Energy>,
     cursor: Res<Mouse>,
 ) {
     let Ok(position) = q_player.single() else {
@@ -233,20 +234,14 @@ pub fn render_player_debug(
         return;
     };
     let zone_idx = position.zone_idx();
-    let zone_pos = zone_xyz(zone_idx);
 
     debug.value = format!(
-        "{},{},{} ({},{},{} {{Y|{}}}) [{},{}] glyphs={}",
-        position.x,
-        position.y,
-        position.z,
-        zone_pos.0,
-        zone_pos.1,
-        zone_pos.2,
-        zone_idx,
+        "MOUSE={{C|{}}},{{C|{}}} ZONE_IDX={{C|{}}} GLYPHS={{C|{}}} ACTORS={{C|{}}}",
         cursor.world.0.floor(),
         cursor.world.1.floor(),
-        q_glyphs.iter().len()
+        zone_idx,
+        q_glyphs.iter().len(),
+        q_energy.iter().len(),
     );
 }
 

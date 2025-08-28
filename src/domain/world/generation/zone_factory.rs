@@ -140,27 +140,87 @@ impl ZoneFactory {
         let mut on_road = false;
         let road_terrain = self.ozone.biome_type.get_road_terrain();
 
+        // Collect constraints to avoid borrow checker issues
+        let north_constraints: Vec<_> = self
+            .ozone
+            .constraints
+            .north
+            .0
+            .iter()
+            .cloned()
+            .enumerate()
+            .collect();
+        let south_constraints: Vec<_> = self
+            .ozone
+            .constraints
+            .south
+            .0
+            .iter()
+            .cloned()
+            .enumerate()
+            .collect();
+        let east_constraints: Vec<_> = self
+            .ozone
+            .constraints
+            .east
+            .0
+            .iter()
+            .cloned()
+            .enumerate()
+            .collect();
+        let west_constraints: Vec<_> = self
+            .ozone
+            .constraints
+            .west
+            .0
+            .iter()
+            .cloned()
+            .enumerate()
+            .collect();
+
         // NORTH
-        for (x, constraint) in self.ozone.constraints.north.0.iter().enumerate() {
-            if let ZoneConstraintType::Road(_) = constraint {
-                let y = 0;
-                self.terrain.set(x, y, road_terrain);
-                self.locked.set(x, y, true);
+        for (x, constraint) in north_constraints {
+            match constraint {
+                ZoneConstraintType::Road(_) => {
+                    let y = 0;
+                    self.terrain.set(x, y, road_terrain);
+                    self.locked.set(x, y, true);
 
-                if !on_road {
-                    c_road_pos = (x, y);
+                    if !on_road {
+                        c_road_pos = (x, y);
+                    }
+
+                    on_road = true;
+                    c_road_width += 1;
                 }
+                ZoneConstraintType::Rock => {
+                    let y = 0;
+                    let world_pos = zone_local_to_world(self.zone_idx, x, y);
+                    let boulder_config = SpawnConfig::new(PrefabId::Boulder, world_pos);
+                    self.push_entity(x, y, boulder_config);
+                    self.lock_tile(x, y);
 
-                on_road = true;
-                c_road_width += 1;
-            } else if on_road {
-                self.roads.push(RoadConnection {
-                    category: RoadCategory::North,
-                    pos: (c_road_pos.0, c_road_pos.1),
-                    width: c_road_width,
-                });
-                on_road = false;
-                c_road_width = 0;
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::North,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
+                _ => {
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::North,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
             }
         }
 
@@ -168,27 +228,48 @@ impl ZoneFactory {
         c_road_width = 0;
 
         // SOUTH
-        for (x, constraint) in self.ozone.constraints.south.0.iter().enumerate() {
-            if let ZoneConstraintType::Road(_) = constraint {
-                let y = ZONE_SIZE.1 - 1;
-                self.terrain.set(x, y, road_terrain);
-                self.locked.set(x, y, true);
+        for (x, constraint) in south_constraints {
+            match constraint {
+                ZoneConstraintType::Road(_) => {
+                    let y = ZONE_SIZE.1 - 1;
+                    self.terrain.set(x, y, road_terrain);
+                    self.locked.set(x, y, true);
 
-                if !on_road {
-                    c_road_pos = (x, y);
+                    if !on_road {
+                        c_road_pos = (x, y);
+                    }
+
+                    on_road = true;
+                    c_road_width += 1;
                 }
+                ZoneConstraintType::Rock => {
+                    let y = ZONE_SIZE.1 - 1;
+                    let world_pos = zone_local_to_world(self.zone_idx, x, y);
+                    let boulder_config = SpawnConfig::new(PrefabId::Boulder, world_pos);
+                    self.push_entity(x, y, boulder_config);
+                    self.lock_tile(x, y);
 
-                on_road = true;
-                c_road_width += 1;
-            } else if on_road {
-                self.roads.push(RoadConnection {
-                    category: RoadCategory::South,
-                    pos: (c_road_pos.0, c_road_pos.1),
-                    width: c_road_width,
-                });
-                // self.road_grid.set(c_road_pos.0, c_road_pos.1, true);
-                on_road = false;
-                c_road_width = 0;
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::South,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
+                _ => {
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::South,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
             }
         }
 
@@ -196,26 +277,48 @@ impl ZoneFactory {
         c_road_width = 0;
 
         // EAST
-        for (y, constraint) in self.ozone.constraints.east.0.iter().enumerate() {
-            if let ZoneConstraintType::Road(_) = constraint {
-                let x = ZONE_SIZE.0 - 1;
-                self.terrain.set(x, y, road_terrain);
-                self.locked.set(x, y, true);
+        for (y, constraint) in east_constraints {
+            match constraint {
+                ZoneConstraintType::Road(_) => {
+                    let x = ZONE_SIZE.0 - 1;
+                    self.terrain.set(x, y, road_terrain);
+                    self.locked.set(x, y, true);
 
-                if !on_road {
-                    c_road_pos = (x, y);
+                    if !on_road {
+                        c_road_pos = (x, y);
+                    }
+
+                    on_road = true;
+                    c_road_width += 1;
                 }
+                ZoneConstraintType::Rock => {
+                    let x = ZONE_SIZE.0 - 1;
+                    let world_pos = zone_local_to_world(self.zone_idx, x, y);
+                    let boulder_config = SpawnConfig::new(PrefabId::Boulder, world_pos);
+                    self.push_entity(x, y, boulder_config);
+                    self.lock_tile(x, y);
 
-                on_road = true;
-                c_road_width += 1;
-            } else if on_road {
-                self.roads.push(RoadConnection {
-                    category: RoadCategory::East,
-                    pos: (c_road_pos.0, c_road_pos.1),
-                    width: c_road_width,
-                });
-                on_road = false;
-                c_road_width = 0;
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::East,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
+                _ => {
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::East,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
             }
         }
 
@@ -223,26 +326,48 @@ impl ZoneFactory {
         c_road_width = 0;
 
         // WEST
-        for (y, constraint) in self.ozone.constraints.west.0.iter().enumerate() {
-            if let ZoneConstraintType::Road(_) = constraint {
-                let x = 0;
-                self.terrain.set(x, y, road_terrain);
-                self.locked.set(x, y, true);
+        for (y, constraint) in west_constraints {
+            match constraint {
+                ZoneConstraintType::Road(_) => {
+                    let x = 0;
+                    self.terrain.set(x, y, road_terrain);
+                    self.locked.set(x, y, true);
 
-                if !on_road {
-                    c_road_pos = (x, y);
+                    if !on_road {
+                        c_road_pos = (x, y);
+                    }
+
+                    on_road = true;
+                    c_road_width += 1;
                 }
+                ZoneConstraintType::Rock => {
+                    let x = 0;
+                    let world_pos = zone_local_to_world(self.zone_idx, x, y);
+                    let boulder_config = SpawnConfig::new(PrefabId::Boulder, world_pos);
+                    self.push_entity(x, y, boulder_config);
+                    self.lock_tile(x, y);
 
-                on_road = true;
-                c_road_width += 1;
-            } else if on_road {
-                self.roads.push(RoadConnection {
-                    category: RoadCategory::West,
-                    pos: (c_road_pos.0, c_road_pos.1),
-                    width: c_road_width,
-                });
-                on_road = false;
-                c_road_width = 0;
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::West,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
+                _ => {
+                    if on_road {
+                        self.roads.push(RoadConnection {
+                            category: RoadCategory::West,
+                            pos: (c_road_pos.0, c_road_pos.1),
+                            width: c_road_width,
+                        });
+                        on_road = false;
+                        c_road_width = 0;
+                    }
+                }
             }
         }
     }

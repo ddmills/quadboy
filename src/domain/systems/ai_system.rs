@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use macroquad::telemetry;
+use macroquad::{prelude::trace, telemetry};
 
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},

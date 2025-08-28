@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use crate::domain::{
-    world::terrain, CavernBiomeBuilder, DesertBiomeBuilder, ForestBiomeBuilder, OpenAirBiomeBuilder, Terrain, ZoneFactory
+    CavernBiomeBuilder, DesertBiomeBuilder, ForestBiomeBuilder, OpenAirBiomeBuilder, Terrain,
+    ZoneFactory, world::terrain,
 };
 
 pub trait BiomeBuilder {

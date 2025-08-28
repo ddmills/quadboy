@@ -1,7 +1,7 @@
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z, ZONE_SIZE},
     common::{Direction, Rand},
-    domain::{Overworld, RoadType},
+    domain::{BiomeType, Overworld, RoadType},
     rendering::{zone_idx as calculate_zone_idx, zone_xyz},
 };
 
@@ -100,6 +100,28 @@ pub fn get_edge_continuity(
     let mut edge_constraints = vec![ZoneConstraintType::None; edge_length];
 
     if let Some(neighbor) = neighbor_idx {
+        let mut rand = Rand::seed(overworld.seed + zone_idx as u32 + neighbor as u32);
+
+        let zone_biome = overworld.get_zone_type(zone_idx);
+        let is_cavern = zone_biome == BiomeType::Cavern;
+
+        let (num_rock_sections, min_length, max_length) = if is_cavern {
+            (rand.range_n(3, 7), 4, 12)
+        } else {
+            (rand.range_n(1, 4), 2, 8)
+        };
+
+        for _ in 0..num_rock_sections {
+            let start = rand.range_n(0, edge_length as i32) as usize;
+            let length = rand.range_n(min_length, max_length);
+            let end = (start + length as usize).min(edge_length);
+
+            for i in start..end {
+                edge_constraints[i] = ZoneConstraintType::Rock;
+            }
+        }
+
+        // Roads take precedence - overwrite any rock constraints
         if overworld.zone_has_road(zone_idx) && overworld.zone_has_road(neighbor) {
             if let Some(road_network) = overworld.get_road_network(z) {
                 if let Some(road_segment) = road_network
