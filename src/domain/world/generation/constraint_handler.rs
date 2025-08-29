@@ -64,6 +64,7 @@ impl ConstraintHandler {
         Self::apply_river_constraints(ozone, terrain, locked, river_builder);
         // Apply other constraints
         Self::apply_rock_constraints(ozone, entities, locked, road_builder);
+        Self::apply_foliage_constraints(ozone, entities, locked);
         Self::apply_vertical_constraints(ozone, entities, locked, road_builder);
     }
 
@@ -292,5 +293,58 @@ impl ConstraintHandler {
                 }
             }
         }
+    }
+
+    fn apply_foliage_constraints(
+        ozone: &OverworldZone,
+        entities: &mut Grid<Vec<SpawnConfig>>,
+        locked: &mut Grid<bool>,
+    ) {
+        let directions = [
+            EdgeDirection::North,
+            EdgeDirection::South,
+            EdgeDirection::East,
+            EdgeDirection::West,
+        ];
+
+        for direction in &directions {
+            let constraints = direction.get_constraints(ozone);
+
+            for (index, constraint) in constraints.iter().enumerate() {
+                let (x, y) = direction.get_position(index);
+
+                if let ZoneConstraintType::Foliage = constraint {
+                    // Only place foliage if the tile isn't already locked
+                    if !locked.get(x, y).copied().unwrap_or(false) {
+                        Self::place_foliage(ozone, x, y, entities, locked);
+                    }
+                }
+            }
+        }
+    }
+
+    fn place_foliage(
+        ozone: &OverworldZone,
+        x: usize,
+        y: usize,
+        entities: &mut Grid<Vec<SpawnConfig>>,
+        locked: &mut Grid<bool>,
+    ) {
+        let world_pos = zone_local_to_world(ozone.zone_idx, x, y);
+
+        // Choose foliage type based on biome
+        let prefab_id = match ozone.biome_type {
+            crate::domain::BiomeType::Forest => PrefabId::PineTree,
+            crate::domain::BiomeType::Desert => PrefabId::Cactus,
+            crate::domain::BiomeType::Cavern => PrefabId::PineTree, // Temporary, will be mushrooms later
+            _ => return,                                            // No foliage for other biomes
+        };
+
+        let config = SpawnConfig::new(prefab_id, world_pos);
+
+        if let Some(entities_at_pos) = entities.get_mut(x, y) {
+            entities_at_pos.push(config);
+        }
+        locked.set(x, y, true);
     }
 }

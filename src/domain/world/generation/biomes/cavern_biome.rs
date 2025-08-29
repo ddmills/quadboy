@@ -77,7 +77,7 @@ fn generate_cave_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<bool> {
 }
 
 fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
-    // Check if this position should be kept clear for passages or rivers
+    // Check if this position should be kept clear for passages, rivers, or foliage
     if y == 0 {
         if let Some(constraint) = zone.ozone.constraints.north.0.get(x) {
             return matches!(
@@ -85,6 +85,7 @@ fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
                 ZoneConstraintType::None
                     | ZoneConstraintType::River(_)
                     | ZoneConstraintType::Road(_)
+                    | ZoneConstraintType::Foliage
             );
         }
     }
@@ -96,6 +97,7 @@ fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
                 ZoneConstraintType::None
                     | ZoneConstraintType::River(_)
                     | ZoneConstraintType::Road(_)
+                    | ZoneConstraintType::Foliage
             );
         }
     }
@@ -107,6 +109,7 @@ fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
                 ZoneConstraintType::None
                     | ZoneConstraintType::River(_)
                     | ZoneConstraintType::Road(_)
+                    | ZoneConstraintType::Foliage
             );
         }
     }
@@ -118,6 +121,7 @@ fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
                 ZoneConstraintType::None
                     | ZoneConstraintType::River(_)
                     | ZoneConstraintType::Road(_)
+                    | ZoneConstraintType::Foliage
             );
         }
     }

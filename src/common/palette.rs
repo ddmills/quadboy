@@ -26,7 +26,7 @@ pub enum Palette {
     Purple = 0xC467EC,
     DarkPurple = 0x8E44AD,
     Cyan = 0x48C9B0,
-    DarkCyan = 0x17A2B8,
+    DarkCyan = 0x238179,
     Clear = 0x1F161F,
 }
 

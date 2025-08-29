@@ -22,6 +22,7 @@ pub enum ZoneConstraintType {
     River(RiverType),
     StairDown,
     Rock,
+    Foliage,
 }
 
 pub fn get_zone_constraints(overworld: &Overworld, zone_idx: usize) -> ZoneContinuity {
@@ -119,6 +120,49 @@ pub fn get_edge_continuity(
 
             for i in start..end {
                 edge_constraints[i] = ZoneConstraintType::Rock;
+            }
+        }
+
+        // Add foliage generation based on biome
+        let (foliage_density, foliage_min_length, foliage_max_length) = match zone_biome {
+            BiomeType::Forest => (0.5, 1, 3),  // High density, small clusters
+            BiomeType::Desert => (0.25, 1, 2), // Medium density, smaller clusters
+            BiomeType::Cavern => (0.15, 1, 2), // Low density, small clusters
+            _ => (0.0, 0, 0),                  // No foliage for other biomes
+        };
+
+        if foliage_density > 0.0 {
+            // Count available spaces (not Rock)
+            let available_spaces: Vec<usize> = edge_constraints
+                .iter()
+                .enumerate()
+                .filter_map(|(i, &c)| {
+                    if c == ZoneConstraintType::None {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            let num_foliage_sections =
+                ((available_spaces.len() as f32 * foliage_density) / 2.0) as i32;
+
+            for _ in 0..num_foliage_sections {
+                if available_spaces.is_empty() {
+                    break;
+                }
+
+                let start_idx = rand.range_n(0, available_spaces.len() as i32) as usize;
+                let start = available_spaces[start_idx];
+                let length = rand.range_n(foliage_min_length, foliage_max_length + 1) as usize;
+                let end = (start + length).min(edge_length);
+
+                for i in start..end {
+                    if edge_constraints[i] == ZoneConstraintType::None {
+                        edge_constraints[i] = ZoneConstraintType::Foliage;
+                    }
+                }
             }
         }
 
