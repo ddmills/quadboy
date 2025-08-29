@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        Collider, ConsumeEnergyEvent, Energy, EnergyActionType, GameSettings, Prefabs, StairDown,
-        StairUp, TurnState, Zone,
+        Collider, ConsumeEnergyEvent, Energy, EnergyActionType, GameSettings, IsExplored, Prefabs,
+        StairDown, StairUp, TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx},
@@ -66,6 +66,7 @@ pub fn player_input(
     turn_state: Res<TurnState>,
     settings: Res<GameSettings>,
     q_zone: Query<&Zone>,
+    q_unexplored: Query<Entity, Without<IsExplored>>,
 ) {
     let now = time.fixed_t;
     let rate = settings.input_rate;
@@ -84,6 +85,26 @@ pub fn player_input(
 
     if keys.is_pressed(KeyCode::G) {
         Prefabs::spawn(&mut cmds, SpawnConfig::new(PrefabId::Boulder, (x, y, z)));
+    }
+
+    if keys.is_pressed(KeyCode::V) {
+        // Mark all entities in current zone as explored (doesn't consume energy)
+        let zone_idx = world_to_zone_idx(x, y, z);
+        for zone in q_zone.iter() {
+            if zone.idx == zone_idx {
+                // Iterate through all cells in the zone's entity grid
+                for entity_vec in zone.entities.iter() {
+                    // Each cell can have multiple entities
+                    for &entity in entity_vec.iter() {
+                        // Only add IsExplored if the entity doesn't already have it
+                        if q_unexplored.contains(entity) {
+                            cmds.entity(entity).insert(IsExplored);
+                        }
+                    }
+                }
+            }
+        }
+        // Don't return here - this action doesn't consume energy or end the turn
     }
 
     if !turn_state.is_players_turn {

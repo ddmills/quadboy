@@ -32,7 +32,7 @@ impl BiomeType {
             BiomeType::OpenAir => Terrain::OpenAir,
             BiomeType::Forest => Terrain::Dirt,
             BiomeType::Desert => Terrain::Dirt,
-            BiomeType::Cavern => Terrain::River,
+            BiomeType::Cavern => Terrain::Dirt,
         }
     }
 }
