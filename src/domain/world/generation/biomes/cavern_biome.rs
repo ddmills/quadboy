@@ -34,7 +34,7 @@ impl BiomeBuilder for CavernBiomeBuilder {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Boulder, wpos));
                     } else if rand.bool(0.005) {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Bandit, wpos));
-                    } else if rand.bool(0.005) {
+                    } else if rand.bool(0.0025 * wpos.2 as f32) {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::GiantMushroom, wpos));
                     }
                 }
