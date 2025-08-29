@@ -1,5 +1,6 @@
 use crate::domain::{
-    ConstraintHandler, OverworldZone, RoadBuilder, SpawnConfig, Terrain, ZoneData, ZoneGridData,
+    ConstraintHandler, OverworldZone, RiverBuilder, RoadBuilder, SpawnConfig, Terrain, ZoneData,
+    ZoneGridData,
 };
 
 pub struct ZoneFactory {
@@ -19,11 +20,12 @@ impl ZoneFactory {
 
     pub fn build(&mut self) -> ZoneData {
         let mut road_builder = RoadBuilder::new();
+        let mut river_builder = RiverBuilder::new();
         let road_terrain = self.ozone.biome_type.get_road_terrain();
         let zone_idx = self.zone_idx;
         let biome_type = self.ozone.biome_type;
 
-        // Apply all constraints and set up roads
+        // Apply all constraints and set up roads and rivers
         {
             let (terrain, entities, locked) = self.grid_data.get_all_grids_mut();
             ConstraintHandler::apply_all_constraints(
@@ -32,8 +34,21 @@ impl ZoneFactory {
                 entities,
                 locked,
                 &mut road_builder,
+                &mut river_builder,
                 road_terrain,
             );
+        }
+
+        // Build river connections first (they have priority)
+        {
+            let locked_grid = self.grid_data.locked_grid();
+            river_builder.build_rivers(locked_grid, zone_idx);
+        }
+
+        // Apply rivers to terrain
+        {
+            let (terrain, locked) = self.grid_data.get_terrain_and_locked_mut();
+            river_builder.apply_rivers_to_terrain(terrain, locked);
         }
 
         // Build road connections
@@ -42,7 +57,7 @@ impl ZoneFactory {
             road_builder.build_roads(locked_grid, zone_idx);
         }
 
-        // Apply roads to terrain
+        // Apply roads to terrain (will create shallows where roads cross rivers)
         {
             let (terrain, locked) = self.grid_data.get_terrain_and_locked_mut();
             road_builder.apply_roads_to_terrain(terrain, locked, road_terrain);

@@ -169,7 +169,7 @@ impl RoadBuilder {
                 let r = grid_bool.get(x, y).unwrap();
 
                 if *locked_grid.get(x, y).unwrap_or(&true) {
-                    return 10.0;  // Reduced cost to allow crossing rivers when needed
+                    return 10.0; // Reduced cost to allow crossing rivers when needed
                 }
 
                 let rand_cost = match r {

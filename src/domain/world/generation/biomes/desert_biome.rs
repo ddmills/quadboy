@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, Rand},
-    domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneData, ZoneFactory},
+    common::Rand,
+    domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
