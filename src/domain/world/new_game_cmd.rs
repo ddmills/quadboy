@@ -46,11 +46,11 @@ impl NewGameCommand {
                 starting_position.clone(),
                 Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
                 Player,
-                Vision::with_underground_range(40, 15),
+                Vision::with_underground_range(16, 8),
                 ApplyVisibilityEffects,
                 Collider,
                 Energy::new(-10),
-                Label::new("{Y-y repeat|Cowboy}"),
+                Label::new("{Y-y scroll|Cowboy}"),
                 RecordZonePosition,
                 CleanupStatePlay,
             ))

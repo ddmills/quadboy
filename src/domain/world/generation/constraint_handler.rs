@@ -332,12 +332,11 @@ impl ConstraintHandler {
     ) {
         let world_pos = zone_local_to_world(ozone.zone_idx, x, y);
 
-        // Choose foliage type based on biome
         let prefab_id = match ozone.biome_type {
             crate::domain::BiomeType::Forest => PrefabId::PineTree,
             crate::domain::BiomeType::Desert => PrefabId::Cactus,
-            crate::domain::BiomeType::Cavern => PrefabId::PineTree, // Temporary, will be mushrooms later
-            _ => return,                                            // No foliage for other biomes
+            crate::domain::BiomeType::Cavern => PrefabId::GiantMushroom,
+            _ => return,
         };
 
         let config = SpawnConfig::new(prefab_id, world_pos);

@@ -35,6 +35,15 @@ impl BiomeType {
             BiomeType::Cavern => Terrain::Dirt,
         }
     }
+
+    pub fn get_primary_terrain(&self) -> Terrain {
+        match self {
+            BiomeType::OpenAir => Terrain::OpenAir,
+            BiomeType::Forest => Terrain::Grass,
+            BiomeType::Desert => Terrain::Sand,
+            BiomeType::Cavern => Terrain::Sand,
+        }
+    }
 }
 
 impl Display for BiomeType {

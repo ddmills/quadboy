@@ -1,6 +1,7 @@
 mod bandit;
 mod boulder;
 mod cactus;
+mod giant_mushroom;
 mod pine_tree;
 mod prefabs;
 mod spawn_prefab_cmd;
@@ -11,6 +12,7 @@ mod terrain_tile;
 pub use bandit::*;
 pub use boulder::*;
 pub use cactus::*;
+pub use giant_mushroom::*;
 pub use pine_tree::*;
 pub use prefabs::*;
 pub use spawn_prefab_cmd::*;

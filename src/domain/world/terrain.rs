@@ -18,24 +18,27 @@ pub enum Terrain {
 impl Terrain {
     pub fn tiles(&self) -> Vec<usize> {
         match self {
-            Terrain::Grass => vec![0, 1, 2, 3],
-            Terrain::Dirt => vec![48, 49],
+            Terrain::Grass => vec![0, 1, 2],
+            Terrain::Dirt => vec![4, 5],
+            // Terrain::Dirt => vec![48, 49],
+            // Terrain::Sand => vec![4, 5],
             Terrain::Sand => vec![16, 17, 18],
             Terrain::River => vec![34],
-            Terrain::Shallows => vec![32],
+            Terrain::Shallows => vec![5],
             Terrain::OpenAir => vec![0],
         }
     }
 
-    pub fn colors(&self) -> (Option<u32>, Option<u32>) {
+    pub fn label_formatted(&self) -> String {
         match self {
-            Terrain::Grass => (None, Some(Palette::DarkCyan.into())),
-            Terrain::Dirt => (None, Some(Palette::Brown.into())),
-            Terrain::Sand => (None, Some(Palette::Red.into())),
-            Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
-            Terrain::Shallows => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
-            Terrain::OpenAir => (None, None),
+            Terrain::Grass => "{G|Grass}",
+            Terrain::Dirt => "{X|Dirt}",
+            Terrain::Sand => "{Y|Sand}",
+            Terrain::River => "{B|River}",
+            Terrain::Shallows => "{B|Shallows}",
+            Terrain::OpenAir => "{B|Open Air}",
         }
+        .to_owned()
     }
 }
 
@@ -74,7 +77,7 @@ impl TerrainNoise {
 
         Style {
             idx: sand_tiles[tile_idx],
-            fg1: Palette::White.into(),
+            fg1: Palette::Red.into(),
             fg2: None,
             bg: None,
             outline: None,
@@ -131,16 +134,16 @@ impl TerrainNoise {
 
     pub fn shallows(&mut self, pos: (usize, usize)) -> Style {
         let v = self.river.get(pos.0 as f32, pos.1 as f32);
-        let shallows_tiles = Terrain::Shallows.tiles();
+        let shallows_tiles = Terrain::River.tiles();
 
         let tile_idx = (v * shallows_tiles.len() as f32) as usize;
         let tile_idx = tile_idx.min(shallows_tiles.len() - 1);
 
         Style {
             idx: shallows_tiles[tile_idx],
-            fg1: Palette::Blue.into(),
+            fg1: Palette::DarkBlue.into(),
             fg2: None,
-            bg: Palette::DarkBlue.into(),
+            bg: Palette::Blue.into(),
             outline: None,
         }
     }

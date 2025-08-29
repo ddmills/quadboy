@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::Grid,
-    domain::{SpawnConfig, Terrain},
+    domain::{BiomeType, SpawnConfig, Terrain},
 };
 
 pub struct ZoneGridData {
@@ -11,9 +11,9 @@ pub struct ZoneGridData {
 }
 
 impl ZoneGridData {
-    pub fn new() -> Self {
+    pub fn new(terrain: Terrain) -> Self {
         Self {
-            terrain: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| Terrain::Grass),
+            terrain: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| terrain),
             entities: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| vec![]),
             locked: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
         }

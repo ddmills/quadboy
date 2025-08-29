@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Resource, Clone)]
 pub struct GameSettings {
-    pub input_rate: f64,
+    pub input_delay: f64,
     pub input_initial_delay: f64,
     pub zone_boundary_move_delay: f64,
     pub enable_saves: bool,
@@ -24,7 +24,7 @@ pub struct GameSettings {
 impl Default for GameSettings {
     fn default() -> Self {
         Self {
-            input_rate: 0.05,
+            input_delay: 0.075,
             input_initial_delay: 0.2,
             zone_boundary_move_delay: 0.0,
             enable_saves: true,

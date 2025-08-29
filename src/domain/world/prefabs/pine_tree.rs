@@ -11,7 +11,7 @@ use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: SpawnConfig) {
     let mut rand = world.get_resource_mut::<Rand>().unwrap();
-    let glyph_char = rand.pick(&[64, 47]);
+    let glyph_char = rand.pick(&[45, 46, 47]);
 
     world.entity_mut(entity).insert((
         Position::new_world(config.pos),

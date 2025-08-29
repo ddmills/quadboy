@@ -9,7 +9,7 @@ use crate::{
         StairDown, StairUp, TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
-    rendering::{Glyph, Position, Text, world_to_zone_idx},
+    rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
     states::{CurrentGameState, GameState},
 };
 
@@ -69,7 +69,7 @@ pub fn player_input(
     q_unexplored: Query<Entity, Without<IsExplored>>,
 ) {
     let now = time.fixed_t;
-    let rate = settings.input_rate;
+    let mut rate = settings.input_delay;
     let delay = settings.input_initial_delay;
     let (player_entity, mut position) = q_player.single_mut().unwrap();
     let mut moved = false;
@@ -85,6 +85,10 @@ pub fn player_input(
 
     if keys.is_pressed(KeyCode::G) {
         Prefabs::spawn(&mut cmds, SpawnConfig::new(PrefabId::Boulder, (x, y, z)));
+    }
+
+    if keys.is_down(KeyCode::LeftShift) {
+        rate /= 2.0;
     }
 
     if keys.is_pressed(KeyCode::V) {
@@ -284,6 +288,7 @@ pub fn render_player_debug(
     mut q_debug: Query<&mut Text, With<PlayerDebug>>,
     q_glyphs: Query<&Glyph>,
     q_energy: Query<&Energy>,
+    q_zones: Query<&Zone>,
     cursor: Res<Mouse>,
 ) {
     let Ok(position) = q_player.single() else {
@@ -294,11 +299,29 @@ pub fn render_player_debug(
     };
     let zone_idx = position.zone_idx();
 
+    let (cursor_x, cursor_y) = (
+        cursor.world.0.floor() as usize,
+        cursor.world.1.floor() as usize,
+    );
+
+    // Get terrain at player position
+    let terrain_str = if let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) {
+        let (local_x, local_y) = world_to_zone_local(cursor_x, cursor_y);
+        if let Some(terrain) = zone.terrain.get(local_x, local_y) {
+            terrain.label_formatted()
+        } else {
+            "Unknown".to_string()
+        }
+    } else {
+        "No Zone".to_string()
+    };
+
     debug.value = format!(
-        "MOUSE={{C|{}}},{{C|{}}} ZONE_IDX={{C|{}}} GLYPHS={{C|{}}} ACTORS={{C|{}}}",
-        cursor.world.0.floor(),
-        cursor.world.1.floor(),
+        "MOUSE={{C|{}}},{{C|{}}} ZONE_IDX={{C|{}}} TERRAIN={} GLYPHS={{C|{}}} ACTORS={{C|{}}}",
+        cursor_x,
+        cursor_y,
         zone_idx,
+        terrain_str,
         q_glyphs.iter().len(),
         q_energy.iter().len(),
     );

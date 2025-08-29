@@ -12,9 +12,9 @@ pub struct ZoneFactory {
 impl ZoneFactory {
     pub fn new(ozone: OverworldZone) -> Self {
         Self {
+            grid_data: ZoneGridData::new(ozone.biome_type.get_primary_terrain()),
             zone_idx: ozone.zone_idx,
             ozone,
-            grid_data: ZoneGridData::new(),
         }
     }
 

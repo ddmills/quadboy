@@ -125,7 +125,7 @@ pub fn render_text(
     time: Res<Time>,
 ) {
     telemetry::begin_zone("render_text");
-    let tick = (time.fixed_t * 25.).floor() as usize;
+    let tick = (time.fixed_t * 10.).floor() as usize;
 
     let changed = q_text.p0().iter().collect::<Vec<_>>();
 

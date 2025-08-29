@@ -12,11 +12,11 @@ pub enum Palette {
     Black = 0x140E08,
     Gray = 0xA0845C,
     Green = 0x89CA43,
-    DarkGreen = 0x4C7C29,
+    DarkGreen = 0x395C20,
     Brown = 0x9E5423,
     DarkBrown = 0xBF6F2A,
     Blue = 0x53ACE7,
-    DarkBlue = 0x255270,
+    DarkBlue = 0x1E435C,
     Red = 0xD4311E,
     DarkRed = 0xA7362A,
     Orange = 0xFF7A27,
@@ -25,9 +25,9 @@ pub enum Palette {
     DarkYellow = 0xD68910,
     Purple = 0xC467EC,
     DarkPurple = 0x8E44AD,
-    Cyan = 0x48C9B0,
-    DarkCyan = 0x238179,
-    Clear = 0x1F161F,
+    Cyan = 0x43D4B7,
+    DarkCyan = 0x23816A,
+    Clear = 0x1A131A,
 }
 
 #[allow(dead_code)]
@@ -134,6 +134,8 @@ fn get_seq_color(ch: &str) -> Palette {
         "o" => Palette::DarkOrange,
         "P" => Palette::Purple,
         "p" => Palette::DarkPurple,
+        "X" => Palette::Brown,
+        "x" => Palette::DarkBrown,
         _ => Palette::White,
     }
 }

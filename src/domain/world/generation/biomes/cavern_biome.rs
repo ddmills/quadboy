@@ -34,6 +34,8 @@ impl BiomeBuilder for CavernBiomeBuilder {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Boulder, wpos));
                     } else if rand.bool(0.005) {
                         zone.push_entity(x, y, SpawnConfig::new(PrefabId::Bandit, wpos));
+                    } else if rand.bool(0.005) {
+                        zone.push_entity(x, y, SpawnConfig::new(PrefabId::GiantMushroom, wpos));
                     }
                 }
             }
@@ -49,18 +51,49 @@ fn generate_cave_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<bool> {
             return false;
         }
 
+        // Check if this tile is locked (rivers, roads already placed)
+        // Rivers are River/Shallows terrain, roads are Dirt terrain when locked
+        if zone.grid_data.is_locked_tile(x, y) {
+            if let Some(terrain) = zone.grid_data.terrain.get(x, y) {
+                // If it's a river or shallows, always seed as empty
+                // If it's dirt and locked, it's a road - also seed as empty
+                if matches!(terrain, Terrain::River | Terrain::Shallows) {
+                    return false;
+                }
+                // Dirt terrain when locked means it's a road
+                if matches!(terrain, Terrain::Dirt) {
+                    return false;
+                }
+            }
+        }
+
         // Place rocks at edge rock positions
         if is_edge_rock_position(zone, x, y) {
             return true;
         }
 
-        // Random initial state with 45% density
+        // Random initial state with 50% density
         rand.bool(0.5)
     });
 
-    // Create constraints grid to preserve edge passages
+    // Create constraints grid to preserve edge passages and rivers/roads
     let constraints = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-        should_keep_clear(zone, x, y) || is_edge_rock_position(zone, x, y)
+        // Preserve edge constraints
+        if should_keep_clear(zone, x, y) || is_edge_rock_position(zone, x, y) {
+            return true;
+        }
+
+        // Preserve rivers and roads
+        if zone.grid_data.is_locked_tile(x, y) {
+            if let Some(terrain) = zone.grid_data.terrain.get(x, y) {
+                // Preserve rivers, shallows, and roads (which are Dirt when locked)
+                if matches!(terrain, Terrain::River | Terrain::Shallows | Terrain::Dirt) {
+                    return true;
+                }
+            }
+        }
+
+        false
     });
 
     // Run cellular automata

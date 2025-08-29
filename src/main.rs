@@ -141,7 +141,11 @@ async fn main() {
         )
         .add_systems(
             ScheduleType::FrameFinal,
-            (render_all, crate::engine::render_profiler).chain(),
+            (
+                render_all,
+                // crate::engine::render_profiler,
+            )
+                .chain(),
         )
         .add_systems(
             ScheduleType::StateTransition,

@@ -245,11 +245,11 @@ fn settings_input(
 
     // Input Rate controls (Up/Down arrows)
     if keys.is_pressed(KeyCode::Up) {
-        settings.input_rate = (settings.input_rate + 0.005).min(0.2);
+        settings.input_delay = (settings.input_delay + 0.005).min(0.2);
     }
 
     if keys.is_pressed(KeyCode::Down) {
-        settings.input_rate = (settings.input_rate - 0.005).max(0.01);
+        settings.input_delay = (settings.input_delay - 0.005).max(0.01);
     }
 
     // Input Delay controls (Left/Right arrows)
@@ -374,7 +374,7 @@ fn update_settings_display(
     if let Ok(mut text) = q_text.get_mut(ui_entities.input_rate) {
         text.value = format!(
             "({{Y|↑}}/{{Y|↓}}) Input Rate: {{G|{:.3}}}",
-            settings.input_rate
+            settings.input_delay
         );
     }
 
