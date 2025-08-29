@@ -77,28 +77,48 @@ fn generate_cave_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<bool> {
 }
 
 fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
-    // Check if this position should be kept clear for passages
+    // Check if this position should be kept clear for passages or rivers
     if y == 0 {
         if let Some(constraint) = zone.ozone.constraints.north.0.get(x) {
-            return *constraint == ZoneConstraintType::None;
+            return matches!(
+                constraint,
+                ZoneConstraintType::None
+                    | ZoneConstraintType::River(_)
+                    | ZoneConstraintType::Road(_)
+            );
         }
     }
 
     if y == ZONE_SIZE.1 - 1 {
         if let Some(constraint) = zone.ozone.constraints.south.0.get(x) {
-            return *constraint == ZoneConstraintType::None;
+            return matches!(
+                constraint,
+                ZoneConstraintType::None
+                    | ZoneConstraintType::River(_)
+                    | ZoneConstraintType::Road(_)
+            );
         }
     }
 
     if x == 0 {
         if let Some(constraint) = zone.ozone.constraints.west.0.get(y) {
-            return *constraint == ZoneConstraintType::None;
+            return matches!(
+                constraint,
+                ZoneConstraintType::None
+                    | ZoneConstraintType::River(_)
+                    | ZoneConstraintType::Road(_)
+            );
         }
     }
 
     if x == ZONE_SIZE.0 - 1 {
         if let Some(constraint) = zone.ozone.constraints.east.0.get(y) {
-            return *constraint == ZoneConstraintType::None;
+            return matches!(
+                constraint,
+                ZoneConstraintType::None
+                    | ZoneConstraintType::River(_)
+                    | ZoneConstraintType::Road(_)
+            );
         }
     }
 

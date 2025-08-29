@@ -227,7 +227,7 @@ impl RiverBuilder {
                 // Lower weight for more meandering
                 0.5 * Distance::manhattan([x as i32, y as i32, 0], [b.0 as i32, b.1 as i32, 0])
             },
-            neighbors: |[x, y]| get_river_neighbors((x, y)),
+            neighbors: |[x, y]| get_river_neighbors((x, y), river_type),
             max_depth: 10000,
             max_cost: None,
         });
@@ -255,29 +255,20 @@ impl RiverBuilder {
     }
 }
 
-fn get_river_neighbors(pos: (usize, usize)) -> Vec<[usize; 2]> {
+fn get_river_neighbors(pos: (usize, usize), river_type: RiverType) -> Vec<[usize; 2]> {
     let mut neighbors = vec![];
     let (x, y) = pos;
 
-    // Cardinals and diagonals for smoother river flow
+    // Width-1 rivers (creeks) should only use cardinal directions for more natural flow
+    let allow_diagonals = river_type.width() > 1;
+
+    // Cardinals - always allowed
     if x > 0 {
         neighbors.push([x - 1, y]);
-        if y > 0 {
-            neighbors.push([x - 1, y - 1]);
-        }
-        if y < ZONE_SIZE.1 - 1 {
-            neighbors.push([x - 1, y + 1]);
-        }
     }
 
     if x < ZONE_SIZE.0 - 1 {
         neighbors.push([x + 1, y]);
-        if y > 0 {
-            neighbors.push([x + 1, y - 1]);
-        }
-        if y < ZONE_SIZE.1 - 1 {
-            neighbors.push([x + 1, y + 1]);
-        }
     }
 
     if y > 0 {
@@ -286,6 +277,27 @@ fn get_river_neighbors(pos: (usize, usize)) -> Vec<[usize; 2]> {
 
     if y < ZONE_SIZE.1 - 1 {
         neighbors.push([x, y + 1]);
+    }
+
+    // Diagonals - only for wider rivers
+    if allow_diagonals {
+        if x > 0 {
+            if y > 0 {
+                neighbors.push([x - 1, y - 1]);
+            }
+            if y < ZONE_SIZE.1 - 1 {
+                neighbors.push([x - 1, y + 1]);
+            }
+        }
+
+        if x < ZONE_SIZE.0 - 1 {
+            if y > 0 {
+                neighbors.push([x + 1, y - 1]);
+            }
+            if y < ZONE_SIZE.1 - 1 {
+                neighbors.push([x + 1, y + 1]);
+            }
+        }
     }
 
     neighbors

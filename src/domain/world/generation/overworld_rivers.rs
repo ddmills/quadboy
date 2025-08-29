@@ -13,11 +13,110 @@ impl OverworldRiverGenerator {
     pub fn generate_rivers(seed: u32) -> HashMap<usize, RiverNetwork> {
         let mut networks = HashMap::new();
 
-        // Generate rivers only at the surface level
+        // Generate rivers at surface level
         let network = Self::generate_rivers_for_layer(SURFACE_LEVEL_Z, seed);
         networks.insert(SURFACE_LEVEL_Z, network);
 
+        // Generate underground rivers for cavern levels
+        for z in (SURFACE_LEVEL_Z + 1)..MAP_SIZE.2 {
+            let cavern_network = Self::generate_cavern_rivers(z, seed);
+            networks.insert(z, cavern_network);
+        }
+
         networks
+    }
+
+    fn generate_cavern_rivers(z: usize, seed: u32) -> RiverNetwork {
+        let mut network = RiverNetwork::default();
+        let mut rand = Rand::seed(seed + z as u32 + 5000); // Different seed offset for caverns
+
+        // Cavern rivers use different perlin noise for underground water flow patterns
+        let cave_perlin = Perlin::new(seed + 2000 + z as u32, 0.08, 3, 2.0);
+
+        // More underground rivers for better coverage
+        let num_underground_rivers = rand.range_n(4, 7);
+        let mut river_sources = Vec::new();
+
+        // Create underground river sources at random positions
+        for _ in 0..num_underground_rivers {
+            let x = rand.range_n(0, MAP_SIZE.0 as i32);
+            let y = rand.range_n(0, MAP_SIZE.1 as i32);
+            river_sources.push((x, y));
+        }
+
+        // Create more underground lakes/pools that rivers flow between
+        let num_pools = rand.range_n(5, 9);
+        let mut pools = Vec::new();
+        for _ in 0..num_pools {
+            let x = rand.range_n(2, MAP_SIZE.0 as i32 - 2);
+            let y = rand.range_n(2, MAP_SIZE.1 as i32 - 2);
+            pools.push((x as usize, y as usize));
+        }
+
+        // Flow rivers between sources and pools
+        for &(start_x, start_y) in &river_sources {
+            // Find nearest pool to flow toward
+            if let Some(&(pool_x, pool_y)) = pools.iter().min_by_key(|&&(px, py)| {
+                let dx = (start_x - px as i32).abs();
+                let dy = (start_y - py as i32).abs();
+                dx + dy
+            }) {
+                // Flow underground river toward pool
+                Self::flow_cavern_river(
+                    start_x,
+                    start_y,
+                    pool_x as i32,
+                    pool_y as i32,
+                    RiverType::Stream, // Underground rivers are typically streams
+                    &mut network,
+                    &cave_perlin,
+                    &mut rand,
+                    z,
+                );
+            }
+        }
+
+        // Connect pools to each other with more connections
+        for i in 0..pools.len() {
+            // Connect to next pool in sequence
+            if i + 1 < pools.len() {
+                let (x1, y1) = pools[i];
+                let (x2, y2) = pools[i + 1];
+                Self::flow_cavern_river(
+                    x1 as i32,
+                    y1 as i32,
+                    x2 as i32,
+                    y2 as i32,
+                    RiverType::Creek,
+                    &mut network,
+                    &cave_perlin,
+                    &mut rand,
+                    z,
+                );
+            }
+
+            // Add some cross-connections for more interconnected network
+            if pools.len() > 4 && rand.bool(0.4) {
+                let other_idx = rand.range_n(0, pools.len() as i32) as usize;
+                if other_idx != i && other_idx != i + 1 && i != 0 {
+                    let (x1, y1) = pools[i];
+                    let (x2, y2) = pools[other_idx];
+                    Self::flow_cavern_river(
+                        x1 as i32,
+                        y1 as i32,
+                        x2 as i32,
+                        y2 as i32,
+                        RiverType::Creek,
+                        &mut network,
+                        &cave_perlin,
+                        &mut rand,
+                        z,
+                    );
+                }
+            }
+        }
+
+        network
     }
 
     fn generate_rivers_for_layer(z: usize, seed: u32) -> RiverNetwork {
@@ -138,6 +237,107 @@ impl OverworldRiverGenerator {
 
         // Upgrade river segments based on confluences
         Self::upgrade_confluence_segments(network);
+    }
+
+    fn flow_cavern_river(
+        start_x: i32,
+        start_y: i32,
+        target_x: i32,
+        target_y: i32,
+        river_type: RiverType,
+        network: &mut RiverNetwork,
+        cave_perlin: &Perlin,
+        rand: &mut Rand,
+        z: usize,
+    ) {
+        let mut x = start_x;
+        let mut y = start_y;
+        let mut visited = HashSet::new();
+        let max_steps = 200;
+
+        for _step in 0..max_steps {
+            // Check bounds
+            if x < 0 || y < 0 || x >= MAP_SIZE.0 as i32 || y >= MAP_SIZE.1 as i32 {
+                break;
+            }
+
+            let current_zone_idx = zone_idx(x as usize, y as usize, z);
+
+            // Avoid loops
+            if visited.contains(&current_zone_idx) {
+                break;
+            }
+            visited.insert(current_zone_idx);
+
+            // Add to network
+            network.nodes.insert(current_zone_idx);
+
+            // Check if we reached target
+            if (x - target_x).abs() <= 1 && (y - target_y).abs() <= 1 {
+                break;
+            }
+
+            // Find next position toward target with some randomness
+            let dx = (target_x - x).signum();
+            let dy = (target_y - y).signum();
+
+            // Add some meandering based on perlin noise
+            let noise = cave_perlin.get(x as f32 * 0.5, y as f32 * 0.5);
+
+            // Only move in cardinal directions (no diagonals between zones)
+            let (next_x, next_y) = if dx != 0 && dy != 0 {
+                // Both directions available - choose one based on noise and randomness
+                if rand.random() < 0.5 + noise * 0.2 {
+                    (x + dx, y) // Move horizontally
+                } else {
+                    (x, y + dy) // Move vertically
+                }
+            } else if dx != 0 {
+                // Only horizontal movement needed
+                (x + dx, y)
+            } else if dy != 0 {
+                // Only vertical movement needed
+                (x, y + dy)
+            } else {
+                // At target or need to meander
+                let meander = if rand.random() < 0.3 + noise * 0.2 {
+                    if rand.bool(0.5) {
+                        if rand.bool(0.5) { (1, 0) } else { (-1, 0) } // Horizontal meander
+                    } else {
+                        if rand.bool(0.5) { (0, 1) } else { (0, -1) } // Vertical meander
+                    }
+                } else {
+                    (0, 0)
+                };
+                (x + meander.0, y + meander.1)
+            };
+
+            // Ensure next position is valid
+            if next_x >= 0
+                && next_y >= 0
+                && next_x < MAP_SIZE.0 as i32
+                && next_y < MAP_SIZE.1 as i32
+            {
+                let from = current_zone_idx;
+                let to = zone_idx(next_x as usize, next_y as usize, z);
+                let direction = Self::get_direction(x, y, next_x, next_y);
+
+                network.edges.insert(
+                    (from, to),
+                    RiverSegment {
+                        river_type,
+                        flow_direction: direction,
+                        depth: Self::calculate_depth(river_type),
+                        length: 1.0,
+                    },
+                );
+
+                x = next_x;
+                y = next_y;
+            } else {
+                break;
+            }
+        }
     }
 
     fn flow_river(
