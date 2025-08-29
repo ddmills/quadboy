@@ -2,7 +2,6 @@ use std::collections::VecDeque;
 
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
-use macroquad_profiler;
 
 use crate::rendering::Text;
 

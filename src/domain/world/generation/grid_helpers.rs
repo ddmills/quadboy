@@ -35,7 +35,7 @@ impl ZoneGrid {
     }
 
     pub fn perlin(seed: u32, frequency: f32, octaves: u32, lacunarity: f32) -> Grid<f32> {
-        let mut nz = Perlin::new(seed, frequency, octaves, lacunarity);
+        let nz = Perlin::new(seed, frequency, octaves, lacunarity);
 
         Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| nz.get(x as f32, y as f32))
     }

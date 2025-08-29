@@ -152,7 +152,7 @@ impl OverworldRiverGenerator {
     ) {
         let mut x = start_x;
         let mut y = start_y;
-        let mut river_type = initial_type;
+        let river_type = initial_type;
         let mut visited = HashSet::new();
         let mut previous_direction = None;
 

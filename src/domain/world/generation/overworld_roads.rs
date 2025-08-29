@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use macroquad::prelude::trace;
-
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{
@@ -141,7 +139,7 @@ impl OverworldRoadGenerator {
         let start = (pos1.0, pos1.1);
         let goal = (pos2.0, pos2.1);
 
-        let mut perlin = Perlin::new(seed + 500, 0.1, 1, 1.5);
+        let perlin = Perlin::new(seed + 500, 0.1, 1, 1.5);
 
         let min_x = pos1.0.min(pos2.0).saturating_sub(5);
         let max_x = (pos1.0.max(pos2.0) + 5).min(MAP_SIZE.0 - 1);

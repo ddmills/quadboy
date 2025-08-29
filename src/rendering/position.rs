@@ -3,7 +3,7 @@ use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{InActiveZone, Zone, ZoneStatus};
-use crate::rendering::{position, world_to_zone_idx, world_to_zone_local};
+use crate::rendering::{world_to_zone_idx, world_to_zone_local};
 
 use crate::engine::SerializableComponent;
 

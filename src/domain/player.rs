@@ -9,7 +9,7 @@ use crate::{
         StairUp, TurnState, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
-    rendering::{Glyph, Position, Text, world_to_zone_idx, zone_xyz},
+    rendering::{Glyph, Position, Text, world_to_zone_idx},
     states::{CurrentGameState, GameState},
 };
 

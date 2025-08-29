@@ -2,9 +2,9 @@ use bevy_ecs::prelude::*;
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
-    cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
+    cfg::MAP_SIZE,
     common::Palette,
-    domain::{BiomeType, Overworld, PlayerPosition, RoadNetwork},
+    domain::{BiomeType, Overworld, PlayerPosition},
     engine::{KeyInput, Mouse, Plugin},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},

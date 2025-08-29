@@ -11,7 +11,7 @@ use crate::{
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 use bevy_ecs::prelude::*;
-use macroquad::{prelude::trace, telemetry};
+use macroquad::telemetry;
 
 pub fn update_player_vision(
     q_player: Query<&Vision, With<Player>>,

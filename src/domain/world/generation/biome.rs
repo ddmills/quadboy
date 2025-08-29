@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::domain::{
     CavernBiomeBuilder, DesertBiomeBuilder, ForestBiomeBuilder, OpenAirBiomeBuilder, Terrain,
-    ZoneFactory, world::terrain,
+    ZoneFactory,
 };
 
 pub trait BiomeBuilder {

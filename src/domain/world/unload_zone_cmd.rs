@@ -1,5 +1,4 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 use serde::{Deserialize, Serialize};
 
 use crate::{

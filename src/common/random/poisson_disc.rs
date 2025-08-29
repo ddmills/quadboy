@@ -52,8 +52,6 @@ impl PoissonDiscSampler {
             let idx = self.rng.range_n(0, self.active_list.len() as i32) as usize;
             let current = self.active_list[idx];
 
-            let mut found = false;
-
             for _ in 0..30 {
                 let angle = self.rng.random() * 2.0 * std::f32::consts::PI;
                 let distance = self.settings.radius + self.rng.random() * self.settings.radius;
@@ -75,15 +73,13 @@ impl PoissonDiscSampler {
                         self.grid.set(grid_x, grid_y, Some(new_point));
                         self.active_list.push(new_point);
                         self.samples.push(new_point);
-                        found = true;
                         return Some(new_point);
                     }
                 }
             }
 
-            if !found {
-                self.active_list.remove(idx);
-            }
+            // No valid point found after 30 attempts, remove from active list
+            self.active_list.remove(idx);
         }
 
         None
