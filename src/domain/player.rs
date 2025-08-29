@@ -59,6 +59,7 @@ pub fn player_input(
     keys: Res<KeyInput>,
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
+    mut movement_timer: Local<(f64, bool)>, // (last_move_time, past_initial_delay)
     mut e_player_moved: EventWriter<PlayerMovedEvent>,
     mut e_consume_energy: EventWriter<ConsumeEnergyEvent>,
     mut game_state: ResMut<CurrentGameState>,
@@ -97,94 +98,131 @@ pub fn player_input(
         return;
     }
 
-    if x > 0
-        && keys.is_down(KeyCode::A)
-        && can_move_with_boundary_check(
-            KeyCode::A,
-            (x, y, z),
-            (x - 1, y, z),
-            &mut input_rate,
-            now,
-            rate,
-            delay,
-            &settings,
-        )
-        && !has_collider_at((x - 1, y, z), &q_colliders, &q_zone)
-    {
-        position.x -= 1.;
-        moved = true;
+    // Check if any movement key is pressed or held
+    let movement_keys_down = keys.is_down(KeyCode::A)
+        || keys.is_down(KeyCode::D)
+        || keys.is_down(KeyCode::W)
+        || keys.is_down(KeyCode::S)
+        || keys.is_down(KeyCode::Q)
+        || keys.is_down(KeyCode::E);
+
+    // Check if any movement key was just pressed (not held)
+    let movement_keys_pressed = keys.is_pressed(KeyCode::A)
+        || keys.is_pressed(KeyCode::D)
+        || keys.is_pressed(KeyCode::W)
+        || keys.is_pressed(KeyCode::S)
+        || keys.is_pressed(KeyCode::Q)
+        || keys.is_pressed(KeyCode::E);
+
+    if !movement_keys_down {
+        // Reset movement timer when no keys are held
+        movement_timer.1 = false;
     }
 
-    if x < (MAP_SIZE.0 * ZONE_SIZE.0) - 1
-        && keys.is_down(KeyCode::D)
-        && can_move_with_boundary_check(
-            KeyCode::D,
-            (x, y, z),
-            (x + 1, y, z),
-            &mut input_rate,
-            now,
-            rate,
-            delay,
-            &settings,
-        )
-        && !has_collider_at((x + 1, y, z), &q_colliders, &q_zone)
-    {
-        position.x += 1.;
-        moved = true;
-    }
+    // Determine if we can move:
+    // - Always move immediately on fresh key press
+    // - Otherwise check timing based on whether we're in initial delay or repeat phase
+    let can_move = if movement_keys_pressed {
+        true // Immediate movement on key press
+    } else if movement_keys_down {
+        if movement_timer.1 {
+            // Already past initial delay, use repeat rate
+            now - movement_timer.0 >= rate
+        } else {
+            // Still in initial delay period
+            if now - movement_timer.0 >= delay {
+                // Initial delay has passed, switch to repeat rate
+                movement_timer.1 = true;
+                true
+            } else {
+                false
+            }
+        }
+    } else {
+        false
+    };
 
-    if y > 0
-        && keys.is_down(KeyCode::W)
-        && can_move_with_boundary_check(
-            KeyCode::W,
-            (x, y, z),
-            (x, y - 1, z),
-            &mut input_rate,
-            now,
-            rate,
-            delay,
-            &settings,
-        )
-        && !has_collider_at((x, y - 1, z), &q_colliders, &q_zone)
-    {
-        position.y -= 1.;
-        moved = true;
-    }
+    if movement_keys_down && can_move {
+        // Collect intended movement deltas
+        let mut dx: i32 = 0;
+        let mut dy: i32 = 0;
+        let mut dz: i32 = 0;
 
-    if y < (MAP_SIZE.1 * ZONE_SIZE.1) - 1
-        && keys.is_down(KeyCode::S)
-        && can_move_with_boundary_check(
-            KeyCode::S,
-            (x, y, z),
-            (x, y + 1, z),
-            &mut input_rate,
-            now,
-            rate,
-            delay,
-            &settings,
-        )
-        && !has_collider_at((x, y + 1, z), &q_colliders, &q_zone)
-    {
-        position.y += 1.;
-        moved = true;
-    }
+        if x > 0 && keys.is_down(KeyCode::A) {
+            dx -= 1;
+        }
 
-    if z > 0
-        && keys.is_down(KeyCode::E)
-        && input_rate.try_key(KeyCode::E, now, rate, delay)
-        && is_on_stair_up(x, y, z, &q_stairs_up)
-    {
-        position.z -= 1.;
-        moved = true;
-    }
+        if x < (MAP_SIZE.0 * ZONE_SIZE.0) - 1 && keys.is_down(KeyCode::D) {
+            dx += 1;
+        }
 
-    if z < MAP_SIZE.2 - 1
-        && keys.is_down(KeyCode::Q)
-        && input_rate.try_key(KeyCode::Q, now, rate, delay)
-        && is_on_stair_down(x, y, z, &q_stairs_down)
-    {
-        position.z += 1.;
-        moved = true;
+        if y > 0 && keys.is_down(KeyCode::W) {
+            dy -= 1;
+        }
+
+        if y < (MAP_SIZE.1 * ZONE_SIZE.1) - 1 && keys.is_down(KeyCode::S) {
+            dy += 1;
+        }
+
+        if z > 0 && keys.is_down(KeyCode::E) && is_on_stair_up(x, y, z, &q_stairs_up) {
+            dz -= 1;
+        }
+
+        if z < MAP_SIZE.2 - 1
+            && keys.is_down(KeyCode::Q)
+            && is_on_stair_down(x, y, z, &q_stairs_down)
+        {
+            dz += 1;
+        }
+
+        // Check final destination for collisions
+        if dx != 0 || dy != 0 || dz != 0 {
+            let new_x = (x as i32 + dx) as usize;
+            let new_y = (y as i32 + dy) as usize;
+            let new_z = (z as i32 + dz) as usize;
+
+            // Check if crossing zone boundary for different rate
+            let crosses_boundary = would_cross_zone_boundary((x, y, z), (new_x, new_y, new_z));
+            // For zone boundary crossing, override the normal timing
+            let zone_boundary_override =
+                crosses_boundary && settings.zone_boundary_move_delay > 0.0;
+
+            // Check timing: immediate on press, or respect delays for held keys
+            let can_move_now = if movement_keys_pressed && !zone_boundary_override {
+                true // Immediate on press (unless crossing zone boundary)
+            } else if zone_boundary_override {
+                now - movement_timer.0 >= settings.zone_boundary_move_delay
+            } else {
+                // Already checked timing in can_move above
+                true
+            };
+
+            if can_move_now {
+                // Check bounds
+                if new_x < MAP_SIZE.0 * ZONE_SIZE.0
+                    && new_y < MAP_SIZE.1 * ZONE_SIZE.1
+                    && new_z < MAP_SIZE.2
+                {
+                    // For vertical movement, also check if we're still on the appropriate stair
+                    let can_move_vertically = dz == 0
+                        || (dz < 0 && is_on_stair_up(new_x, new_y, z, &q_stairs_up))
+                        || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
+
+                    if can_move_vertically
+                        && !has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone)
+                    {
+                        position.x = new_x as f32;
+                        position.y = new_y as f32;
+                        position.z = new_z as f32;
+                        moved = true;
+
+                        // Update movement timer
+                        movement_timer.0 = now;
+                        // Don't set past_initial_delay to true here - let the timing logic handle it
+                    }
+                }
+            }
+        }
     }
 
     for key in keys.released.iter() {
@@ -296,28 +334,4 @@ fn would_cross_zone_boundary(
     let from_zone = world_to_zone_idx(from_pos.0, from_pos.1, from_pos.2);
     let to_zone = world_to_zone_idx(to_pos.0, to_pos.1, to_pos.2);
     from_zone != to_zone
-}
-
-fn can_move_with_boundary_check(
-    key: KeyCode,
-    from_pos: (usize, usize, usize),
-    to_pos: (usize, usize, usize),
-    input_rate: &mut InputRate,
-    now: f64,
-    rate: f64,
-    delay: f64,
-    settings: &GameSettings,
-) -> bool {
-    let crosses_boundary = would_cross_zone_boundary(from_pos, to_pos);
-
-    if crosses_boundary && settings.zone_boundary_move_delay > 0.0 {
-        input_rate.try_key(
-            key,
-            now,
-            settings.zone_boundary_move_delay,
-            settings.zone_boundary_move_delay,
-        )
-    } else {
-        input_rate.try_key(key, now, rate, delay)
-    }
 }

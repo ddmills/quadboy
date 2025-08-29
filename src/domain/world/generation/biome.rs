@@ -31,7 +31,7 @@ impl BiomeType {
         match self {
             BiomeType::OpenAir => Terrain::OpenAir,
             BiomeType::Forest => Terrain::Dirt,
-            BiomeType::Desert => Terrain::Grass,
+            BiomeType::Desert => Terrain::Dirt,
             BiomeType::Cavern => Terrain::River,
         }
     }

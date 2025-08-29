@@ -20,7 +20,7 @@ impl Terrain {
         match self {
             Terrain::Grass => vec![0, 1, 2, 3],
             Terrain::Dirt => vec![48, 49],
-            Terrain::Sand => vec![32, 33, 34, 35],
+            Terrain::Sand => vec![16, 17, 18],
             Terrain::River => vec![34],
             Terrain::Shallows => vec![32],
             Terrain::OpenAir => vec![0],
@@ -70,11 +70,11 @@ impl TerrainNoise {
         let sand_tiles = Terrain::Sand.tiles();
 
         let tile_idx = (v * sand_tiles.len() as f32) as usize;
-        let tile_idx = tile_idx.min(sand_tiles.len() - 2);
+        let tile_idx = tile_idx.min(sand_tiles.len() - 1);
 
         Style {
             idx: sand_tiles[tile_idx],
-            fg1: Palette::Brown.into(),
+            fg1: Palette::White.into(),
             fg2: None,
             bg: None,
             outline: None,
