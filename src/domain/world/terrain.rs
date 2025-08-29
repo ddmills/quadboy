@@ -12,15 +12,17 @@ pub enum Terrain {
     Dirt = 3,
     River = 4,
     Sand = 5,
+    Shallows = 6,
 }
 
 impl Terrain {
     pub fn tiles(&self) -> Vec<usize> {
         match self {
             Terrain::Grass => vec![0, 1, 2, 3],
-            Terrain::Dirt => vec![18, 19],
+            Terrain::Dirt => vec![48, 49],
             Terrain::Sand => vec![32, 33, 34, 35],
-            Terrain::River => vec![32, 33, 34, 35],
+            Terrain::River => vec![34],
+            Terrain::Shallows => vec![32],
             Terrain::OpenAir => vec![0],
         }
     }
@@ -31,6 +33,7 @@ impl Terrain {
             Terrain::Dirt => (None, Some(Palette::Brown.into())),
             Terrain::Sand => (None, Some(Palette::Red.into())),
             Terrain::River => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
+            Terrain::Shallows => (Some(Palette::DarkBlue.into()), Some(Palette::Blue.into())),
             Terrain::OpenAir => (None, None),
         }
     }
@@ -126,6 +129,22 @@ impl TerrainNoise {
         }
     }
 
+    pub fn shallows(&mut self, pos: (usize, usize)) -> Style {
+        let v = self.river.get(pos.0 as f32, pos.1 as f32);
+        let shallows_tiles = Terrain::Shallows.tiles();
+
+        let tile_idx = (v * shallows_tiles.len() as f32) as usize;
+        let tile_idx = tile_idx.min(shallows_tiles.len() - 1);
+
+        Style {
+            idx: shallows_tiles[tile_idx],
+            fg1: Palette::Blue.into(),
+            fg2: None,
+            bg: Palette::DarkBlue.into(),
+            outline: None,
+        }
+    }
+
     pub fn style(&mut self, terrain: Terrain, pos: (usize, usize)) -> Style {
         match terrain {
             Terrain::OpenAir => Style {
@@ -139,6 +158,7 @@ impl TerrainNoise {
             Terrain::Dirt => self.dirt(pos),
             Terrain::River => self.river(pos),
             Terrain::Sand => self.sand(pos),
+            Terrain::Shallows => self.shallows(pos),
         }
     }
 }

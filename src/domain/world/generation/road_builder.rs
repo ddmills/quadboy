@@ -67,9 +67,13 @@ impl RoadBuilder {
     ) {
         for (x, y, &is_road) in self.road_grid.iter_xy() {
             if is_road {
-                // Don't overwrite river tiles
                 let current_terrain = terrain.get(x, y).unwrap_or(&Terrain::Grass);
-                if *current_terrain != Terrain::River {
+                if *current_terrain == Terrain::River {
+                    // Place shallows where roads cross rivers
+                    terrain.set(x, y, Terrain::Shallows);
+                    locked.set(x, y, true);
+                } else {
+                    // Normal road placement
                     terrain.set(x, y, road_terrain);
                     locked.set(x, y, true);
                 }
@@ -165,7 +169,7 @@ impl RoadBuilder {
                 let r = grid_bool.get(x, y).unwrap();
 
                 if *locked_grid.get(x, y).unwrap_or(&true) {
-                    return 100.0;
+                    return 10.0;  // Reduced cost to allow crossing rivers when needed
                 }
 
                 let rand_cost = match r {
@@ -190,7 +194,8 @@ impl RoadBuilder {
                         let x = s_x + w1;
                         let y = s_y + w2;
 
-                        if in_zone_bounds(x, y) && !*locked_grid.get(x, y).unwrap_or(&true) {
+                        if in_zone_bounds(x, y) {
+                            // Always place road, even on locked tiles (rivers)
                             self.road_grid.set(x, y, true);
                         }
                     }

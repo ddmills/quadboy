@@ -79,6 +79,7 @@ impl Prefabs {
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::River), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Sand), spawn_terrain_tile);
+        self.register(PrefabId::TerrainTile(Terrain::Shallows), spawn_terrain_tile);
     }
 
     pub fn register(&mut self, id: PrefabId, spawn_fn: SpawnFunction) {
