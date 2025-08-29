@@ -10,7 +10,7 @@ pub struct Vision {
 
 impl Vision {
     pub fn new(range: usize) -> Self {
-        Self { 
+        Self {
             range,
             underground_range: range / 2,
         }

@@ -15,20 +15,10 @@ pub enum Terrain {
 }
 
 impl Terrain {
-    pub fn tile(&self) -> usize {
-        match self {
-            Terrain::Grass => 1,
-            Terrain::Dirt => 129,
-            Terrain::Sand => 33,
-            Terrain::River => 34,
-            Terrain::OpenAir => 0,
-        }
-    }
-
     pub fn tiles(&self) -> Vec<usize> {
         match self {
             Terrain::Grass => vec![0, 1, 2, 3],
-            Terrain::Dirt => vec![16, 17, 18, 19],
+            Terrain::Dirt => vec![18, 19],
             Terrain::Sand => vec![32, 33, 34, 35],
             Terrain::River => vec![32, 33, 34, 35],
             Terrain::OpenAir => vec![0],

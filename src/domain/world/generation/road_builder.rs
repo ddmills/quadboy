@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use macroquad::prelude::trace;
+use std::collections::HashMap;
 
 use crate::{
     cfg::ZONE_SIZE,
@@ -59,26 +59,43 @@ impl RoadBuilder {
         self.connect_stairs(&grouped_bycat);
     }
 
-    pub fn apply_roads_to_terrain(&self, terrain: &mut Grid<Terrain>, locked: &mut Grid<bool>, road_terrain: Terrain) {
+    pub fn apply_roads_to_terrain(
+        &self,
+        terrain: &mut Grid<Terrain>,
+        locked: &mut Grid<bool>,
+        road_terrain: Terrain,
+    ) {
         for (x, y, &is_road) in self.road_grid.iter_xy() {
             if is_road {
-                terrain.set(x, y, road_terrain);
-                locked.set(x, y, true);
+                // Don't overwrite river tiles
+                let current_terrain = terrain.get(x, y).unwrap_or(&Terrain::Grass);
+                if *current_terrain != Terrain::River {
+                    terrain.set(x, y, road_terrain);
+                    locked.set(x, y, true);
+                }
             }
         }
     }
 
     fn group_connections_by_category(&self) -> HashMap<RoadCategory, Vec<RoadConnection>> {
         let mut grouped: HashMap<RoadCategory, Vec<RoadConnection>> = HashMap::new();
-        
+
         for connection in &self.connections {
-            grouped.entry(connection.category).or_default().push(*connection);
+            grouped
+                .entry(connection.category)
+                .or_default()
+                .push(*connection);
         }
-        
+
         grouped
     }
 
-    fn connect_horizontal_roads(&mut self, grouped: &HashMap<RoadCategory, Vec<RoadConnection>>, locked_grid: &Grid<bool>, zone_idx: usize) {
+    fn connect_horizontal_roads(
+        &mut self,
+        grouped: &HashMap<RoadCategory, Vec<RoadConnection>>,
+        locked_grid: &Grid<bool>,
+        zone_idx: usize,
+    ) {
         let empty_east = vec![];
         let empty_west = vec![];
         let road_east = grouped.get(&RoadCategory::East).unwrap_or(&empty_east);
@@ -92,7 +109,12 @@ impl RoadBuilder {
         }
     }
 
-    fn connect_vertical_roads(&mut self, grouped: &HashMap<RoadCategory, Vec<RoadConnection>>, locked_grid: &Grid<bool>, zone_idx: usize) {
+    fn connect_vertical_roads(
+        &mut self,
+        grouped: &HashMap<RoadCategory, Vec<RoadConnection>>,
+        locked_grid: &Grid<bool>,
+        zone_idx: usize,
+    ) {
         let empty_north = vec![];
         let empty_south = vec![];
         let road_north = grouped.get(&RoadCategory::North).unwrap_or(&empty_north);
@@ -126,7 +148,14 @@ impl RoadBuilder {
         }
     }
 
-    fn connect_points(&mut self, a: (usize, usize), b: (usize, usize), width: usize, locked_grid: &Grid<bool>, zone_idx: usize) {
+    fn connect_points(
+        &mut self,
+        a: (usize, usize),
+        b: (usize, usize),
+        width: usize,
+        locked_grid: &Grid<bool>,
+        zone_idx: usize,
+    ) {
         let grid_bool = ZoneGrid::rand_bool(zone_idx as u32);
 
         let result = astar(AStarSettings {
@@ -192,7 +221,13 @@ impl RoadBuilder {
 
         if let Some(target_pos) = nearest_pos {
             let dummy_locked = Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, false);
-            self.connect_points(connection.pos, target_pos, connection.width, &dummy_locked, 0);
+            self.connect_points(
+                connection.pos,
+                target_pos,
+                connection.width,
+                &dummy_locked,
+                0,
+            );
         }
     }
 }

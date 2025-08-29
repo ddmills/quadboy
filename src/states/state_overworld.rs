@@ -88,6 +88,7 @@ fn render_overworld_map(
 
             let has_town = ozone.town.is_some();
             let has_road = overworld.zone_has_road(idx);
+            let has_river = overworld.zone_has_river(idx);
 
             let (glyph, fg1, fg2, bg) = if has_town {
                 (
@@ -96,6 +97,8 @@ fn render_overworld_map(
                     Palette::Yellow,
                     if is_player_zone {
                         Palette::Red
+                    } else if has_river {
+                        Palette::Blue
                     } else if has_road {
                         Palette::Brown
                     } else {
@@ -104,6 +107,9 @@ fn render_overworld_map(
                 )
             } else if is_player_zone {
                 (zone_glyph, zone_fg1, zone_fg1, Palette::Red)
+            } else if has_river {
+                // Rivers take precedence over roads
+                (zone_glyph, zone_fg1, zone_fg1, Palette::Blue)
             } else if has_road {
                 (zone_glyph, zone_fg1, zone_fg1, Palette::Brown)
             } else {
@@ -160,6 +166,7 @@ fn display_overworld_debug_at_mouse(
     let ozone = overworld.get_overworld_zone(zone_idx);
 
     let has_road = overworld.zone_has_road(zone_idx);
+    let has_river = overworld.zone_has_river(zone_idx);
     let road_connections = 0;
 
     let town_value = if let Some(town) = &ozone.town {
@@ -169,13 +176,14 @@ fn display_overworld_debug_at_mouse(
     };
 
     let debug_info = format!(
-        "Zone {{C|({}, {})}}\nIndex: {{C|{}}}\nType: {{C|{}}}\nTown: {{C|{}}}\nRoad: {{C|{}}}\nConnections: {{C|{}}}",
+        "Zone {{C|({}, {})}}\nIndex: {{C|{}}}\nType: {{C|{}}}\nTown: {{C|{}}}\nRoad: {{C|{}}}\nRiver: {{C|{}}}\nConnections: {{C|{}}}",
         zone_x,
         zone_y,
         zone_idx,
         ozone.biome_type,
         town_value,
         if has_road { "Yes" } else { "No" },
+        if has_river { "Yes" } else { "No" },
         road_connections
     );
 

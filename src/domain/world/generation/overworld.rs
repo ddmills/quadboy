@@ -4,10 +4,10 @@ use bevy_ecs::resource::Resource;
 
 use crate::{
     cfg::SURFACE_LEVEL_Z,
-    common::Perlin,
+    common::{Direction, Perlin},
     domain::{
-        BiomeType, OverworldRoadGenerator, OverworldTownGenerator, ZoneContinuity,
-        get_zone_constraints,
+        BiomeType, OverworldRiverGenerator, OverworldRoadGenerator, OverworldTownGenerator,
+        ZoneContinuity, get_zone_constraints,
     },
     rendering::zone_xyz,
 };
@@ -41,6 +41,47 @@ impl RoadType {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum RiverType {
+    Creek,
+    Stream,
+    River,
+    MightyRiver,
+}
+
+impl RiverType {
+    pub fn width(self) -> usize {
+        match self {
+            RiverType::Creek => 1,
+            RiverType::Stream => 2,
+            RiverType::River => 3,
+            RiverType::MightyRiver => 4,
+        }
+    }
+
+    pub fn upgrade(self) -> Self {
+        match self {
+            RiverType::Creek => RiverType::Stream,
+            RiverType::Stream => RiverType::River,
+            RiverType::River => RiverType::MightyRiver,
+            RiverType::MightyRiver => RiverType::MightyRiver,
+        }
+    }
+
+    pub fn can_merge_with(self, other: RiverType) -> bool {
+        match (self, other) {
+            (RiverType::Creek, RiverType::Creek) => true,
+            (RiverType::Stream, RiverType::Creek) => true,
+            (RiverType::Creek, RiverType::Stream) => true,
+            (RiverType::Stream, RiverType::Stream) => true,
+            (RiverType::River, _) => true,
+            (_, RiverType::River) => true,
+            (RiverType::MightyRiver, _) => true,
+            (_, RiverType::MightyRiver) => true,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct RoadSegment {
     pub road_type: RoadType,
@@ -59,12 +100,49 @@ impl RoadNetwork {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct RiverSegment {
+    pub river_type: RiverType,
+    pub flow_direction: Direction,
+    pub depth: f32,
+    pub length: f32,
+}
+
+#[derive(Default, Clone)]
+pub struct RiverNetwork {
+    pub edges: HashMap<(usize, usize), RiverSegment>,
+    pub nodes: HashSet<usize>,
+    pub sources: Vec<usize>,
+    pub confluences: Vec<usize>,
+}
+
+impl RiverNetwork {
+    pub fn has_river(&self, zone_idx: usize) -> bool {
+        self.nodes.contains(&zone_idx)
+    }
+
+    pub fn get_river_at_edge(&self, from_zone: usize, to_zone: usize) -> Option<&RiverSegment> {
+        self.edges
+            .get(&(from_zone, to_zone))
+            .or_else(|| self.edges.get(&(to_zone, from_zone)))
+    }
+
+    pub fn is_confluence(&self, zone_idx: usize) -> bool {
+        self.confluences.contains(&zone_idx)
+    }
+
+    pub fn is_source(&self, zone_idx: usize) -> bool {
+        self.sources.contains(&zone_idx)
+    }
+}
+
 #[derive(Resource)]
 pub struct Overworld {
     perlin: Perlin,
     pub seed: u32,
     pub towns: HashMap<usize, HashMap<usize, OverworldTown>>,
     pub road_networks: HashMap<usize, RoadNetwork>,
+    pub river_networks: HashMap<usize, RiverNetwork>,
 }
 
 impl Overworld {
@@ -74,9 +152,16 @@ impl Overworld {
             perlin: Perlin::new(seed, 0.15, 2, 2.0),
             towns: HashMap::new(),
             road_networks: HashMap::new(),
+            river_networks: HashMap::new(),
         };
 
+        // Generate rivers first (natural features)
+        overworld.river_networks = OverworldRiverGenerator::generate_rivers(seed);
+
+        // Then generate towns (near rivers for water access)
         overworld.towns = OverworldTownGenerator::generate_towns(seed);
+
+        // Finally generate roads (connecting towns, bridging rivers)
         overworld.generate_roads();
         overworld
     }
@@ -122,6 +207,19 @@ impl Overworld {
         }
 
         BiomeType::Forest
+    }
+
+    pub fn zone_has_river(&self, zone_idx: usize) -> bool {
+        let (_, _, z) = zone_xyz(zone_idx);
+        if let Some(network) = self.river_networks.get(&z) {
+            network.has_river(zone_idx)
+        } else {
+            false
+        }
+    }
+
+    pub fn get_river_network(&self, z: usize) -> Option<&RiverNetwork> {
+        self.river_networks.get(&z)
     }
 
     fn generate_roads(&mut self) {

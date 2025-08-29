@@ -22,8 +22,8 @@ pub struct NeighborData<T> {
     pub alive_count: usize,
 }
 
-impl<T> NeighborData<T> 
-where 
+impl<T> NeighborData<T>
+where
     T: Clone + PartialEq,
 {
     pub fn count_matching(&self, value: &T) -> usize {
@@ -39,8 +39,8 @@ pub struct CellularAutomata<T> {
     constraints: Option<Grid<bool>>,
 }
 
-impl<T> CellularAutomata<T> 
-where 
+impl<T> CellularAutomata<T>
+where
     T: Clone + Default,
 {
     pub fn new(width: usize, height: usize, initial_value: T) -> Self {
@@ -57,7 +57,7 @@ where
         let width = grid.width();
         let height = grid.height();
         let default_value = T::default();
-        
+
         Self {
             current: grid,
             next: Grid::init(width, height, default_value.clone()),
@@ -67,8 +67,15 @@ where
         }
     }
 
-    pub fn from_seed(width: usize, height: usize, density: f32, rand: &mut Rand, alive_value: T, dead_value: T) -> Self 
-    where 
+    pub fn from_seed(
+        width: usize,
+        height: usize,
+        density: f32,
+        rand: &mut Rand,
+        alive_value: T,
+        dead_value: T,
+    ) -> Self
+    where
         T: Clone,
     {
         let grid = Grid::init_fill(width, height, |_, _| {
@@ -78,7 +85,7 @@ where
                 dead_value.clone()
             }
         });
-        
+
         Self::from_grid(grid)
     }
 
@@ -103,7 +110,7 @@ where
             let height = self.current.height();
             self.constraints = Some(Grid::init(width, height, false));
         }
-        
+
         if let Some(ref mut constraints) = self.constraints {
             constraints.set(x, y, locked);
         }
@@ -121,8 +128,8 @@ where
         &self.current
     }
 
-    pub fn step<R>(&mut self, rule: &R) 
-    where 
+    pub fn step<R>(&mut self, rule: &R)
+    where
         R: Rule<T>,
     {
         let width = self.current.width();
@@ -153,8 +160,8 @@ where
         std::mem::swap(&mut self.current, &mut self.next);
     }
 
-    pub fn evolve_steps<R>(&mut self, rule: &R, steps: usize) 
-    where 
+    pub fn evolve_steps<R>(&mut self, rule: &R, steps: usize)
+    where
         R: Rule<T>,
     {
         for _ in 0..steps {
@@ -162,15 +169,15 @@ where
         }
     }
 
-    pub fn evolve_until_stable<R>(&mut self, rule: &R, max_steps: usize) -> usize 
-    where 
+    pub fn evolve_until_stable<R>(&mut self, rule: &R, max_steps: usize) -> usize
+    where
         T: PartialEq,
         R: Rule<T>,
     {
         for step in 0..max_steps {
             let before = self.current.clone();
             self.step(rule);
-            
+
             if self.grids_equal(&before, &self.current) {
                 return step + 1;
             }
@@ -178,8 +185,8 @@ where
         max_steps
     }
 
-    fn grids_equal(&self, a: &Grid<T>, b: &Grid<T>) -> bool 
-    where 
+    fn grids_equal(&self, a: &Grid<T>, b: &Grid<T>) -> bool
+    where
         T: PartialEq,
     {
         if a.width() != b.width() || a.height() != b.height() {
@@ -198,24 +205,25 @@ where
 
     fn get_neighbors(&self, x: usize, y: usize) -> NeighborData<T> {
         let mut neighbors = Vec::new();
-        
+
         let offsets = match self.neighborhood {
             Neighborhood::Moore => vec![
-                (-1, -1), (-1, 0), (-1, 1),
-                (0, -1),           (0, 1),
-                (1, -1),  (1, 0),  (1, 1),
-            ],
-            Neighborhood::VonNeumann => vec![
+                (-1, -1),
                 (-1, 0),
-                (0, -1), (0, 1),
+                (-1, 1),
+                (0, -1),
+                (0, 1),
+                (1, -1),
                 (1, 0),
+                (1, 1),
             ],
+            Neighborhood::VonNeumann => vec![(-1, 0), (0, -1), (0, 1), (1, 0)],
         };
 
         for (dx, dy) in offsets {
             let nx = x as i32 + dx;
             let ny = y as i32 + dy;
-            
+
             let neighbor_value = self.get_cell_with_boundary(nx, ny);
             neighbors.push(neighbor_value);
         }
@@ -240,12 +248,12 @@ where
                 let clamped_x = (x.max(0).min(width - 1)) as usize;
                 let clamped_y = (y.max(0).min(height - 1)) as usize;
                 self.current.get(clamped_x, clamped_y).unwrap().clone()
-            },
+            }
             BoundaryBehavior::Wrap => {
                 let wrapped_x = ((x % width + width) % width) as usize;
                 let wrapped_y = ((y % height + height) % height) as usize;
                 self.current.get(wrapped_x, wrapped_y).unwrap().clone()
-            },
+            }
         }
     }
 }

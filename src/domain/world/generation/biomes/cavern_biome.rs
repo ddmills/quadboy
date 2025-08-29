@@ -1,6 +1,9 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, Rand, algorithm::{cellular_automata::*, ca_rules::*}},
+    common::{
+        Grid, Rand,
+        algorithm::{ca_rules::*, cellular_automata::*},
+    },
     domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneConstraintType, ZoneFactory},
     rendering::zone_local_to_world,
 };
@@ -128,4 +131,3 @@ fn is_edge_rock_position(zone: &ZoneFactory, x: usize, y: usize) -> bool {
 
     false
 }
-

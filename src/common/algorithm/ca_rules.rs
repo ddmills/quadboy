@@ -1,11 +1,11 @@
-use super::cellular_automata::{Rule, NeighborData};
+use super::cellular_automata::{NeighborData, Rule};
 
 pub struct ConwaysLifeRule;
 
 impl Rule<bool> for ConwaysLifeRule {
     fn apply(&self, _x: usize, _y: usize, current: &bool, neighbors: &NeighborData<bool>) -> bool {
         let alive_neighbors = neighbors.count_matching(&true);
-        
+
         match (*current, alive_neighbors) {
             (true, 2) | (true, 3) => true,
             (false, 3) => true,
@@ -21,9 +21,12 @@ pub struct CaveRule {
 
 impl CaveRule {
     pub fn new(birth_threshold: usize, survival_threshold: usize) -> Self {
-        Self { birth_threshold, survival_threshold }
+        Self {
+            birth_threshold,
+            survival_threshold,
+        }
     }
-    
+
     pub fn default_cavern() -> Self {
         Self::new(5, 4)
     }
@@ -32,7 +35,7 @@ impl CaveRule {
 impl Rule<bool> for CaveRule {
     fn apply(&self, _x: usize, _y: usize, current: &bool, neighbors: &NeighborData<bool>) -> bool {
         let wall_neighbors = neighbors.count_matching(&true);
-        
+
         if *current {
             wall_neighbors >= self.survival_threshold
         } else {
@@ -45,8 +48,8 @@ pub struct MajorityRule<T> {
     pub tie_breaker: T,
 }
 
-impl<T> MajorityRule<T> 
-where 
+impl<T> MajorityRule<T>
+where
     T: Clone,
 {
     pub fn new(tie_breaker: T) -> Self {
@@ -54,8 +57,8 @@ where
     }
 }
 
-impl<T> Rule<T> for MajorityRule<T> 
-where 
+impl<T> Rule<T> for MajorityRule<T>
+where
     T: Clone + PartialEq + Eq + std::hash::Hash,
 {
     fn apply(&self, _x: usize, _y: usize, _current: &T, neighbors: &NeighborData<T>) -> T {
@@ -69,7 +72,8 @@ where
         }
 
         let max_count = counts.values().max().unwrap_or(&0);
-        let most_common: Vec<_> = counts.iter()
+        let most_common: Vec<_> = counts
+            .iter()
             .filter(|&(_, count)| count == max_count)
             .map(|(value, _)| *value)
             .collect();
@@ -118,14 +122,18 @@ pub struct DistanceRule {
 
 impl DistanceRule {
     pub fn new(inner_value: bool, outer_value: bool, transition_distance: usize) -> Self {
-        Self { inner_value, outer_value, transition_distance }
+        Self {
+            inner_value,
+            outer_value,
+            transition_distance,
+        }
     }
 }
 
 impl Rule<bool> for DistanceRule {
     fn apply(&self, x: usize, y: usize, _current: &bool, _neighbors: &NeighborData<bool>) -> bool {
         let min_edge_distance = x.min(y);
-        
+
         if min_edge_distance < self.transition_distance {
             self.outer_value
         } else {

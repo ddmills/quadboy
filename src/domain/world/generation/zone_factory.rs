@@ -77,5 +77,4 @@ impl ZoneFactory {
     pub fn is_locked_tile(&mut self, x: usize, y: usize) -> bool {
         self.grid_data.is_locked_tile(x, y)
     }
-
 }

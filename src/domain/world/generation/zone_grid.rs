@@ -71,7 +71,13 @@ impl ZoneGridData {
         }
     }
 
-    pub fn get_all_grids_mut(&mut self) -> (&mut Grid<Terrain>, &mut Grid<Vec<SpawnConfig>>, &mut Grid<bool>) {
+    pub fn get_all_grids_mut(
+        &mut self,
+    ) -> (
+        &mut Grid<Terrain>,
+        &mut Grid<Vec<SpawnConfig>>,
+        &mut Grid<bool>,
+    ) {
         (&mut self.terrain, &mut self.entities, &mut self.locked)
     }
 

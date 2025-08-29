@@ -1,6 +1,9 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, Rand, algorithm::{cellular_automata::*, ca_rules::*}},
+    common::{
+        Grid, Rand,
+        algorithm::{ca_rules::*, cellular_automata::*},
+    },
     domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
@@ -43,9 +46,7 @@ impl BiomeBuilder for ForestBiomeBuilder {
 }
 
 fn collect_constraint_grid(zone: &mut ZoneFactory) -> Grid<bool> {
-    Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-        zone.is_locked_tile(x, y)
-    })
+    Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| zone.is_locked_tile(x, y))
 }
 
 fn generate_forest_boulder_ca(constraint_grid: &Grid<bool>, rand: &mut Rand) -> Grid<bool> {

@@ -1,7 +1,7 @@
 use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z, ZONE_SIZE},
     common::{Direction, Rand},
-    domain::{BiomeType, Overworld, RoadType},
+    domain::{BiomeType, Overworld, RiverType, RoadType},
     rendering::{zone_idx as calculate_zone_idx, zone_xyz},
 };
 
@@ -19,6 +19,7 @@ pub enum ZoneConstraintType {
     None,
     Water,
     Road(RoadType),
+    River(RiverType),
     StairDown,
     Rock,
 }
@@ -121,26 +122,93 @@ pub fn get_edge_continuity(
             }
         }
 
-        // Roads take precedence - overwrite any rock constraints
-        if overworld.zone_has_road(zone_idx) && overworld.zone_has_road(neighbor) {
+        // Determine positions for roads and rivers with randomness
+        let mut road_position = None;
+        let mut river_position = None;
+
+        // Check if both road and river exist
+        let has_road = overworld.zone_has_road(zone_idx) && overworld.zone_has_road(neighbor);
+        let has_river = overworld.zone_has_river(zone_idx) && overworld.zone_has_river(neighbor);
+
+        if has_road && has_river {
+            // Both exist - place them at different positions
+            // Use consistent random seed for this edge - must be same for both zones sharing the edge
+            // Sort zone indices to ensure consistency
+            let (smaller_idx, larger_idx) = if zone_idx < neighbor {
+                (zone_idx as u32, neighbor as u32)
+            } else {
+                (neighbor as u32, zone_idx as u32)
+            };
+            let edge_rand_seed = overworld.seed + smaller_idx * 10000 + larger_idx * 100;
+            let mut edge_rand = Rand::seed(edge_rand_seed);
+
+            // Divide edge into thirds for better separation
+            let third = edge_length / 3;
+            let river_zone = edge_rand.range_n(0, 3); // 0, 1, or 2
+            let river_offset = edge_rand.range_n(5, third as i32 - 5).max(5) as usize;
+            river_position = Some(river_zone as usize * third + river_offset);
+
+            // Place road in a different third
+            let road_zone = (river_zone + 1 + edge_rand.range_n(0, 2)) % 3;
+            let road_offset = edge_rand.range_n(5, third as i32 - 5).max(5) as usize;
+            road_position = Some(road_zone as usize * third + road_offset);
+        } else if has_road || has_river {
+            // Only one exists - can place anywhere along edge
+            // Use consistent random seed for this edge - must be same for both zones sharing the edge
+            // Sort zone indices to ensure consistency
+            let (smaller_idx, larger_idx) = if zone_idx < neighbor {
+                (zone_idx as u32, neighbor as u32)
+            } else {
+                (neighbor as u32, zone_idx as u32)
+            };
+            let edge_rand_seed = overworld.seed + smaller_idx * 10000 + larger_idx * 100;
+            let mut edge_rand = Rand::seed(edge_rand_seed);
+
+            // Random position with buffer from edges
+            let buffer = 10.min(edge_length / 4);
+            let position = edge_rand.range_n(buffer as i32, (edge_length - buffer) as i32) as usize;
+
+            if has_road {
+                road_position = Some(position);
+            } else {
+                river_position = Some(position);
+            }
+        }
+
+        // Apply road constraints
+        if let Some(pos) = road_position {
             if let Some(road_network) = overworld.get_road_network(z) {
                 if let Some(road_segment) = road_network
                     .edges
                     .get(&(zone_idx, neighbor))
                     .or_else(|| road_network.edges.get(&(neighbor, zone_idx)))
                 {
-                    let middle = edge_length / 2;
                     let width = road_segment.road_type.width();
-
                     for i in 0..width {
-                        let pos = middle + i - (width / 2);
-                        if pos < edge_constraints.len() {
-                            edge_constraints[pos] =
+                        let tile_pos = (pos + i).saturating_sub(width / 2);
+                        if tile_pos < edge_constraints.len() {
+                            edge_constraints[tile_pos] =
                                 ZoneConstraintType::Road(road_segment.road_type);
                         }
                     }
                 }
-            };
+            }
+        }
+
+        // Rivers take highest precedence - overwrite any rock/road constraints
+        if let Some(pos) = river_position {
+            if let Some(river_network) = overworld.get_river_network(z) {
+                if let Some(river_segment) = river_network.get_river_at_edge(zone_idx, neighbor) {
+                    let width = river_segment.river_type.width();
+                    for i in 0..width {
+                        let tile_pos = (pos + i).saturating_sub(width / 2);
+                        if tile_pos < edge_constraints.len() {
+                            edge_constraints[tile_pos] =
+                                ZoneConstraintType::River(river_segment.river_type);
+                        }
+                    }
+                }
+            }
         }
     } else {
         edge_constraints.fill(ZoneConstraintType::Rock);
