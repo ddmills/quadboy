@@ -2,7 +2,7 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{
         Grid, Rand,
-        algorithm::{ca_rules::*, cellular_automata::*},
+        algorithm::{ca_rules::CaveRule, cellular_automata::*},
     },
     domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneConstraintType, ZoneFactory},
     rendering::zone_local_to_world,
@@ -22,9 +22,9 @@ impl BiomeBuilder for CavernBiomeBuilder {
             }
         }
 
-        let constraint_grid = collect_constraint_grid(zone);
-        let boulder_grid = generate_boulder_cellular_automata(&constraint_grid, zone, &mut rand);
+        let boulder_grid = generate_cave_ca(zone, &mut rand);
 
+        // Place boulders based on CA result
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
                 if !zone.is_locked_tile(x, y) {
@@ -41,67 +41,68 @@ impl BiomeBuilder for CavernBiomeBuilder {
     }
 }
 
-fn collect_constraint_grid(zone: &mut ZoneFactory) -> Grid<bool> {
-    Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-        if zone.is_locked_tile(x, y) {
-            return true;
-        }
-
-        if y == 0
-            && let Some(constraint) = zone.ozone.constraints.north.0.get(x)
-            && *constraint == ZoneConstraintType::None
-        {
-            return true;
-        }
-
-        if y == ZONE_SIZE.1 - 1
-            && let Some(constraint) = zone.ozone.constraints.south.0.get(x)
-            && *constraint == ZoneConstraintType::None
-        {
-            return true;
-        }
-
-        if x == 0
-            && let Some(constraint) = zone.ozone.constraints.west.0.get(y)
-            && *constraint == ZoneConstraintType::None
-        {
-            return true;
-        }
-
-        if x == ZONE_SIZE.0 - 1
-            && let Some(constraint) = zone.ozone.constraints.east.0.get(y)
-            && *constraint == ZoneConstraintType::None
-        {
-            return true;
-        }
-
-        false
-    })
-}
-
-fn generate_boulder_cellular_automata(
-    constraint_grid: &Grid<bool>,
-    zone: &ZoneFactory,
-    rand: &mut Rand,
-) -> Grid<bool> {
+fn generate_cave_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<bool> {
+    // Create initial random grid
     let initial_grid = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-        if *constraint_grid.get(x, y).unwrap_or(&true) {
-            false
-        } else {
-            let has_edge_rock = is_edge_rock_position(zone, x, y);
-            if has_edge_rock { true } else { rand.bool(0.60) }
+        // Check edge constraints - don't place rocks where passages should be
+        if should_keep_clear(zone, x, y) {
+            return false;
         }
+
+        // Place rocks at edge rock positions
+        if is_edge_rock_position(zone, x, y) {
+            return true;
+        }
+
+        // Random initial state with 45% density
+        rand.bool(0.5)
     });
 
+    // Create constraints grid to preserve edge passages
+    let constraints = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
+        should_keep_clear(zone, x, y) || is_edge_rock_position(zone, x, y)
+    });
+
+    // Run cellular automata
     let mut ca = CellularAutomata::from_grid(initial_grid)
         .with_neighborhood(Neighborhood::Moore)
         .with_boundary(BoundaryBehavior::Constant(true))
-        .with_constraints(constraint_grid.clone());
+        .with_constraints(constraints);
 
+    // Simple cave rule: B5678/S5678 (born if 5-8 neighbors, survive if 5-8 neighbors)
     let rule = CaveRule::new(5, 4);
-    ca.evolve_steps(&rule, 3);
+    ca.evolve_steps(&rule, 5);
 
     ca.grid().clone()
+}
+
+fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
+    // Check if this position should be kept clear for passages
+    if y == 0 {
+        if let Some(constraint) = zone.ozone.constraints.north.0.get(x) {
+            return *constraint == ZoneConstraintType::None;
+        }
+    }
+
+    if y == ZONE_SIZE.1 - 1 {
+        if let Some(constraint) = zone.ozone.constraints.south.0.get(x) {
+            return *constraint == ZoneConstraintType::None;
+        }
+    }
+
+    if x == 0 {
+        if let Some(constraint) = zone.ozone.constraints.west.0.get(y) {
+            return *constraint == ZoneConstraintType::None;
+        }
+    }
+
+    if x == ZONE_SIZE.0 - 1 {
+        if let Some(constraint) = zone.ozone.constraints.east.0.get(y) {
+            return *constraint == ZoneConstraintType::None;
+        }
+    }
+
+    false
 }
 
 fn is_edge_rock_position(zone: &ZoneFactory, x: usize, y: usize) -> bool {

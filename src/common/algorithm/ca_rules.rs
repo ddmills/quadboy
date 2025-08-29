@@ -183,3 +183,81 @@ impl Rule<bool> for DilationRule {
         }
     }
 }
+
+pub struct EdgeBiasedCaveRule {
+    pub width: usize,
+    pub height: usize,
+    pub edge_birth_threshold: usize,
+    pub edge_survival_threshold: usize,
+    pub center_birth_threshold: usize,
+    pub center_survival_threshold: usize,
+    pub transition_zone: f32,
+}
+
+impl EdgeBiasedCaveRule {
+    pub fn new(width: usize, height: usize) -> Self {
+        Self {
+            width,
+            height,
+            edge_birth_threshold: 3,
+            edge_survival_threshold: 2,
+            center_birth_threshold: 4,
+            center_survival_threshold: 3,
+            transition_zone: 0.1,
+        }
+    }
+
+    pub fn with_edge_thresholds(mut self, birth: usize, survival: usize) -> Self {
+        self.edge_birth_threshold = birth;
+        self.edge_survival_threshold = survival;
+        self
+    }
+
+    pub fn with_center_thresholds(mut self, birth: usize, survival: usize) -> Self {
+        self.center_birth_threshold = birth;
+        self.center_survival_threshold = survival;
+        self
+    }
+
+    pub fn with_transition_zone(mut self, transition: f32) -> Self {
+        self.transition_zone = transition.clamp(0.0, 1.0);
+        self
+    }
+
+    fn get_edge_distance_ratio(&self, x: usize, y: usize) -> f32 {
+        let min_edge_distance = x.min(y).min(self.width - x - 1).min(self.height - y - 1);
+        let max_possible_distance = (self.width.min(self.height) / 2) as f32;
+        (min_edge_distance as f32 / max_possible_distance).min(1.0)
+    }
+}
+
+impl Rule<bool> for EdgeBiasedCaveRule {
+    fn apply(&self, x: usize, y: usize, current: &bool, neighbors: &NeighborData<bool>) -> bool {
+        let wall_neighbors = neighbors.count_matching(&true);
+        let distance_ratio = self.get_edge_distance_ratio(x, y);
+
+        let birth_threshold = if distance_ratio < self.transition_zone {
+            let t = distance_ratio / self.transition_zone;
+            let threshold = self.edge_birth_threshold as f32 * (1.0 - t)
+                + self.center_birth_threshold as f32 * t;
+            threshold.round() as usize
+        } else {
+            self.center_birth_threshold
+        };
+
+        let survival_threshold = if distance_ratio < self.transition_zone {
+            let t = distance_ratio / self.transition_zone;
+            let threshold = self.edge_survival_threshold as f32 * (1.0 - t)
+                + self.center_survival_threshold as f32 * t;
+            threshold.round() as usize
+        } else {
+            self.center_survival_threshold
+        };
+
+        if *current {
+            wall_neighbors >= survival_threshold
+        } else {
+            wall_neighbors >= birth_threshold
+        }
+    }
+}
