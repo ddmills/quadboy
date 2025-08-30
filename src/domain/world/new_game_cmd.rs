@@ -50,7 +50,7 @@ impl NewGameCommand {
                 ApplyVisibilityEffects,
                 Collider,
                 Energy::new(-10),
-                Label::new("{Y-y scroll|Cowboy}"),
+                Label::new("{Y-Y-Y-Y-Y-Y-Y-W scrollf|Cowboy}"),
                 RecordZonePosition,
                 CleanupStatePlay,
             ))

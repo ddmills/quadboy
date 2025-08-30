@@ -184,7 +184,7 @@ pub fn player_input(
             dy += 1;
         }
 
-        if z > 0 && keys.is_down(KeyCode::E) && is_on_stair_up(x, y, z, &q_stairs_up) {
+        if z > 0 && keys.is_down(KeyCode::Q) && is_on_stair_up(x, y, z, &q_stairs_up) {
             dz -= 1;
         }
 
