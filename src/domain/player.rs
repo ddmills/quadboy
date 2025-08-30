@@ -13,7 +13,7 @@ use crate::{
     states::{CurrentGameState, GameState},
 };
 
-use super::{PrefabId, SpawnConfig};
+use super::{Prefab, PrefabId};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Player;
@@ -84,7 +84,7 @@ pub fn player_input(
     }
 
     if keys.is_pressed(KeyCode::G) {
-        Prefabs::spawn(&mut cmds, SpawnConfig::new(PrefabId::Boulder, (x, y, z)));
+        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Boulder, (x, y, z)));
     }
 
     if keys.is_down(KeyCode::LeftShift) {
@@ -92,15 +92,11 @@ pub fn player_input(
     }
 
     if keys.is_pressed(KeyCode::V) {
-        // Mark all entities in current zone as explored (doesn't consume energy)
         let zone_idx = world_to_zone_idx(x, y, z);
         for zone in q_zone.iter() {
             if zone.idx == zone_idx {
-                // Iterate through all cells in the zone's entity grid
                 for entity_vec in zone.entities.iter() {
-                    // Each cell can have multiple entities
                     for &entity in entity_vec.iter() {
-                        // Only add IsExplored if the entity doesn't already have it
                         if q_unexplored.contains(entity) {
                             cmds.entity(entity).insert(IsExplored);
                         }
@@ -108,7 +104,6 @@ pub fn player_input(
                 }
             }
         }
-        // Don't return here - this action doesn't consume energy or end the turn
     }
 
     if !turn_state.is_players_turn {

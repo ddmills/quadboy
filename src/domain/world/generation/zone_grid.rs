@@ -1,12 +1,12 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::Grid,
-    domain::{BiomeType, SpawnConfig, Terrain},
+    domain::{BiomeType, Prefab, Terrain},
 };
 
 pub struct ZoneGridData {
     pub terrain: Grid<Terrain>,
-    pub entities: Grid<Vec<SpawnConfig>>,
+    pub entities: Grid<Vec<Prefab>>,
     pub locked: Grid<bool>,
 }
 
@@ -19,7 +19,7 @@ impl ZoneGridData {
         }
     }
 
-    pub fn push_entity(&mut self, x: usize, y: usize, config: SpawnConfig) {
+    pub fn push_entity(&mut self, x: usize, y: usize, config: Prefab) {
         if let Some(ents) = self.entities.get_mut(x, y) {
             ents.push(config);
         }
@@ -45,11 +45,11 @@ impl ZoneGridData {
         &mut self.terrain
     }
 
-    pub fn entities_grid(&self) -> &Grid<Vec<SpawnConfig>> {
+    pub fn entities_grid(&self) -> &Grid<Vec<Prefab>> {
         &self.entities
     }
 
-    pub fn entities_grid_mut(&mut self) -> &mut Grid<Vec<SpawnConfig>> {
+    pub fn entities_grid_mut(&mut self) -> &mut Grid<Vec<Prefab>> {
         &mut self.entities
     }
 
@@ -73,11 +73,7 @@ impl ZoneGridData {
 
     pub fn get_all_grids_mut(
         &mut self,
-    ) -> (
-        &mut Grid<Terrain>,
-        &mut Grid<Vec<SpawnConfig>>,
-        &mut Grid<bool>,
-    ) {
+    ) -> (&mut Grid<Terrain>, &mut Grid<Vec<Prefab>>, &mut Grid<bool>) {
         (&mut self.terrain, &mut self.entities, &mut self.locked)
     }
 

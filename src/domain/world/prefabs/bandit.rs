@@ -1,4 +1,4 @@
-use super::SpawnConfig;
+use super::Prefab;
 use crate::{
     common::Palette,
     domain::{ApplyVisibilityEffects, Collider, Energy, HideWhenNotVisible, Label, SaveFlag},
@@ -7,7 +7,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_bandit(entity: Entity, world: &mut World, config: SpawnConfig) {
+pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
     let position = Position::new_world(config.pos);
 
     world.entity_mut(entity).insert((

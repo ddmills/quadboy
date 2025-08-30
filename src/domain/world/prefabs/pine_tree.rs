@@ -1,4 +1,4 @@
-use super::SpawnConfig;
+use super::Prefab;
 use crate::common::Rand;
 use crate::domain::{ApplyVisibilityEffects, Label};
 use crate::{
@@ -9,14 +9,14 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: SpawnConfig) {
+pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) {
     let mut rand = world.get_resource_mut::<Rand>().unwrap();
     let glyph_char = rand.pick(&[45, 46, 47]);
 
     world.entity_mut(entity).insert((
         Position::new_world(config.pos),
-        Glyph::new(glyph_char, Palette::DarkCyan, Palette::Red).layer(Layer::Objects),
-        Label::new("Pine Tree"),
+        Glyph::new(glyph_char, Palette::DarkCyan, Palette::Brown).layer(Layer::Objects),
+        Label::new("{G|P}ine {G|T}ree"),
         Collider,
         VisionBlocker,
         RecordZonePosition,

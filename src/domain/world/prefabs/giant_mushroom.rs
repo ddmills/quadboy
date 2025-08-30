@@ -2,12 +2,12 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Collider, Label, SaveFlag, SpawnConfig, VisionBlocker},
+    domain::{ApplyVisibilityEffects, Collider, Label, Prefab, SaveFlag, VisionBlocker},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
 
-pub fn spawn_giant_mushroom(_entity: Entity, world: &mut World, config: SpawnConfig) {
+pub fn spawn_giant_mushroom(_entity: Entity, world: &mut World, config: Prefab) {
     let entity = world.spawn_empty().id();
 
     let mut entity_mut = world.entity_mut(entity);

@@ -1,4 +1,4 @@
-use super::{PrefabId, SpawnConfig};
+use super::{Prefab, PrefabId};
 use crate::{
     domain::{ApplyVisibilityEffects, TerrainNoise, ZoneStatus},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
@@ -6,7 +6,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_terrain_tile(entity: Entity, world: &mut World, config: SpawnConfig) {
+pub fn spawn_terrain_tile(entity: Entity, world: &mut World, config: Prefab) {
     let terrain = match config.prefab_id {
         PrefabId::TerrainTile(terrain) => terrain,
         _ => panic!("spawn_terrain_tile called with non-TerrainTile prefab_id"),

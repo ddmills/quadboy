@@ -8,7 +8,7 @@ use crate::{
     cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid},
     domain::{
-        InActiveZone, LoadZoneCommand, PlayerMovedEvent, PrefabId, Prefabs, SpawnConfig, Terrain,
+        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs, Terrain,
         UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
@@ -181,7 +181,7 @@ pub fn on_set_zone_status(
             if !has_terrain {
                 for (x, y, t) in zone.terrain.iter_xy() {
                     let wpos = zone_local_to_world(zone.idx, x, y);
-                    let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
+                    let config = Prefab::new(PrefabId::TerrainTile(*t), wpos);
                     let terrain_entity = Prefabs::spawn(&mut cmds, config);
 
                     cmds.entity(terrain_entity)
@@ -444,7 +444,7 @@ fn spawn_terrain(
 
         for (x, y, t) in terrain.iter_xy() {
             let wpos = zone_local_to_world(zone_idx, x, y);
-            let config = SpawnConfig::new(PrefabId::TerrainTile(*t), wpos);
+            let config = Prefab::new(PrefabId::TerrainTile(*t), wpos);
             let terrain_entity = Prefabs::spawn_world(world, config);
 
             world

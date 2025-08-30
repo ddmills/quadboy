@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::Grid,
-    domain::{OverworldZone, PrefabId, RiverType, SpawnConfig, Terrain, ZoneConstraintType},
+    domain::{OverworldZone, Prefab, PrefabId, RiverType, Terrain, ZoneConstraintType},
     rendering::zone_local_to_world,
 };
 
@@ -53,7 +53,7 @@ impl ConstraintHandler {
     pub fn apply_all_constraints(
         ozone: &OverworldZone,
         terrain: &mut Grid<Terrain>,
-        entities: &mut Grid<Vec<SpawnConfig>>,
+        entities: &mut Grid<Vec<Prefab>>,
         locked: &mut Grid<bool>,
         road_builder: &mut RoadBuilder,
         river_builder: &mut RiverBuilder,
@@ -70,7 +70,7 @@ impl ConstraintHandler {
 
     fn apply_vertical_constraints(
         ozone: &OverworldZone,
-        entities: &mut Grid<Vec<SpawnConfig>>,
+        entities: &mut Grid<Vec<Prefab>>,
         locked: &mut Grid<bool>,
         road_builder: &mut RoadBuilder,
     ) {
@@ -79,7 +79,7 @@ impl ConstraintHandler {
             if constraint.constraint == ZoneConstraintType::StairDown {
                 let (x, y) = constraint.position;
                 let world_pos = zone_local_to_world(ozone.zone_idx, x, y);
-                let stair_config = SpawnConfig::new(PrefabId::StairUp, world_pos);
+                let stair_config = Prefab::new(PrefabId::StairUp, world_pos);
 
                 if let Some(entities_at_pos) = entities.get_mut(x, y) {
                     entities_at_pos.push(stair_config);
@@ -98,7 +98,7 @@ impl ConstraintHandler {
             if constraint.constraint == ZoneConstraintType::StairDown {
                 let (x, y) = constraint.position;
                 let world_pos = zone_local_to_world(ozone.zone_idx, x, y);
-                let stair_config = SpawnConfig::new(PrefabId::StairDown, world_pos);
+                let stair_config = Prefab::new(PrefabId::StairDown, world_pos);
 
                 if let Some(entities_at_pos) = entities.get_mut(x, y) {
                     entities_at_pos.push(stair_config);
@@ -117,11 +117,11 @@ impl ConstraintHandler {
         zone_idx: usize,
         x: usize,
         y: usize,
-        entities: &mut Grid<Vec<SpawnConfig>>,
+        entities: &mut Grid<Vec<Prefab>>,
         locked: &mut Grid<bool>,
     ) {
         let world_pos = zone_local_to_world(zone_idx, x, y);
-        let boulder_config = SpawnConfig::new(PrefabId::Boulder, world_pos);
+        let boulder_config = Prefab::new(PrefabId::Boulder, world_pos);
 
         if let Some(entities_at_pos) = entities.get_mut(x, y) {
             entities_at_pos.push(boulder_config);
@@ -268,7 +268,7 @@ impl ConstraintHandler {
 
     fn apply_rock_constraints(
         ozone: &OverworldZone,
-        entities: &mut Grid<Vec<SpawnConfig>>,
+        entities: &mut Grid<Vec<Prefab>>,
         locked: &mut Grid<bool>,
         _road_builder: &mut RoadBuilder,
     ) {
@@ -297,7 +297,7 @@ impl ConstraintHandler {
 
     fn apply_foliage_constraints(
         ozone: &OverworldZone,
-        entities: &mut Grid<Vec<SpawnConfig>>,
+        entities: &mut Grid<Vec<Prefab>>,
         locked: &mut Grid<bool>,
     ) {
         let directions = [
@@ -327,7 +327,7 @@ impl ConstraintHandler {
         ozone: &OverworldZone,
         x: usize,
         y: usize,
-        entities: &mut Grid<Vec<SpawnConfig>>,
+        entities: &mut Grid<Vec<Prefab>>,
         locked: &mut Grid<bool>,
     ) {
         let world_pos = zone_local_to_world(ozone.zone_idx, x, y);
@@ -339,7 +339,7 @@ impl ConstraintHandler {
             _ => return,
         };
 
-        let config = SpawnConfig::new(prefab_id, world_pos);
+        let config = Prefab::new(prefab_id, world_pos);
 
         if let Some(entities_at_pos) = entities.get_mut(x, y) {
             entities_at_pos.push(config);

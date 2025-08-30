@@ -1,6 +1,7 @@
 use super::{
     SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_giant_mushroom,
-    spawn_pine_tree, spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
+    spawn_lantern, spawn_pickaxe, spawn_pine_tree, spawn_stair_down, spawn_stair_up,
+    spawn_terrain_tile,
 };
 use crate::domain::Terrain;
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
@@ -13,6 +14,8 @@ pub enum PrefabId {
     Cactus,
     GiantMushroom,
     Bandit,
+    Lantern,
+    Pickaxe,
     StairDown,
     StairUp,
     TerrainTile(Terrain),
@@ -20,7 +23,7 @@ pub enum PrefabId {
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
-pub struct SpawnConfig {
+pub struct Prefab {
     pub prefab_id: PrefabId,
     pub pos: (usize, usize, usize),
     pub metadata: HashMap<String, SpawnValue>,
@@ -35,7 +38,7 @@ pub enum SpawnValue {
     Bool(bool),
 }
 
-impl SpawnConfig {
+impl Prefab {
     pub fn new(prefab_id: PrefabId, pos: (usize, usize, usize)) -> Self {
         Self {
             prefab_id,
@@ -49,9 +52,15 @@ impl SpawnConfig {
         self.metadata.insert(key, value);
         self
     }
+
+    #[allow(dead_code)]
+    pub fn with_pos(mut self, pos: (usize, usize, usize)) -> Self {
+        self.pos = pos;
+        self
+    }
 }
 
-type SpawnFunction = fn(Entity, &mut World, SpawnConfig);
+type SpawnFunction = fn(Entity, &mut World, Prefab);
 
 #[derive(Resource)]
 pub struct Prefabs {
@@ -74,6 +83,8 @@ impl Prefabs {
         self.register(PrefabId::Cactus, spawn_cactus);
         self.register(PrefabId::GiantMushroom, spawn_giant_mushroom);
         self.register(PrefabId::Bandit, spawn_bandit);
+        self.register(PrefabId::Lantern, spawn_lantern);
+        self.register(PrefabId::Pickaxe, spawn_pickaxe);
         self.register(PrefabId::StairDown, spawn_stair_down);
         self.register(PrefabId::StairUp, spawn_stair_up);
 
@@ -88,7 +99,7 @@ impl Prefabs {
         self.spawn_functions.insert(id, spawn_fn);
     }
 
-    pub fn spawn(cmds: &mut Commands, config: SpawnConfig) -> Entity {
+    pub fn spawn(cmds: &mut Commands, config: Prefab) -> Entity {
         let entity = cmds.spawn_empty().id();
 
         let command = SpawnPrefabCommand::new(entity, config);
@@ -101,7 +112,7 @@ impl Prefabs {
         entity
     }
 
-    pub fn spawn_world(world: &mut World, config: SpawnConfig) -> Entity {
+    pub fn spawn_world(world: &mut World, config: Prefab) -> Entity {
         let entity = world.spawn_empty().id();
 
         let command = SpawnPrefabCommand::new(entity, config);

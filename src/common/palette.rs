@@ -8,9 +8,9 @@ use crate::{
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Palette {
-    White = 0xFFE4B5,
+    White = 0xFFEAC5,
     Black = 0x140E08,
-    Gray = 0xA0845C,
+    Gray = 0x9C978E,
     Green = 0x89CA43,
     DarkGreen = 0x395C20,
     Brown = 0x9E5423,

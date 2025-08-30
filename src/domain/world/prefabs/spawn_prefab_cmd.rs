@@ -1,13 +1,13 @@
-use super::{Prefabs, SpawnConfig};
+use super::{Prefab, Prefabs};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub struct SpawnPrefabCommand {
     pub entity: Entity,
-    pub config: SpawnConfig,
+    pub config: Prefab,
 }
 
 impl SpawnPrefabCommand {
-    pub fn new(entity: Entity, config: SpawnConfig) -> Self {
+    pub fn new(entity: Entity, config: Prefab) -> Self {
         Self { entity, config }
     }
 

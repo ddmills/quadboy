@@ -1,4 +1,4 @@
-use super::SpawnConfig;
+use super::Prefab;
 use crate::common::Rand;
 use crate::domain::{ApplyVisibilityEffects, Label, VisionBlocker};
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_cactus(entity: Entity, world: &mut World, config: SpawnConfig) {
+pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) {
     let mut rand = world.get_resource_mut::<Rand>().unwrap();
     let glyph_idx = rand.pick(&[67, 68]);
 

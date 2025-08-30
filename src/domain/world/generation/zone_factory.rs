@@ -1,5 +1,5 @@
 use crate::domain::{
-    ConstraintHandler, OverworldZone, RiverBuilder, RoadBuilder, SpawnConfig, Terrain, ZoneData,
+    ConstraintHandler, OverworldZone, Prefab, RiverBuilder, RoadBuilder, Terrain, ZoneData,
     ZoneGridData,
 };
 
@@ -77,7 +77,7 @@ impl ZoneFactory {
         }
     }
 
-    pub fn push_entity(&mut self, x: usize, y: usize, config: SpawnConfig) {
+    pub fn push_entity(&mut self, x: usize, y: usize, config: Prefab) {
         self.grid_data.push_entity(x, y, config);
     }
 

@@ -3,13 +3,13 @@ use macroquad::prelude::trace;
 
 use crate::{
     common::Grid,
-    domain::{Overworld, SpawnConfig, Terrain, ZoneFactory},
+    domain::{Overworld, Prefab, Terrain, ZoneFactory},
 };
 
 pub struct ZoneData {
     pub zone_idx: usize,
     pub terrain: Grid<Terrain>,
-    pub entities: Grid<Vec<SpawnConfig>>,
+    pub entities: Grid<Vec<Prefab>>,
 }
 
 pub struct ZoneGenerator;

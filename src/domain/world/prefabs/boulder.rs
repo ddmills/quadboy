@@ -1,4 +1,4 @@
-use super::SpawnConfig;
+use super::Prefab;
 use crate::{
     common::Palette,
     domain::{
@@ -10,7 +10,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_boulder(entity: Entity, world: &mut World, config: SpawnConfig) {
+pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
     world.entity_mut(entity).insert((
         Position::new_world(config.pos),
         Glyph::new(68, Palette::Gray, Palette::Clear).layer(Layer::Objects),

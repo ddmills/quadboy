@@ -4,7 +4,7 @@ use crate::{
         Grid, Rand,
         algorithm::{ca_rules::*, cellular_automata::*},
     },
-    domain::{BiomeBuilder, PrefabId, SpawnConfig, Terrain, ZoneFactory},
+    domain::{BiomeBuilder, Prefab, PrefabId, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
@@ -46,11 +46,15 @@ impl BiomeBuilder for ForestBiomeBuilder {
 
                 // Boulders take precedence
                 if *boulder_grid.get(x, y).unwrap_or(&false) {
-                    zone.push_entity(x, y, SpawnConfig::new(PrefabId::Boulder, wpos));
+                    zone.push_entity(x, y, Prefab::new(PrefabId::Boulder, wpos));
                 } else if *tree_grid.get(x, y).unwrap_or(&false) {
-                    zone.push_entity(x, y, SpawnConfig::new(PrefabId::PineTree, wpos));
+                    zone.push_entity(x, y, Prefab::new(PrefabId::PineTree, wpos));
                 } else if rand.bool(0.005) {
-                    zone.push_entity(x, y, SpawnConfig::new(PrefabId::Bandit, wpos));
+                    zone.push_entity(x, y, Prefab::new(PrefabId::Bandit, wpos));
+                } else if rand.bool(0.001) {
+                    zone.push_entity(x, y, Prefab::new(PrefabId::Lantern, wpos));
+                } else if rand.bool(0.001) {
+                    zone.push_entity(x, y, Prefab::new(PrefabId::Pickaxe, wpos));
                 }
             }
         }
