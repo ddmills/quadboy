@@ -16,14 +16,14 @@ use crate::{
     common::Rand,
     domain::{
         ApplyVisibilityEffects, Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings,
-        HideWhenNotVisible, InActiveZone, IsExplored, IsVisible, Label, LoadGameResult,
-        LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag,
-        SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Vision,
-        VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
+        HideWhenNotVisible, InActiveZone, InInventory, Inventory, IsExplored, IsVisible, Item,
+        Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState,
+        UnloadZoneEvent, Vision, VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
-        update_mouse,
+        StableId, update_mouse,
     },
     rendering::{CrtShader, Glyph, RecordZonePosition},
     states::{
@@ -79,6 +79,10 @@ async fn main() {
     reg.register::<StairUp>();
     reg.register::<InActiveZone>();
     reg.register::<Player>();
+    reg.register::<Item>();
+    reg.register::<Inventory>();
+    reg.register::<InInventory>();
+    reg.register::<StableId>();
     reg.register::<Vision>();
     reg.register::<VisionBlocker>();
     reg.register::<IsVisible>();

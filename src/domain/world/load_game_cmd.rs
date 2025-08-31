@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
+use bevy_ecs::system::RunSystemOnce;
 
 use crate::{
-    domain::{LoadZoneCommand, Overworld, PlayerPosition, TerrainNoise, Zones},
-    engine::{Clock, deserialize, try_load_game},
+    domain::{LoadZoneCommand, Overworld, PlayerPosition, TerrainNoise, Zones, reconcile_inventory_ids},
+    engine::{Clock, StableIdRegistry, deserialize, reconcile_stable_ids, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
 };
@@ -40,6 +41,7 @@ impl LoadGameCommand {
         world.insert_resource(Overworld::new(game_data.seed));
         world.insert_resource(TerrainNoise::new(game_data.seed));
         world.insert_resource(PlayerPosition::from_position(&position));
+        world.insert_resource(StableIdRegistry::new());
         world.insert_resource(Zones {
             player: zone_idx,
             active: vec![zone_idx],
@@ -52,6 +54,10 @@ impl LoadGameCommand {
         let _ = LoadZoneCommand(zone_idx).apply(world);
 
         deserialize(game_data.player.entity, world);
+        
+        reconcile_stable_ids(world);
+        
+        let _ = world.run_system_once(reconcile_inventory_ids);
 
         if let Some(mut clock) = world.get_resource_mut::<Clock>() {
             clock.set_tick(game_data.tick);

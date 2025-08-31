@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        IsExplored, Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Zone, game_loop,
-        player_input, render_player_debug,
+        IsExplored, InventoryDisplay, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent,
+        PlayerPosition, Zone, cleanup_old_messages, cleanup_zone_entities_on_position_removal,
+        display_inventory_count, display_pickup_messages, game_loop, handle_item_pickup, player_input,
+        render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
@@ -19,6 +21,8 @@ pub struct ExploreStatePlugin;
 
 impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
+        app.register_event::<PickupEvent>();
+        
         GameStatePlugin::new(GameState::Explore)
             .on_enter(app, (on_enter_explore, center_camera_on_player).chain())
             .on_update(
@@ -28,7 +32,12 @@ impl Plugin for ExploreStatePlugin {
                     render_tick_display,
                     render_cursor,
                     display_entity_names_at_mouse,
+                    display_inventory_count,
                     player_input,
+                    handle_item_pickup,
+                    cleanup_zone_entities_on_position_removal,
+                    display_pickup_messages,
+                    cleanup_old_messages,
                     game_loop,
                 ),
             )
@@ -76,6 +85,13 @@ fn on_enter_explore(mut cmds: Commands) {
         Position::new_f32(0., 0., 0.),
         Visibility::Hidden,
         MouseHoverText,
+        CleanupStateExplore,
+    ));
+    
+    cmds.spawn((
+        Text::new("Inventory: 0/10").fg1(Palette::White).bg(Palette::Black),
+        Position::new_f32(0., 1.5, 0.),
+        InventoryDisplay,
         CleanupStateExplore,
     ));
 }

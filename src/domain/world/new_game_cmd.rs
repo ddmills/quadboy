@@ -6,10 +6,10 @@ use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Label, LoadZoneCommand, Overworld,
-        Player, PlayerPosition, PlayerSaveData, TerrainNoise, Vision, Zones,
+        ApplyVisibilityEffects, Collider, Energy, GameSaveData, Inventory, Label, LoadZoneCommand,
+        Overworld, Player, PlayerPosition, PlayerSaveData, TerrainNoise, Vision, Zones,
     },
-    engine::{Clock, delete_save, save_game, serialize},
+    engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
@@ -41,11 +41,16 @@ impl NewGameCommand {
         let starting_position = Position::new(502, 466, SURFACE_LEVEL_Z);
         let start_zone = starting_position.zone_idx();
 
+        let mut id_registry = StableIdRegistry::new();
+        let player_id = id_registry.generate_id();
+
         let player_entity = world
             .spawn((
                 starting_position.clone(),
                 Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
                 Player,
+                StableId::new(player_id),
+                Inventory::new(10),
                 Vision::with_underground_range(16, 8),
                 ApplyVisibilityEffects,
                 Collider,
@@ -55,6 +60,8 @@ impl NewGameCommand {
                 CleanupStatePlay,
             ))
             .id();
+        
+        id_registry.register(player_entity, player_id);
 
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();
         camera.focus_on(starting_position.x, starting_position.y);
@@ -63,6 +70,7 @@ impl NewGameCommand {
         world.insert_resource(Overworld::new(self.seed));
         world.insert_resource(TerrainNoise::new(self.seed));
         world.insert_resource(Clock::new());
+        world.insert_resource(id_registry);
         world.insert_resource(Zones {
             player: start_zone,
             active: vec![start_zone],

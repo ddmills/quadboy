@@ -17,7 +17,7 @@ pub enum Palette {
     DarkBrown = 0xBF6F2A,
     Blue = 0x53ACE7,
     DarkBlue = 0x1E435C,
-    Red = 0xD4311E,
+    Red = 0xE42C18,
     DarkRed = 0xA7362A,
     Orange = 0xFF7A27,
     DarkOrange = 0xC2722D,

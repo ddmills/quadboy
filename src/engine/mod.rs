@@ -5,6 +5,7 @@ mod exit;
 mod input;
 mod mouse;
 mod save;
+mod stable_id;
 mod time;
 
 pub use app::*;
@@ -14,4 +15,5 @@ pub use exit::*;
 pub use input::*;
 pub use mouse::*;
 pub use save::*;
+pub use stable_id::*;
 pub use time::*;

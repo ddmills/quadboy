@@ -51,9 +51,9 @@ impl BiomeBuilder for ForestBiomeBuilder {
                     zone.push_entity(x, y, Prefab::new(PrefabId::PineTree, wpos));
                 } else if rand.bool(0.005) {
                     zone.push_entity(x, y, Prefab::new(PrefabId::Bandit, wpos));
-                } else if rand.bool(0.001) {
+                } else if rand.bool(0.003) {
                     zone.push_entity(x, y, Prefab::new(PrefabId::Lantern, wpos));
-                } else if rand.bool(0.001) {
+                } else if rand.bool(0.003) {
                     zone.push_entity(x, y, Prefab::new(PrefabId::Pickaxe, wpos));
                 }
             }
