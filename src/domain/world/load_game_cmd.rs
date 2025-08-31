@@ -4,7 +4,9 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::system::RunSystemOnce;
 
 use crate::{
-    domain::{LoadZoneCommand, Overworld, PlayerPosition, TerrainNoise, Zones, reconcile_inventory_ids},
+    domain::{
+        LoadZoneCommand, Overworld, PlayerPosition, TerrainNoise, Zones, reconcile_inventory_ids,
+    },
     engine::{Clock, StableIdRegistry, deserialize, reconcile_stable_ids, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
@@ -54,9 +56,9 @@ impl LoadGameCommand {
         let _ = LoadZoneCommand(zone_idx).apply(world);
 
         deserialize(game_data.player.entity, world);
-        
+
         reconcile_stable_ids(world);
-        
+
         let _ = world.run_system_once(reconcile_inventory_ids);
 
         if let Some(mut clock) = world.get_resource_mut::<Clock>() {

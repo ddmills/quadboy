@@ -19,6 +19,6 @@ pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
         SaveFlag,
         CleanupStatePlay,
     ));
-    
+
     assign_stable_id(entity, world);
 }

@@ -1,9 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::{
-    domain::Zone,
-    rendering::Position,
-};
+use crate::{domain::Zone, rendering::Position};
 
 pub fn cleanup_zone_entities_on_position_removal(
     mut removed: RemovedComponents<Position>,

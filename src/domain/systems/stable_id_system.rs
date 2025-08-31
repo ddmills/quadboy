@@ -11,7 +11,7 @@ pub fn reconcile_inventory_ids(
 ) {
     for mut inventory in q_inventory.iter_mut() {
         inventory.items.clear();
-        
+
         let item_ids = inventory.item_ids.clone();
         for item_id in item_ids {
             if let Some(entity) = registry.get_entity(item_id) {

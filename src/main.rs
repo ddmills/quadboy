@@ -18,8 +18,9 @@ use crate::{
         ApplyVisibilityEffects, Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings,
         HideWhenNotVisible, InActiveZone, InInventory, Inventory, IsExplored, IsVisible, Item,
         Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState,
-        UnloadZoneEvent, Vision, VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
+        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp,
+        TurnState, UnloadZoneEvent, Vision, VisionBlocker, Zones, on_bitmask_spawn,
+        on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,

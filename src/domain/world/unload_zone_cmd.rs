@@ -2,8 +2,9 @@ use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{GameSettings, Zone},
-    engine::{SerializableComponent, save_zone, serialize},
+    domain::{GameSettings, InInventory, Zone},
+    engine::{SerializableComponent, StableId, StableIdRegistry, save_zone, serialize},
+    rendering::{Position, world_to_zone_idx},
 };
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
@@ -31,6 +32,7 @@ impl Command<Result> for UnloadZoneCommand {
         let mut ent_data = vec![];
         let mut despawns = vec![];
 
+        // Save entities with positions (existing behavior)
         for v in zone.entities.iter() {
             for e in v {
                 despawns.push(*e);
@@ -42,7 +44,49 @@ impl Command<Result> for UnloadZoneCommand {
             }
         }
 
+        // Create zone save data before doing inventory items query
         let mut zone_save = zone.to_save();
+
+        // Also save inventory items whose owners are in this zone
+        // First, collect inventory items and their owner IDs
+        let mut inventory_items_to_check = Vec::new();
+        {
+            let mut q_inventory_items = world.query::<(Entity, &InInventory, &SaveFlag)>();
+            for (item_entity, in_inventory, _) in q_inventory_items.iter(world) {
+                inventory_items_to_check.push((item_entity, in_inventory.owner_id));
+            }
+        }
+
+        // Now check each item's owner position
+        let Some(id_registry) = world.get_resource::<StableIdRegistry>() else {
+            return Err("StableIdRegistry not found".into());
+        };
+
+        for (item_entity, owner_id) in inventory_items_to_check {
+            // Find the owner entity using stable ID
+            if let Some(owner_entity) = id_registry.get_entity(owner_id) {
+                // Check if owner has a position and is in this zone
+                if let Some(owner_pos) = world.get::<Position>(owner_entity) {
+                    let owner_zone_idx = world_to_zone_idx(
+                        owner_pos.x as usize,
+                        owner_pos.y as usize,
+                        owner_pos.z as usize,
+                    );
+
+                    if owner_zone_idx == zone_idx {
+                        // Save this inventory item with this zone
+                        let e_save = serialize(item_entity, world);
+                        ent_data.push(e_save);
+
+                        // Also add to despawn list if we're despawning the zone
+                        if self.despawn {
+                            despawns.push(item_entity);
+                        }
+                    }
+                }
+            }
+        }
+
         zone_save.entities = ent_data;
 
         let Some(settings) = world.get_resource::<GameSettings>() else {

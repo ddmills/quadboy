@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{Inventory, Player, PickupEvent},
+    domain::{DropEvent, Inventory, PickupEvent, Player},
     engine::Time,
     rendering::{Position, Text},
     states::CleanupStateExplore,
@@ -20,10 +20,33 @@ pub fn display_pickup_messages(
 ) {
     for event in e_pickup.read() {
         let message = format!("Picked up {}", event.item_name);
-        
+
         cmds.spawn((
             Text::new(&message).fg1(Palette::Yellow).bg(Palette::Black),
             Position::new_f32(2., 2., 0.),
+            PickupMessage {
+                lifetime: time.fixed_t + 2.0, // Show for 2 seconds
+            },
+            CleanupStateExplore,
+        ));
+    }
+}
+
+pub fn display_drop_messages(
+    mut cmds: Commands,
+    mut e_drop: EventReader<DropEvent>,
+    time: Res<Time>,
+) {
+    for event in e_drop.read() {
+        let message = if event.count == 1 {
+            "Dropped 1 item".to_string()
+        } else {
+            format!("Dropped {} items", event.count)
+        };
+
+        cmds.spawn((
+            Text::new(&message).fg1(Palette::Cyan).bg(Palette::Black),
+            Position::new_f32(2., 2.5, 0.),
             PickupMessage {
                 lifetime: time.fixed_t + 2.0, // Show for 2 seconds
             },
@@ -51,11 +74,11 @@ pub fn display_inventory_count(
     let Ok(inventory) = q_inventory.single() else {
         return;
     };
-    
+
     let Ok(mut text) = q_text.single_mut() else {
         return;
     };
-    
+
     text.value = format!("Inventory: {}/{}", inventory.count(), inventory.capacity);
 }
 

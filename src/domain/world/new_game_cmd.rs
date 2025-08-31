@@ -60,7 +60,7 @@ impl NewGameCommand {
                 CleanupStatePlay,
             ))
             .id();
-        
+
         id_registry.register(player_entity, player_id);
 
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();

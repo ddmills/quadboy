@@ -4,7 +4,18 @@ use std::collections::HashMap;
 
 use crate::engine::SerializableComponent;
 
-#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent, Debug, PartialEq, Eq, Hash, Copy)]
+#[derive(
+    Component,
+    Serialize,
+    Deserialize,
+    Clone,
+    SerializableComponent,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Copy,
+)]
 pub struct StableId(pub u64);
 
 impl StableId {
@@ -86,7 +97,7 @@ pub fn reconcile_stable_ids(world: &mut World) {
     for (entity, stable_id) in query.iter(world) {
         entities.push((entity, stable_id.0));
     }
-    
+
     let mut registry = world.resource_mut::<StableIdRegistry>();
     registry.rebuild_mappings(entities);
 }
