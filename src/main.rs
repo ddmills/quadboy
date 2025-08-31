@@ -24,14 +24,14 @@ use crate::{
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
-        StableId, update_mouse,
+        StableId, StableIdRegistry, update_mouse,
     },
     rendering::{CrtShader, Glyph, RecordZonePosition},
     states::{
         CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
-        ExploreStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin,
-        OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin,
-        update_app_states, update_game_states,
+        ExploreStatePlugin, InventoryStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin,
+        NewGameStatePlugin, OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin,
+        SettingsStatePlugin, update_app_states, update_game_states,
     },
 };
 
@@ -98,6 +98,7 @@ async fn main() {
         .add_plugin(NewGameStatePlugin)
         .add_plugin(LoadGameStatePlugin)
         .add_plugin(ExploreStatePlugin)
+        .add_plugin(InventoryStatePlugin)
         .add_plugin(OverworldStatePlugin)
         .add_plugin(PauseStatePlugin)
         .register_event::<LoadGameResult>()
@@ -129,6 +130,7 @@ async fn main() {
         .init_resource::<Bitmasker>()
         .init_resource::<Prefabs>()
         .init_resource::<Rand>()
+        .init_resource::<StableIdRegistry>()
         .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
         .add_systems(
             ScheduleType::Update,

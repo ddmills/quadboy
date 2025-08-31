@@ -52,6 +52,8 @@ pub enum GameState {
     Explore,
     Pause,
     Overworld,
+    Inventory,
+    Container,
 }
 
 impl fmt::Display for GameState {
@@ -63,6 +65,8 @@ impl fmt::Display for GameState {
             GameState::Explore => write!(f, "Explore"),
             GameState::Pause => write!(f, "Pause"),
             GameState::Overworld => write!(f, "Overworld"),
+            GameState::Inventory => write!(f, "Inventory"),
+            GameState::Container => write!(f, "Container"),
         }
     }
 }

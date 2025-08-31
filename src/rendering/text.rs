@@ -119,7 +119,7 @@ impl Text {
 pub fn render_text(
     mut cmds: Commands,
     mut q_text: ParamSet<(
-        Query<Entity, Or<(Changed<Text>, Changed<Visibility>)>>,
+        Query<Entity, Or<(Changed<Text>, Changed<Visibility>, Changed<Position>)>>,
         Query<(Entity, &mut Text, &Position, &Visibility)>,
     )>,
     time: Res<Time>,
