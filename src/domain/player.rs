@@ -99,6 +99,10 @@ pub fn player_input(
         Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Pickaxe, (x, y, z)));
     }
 
+    if keys.is_pressed(KeyCode::C) {
+        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Chest, (x, y, z)));
+    }
+
     if keys.is_down(KeyCode::LeftShift) {
         rate /= 2.0;
     }
@@ -130,7 +134,6 @@ pub fn player_input(
         return;
     }
 
-    // Check if any movement key is pressed or held
     let movement_keys_down = keys.is_down(KeyCode::A)
         || keys.is_down(KeyCode::D)
         || keys.is_down(KeyCode::W)
@@ -138,7 +141,6 @@ pub fn player_input(
         || keys.is_down(KeyCode::Q)
         || keys.is_down(KeyCode::E);
 
-    // Check if any movement key was just pressed (not held)
     let movement_keys_pressed = keys.is_pressed(KeyCode::A)
         || keys.is_pressed(KeyCode::D)
         || keys.is_pressed(KeyCode::W)
@@ -147,23 +149,16 @@ pub fn player_input(
         || keys.is_pressed(KeyCode::E);
 
     if !movement_keys_down {
-        // Reset movement timer when no keys are held
         movement_timer.1 = false;
     }
 
-    // Determine if we can move:
-    // - Always move immediately on fresh key press
-    // - Otherwise check timing based on whether we're in initial delay or repeat phase
     let can_move = if movement_keys_pressed {
-        true // Immediate movement on key press
+        true
     } else if movement_keys_down {
         if movement_timer.1 {
-            // Already past initial delay, use repeat rate
             now - movement_timer.0 >= rate
         } else {
-            // Still in initial delay period
             if now - movement_timer.0 >= delay {
-                // Initial delay has passed, switch to repeat rate
                 movement_timer.1 = true;
                 true
             } else {
@@ -175,7 +170,6 @@ pub fn player_input(
     };
 
     if movement_keys_down && can_move {
-        // Collect intended movement deltas
         let mut dx: i32 = 0;
         let mut dy: i32 = 0;
         let mut dz: i32 = 0;
@@ -207,35 +201,28 @@ pub fn player_input(
             dz += 1;
         }
 
-        // Check final destination for collisions
         if dx != 0 || dy != 0 || dz != 0 {
             let new_x = (x as i32 + dx) as usize;
             let new_y = (y as i32 + dy) as usize;
             let new_z = (z as i32 + dz) as usize;
 
-            // Check if crossing zone boundary for different rate
             let crosses_boundary = would_cross_zone_boundary((x, y, z), (new_x, new_y, new_z));
-            // For zone boundary crossing, override the normal timing
             let zone_boundary_override =
                 crosses_boundary && settings.zone_boundary_move_delay > 0.0;
 
-            // Check timing: immediate on press, or respect delays for held keys
             let can_move_now = if movement_keys_pressed && !zone_boundary_override {
-                true // Immediate on press (unless crossing zone boundary)
+                true
             } else if zone_boundary_override {
                 now - movement_timer.0 >= settings.zone_boundary_move_delay
             } else {
-                // Already checked timing in can_move above
                 true
             };
 
             if can_move_now {
-                // Check bounds
                 if new_x < MAP_SIZE.0 * ZONE_SIZE.0
                     && new_y < MAP_SIZE.1 * ZONE_SIZE.1
                     && new_z < MAP_SIZE.2
                 {
-                    // For vertical movement, also check if we're still on the appropriate stair
                     let can_move_vertically = dz == 0
                         || (dz < 0 && is_on_stair_up(new_x, new_y, z, &q_stairs_up))
                         || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
@@ -248,9 +235,7 @@ pub fn player_input(
                         position.z = new_z as f32;
                         moved = true;
 
-                        // Update movement timer
                         movement_timer.0 = now;
-                        // Don't set past_initial_delay to true here - let the timing logic handle it
                     }
                 }
             }

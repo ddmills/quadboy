@@ -5,10 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        DropEvent, InventoryDisplay, IsExplored, Label, PickupEvent, Player, PlayerDebug,
-        PlayerMovedEvent, PlayerPosition, Zone, cleanup_old_messages,
-        cleanup_zone_entities_on_position_removal, display_drop_messages, display_inventory_count,
-        display_pickup_messages, game_loop, handle_drop_all_items, handle_item_pickup,
+        IsExplored, Label, PickupEvent, Player, PlayerDebug,
+        PlayerMovedEvent, PlayerPosition, Zone,
+        cleanup_zone_entities_on_position_removal, game_loop, handle_item_pickup,
         player_input, render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
@@ -23,7 +22,6 @@ pub struct ExploreStatePlugin;
 impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
         app.register_event::<PickupEvent>();
-        app.register_event::<DropEvent>();
 
         GameStatePlugin::new(GameState::Explore)
             .on_enter(app, (on_enter_explore, center_camera_on_player).chain())
@@ -34,14 +32,9 @@ impl Plugin for ExploreStatePlugin {
                     render_tick_display,
                     render_cursor,
                     display_entity_names_at_mouse,
-                    display_inventory_count,
                     player_input,
                     handle_item_pickup,
-                    handle_drop_all_items,
                     cleanup_zone_entities_on_position_removal,
-                    display_pickup_messages,
-                    display_drop_messages,
-                    cleanup_old_messages,
                     game_loop,
                 ),
             )
@@ -92,14 +85,6 @@ fn on_enter_explore(mut cmds: Commands) {
         CleanupStateExplore,
     ));
 
-    cmds.spawn((
-        Text::new("Inventory: 0/10")
-            .fg1(Palette::White)
-            .bg(Palette::Black),
-        Position::new_f32(0., 1.5, 0.),
-        InventoryDisplay,
-        CleanupStateExplore,
-    ));
 }
 
 fn on_leave_explore() {

@@ -1,7 +1,7 @@
 use super::{
-    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_giant_mushroom,
-    spawn_lantern, spawn_pickaxe, spawn_pine_tree, spawn_stair_down, spawn_stair_up,
-    spawn_terrain_tile,
+    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_chest,
+    spawn_giant_mushroom, spawn_lantern, spawn_pickaxe, spawn_pine_tree, spawn_stair_down,
+    spawn_stair_up, spawn_terrain_tile,
 };
 use crate::domain::Terrain;
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
@@ -12,6 +12,7 @@ pub enum PrefabId {
     PineTree,
     Boulder,
     Cactus,
+    Chest,
     GiantMushroom,
     Bandit,
     Lantern,
@@ -81,6 +82,7 @@ impl Prefabs {
         self.register(PrefabId::PineTree, spawn_pine_tree);
         self.register(PrefabId::Boulder, spawn_boulder);
         self.register(PrefabId::Cactus, spawn_cactus);
+        self.register(PrefabId::Chest, spawn_chest);
         self.register(PrefabId::GiantMushroom, spawn_giant_mushroom);
         self.register(PrefabId::Bandit, spawn_bandit);
         self.register(PrefabId::Lantern, spawn_lantern);

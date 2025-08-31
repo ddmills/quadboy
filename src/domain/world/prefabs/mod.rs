@@ -1,6 +1,7 @@
 mod bandit;
 mod boulder;
 mod cactus;
+mod chest;
 mod giant_mushroom;
 mod lantern;
 mod pickaxe;
@@ -14,6 +15,7 @@ mod terrain_tile;
 pub use bandit::*;
 pub use boulder::*;
 pub use cactus::*;
+pub use chest::*;
 pub use giant_mushroom::*;
 pub use lantern::*;
 pub use pickaxe::*;
