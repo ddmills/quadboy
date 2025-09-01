@@ -220,37 +220,33 @@ pub fn get_edge_continuity(
         }
 
         // Apply road constraints
-        if let Some(pos) = road_position {
-            if let Some(road_network) = overworld.get_road_network(z) {
-                if let Some(road_segment) = road_network
-                    .edges
-                    .get(&(zone_idx, neighbor))
-                    .or_else(|| road_network.edges.get(&(neighbor, zone_idx)))
-                {
-                    let width = road_segment.road_type.width();
-                    for i in 0..width {
-                        let tile_pos = (pos + i).saturating_sub(width / 2);
-                        if tile_pos < edge_constraints.len() {
-                            edge_constraints[tile_pos] =
-                                ZoneConstraintType::Road(road_segment.road_type);
-                        }
-                    }
+        if let Some(pos) = road_position
+            && let Some(road_network) = overworld.get_road_network(z)
+            && let Some(road_segment) = road_network
+                .edges
+                .get(&(zone_idx, neighbor))
+                .or_else(|| road_network.edges.get(&(neighbor, zone_idx)))
+        {
+            let width = road_segment.road_type.width();
+            for i in 0..width {
+                let tile_pos = (pos + i).saturating_sub(width / 2);
+                if tile_pos < edge_constraints.len() {
+                    edge_constraints[tile_pos] = ZoneConstraintType::Road(road_segment.road_type);
                 }
             }
         }
 
         // Rivers take highest precedence - overwrite any rock/road constraints
-        if let Some(pos) = river_position {
-            if let Some(river_network) = overworld.get_river_network(z) {
-                if let Some(river_segment) = river_network.get_river_at_edge(zone_idx, neighbor) {
-                    let width = river_segment.river_type.width();
-                    for i in 0..width {
-                        let tile_pos = (pos + i).saturating_sub(width / 2);
-                        if tile_pos < edge_constraints.len() {
-                            edge_constraints[tile_pos] =
-                                ZoneConstraintType::River(river_segment.river_type);
-                        }
-                    }
+        if let Some(pos) = river_position
+            && let Some(river_network) = overworld.get_river_network(z)
+            && let Some(river_segment) = river_network.get_river_at_edge(zone_idx, neighbor)
+        {
+            let width = river_segment.river_type.width();
+            for i in 0..width {
+                let tile_pos = (pos + i).saturating_sub(width / 2);
+                if tile_pos < edge_constraints.len() {
+                    edge_constraints[tile_pos] =
+                        ZoneConstraintType::River(river_segment.river_type);
                 }
             }
         }

@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::Grid,
-    domain::{BiomeType, Prefab, Terrain},
+    domain::{Prefab, Terrain},
 };
 
 pub struct ZoneGridData {

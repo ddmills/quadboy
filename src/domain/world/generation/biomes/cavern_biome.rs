@@ -57,17 +57,17 @@ fn generate_cave_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<bool> {
 
         // Check if this tile is locked (rivers, roads already placed)
         // Rivers are River/Shallows terrain, roads are Dirt terrain when locked
-        if zone.grid_data.is_locked_tile(x, y) {
-            if let Some(terrain) = zone.grid_data.terrain.get(x, y) {
-                // If it's a river or shallows, always seed as empty
-                // If it's dirt and locked, it's a road - also seed as empty
-                if matches!(terrain, Terrain::River | Terrain::Shallows) {
-                    return false;
-                }
-                // Dirt terrain when locked means it's a road
-                if matches!(terrain, Terrain::Dirt) {
-                    return false;
-                }
+        if zone.grid_data.is_locked_tile(x, y)
+            && let Some(terrain) = zone.grid_data.terrain.get(x, y)
+        {
+            // If it's a river or shallows, always seed as empty
+            // If it's dirt and locked, it's a road - also seed as empty
+            if matches!(terrain, Terrain::River | Terrain::Shallows) {
+                return false;
+            }
+            // Dirt terrain when locked means it's a road
+            if matches!(terrain, Terrain::Dirt) {
+                return false;
             }
         }
 
@@ -88,12 +88,12 @@ fn generate_cave_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<bool> {
         }
 
         // Preserve rivers and roads
-        if zone.grid_data.is_locked_tile(x, y) {
-            if let Some(terrain) = zone.grid_data.terrain.get(x, y) {
-                // Preserve rivers, shallows, and roads (which are Dirt when locked)
-                if matches!(terrain, Terrain::River | Terrain::Shallows | Terrain::Dirt) {
-                    return true;
-                }
+        if zone.grid_data.is_locked_tile(x, y)
+            && let Some(terrain) = zone.grid_data.terrain.get(x, y)
+        {
+            // Preserve rivers, shallows, and roads (which are Dirt when locked)
+            if matches!(terrain, Terrain::River | Terrain::Shallows | Terrain::Dirt) {
+                return true;
             }
         }
 
@@ -115,52 +115,52 @@ fn generate_cave_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<bool> {
 
 fn should_keep_clear(zone: &ZoneFactory, x: usize, y: usize) -> bool {
     // Check if this position should be kept clear for passages, rivers, or foliage
-    if y == 0 {
-        if let Some(constraint) = zone.ozone.constraints.north.0.get(x) {
-            return matches!(
-                constraint,
-                ZoneConstraintType::None
-                    | ZoneConstraintType::River(_)
-                    | ZoneConstraintType::Road(_)
-                    | ZoneConstraintType::Foliage
-            );
-        }
+    if y == 0
+        && let Some(constraint) = zone.ozone.constraints.north.0.get(x)
+    {
+        return matches!(
+            constraint,
+            ZoneConstraintType::None
+                | ZoneConstraintType::River(_)
+                | ZoneConstraintType::Road(_)
+                | ZoneConstraintType::Foliage
+        );
     }
 
-    if y == ZONE_SIZE.1 - 1 {
-        if let Some(constraint) = zone.ozone.constraints.south.0.get(x) {
-            return matches!(
-                constraint,
-                ZoneConstraintType::None
-                    | ZoneConstraintType::River(_)
-                    | ZoneConstraintType::Road(_)
-                    | ZoneConstraintType::Foliage
-            );
-        }
+    if y == ZONE_SIZE.1 - 1
+        && let Some(constraint) = zone.ozone.constraints.south.0.get(x)
+    {
+        return matches!(
+            constraint,
+            ZoneConstraintType::None
+                | ZoneConstraintType::River(_)
+                | ZoneConstraintType::Road(_)
+                | ZoneConstraintType::Foliage
+        );
     }
 
-    if x == 0 {
-        if let Some(constraint) = zone.ozone.constraints.west.0.get(y) {
-            return matches!(
-                constraint,
-                ZoneConstraintType::None
-                    | ZoneConstraintType::River(_)
-                    | ZoneConstraintType::Road(_)
-                    | ZoneConstraintType::Foliage
-            );
-        }
+    if x == 0
+        && let Some(constraint) = zone.ozone.constraints.west.0.get(y)
+    {
+        return matches!(
+            constraint,
+            ZoneConstraintType::None
+                | ZoneConstraintType::River(_)
+                | ZoneConstraintType::Road(_)
+                | ZoneConstraintType::Foliage
+        );
     }
 
-    if x == ZONE_SIZE.0 - 1 {
-        if let Some(constraint) = zone.ozone.constraints.east.0.get(y) {
-            return matches!(
-                constraint,
-                ZoneConstraintType::None
-                    | ZoneConstraintType::River(_)
-                    | ZoneConstraintType::Road(_)
-                    | ZoneConstraintType::Foliage
-            );
-        }
+    if x == ZONE_SIZE.0 - 1
+        && let Some(constraint) = zone.ozone.constraints.east.0.get(y)
+    {
+        return matches!(
+            constraint,
+            ZoneConstraintType::None
+                | ZoneConstraintType::River(_)
+                | ZoneConstraintType::Road(_)
+                | ZoneConstraintType::Foliage
+        );
     }
 
     false

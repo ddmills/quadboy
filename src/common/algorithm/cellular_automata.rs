@@ -147,11 +147,11 @@ where
         if let Some(ref constraints) = self.constraints {
             for x in 0..width {
                 for y in 0..height {
-                    if let Some(&is_locked) = constraints.get(x, y) {
-                        if is_locked {
-                            let current_value = self.current.get(x, y).unwrap().clone();
-                            self.next.set(x, y, current_value);
-                        }
+                    if let Some(&is_locked) = constraints.get(x, y)
+                        && is_locked
+                    {
+                        let current_value = self.current.get(x, y).unwrap().clone();
+                        self.next.set(x, y, current_value);
                     }
                 }
             }

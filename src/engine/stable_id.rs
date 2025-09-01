@@ -82,10 +82,12 @@ pub fn assign_stable_id(entity: Entity, world: &mut World) -> u64 {
         return existing_id.0;
     }
 
-    let mut registry = world.resource_mut::<StableIdRegistry>();
-    let id = registry.generate_id();
-    registry.register(entity, id);
-    drop(registry);
+    let id = {
+        let mut registry = world.resource_mut::<StableIdRegistry>();
+        let id = registry.generate_id();
+        registry.register(entity, id);
+        id
+    };
 
     world.entity_mut(entity).insert(StableId::new(id));
     id

@@ -135,14 +135,14 @@ impl ConstraintHandler {
         direction: &EdgeDirection,
         road_builder: &mut RoadBuilder,
     ) {
-        if let Some(road_pos) = current_road.take() {
-            if road_width > 0 {
-                road_builder.add_connection(RoadConnection {
-                    category: direction.get_road_category(),
-                    pos: road_pos,
-                    width: road_width,
-                });
-            }
+        if let Some(road_pos) = current_road.take()
+            && road_width > 0
+        {
+            road_builder.add_connection(RoadConnection {
+                category: direction.get_road_category(),
+                pos: road_pos,
+                width: road_width,
+            });
         }
     }
 

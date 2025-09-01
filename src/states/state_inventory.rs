@@ -1,12 +1,12 @@
 use bevy_ecs::prelude::*;
-use macroquad::{input::KeyCode, prelude::trace};
+use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    domain::{game_loop, ConsumeEnergyEvent, EnergyActionType, InInventory, Inventory, Label, Player, PlayerPosition, Zone},
+    domain::{DropItemAction, Inventory, Label, Player, PlayerPosition, game_loop},
     engine::{App, KeyInput, Plugin, StableIdRegistry},
-    rendering::{world_to_zone_idx, world_to_zone_local, Layer, Position, Text},
-    states::{cleanup_system, CurrentGameState, GameState, GameStatePlugin},
+    rendering::{Layer, Position, Text},
+    states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
 };
 
 #[derive(Component)]
@@ -296,13 +296,9 @@ fn handle_inventory_input(
     keys: Res<KeyInput>,
     mut game_state: ResMut<CurrentGameState>,
     mut q_cursor: Query<(&mut InventoryCursor, &mut Position)>,
-    mut q_inventory: Query<&mut Inventory>,
-    q_player: Query<Entity, With<Player>>,
+    q_inventory: Query<&Inventory>,
     player_pos: Res<PlayerPosition>,
-    mut q_zones: Query<&mut Zone>,
     context: Res<InventoryContext>,
-    id_registry: Res<StableIdRegistry>,
-    mut e_consume_energy: EventWriter<ConsumeEnergyEvent>,
 ) {
     if keys.is_pressed(KeyCode::Escape) {
         game_state.next = GameState::Explore;
@@ -323,53 +319,19 @@ fn handle_inventory_input(
         cursor_pos.y += 0.5;
     }
 
-    // Handle dropping an item
     if keys.is_pressed(KeyCode::D) {
-        let Ok(mut inventory) = q_inventory.get_mut(context.player_entity) else {
+        let Ok(inventory) = q_inventory.get(context.player_entity) else {
             return;
         };
 
-        // Check if there's an item at the cursor position
-        if let Some(item_id) = inventory.item_ids.get(cursor.index).copied()
-            && let Some(item_entity) = id_registry.get_entity(item_id) {
-                // Get player position for dropping
-                let drop_pos = Position::new_f32(player_pos.x, player_pos.y, player_pos.z);
-                let world_pos = player_pos.world();
-                let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
-                let (local_x, local_y) = world_to_zone_local(world_pos.0, world_pos.1);
-
-                // Find the zone to add item back to
-                let mut zone_found = false;
-                for mut zone in q_zones.iter_mut() {
-                    if zone.idx == zone_idx {
-                        // Restore Position component and remove InInventory
-                        cmds.entity(item_entity)
-                            .insert(drop_pos.clone())
-                            .remove::<InInventory>();
-
-                        // Add back to zone's entity grid
-                        zone.entities.insert(local_x, local_y, item_entity);
-                        zone_found = true;
-                        break;
-                    }
-                }
-
-                if zone_found {
-                    // Remove from inventory
-                    inventory.item_ids.remove(cursor.index);
-                    inventory.items.remove(cursor.index);
-
-                    // Consume energy for dropping
-                    if let Ok(player_entity) = q_player.single() {
-                        e_consume_energy.write(ConsumeEnergyEvent::new(
-                            player_entity,
-                            EnergyActionType::DropItem,
-                        ));
-                    }
-                } else {
-                    trace!("Warning: Could not find zone {} to drop item into", zone_idx);
-                }
-            }
+        if let Some(item_id) = inventory.item_ids.get(cursor.index).copied() {
+            let world_pos = player_pos.world();
+            cmds.queue(DropItemAction {
+                entity: context.player_entity,
+                item_stable_id: item_id,
+                drop_position: world_pos,
+            });
+        }
     }
 }
 

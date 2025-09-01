@@ -149,7 +149,7 @@ impl RiverBuilder {
         }
 
         // Connect any unconnected rivers to nearest connected point or center
-        for (_category, connections) in grouped {
+        for connections in grouped.values() {
             for connection in connections {
                 if !connected_positions.contains(&connection.pos) {
                     if let Some(nearest) =

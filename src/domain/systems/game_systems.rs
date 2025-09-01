@@ -7,10 +7,10 @@ use macroquad::{prelude::trace, telemetry};
 
 use crate::{
     domain::{
-        TurnState, ai_turn, process_energy_consumption, turn_scheduler,
+        Player, PlayerPosition, TurnState, Zones, ai_turn, turn_scheduler,
         update_entity_visibility_flags, update_player_vision,
     },
-    rendering::update_entity_pos,
+    rendering::{Position, update_entity_pos, world_to_zone_idx},
 };
 
 #[derive(Resource)]
@@ -20,12 +20,12 @@ pub struct GameSystems {
 
 pub fn register_game_systems(world: &mut World) {
     let systems = vec![
+        world.register_system(apply_deferred),
         world.register_system(update_entity_pos),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
         world.register_system(turn_scheduler),
         world.register_system(ai_turn),
-        world.register_system(process_energy_consumption),
     ];
 
     world.insert_resource(GameSystems { all: systems });
@@ -39,11 +39,14 @@ fn exec_game_systems(world: &mut World) {
         systems.all.clone()
     };
 
-    let _ = world.run_system_once(bevy_ecs::schedule::ApplyDeferred);
-
     for id in system_ids {
         let _ = world.run_system(id);
     }
+}
+
+#[inline]
+pub fn apply_deferred(world: &mut World) {
+    let _ = world.run_system_once(bevy_ecs::schedule::ApplyDeferred);
 }
 
 pub fn game_loop(world: &mut World) {
@@ -52,6 +55,23 @@ pub fn game_loop(world: &mut World) {
     const MAX_ITERATIONS: u32 = 200;
 
     loop {
+        {
+            let Some(player_pos) = world.get_resource::<PlayerPosition>() else {
+                return;
+            };
+
+            let player_zone_idx = player_pos.zone_idx();
+
+            let Some(zones) = world.get_resource::<Zones>() else {
+                return;
+            };
+
+            if !zones.active.contains(&player_zone_idx) {
+                telemetry::end_zone();
+                return;
+            };
+        }
+
         exec_game_systems(world);
         let Some(turn) = world.get_resource::<TurnState>() else {
             return;

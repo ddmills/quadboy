@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        Collider, ConsumeEnergyEvent, Energy, EnergyActionType, GameSettings, IsExplored, Prefabs,
-        StairDown, StairUp, TurnState, Zone,
+        Collider, Energy, GameSettings, IsExplored, MoveAction, Prefabs, StairDown, StairUp,
+        TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
@@ -41,6 +41,11 @@ impl PlayerPosition {
             self.z.floor() as usize,
         )
     }
+
+    pub fn zone_idx(&self) -> usize {
+        let (x, y, z) = self.world();
+        world_to_zone_idx(x, y, z)
+    }
 }
 
 #[derive(Event)]
@@ -52,7 +57,7 @@ pub struct PlayerMovedEvent {
 
 pub fn player_input(
     mut cmds: Commands,
-    mut q_player: Query<(Entity, &mut Position), With<Player>>,
+    q_player: Query<(Entity, &Position), With<Player>>,
     q_colliders: Query<&Position, (With<Collider>, Without<Player>)>,
     q_stairs_down: Query<&Position, (With<StairDown>, Without<Player>)>,
     q_stairs_up: Query<&Position, (With<StairUp>, Without<Player>)>,
@@ -60,8 +65,6 @@ pub fn player_input(
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
     mut movement_timer: Local<(f64, bool)>, // (last_move_time, past_initial_delay)
-    mut e_player_moved: EventWriter<PlayerMovedEvent>,
-    mut e_consume_energy: EventWriter<ConsumeEnergyEvent>,
     mut game_state: ResMut<CurrentGameState>,
     turn_state: Res<TurnState>,
     settings: Res<GameSettings>,
@@ -71,8 +74,7 @@ pub fn player_input(
     let now = time.fixed_t;
     let mut rate = settings.input_delay;
     let delay = settings.input_initial_delay;
-    let (player_entity, mut position) = q_player.single_mut().unwrap();
-    let mut moved = false;
+    let (player_entity, position) = q_player.single().unwrap();
     let (x, y, z) = position.world();
 
     if keys.is_pressed(KeyCode::Escape) {
@@ -127,10 +129,9 @@ pub fn player_input(
     }
 
     if keys.is_down(KeyCode::T) && input_rate.try_key(KeyCode::T, now, rate, delay) {
-        e_consume_energy.write(ConsumeEnergyEvent::new(
-            player_entity,
-            EnergyActionType::Wait,
-        ));
+        cmds.queue(WaitAction {
+            entity: player_entity,
+        });
         return;
     }
 
@@ -157,13 +158,11 @@ pub fn player_input(
     } else if movement_keys_down {
         if movement_timer.1 {
             now - movement_timer.0 >= rate
+        } else if now - movement_timer.0 >= delay {
+            movement_timer.1 = true;
+            true
         } else {
-            if now - movement_timer.0 >= delay {
-                movement_timer.1 = true;
-                true
-            } else {
-                false
-            }
+            false
         }
     } else {
         false
@@ -218,25 +217,23 @@ pub fn player_input(
                 true
             };
 
-            if can_move_now {
-                if new_x < MAP_SIZE.0 * ZONE_SIZE.0
-                    && new_y < MAP_SIZE.1 * ZONE_SIZE.1
-                    && new_z < MAP_SIZE.2
+            if can_move_now
+                && new_x < MAP_SIZE.0 * ZONE_SIZE.0
+                && new_y < MAP_SIZE.1 * ZONE_SIZE.1
+                && new_z < MAP_SIZE.2
+            {
+                let can_move_vertically = dz == 0
+                    || (dz < 0 && is_on_stair_up(new_x, new_y, z, &q_stairs_up))
+                    || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
+
+                if can_move_vertically
+                    && !has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone)
                 {
-                    let can_move_vertically = dz == 0
-                        || (dz < 0 && is_on_stair_up(new_x, new_y, z, &q_stairs_up))
-                        || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
-
-                    if can_move_vertically
-                        && !has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone)
-                    {
-                        position.x = new_x as f32;
-                        position.y = new_y as f32;
-                        position.z = new_z as f32;
-                        moved = true;
-
-                        movement_timer.0 = now;
-                    }
+                    cmds.queue(MoveAction {
+                        entity: player_entity,
+                        new_position: (new_x, new_y, new_z),
+                    });
+                    movement_timer.0 = now;
                 }
             }
         }
@@ -244,20 +241,6 @@ pub fn player_input(
 
     for key in keys.released.iter() {
         input_rate.keys.remove(key);
-    }
-
-    if moved {
-        e_player_moved.write(PlayerMovedEvent {
-            x: position.x as usize,
-            y: position.y as usize,
-            z: position.z as usize,
-        });
-
-        // Consume energy for movement
-        e_consume_energy.write(ConsumeEnergyEvent::new(
-            player_entity,
-            EnergyActionType::Move,
-        ));
     }
 }
 

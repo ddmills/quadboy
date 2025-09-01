@@ -15,12 +15,11 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, Bitmasker, Collider, ConsumeEnergyEvent, Energy, GameSettings,
-        HideWhenNotVisible, InActiveZone, InInventory, Inventory, IsExplored, IsVisible, Item,
-        Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp,
-        TurnState, UnloadZoneEvent, Vision, VisionBlocker, Zones, on_bitmask_spawn,
-        on_refresh_bitmask,
+        ApplyVisibilityEffects, Bitmasker, Collider, Energy, GameSettings, HideWhenNotVisible,
+        InActiveZone, InInventory, Inventory, IsExplored, IsVisible, Item, Label, LoadGameResult,
+        LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag,
+        SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Vision,
+        VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -108,7 +107,6 @@ async fn main() {
         .register_event::<SetZoneStatusEvent>()
         .register_event::<PlayerMovedEvent>()
         .register_event::<SaveGameResult>()
-        .register_event::<ConsumeEnergyEvent>()
         .register_event::<RefreshBitmask>()
         .insert_resource(tilesets)
         .insert_resource(reg)

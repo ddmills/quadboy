@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{GameSettings, InInventory, Zone},
-    engine::{SerializableComponent, StableId, StableIdRegistry, save_zone, serialize},
+    engine::{SerializableComponent, StableIdRegistry, save_zone, serialize},
     rendering::{Position, world_to_zone_idx},
 };
 

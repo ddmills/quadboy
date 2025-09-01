@@ -303,8 +303,10 @@ impl OverworldRiverGenerator {
                 let meander = if rand.random() < 0.3 + noise * 0.2 {
                     if rand.bool(0.5) {
                         if rand.bool(0.5) { (1, 0) } else { (-1, 0) } // Horizontal meander
+                    } else if rand.bool(0.5) {
+                        (0, 1)
                     } else {
-                        if rand.bool(0.5) { (0, 1) } else { (0, -1) } // Vertical meander
+                        (0, -1)
                     }
                 } else {
                     (0, 0)

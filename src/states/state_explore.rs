@@ -5,9 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        IsExplored, Label, PickupEvent, Player, PlayerDebug,
-        PlayerMovedEvent, PlayerPosition, Zone,
-        cleanup_zone_entities_on_position_removal, game_loop, handle_item_pickup,
+        IsExplored, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
+        Zone, cleanup_zone_entities_on_position_removal, game_loop, handle_item_pickup,
         player_input, render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
@@ -84,7 +83,6 @@ fn on_enter_explore(mut cmds: Commands) {
         MouseHoverText,
         CleanupStateExplore,
     ));
-
 }
 
 fn on_leave_explore() {

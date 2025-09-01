@@ -19,18 +19,6 @@ pub struct TurnState {
     pub current_turn_entity: Option<Entity>,
 }
 
-#[derive(Event)]
-pub struct ConsumeEnergyEvent {
-    pub entity: Entity,
-    pub action: EnergyActionType,
-}
-
-impl ConsumeEnergyEvent {
-    pub fn new(entity: Entity, action: EnergyActionType) -> Self {
-        Self { entity, action }
-    }
-}
-
 pub fn turn_scheduler(
     mut q_energy: Query<(Entity, &mut Energy), With<InActiveZone>>,
     mut turn_state: ResMut<TurnState>,
@@ -76,18 +64,6 @@ pub fn turn_scheduler(
 
     turn_state.is_players_turn = highest_entity == player_entity;
     telemetry::end_zone();
-}
-
-pub fn process_energy_consumption(
-    mut events: EventReader<ConsumeEnergyEvent>,
-    mut q_energy: Query<&mut Energy>,
-) {
-    for event in events.read() {
-        if let Ok(mut energy) = q_energy.get_mut(event.entity) {
-            let cost = get_energy_cost(event.action);
-            energy.consume_energy(cost);
-        }
-    }
 }
 
 pub fn get_energy_cost(action: EnergyActionType) -> i32 {
