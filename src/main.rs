@@ -16,8 +16,9 @@ use crate::{
     common::Rand,
     domain::{
         ApplyVisibilityEffects, Bitmasker, Collider, Energy, GameSettings, HideWhenNotVisible,
-        InActiveZone, InInventory, Inventory, IsExplored, IsVisible, Item, Label, LoadGameResult,
-        LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag,
+        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
+        Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        RefreshBitmask, SaveFlag,
         SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Vision,
         VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
@@ -89,6 +90,7 @@ async fn main() {
     reg.register::<IsExplored>();
     reg.register::<ApplyVisibilityEffects>();
     reg.register::<HideWhenNotVisible>();
+    reg.register::<InventoryAccessible>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

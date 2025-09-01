@@ -1,7 +1,7 @@
 use super::Prefab;
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Collider, Inventory, Label, SaveFlag},
+    domain::{ApplyVisibilityEffects, Collider, Inventory, InventoryAccessible, Label, SaveFlag},
     engine::assign_stable_id,
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -14,6 +14,7 @@ pub fn spawn_chest(entity: Entity, world: &mut World, config: Prefab) {
         Glyph::new(125, Palette::Brown, Palette::Yellow).layer(Layer::Objects),
         Label::new("Chest"),
         Inventory::new(20), // Chest can hold 20 items
+        InventoryAccessible, // Chest inventory can be accessed by players
         Collider,
         ApplyVisibilityEffects,
         RecordZonePosition,

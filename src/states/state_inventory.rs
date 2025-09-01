@@ -3,17 +3,26 @@ use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     common::Palette,
-    domain::{DropItemAction, Inventory, Label, Player, PlayerPosition, game_loop},
+    domain::{DropItemAction, Inventory, Label, Player, PlayerPosition, TransferItemAction, game_loop},
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
 };
+
+#[derive(Event)]
+pub struct InventoryChangedEvent;
 
 #[derive(Component)]
 pub struct CleanupStateInventory;
 
 #[derive(Component)]
 pub struct CleanupStateContainer;
+
+#[derive(Component)]
+pub struct InventoryItemDisplay;
+
+#[derive(Component)]
+pub struct ContainerItemDisplay;
 
 #[derive(Component)]
 pub struct InventorySlot {
@@ -38,14 +47,16 @@ pub struct InventoryStatePlugin;
 
 impl Plugin for InventoryStatePlugin {
     fn build(&self, app: &mut App) {
+        app.register_event::<InventoryChangedEvent>();
+        
         GameStatePlugin::new(GameState::Inventory)
             .on_enter(app, setup_inventory_screen)
-            .on_update(app, (handle_inventory_input, game_loop))
+            .on_update(app, (handle_inventory_input, refresh_inventory_display, game_loop))
             .on_leave(app, cleanup_system::<CleanupStateInventory>);
 
         GameStatePlugin::new(GameState::Container)
             .on_enter(app, setup_container_screen)
-            .on_update(app, (update_container_display, handle_container_input))
+            .on_update(app, (handle_container_input, refresh_container_display, game_loop))
             .on_leave(app, cleanup_system::<CleanupStateContainer>);
     }
 }
@@ -137,6 +148,7 @@ fn setup_inventory_screen(
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
                     Position::new_f32(left_x + 4., y_pos, 0.),
                     CleanupStateInventory,
+                    InventoryItemDisplay,
                 ));
             }
         } else {
@@ -144,6 +156,7 @@ fn setup_inventory_screen(
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
                 Position::new_f32(left_x + 4., y_pos, 0.),
                 CleanupStateInventory,
+                InventoryItemDisplay,
             ));
         }
     }
@@ -176,19 +189,29 @@ fn setup_container_screen(
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
     id_registry: Res<StableIdRegistry>,
+    context: Option<Res<InventoryContext>>,
 ) {
     let Ok(player_entity) = q_player.single() else {
         return;
     };
 
-    let Ok(inventory) = q_inventory.get(player_entity) else {
+    let Ok(player_inventory) = q_inventory.get(player_entity) else {
         return;
     };
 
-    cmds.insert_resource(InventoryContext {
-        player_entity,
-        container_entity: None, // TODO: Set this to the actual container entity
-    });
+    // Get container entity from existing context if available
+    let container_entity = context.and_then(|ctx| ctx.container_entity);
+    
+    // Re-insert the context resource to ensure it persists
+    if container_entity.is_none() {
+        // If no container entity, return to explore state
+        return;
+    }
+    
+    let container = container_entity.unwrap();
+    let Ok(container_inventory) = q_inventory.get(container) else {
+        return;
+    };
 
     let left_x = 2.0;
     let right_x = 15.0;
@@ -206,8 +229,8 @@ fn setup_container_screen(
     cmds.spawn((
         Text::new(&format!(
             "Items: {}/{}",
-            inventory.count(),
-            inventory.capacity
+            player_inventory.count(),
+            player_inventory.capacity
         ))
         .fg1(Palette::White)
         .layer(Layer::Ui),
@@ -216,17 +239,154 @@ fn setup_container_screen(
     ));
 
     // Display player inventory items
-    for i in 0..inventory.capacity {
+    for i in 0..player_inventory.capacity {
         let y_pos = start_y + (i as f32 * 0.5);
 
         cmds.spawn((
             InventorySlot {
                 index: i,
-                item_id: inventory.item_ids.get(i).copied(),
+                item_id: player_inventory.item_ids.get(i).copied(),
             },
             Position::new_f32(left_x + 2., y_pos, 0.),
             CleanupStateContainer,
         ));
+
+        if let Some(item_id) = player_inventory.item_ids.get(i) {
+            if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                let text = if let Ok(label) = q_labels.get(item_entity) {
+                    label.get().to_string()
+                } else {
+                    "Unknown Item".to_string()
+                };
+
+                cmds.spawn((
+                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Position::new_f32(left_x + 4., y_pos, 0.),
+                    CleanupStateContainer,
+                    InventoryItemDisplay,
+                ));
+            }
+        } else {
+            cmds.spawn((
+                Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
+                Position::new_f32(left_x + 4., y_pos, 0.),
+                CleanupStateContainer,
+                InventoryItemDisplay,
+            ));
+        }
+    }
+
+    // Right side - Container inventory
+    let container_label = if let Ok(label) = q_labels.get(container) {
+        label.get().to_string()
+    } else {
+        "CONTAINER".to_string()
+    };
+    
+    cmds.spawn((
+        Text::new(&container_label).fg1(Palette::Yellow).layer(Layer::Ui),
+        Position::new_f32(right_x, 1., 0.),
+        CleanupStateContainer,
+    ));
+
+    cmds.spawn((
+        Text::new(&format!(
+            "Items: {}/{}",
+            container_inventory.count(),
+            container_inventory.capacity
+        ))
+        .fg1(Palette::White)
+        .layer(Layer::Ui),
+        Position::new_f32(right_x, 2., 0.),
+        CleanupStateContainer,
+    ));
+
+    // Display container inventory items
+    for i in 0..container_inventory.capacity {
+        let y_pos = start_y + (i as f32 * 0.5);
+
+        if let Some(item_id) = container_inventory.item_ids.get(i) {
+            if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                let text = if let Ok(label) = q_labels.get(item_entity) {
+                    label.get().to_string()
+                } else {
+                    "Unknown Item".to_string()
+                };
+
+                cmds.spawn((
+                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Position::new_f32(right_x + 2., y_pos, 0.),
+                    CleanupStateContainer,
+                    ContainerItemDisplay,
+                ));
+            }
+        } else {
+            cmds.spawn((
+                Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
+                Position::new_f32(right_x + 2., y_pos, 0.),
+                CleanupStateContainer,
+                ContainerItemDisplay,
+            ));
+        }
+    }
+
+    // Cursor starts on player side
+    cmds.spawn((
+        InventoryCursor {
+            index: 0,
+            max_index: player_inventory.capacity.saturating_sub(1),
+            is_player_side: true,
+        },
+        Text::new(">").fg1(Palette::Cyan).layer(Layer::Ui),
+        Position::new_f32(left_x, start_y, 0.),
+        CleanupStateContainer,
+    ));
+
+    // Help text
+    let max_capacity = player_inventory.capacity.max(container_inventory.capacity);
+    let help_y = start_y + (max_capacity as f32 * 0.5) + 1.0;
+    cmds.spawn((
+        Text::new("[{Y|I}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+        Position::new_f32(left_x, help_y.min(18.), 0.),
+        CleanupStateContainer,
+    ));
+}
+
+fn refresh_inventory_display(
+    mut cmds: Commands,
+    mut e_inventory_changed: EventReader<InventoryChangedEvent>,
+    q_inventory: Query<&Inventory>,
+    q_labels: Query<&Label>,
+    q_item_displays: Query<Entity, With<InventoryItemDisplay>>,
+    q_player: Query<Entity, With<Player>>,
+    id_registry: Res<StableIdRegistry>,
+) {
+    if e_inventory_changed.is_empty() {
+        return;
+    }
+    e_inventory_changed.clear();
+
+    // Remove old item displays
+    for entity in q_item_displays.iter() {
+        cmds.entity(entity).despawn();
+    }
+
+    // Rebuild player inventory display
+    let Ok(player_entity) = q_player.single() else {
+        return;
+    };
+
+    let Ok(inventory) = q_inventory.get(player_entity) else {
+        return;
+    };
+
+    let left_x = 2.0;
+    let start_y = 3.5;
+
+    for i in 0..inventory.capacity {
+        let y_pos = start_y + (i as f32 * 0.5);
 
         if let Some(item_id) = inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
@@ -239,7 +399,73 @@ fn setup_container_screen(
                 cmds.spawn((
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
                     Position::new_f32(left_x + 4., y_pos, 0.),
+                    CleanupStateInventory,
+                    InventoryItemDisplay,
+                ));
+            }
+        } else {
+            cmds.spawn((
+                Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
+                Position::new_f32(left_x + 4., y_pos, 0.),
+                CleanupStateInventory,
+                InventoryItemDisplay,
+            ));
+        }
+    }
+}
+
+fn refresh_container_display(
+    mut cmds: Commands,
+    mut e_inventory_changed: EventReader<InventoryChangedEvent>,
+    q_inventory: Query<&Inventory>,
+    q_labels: Query<&Label>,
+    q_player_displays: Query<Entity, With<InventoryItemDisplay>>,
+    q_container_displays: Query<Entity, With<ContainerItemDisplay>>,
+    context: Res<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
+) {
+    if e_inventory_changed.is_empty() {
+        return;
+    }
+    e_inventory_changed.clear();
+
+    let Some(container_entity) = context.container_entity else {
+        return;
+    };
+
+    // Remove old displays
+    for entity in q_player_displays.iter() {
+        cmds.entity(entity).despawn();
+    }
+    for entity in q_container_displays.iter() {
+        cmds.entity(entity).despawn();
+    }
+
+    let left_x = 2.0;
+    let right_x = 15.0;
+    let start_y = 3.5;
+
+    // Rebuild player inventory display
+    let Ok(player_inventory) = q_inventory.get(context.player_entity) else {
+        return;
+    };
+
+    for i in 0..player_inventory.capacity {
+        let y_pos = start_y + (i as f32 * 0.5);
+
+        if let Some(item_id) = player_inventory.item_ids.get(i) {
+            if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                let text = if let Ok(label) = q_labels.get(item_entity) {
+                    label.get().to_string()
+                } else {
+                    "Unknown Item".to_string()
+                };
+
+                cmds.spawn((
+                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Position::new_f32(left_x + 4., y_pos, 0.),
                     CleanupStateContainer,
+                    InventoryItemDisplay,
                 ));
             }
         } else {
@@ -247,49 +473,44 @@ fn setup_container_screen(
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
                 Position::new_f32(left_x + 4., y_pos, 0.),
                 CleanupStateContainer,
+                InventoryItemDisplay,
             ));
         }
     }
 
-    // Right side - Container inventory
-    cmds.spawn((
-        Text::new("CONTAINER").fg1(Palette::Yellow).layer(Layer::Ui),
-        Position::new_f32(right_x, 1., 0.),
-        CleanupStateContainer,
-    ));
+    // Rebuild container inventory display
+    let Ok(container_inventory) = q_inventory.get(container_entity) else {
+        return;
+    };
 
-    cmds.spawn((
-        Text::new("Empty").fg1(Palette::Gray).layer(Layer::Ui),
-        Position::new_f32(right_x, 2., 0.),
-        CleanupStateContainer,
-    ));
+    for i in 0..container_inventory.capacity {
+        let y_pos = start_y + (i as f32 * 0.5);
 
-    // TODO: Display container inventory items when we have a container entity
+        if let Some(item_id) = container_inventory.item_ids.get(i) {
+            if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                let text = if let Ok(label) = q_labels.get(item_entity) {
+                    label.get().to_string()
+                } else {
+                    "Unknown Item".to_string()
+                };
 
-    // Cursor starts on player side
-    cmds.spawn((
-        InventoryCursor {
-            index: 0,
-            max_index: inventory.capacity.saturating_sub(1),
-            is_player_side: true,
-        },
-        Text::new(">").fg1(Palette::Yellow).layer(Layer::Ui),
-        Position::new_f32(left_x, start_y, 0.),
-        CleanupStateContainer,
-    ));
-
-    // Help text
-    let help_y = start_y + (inventory.capacity.max(10) as f32 * 0.5) + 1.0;
-    cmds.spawn((
-        Text::new("[{Y|I}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-        Position::new_f32(left_x, help_y.min(18.), 0.),
-        CleanupStateContainer,
-    ));
+                cmds.spawn((
+                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Position::new_f32(right_x + 2., y_pos, 0.),
+                    CleanupStateContainer,
+                    ContainerItemDisplay,
+                ));
+            }
+        } else {
+            cmds.spawn((
+                Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
+                Position::new_f32(right_x + 2., y_pos, 0.),
+                CleanupStateContainer,
+                ContainerItemDisplay,
+            ));
+        }
+    }
 }
-
-fn update_container_display(_cmds: Commands) {}
 
 fn handle_inventory_input(
     mut cmds: Commands,
@@ -299,6 +520,7 @@ fn handle_inventory_input(
     q_inventory: Query<&Inventory>,
     player_pos: Res<PlayerPosition>,
     context: Res<InventoryContext>,
+    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
 ) {
     if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Explore;
@@ -331,12 +553,96 @@ fn handle_inventory_input(
                 item_stable_id: item_id,
                 drop_position: world_pos,
             });
+            e_inventory_changed.write(InventoryChangedEvent);
         }
     }
 }
 
-fn handle_container_input(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
+fn handle_container_input(
+    mut cmds: Commands,
+    keys: Res<KeyInput>,
+    mut game_state: ResMut<CurrentGameState>,
+    mut q_cursor: Query<(&mut InventoryCursor, &mut Position, &mut Text)>,
+    q_inventory: Query<&Inventory>,
+    context: Res<InventoryContext>,
+    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
+) {
     if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Explore;
+        return;
+    }
+
+    let Ok((mut cursor, mut cursor_pos, mut cursor_text)) = q_cursor.single_mut() else {
+        return;
+    };
+
+    let container_entity = match context.container_entity {
+        Some(e) => e,
+        None => {
+            game_state.next = GameState::Explore;
+            return;
+        }
+    };
+
+    let Ok(player_inventory) = q_inventory.get(context.player_entity) else {
+        return;
+    };
+    let Ok(container_inventory) = q_inventory.get(container_entity) else {
+        return;
+    };
+
+    // Handle TAB to switch between player and container sides
+    if keys.is_pressed(KeyCode::Tab) {
+        cursor.is_player_side = !cursor.is_player_side;
+        cursor.index = 0;
+        
+        if cursor.is_player_side {
+            cursor.max_index = player_inventory.capacity.saturating_sub(1);
+            cursor_pos.x = 2.0; // left_x
+            cursor_text.value = ">".to_string();
+            cursor_text.fg1 = Some(Palette::Cyan.into());
+        } else {
+            cursor.max_index = container_inventory.capacity.saturating_sub(1);
+            cursor_pos.x = 15.0; // right_x
+            cursor_text.value = "<".to_string();
+            cursor_text.fg1 = Some(Palette::Orange.into());
+        }
+        cursor_pos.y = 3.5; // start_y
+    }
+
+    // Handle UP/DOWN navigation
+    if keys.is_pressed(KeyCode::Up) && cursor.index > 0 {
+        cursor.index -= 1;
+        cursor_pos.y -= 0.5;
+    }
+
+    if keys.is_pressed(KeyCode::Down) && cursor.index < cursor.max_index {
+        cursor.index += 1;
+        cursor_pos.y += 0.5;
+    }
+
+    // Handle ENTER to transfer items
+    if keys.is_pressed(KeyCode::Enter) {
+        if cursor.is_player_side {
+            // Transfer from player to container
+            if let Some(item_id) = player_inventory.item_ids.get(cursor.index).copied() {
+                cmds.queue(TransferItemAction {
+                    from_entity: context.player_entity,
+                    to_entity: container_entity,
+                    item_stable_id: item_id,
+                });
+                e_inventory_changed.write(InventoryChangedEvent);
+            }
+        } else {
+            // Transfer from container to player
+            if let Some(item_id) = container_inventory.item_ids.get(cursor.index).copied() {
+                cmds.queue(TransferItemAction {
+                    from_entity: container_entity,
+                    to_entity: context.player_entity,
+                    item_stable_id: item_id,
+                });
+                e_inventory_changed.write(InventoryChangedEvent);
+            }
+        }
     }
 }

@@ -11,7 +11,7 @@ pub use bitmask::*;
 pub use collider::Collider;
 pub use energy::Energy;
 pub use in_active_zone::InActiveZone;
-pub use inventory::{InInventory, Inventory, Item};
+pub use inventory::{InInventory, Inventory, InventoryAccessible, Item};
 pub use label::Label;
 pub use stairs::{StairDown, StairUp};
 pub use vision::{

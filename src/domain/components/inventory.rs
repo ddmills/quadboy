@@ -61,6 +61,9 @@ impl Inventory {
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+pub struct InventoryAccessible;
+
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct InInventory {
     pub owner_id: u64,
 }

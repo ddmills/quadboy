@@ -11,7 +11,7 @@ use crate::{
         InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs, Terrain,
         UnloadZoneCommand, ZoneGenerator,
     },
-    engine::{SerializedEntity, deserialize_all},
+    engine::{SerializedEntity, deserialize_all, reconcile_stable_ids},
     rendering::{world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz},
     states::CleanupStatePlay,
 };
@@ -408,6 +408,9 @@ pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
     spawn_terrain(world, zone_data.idx, zone_entity_id, zone_data.terrain);
 
     deserialize_all(&zone_data.entities, world);
+    
+    // Rebuild the StableIdRegistry mappings for the newly deserialized entities
+    reconcile_stable_ids(world);
 }
 
 pub fn manage_zone_cache(

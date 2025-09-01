@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        Collider, Energy, GameSettings, IsExplored, MoveAction, Prefabs, StairDown, StairUp,
-        TurnState, WaitAction, Zone,
+        Collider, Energy, GameSettings, Inventory, InventoryAccessible, IsExplored, MoveAction,
+        OpenContainerAction, Prefabs, StairDown, StairUp, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
@@ -59,6 +59,7 @@ pub fn player_input(
     mut cmds: Commands,
     q_player: Query<(Entity, &Position), With<Player>>,
     q_colliders: Query<&Position, (With<Collider>, Without<Player>)>,
+    q_containers: Query<Entity, (With<Inventory>, With<InventoryAccessible>)>,
     q_stairs_down: Query<&Position, (With<StairDown>, Without<Player>)>,
     q_stairs_up: Query<&Position, (With<StairUp>, Without<Player>)>,
     keys: Res<KeyInput>,
@@ -87,6 +88,24 @@ pub fn player_input(
 
     if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Inventory;
+    }
+
+    if keys.is_pressed(KeyCode::O) {
+        // Check for adjacent containers
+        let neighbors = Zone::get_neighbors((x, y, z), &q_zone);
+        
+        for entities in neighbors {
+            for entity in entities {
+                // Check if this entity is a container (has Inventory and InventoryAccessible)
+                if q_containers.contains(entity) {
+                    cmds.queue(OpenContainerAction {
+                        player_entity,
+                        container_entity: entity,
+                    });
+                    return;
+                }
+            }
+        }
     }
 
     if keys.is_pressed(KeyCode::G) {
