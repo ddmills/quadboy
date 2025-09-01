@@ -17,10 +17,10 @@ use crate::{
     domain::{
         ApplyVisibilityEffects, Bitmasker, Collider, Energy, GameSettings, HideWhenNotVisible,
         InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
-        Label, LoadGameResult, LoadZoneEvent, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp,
-        TurnState, UnloadZoneEvent, Vision, VisionBlocker, Zones, on_bitmask_spawn,
-        on_refresh_bitmask,
+        Label, LoadGameResult, LoadZoneEvent, NeedsStableId, NewGameResult, Player,
+        PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent,
+        StairDown, StairUp, TurnState, UnloadZoneEvent, Vision, VisionBlocker, Zones,
+        on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -84,6 +84,7 @@ async fn main() {
     reg.register::<Inventory>();
     reg.register::<InInventory>();
     reg.register::<StableId>();
+    reg.register::<NeedsStableId>();
     reg.register::<Vision>();
     reg.register::<VisionBlocker>();
     reg.register::<IsVisible>();

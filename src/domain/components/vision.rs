@@ -9,14 +9,7 @@ pub struct Vision {
 }
 
 impl Vision {
-    pub fn new(range: usize) -> Self {
-        Self {
-            range,
-            underground_range: range / 2,
-        }
-    }
-
-    pub fn with_underground_range(range: usize, underground_range: usize) -> Self {
+    pub fn new(range: usize, underground_range: usize) -> Self {
         Self {
             range,
             underground_range,

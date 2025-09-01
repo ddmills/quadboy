@@ -51,6 +51,10 @@ impl StableIdRegistry {
     pub fn register(&mut self, entity: Entity, id: u64) {
         self.entity_to_id.insert(entity, id);
         self.id_to_entity.insert(id, entity);
+        // Update next_id if we see a higher ID (from deserialization)
+        if id >= self.next_id {
+            self.next_id = id + 1;
+        }
     }
 
     pub fn unregister(&mut self, entity: Entity) {
@@ -66,40 +70,4 @@ impl StableIdRegistry {
     pub fn get_id(&self, entity: Entity) -> Option<u64> {
         self.entity_to_id.get(&entity).copied()
     }
-
-    pub fn rebuild_mappings(&mut self, entities: Vec<(Entity, u64)>) {
-        self.entity_to_id.clear();
-        self.id_to_entity.clear();
-
-        for (entity, id) in entities {
-            self.register(entity, id);
-        }
-    }
-}
-
-pub fn assign_stable_id(entity: Entity, world: &mut World) -> u64 {
-    if let Some(existing_id) = world.get::<StableId>(entity) {
-        return existing_id.0;
-    }
-
-    let id = {
-        let mut registry = world.resource_mut::<StableIdRegistry>();
-        let id = registry.generate_id();
-        registry.register(entity, id);
-        id
-    };
-
-    world.entity_mut(entity).insert(StableId::new(id));
-    id
-}
-
-pub fn reconcile_stable_ids(world: &mut World) {
-    let mut entities = Vec::new();
-    let mut query = world.query::<(Entity, &StableId)>();
-    for (entity, stable_id) in query.iter(world) {
-        entities.push((entity, stable_id.0));
-    }
-
-    let mut registry = world.resource_mut::<StableIdRegistry>();
-    registry.rebuild_mappings(entities);
 }

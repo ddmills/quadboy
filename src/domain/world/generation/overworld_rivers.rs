@@ -4,7 +4,7 @@ use crate::{
     cfg::{MAP_SIZE, SURFACE_LEVEL_Z},
     common::{Direction, Perlin, Rand},
     domain::world::generation::{RiverNetwork, RiverSegment, RiverType},
-    rendering::{zone_idx, zone_xyz},
+    rendering::zone_idx,
 };
 
 pub struct OverworldRiverGenerator;
@@ -534,55 +534,6 @@ impl OverworldRiverGenerator {
         } else {
             Direction::North
         }
-    }
-
-    fn get_valid_neighbors(x: usize, y: usize, z: usize) -> Vec<(usize, usize, usize)> {
-        let mut neighbors = Vec::new();
-
-        // Cardinal and diagonal directions for more flow options
-        let directions = [
-            (0, -1),
-            (1, 0),
-            (0, 1),
-            (-1, 0), // Cardinals
-            (1, 1),
-            (-1, 1),
-            (1, -1),
-            (-1, -1), // Diagonals
-        ];
-
-        for (dx, dy) in directions {
-            let nx = x as i32 + dx;
-            let ny = y as i32 + dy;
-
-            if nx >= 0 && ny >= 0 && (nx as usize) < MAP_SIZE.0 && (ny as usize) < MAP_SIZE.1 {
-                neighbors.push((nx as usize, ny as usize, z));
-            }
-        }
-
-        neighbors
-    }
-
-    fn get_flow_direction(from_zone: usize, to_zone: usize) -> Direction {
-        let (fx, fy, _) = zone_xyz(from_zone);
-        let (tx, ty, _) = zone_xyz(to_zone);
-
-        if tx > fx {
-            Direction::East
-        } else if tx < fx {
-            Direction::West
-        } else if ty > fy {
-            Direction::South
-        } else {
-            Direction::North
-        }
-    }
-
-    fn calculate_zone_distance(from_zone: usize, to_zone: usize) -> f32 {
-        let (fx, fy, _) = zone_xyz(from_zone);
-        let (tx, ty, _) = zone_xyz(to_zone);
-
-        ((tx as f32 - fx as f32).powi(2) + (ty as f32 - fy as f32).powi(2)).sqrt()
     }
 
     fn calculate_depth(river_type: RiverType) -> f32 {

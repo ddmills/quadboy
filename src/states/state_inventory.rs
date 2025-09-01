@@ -27,12 +27,6 @@ pub struct InventoryItemDisplay;
 pub struct ContainerItemDisplay;
 
 #[derive(Component)]
-pub struct InventorySlot {
-    pub index: usize,
-    pub item_id: Option<u64>,
-}
-
-#[derive(Component)]
 pub struct InventoryCursor {
     pub index: usize,
     pub max_index: usize,
@@ -133,16 +127,6 @@ fn setup_inventory_screen(
     let start_y = 3.5;
     for i in 0..inventory.capacity {
         let y_pos = start_y + (i as f32 * 1.0);
-
-        // Spawn the slot marker
-        cmds.spawn((
-            InventorySlot {
-                index: i,
-                item_id: inventory.item_ids.get(i).copied(),
-            },
-            Position::new_f32(left_x + 2., y_pos, 0.),
-            CleanupStateInventory,
-        ));
 
         if let Some(item_id) = inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
@@ -262,18 +246,8 @@ fn setup_container_screen(
         CleanupStateContainer,
     ));
 
-    // Display player inventory items
     for i in 0..player_inventory.capacity {
         let y_pos = start_y + (i as f32 * 1.0);
-
-        cmds.spawn((
-            InventorySlot {
-                index: i,
-                item_id: player_inventory.item_ids.get(i).copied(),
-            },
-            Position::new_f32(left_x + 2., y_pos, 0.),
-            CleanupStateContainer,
-        ));
 
         if let Some(item_id) = player_inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {

@@ -126,14 +126,6 @@ impl RiverNetwork {
             .get(&(from_zone, to_zone))
             .or_else(|| self.edges.get(&(to_zone, from_zone)))
     }
-
-    pub fn is_confluence(&self, zone_idx: usize) -> bool {
-        self.confluences.contains(&zone_idx)
-    }
-
-    pub fn is_source(&self, zone_idx: usize) -> bool {
-        self.sources.contains(&zone_idx)
-    }
 }
 
 #[derive(Resource)]

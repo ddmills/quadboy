@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{
-        activate_zones_by_player, cleanup_despawned_stable_ids, load_nearby_zones,
-        manage_zone_cache, on_load_zone, on_set_zone_status, on_unload_zone, register_game_systems,
+        activate_zones_by_player, auto_assign_stable_ids, cleanup_despawned_stable_ids,
+        load_nearby_zones, manage_zone_cache, on_load_zone, on_set_zone_status, on_unload_zone,
+        register_game_systems, register_new_stable_ids,
     },
     engine::{App, Plugin, SerializableComponent},
     rendering::{ScreenSize, on_zone_status_change, update_camera},
@@ -32,13 +33,18 @@ impl Plugin for PlayStatePlugin {
                 app,
                 (
                     (
-                        cleanup_despawned_stable_ids,
+                        // Zone management systems must run first
                         activate_zones_by_player,
                         load_nearby_zones,
                         on_load_zone,
                         on_unload_zone,
                         on_set_zone_status,
                         manage_zone_cache,
+                        // Then stable ID systems for newly loaded entities
+                        auto_assign_stable_ids,
+                        register_new_stable_ids,
+                        // Then cleanup and rendering
+                        cleanup_despawned_stable_ids,
                         on_zone_status_change,
                         update_camera,
                     )

@@ -1,8 +1,10 @@
 use super::Prefab;
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Collider, Inventory, InventoryAccessible, Label, SaveFlag},
-    engine::assign_stable_id,
+    domain::{
+        ApplyVisibilityEffects, Collider, Inventory, InventoryAccessible, Label, NeedsStableId,
+        SaveFlag,
+    },
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
@@ -19,8 +21,7 @@ pub fn spawn_chest(entity: Entity, world: &mut World, config: Prefab) {
         ApplyVisibilityEffects,
         RecordZonePosition,
         SaveFlag,
+        NeedsStableId,
         CleanupStatePlay,
     ));
-
-    assign_stable_id(entity, world);
 }

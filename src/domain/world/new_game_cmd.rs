@@ -51,7 +51,7 @@ impl NewGameCommand {
                 Player,
                 StableId::new(player_id),
                 Inventory::new(10),
-                Vision::with_underground_range(16, 8),
+                Vision::new(16, 8),
                 ApplyVisibilityEffects,
                 Collider,
                 Energy::new(-10),

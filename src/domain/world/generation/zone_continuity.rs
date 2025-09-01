@@ -17,7 +17,6 @@ pub struct ZoneContinuity {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ZoneConstraintType {
     None,
-    Water,
     Road(RoadType),
     River(RiverType),
     StairDown,
