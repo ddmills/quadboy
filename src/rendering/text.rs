@@ -136,6 +136,7 @@ pub fn render_text(
             continue;
         }
 
+        // TODO update so this re-uses existing entities instead of re-spawning.
         for glyph_id in text.glyphs.iter() {
             cmds.entity(*glyph_id).despawn();
         }

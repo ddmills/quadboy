@@ -18,8 +18,6 @@ impl Item {
 pub struct Inventory {
     pub capacity: usize,
     pub item_ids: Vec<u64>,
-    #[serde(skip)]
-    pub items: Vec<Entity>,
 }
 
 impl Inventory {
@@ -27,36 +25,24 @@ impl Inventory {
         Self {
             capacity,
             item_ids: Vec::new(),
-            items: Vec::new(),
         }
     }
 
-    pub fn add_item(&mut self, item: Entity, item_id: u64) -> bool {
+    pub fn add_item(&mut self, item_id: u64) -> bool {
         if self.item_ids.len() < self.capacity {
             self.item_ids.push(item_id);
-            self.items.push(item);
             true
         } else {
             false
         }
     }
 
-    pub fn remove_item(&mut self, item: Entity) -> bool {
-        if let Some(index) = self.items.iter().position(|&e| e == item) {
-            self.items.remove(index);
-            self.item_ids.remove(index);
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn remove_item_by_id(&mut self, item_id: u64) -> Option<Entity> {
+    pub fn remove_item(&mut self, item_id: u64) -> bool {
         if let Some(index) = self.item_ids.iter().position(|&id| id == item_id) {
             self.item_ids.remove(index);
-            Some(self.items.remove(index))
+            true
         } else {
-            None
+            false
         }
     }
 
@@ -68,9 +54,6 @@ impl Inventory {
         self.item_ids.len()
     }
 
-    pub fn contains(&self, item: Entity) -> bool {
-        self.items.contains(&item)
-    }
 
     pub fn contains_id(&self, item_id: u64) -> bool {
         self.item_ids.contains(&item_id)

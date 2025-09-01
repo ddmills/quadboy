@@ -4,13 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{
-        activate_zones_by_player, load_nearby_zones, manage_zone_cache, on_load_zone,
-        on_set_zone_status, on_unload_zone, register_game_systems, update_player_position_resource,
+        activate_zones_by_player, cleanup_despawned_stable_ids, load_nearby_zones, manage_zone_cache, on_load_zone, on_set_zone_status, on_unload_zone, register_game_systems, update_player_position_resource
     },
     engine::{App, Plugin, SerializableComponent},
-    rendering::{ScreenSize, on_zone_status_change, update_camera},
-    states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system},
-    ui::{UiLayout, draw_ui_panels, update_ui_layout},
+    rendering::{on_zone_status_change, update_camera, ScreenSize},
+    states::{cleanup_system, AppState, AppStatePlugin, CurrentGameState, GameState},
+    ui::{draw_ui_panels, update_ui_layout, UiLayout},
 };
 
 pub struct PlayStatePlugin;
@@ -32,6 +31,7 @@ impl Plugin for PlayStatePlugin {
                 app,
                 (
                     (
+                        cleanup_despawned_stable_ids,
                         activate_zones_by_player,
                         load_nearby_zones,
                         on_load_zone,

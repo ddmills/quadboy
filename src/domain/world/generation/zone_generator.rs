@@ -1,5 +1,4 @@
 use bevy_ecs::world::World;
-use macroquad::prelude::trace;
 
 use crate::{
     common::Grid,
@@ -18,8 +17,6 @@ impl ZoneGenerator {
     pub fn generate_zone(world: &mut World, zone_idx: usize) -> ZoneData {
         let mut overworld = world.get_resource_mut::<Overworld>().unwrap();
         let ozone = overworld.get_overworld_zone(zone_idx);
-
-        trace!("Generating zone... {}, {}", zone_idx, ozone.biome_type);
 
         ZoneFactory::new(ozone).build()
     }

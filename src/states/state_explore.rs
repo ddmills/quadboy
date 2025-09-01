@@ -6,8 +6,7 @@ use crate::{
     common::Palette,
     domain::{
         IsExplored, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
-        Zone, cleanup_zone_entities_on_position_removal, game_loop, handle_item_pickup,
-        player_input, render_player_debug,
+        Zone, game_loop, handle_item_pickup, player_input, render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
@@ -33,7 +32,6 @@ impl Plugin for ExploreStatePlugin {
                     display_entity_names_at_mouse,
                     player_input,
                     handle_item_pickup,
-                    cleanup_zone_entities_on_position_removal,
                     game_loop,
                 ),
             )

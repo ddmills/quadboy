@@ -7,10 +7,10 @@ use macroquad::{prelude::trace, telemetry};
 
 use crate::{
     domain::{
-        Player, PlayerPosition, TurnState, Zones, ai_turn, turn_scheduler,
+        PlayerPosition, TurnState, Zones, ai_turn, turn_scheduler,
         update_entity_visibility_flags, update_player_vision,
     },
-    rendering::{Position, update_entity_pos, world_to_zone_idx},
+    rendering::update_entity_pos,
 };
 
 #[derive(Resource)]

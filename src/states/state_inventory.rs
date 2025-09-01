@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use macroquad::input::KeyCode;
+use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     common::Palette,
@@ -18,7 +18,7 @@ pub struct CleanupStateContainer;
 #[derive(Component)]
 pub struct InventorySlot {
     pub index: usize,
-    pub item_entity: Option<Entity>,
+    pub item_id: Option<u64>,
 }
 
 #[derive(Component)]
@@ -118,7 +118,7 @@ fn setup_inventory_screen(
         cmds.spawn((
             InventorySlot {
                 index: i,
-                item_entity: inventory.items.get(i).copied(),
+                item_id: inventory.item_ids.get(i).copied(),
             },
             Position::new_f32(left_x + 2., y_pos, 0.),
             CleanupStateInventory,
@@ -162,7 +162,7 @@ fn setup_inventory_screen(
     // Position help text based on inventory size
     let help_y = start_y + (inventory.capacity as f32 * 0.5) + 1.0;
     cmds.spawn((
-        Text::new("[{Y|ESC}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop")
+        Text::new("[{Y|I}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop")
             .fg1(Palette::White)
             .layer(Layer::Ui),
         Position::new_f32(left_x, help_y.min(18.), 0.),
@@ -222,7 +222,7 @@ fn setup_container_screen(
         cmds.spawn((
             InventorySlot {
                 index: i,
-                item_entity: inventory.items.get(i).copied(),
+                item_id: inventory.item_ids.get(i).copied(),
             },
             Position::new_f32(left_x + 2., y_pos, 0.),
             CleanupStateContainer,
@@ -281,7 +281,7 @@ fn setup_container_screen(
     // Help text
     let help_y = start_y + (inventory.capacity.max(10) as f32 * 0.5) + 1.0;
     cmds.spawn((
-        Text::new("[{Y|ESC}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
+        Text::new("[{Y|I}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
             .fg1(Palette::White)
             .layer(Layer::Ui),
         Position::new_f32(left_x, help_y.min(18.), 0.),
@@ -300,7 +300,7 @@ fn handle_inventory_input(
     player_pos: Res<PlayerPosition>,
     context: Res<InventoryContext>,
 ) {
-    if keys.is_pressed(KeyCode::Escape) {
+    if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Explore;
         return;
     }
@@ -336,7 +336,7 @@ fn handle_inventory_input(
 }
 
 fn handle_container_input(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
-    if keys.is_pressed(KeyCode::Escape) {
+    if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Explore;
     }
 }

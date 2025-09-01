@@ -45,7 +45,6 @@ impl Command for DropItemAction {
         };
 
         inventory.item_ids.remove(item_index);
-        inventory.items.remove(item_index);
 
         let position = Position::new_world(self.drop_position);
         world
