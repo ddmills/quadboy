@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{
-        activate_zones_by_player, cleanup_despawned_stable_ids, load_nearby_zones, manage_zone_cache, on_load_zone, on_set_zone_status, on_unload_zone, register_game_systems, update_player_position_resource
+        activate_zones_by_player, cleanup_despawned_stable_ids, load_nearby_zones, manage_zone_cache, on_load_zone, on_set_zone_status, on_unload_zone, register_game_systems
     },
     engine::{App, Plugin, SerializableComponent},
     rendering::{on_zone_status_change, update_camera, ScreenSize},
@@ -40,7 +40,6 @@ impl Plugin for PlayStatePlugin {
                         manage_zone_cache,
                         on_zone_status_change,
                         update_camera,
-                        update_player_position_resource,
                     )
                         .chain(),
                     update_ui_layout.run_if(resource_changed::<ScreenSize>),

@@ -8,7 +8,7 @@ use macroquad::{prelude::trace, telemetry};
 use crate::{
     domain::{
         PlayerPosition, TurnState, Zones, ai_turn, turn_scheduler,
-        update_entity_visibility_flags, update_player_vision,
+        update_entity_visibility_flags, update_player_position_resource, update_player_vision,
     },
     rendering::update_entity_pos,
 };
@@ -21,6 +21,7 @@ pub struct GameSystems {
 pub fn register_game_systems(world: &mut World) {
     let systems = vec![
         world.register_system(apply_deferred),
+        world.register_system(update_player_position_resource),
         world.register_system(update_entity_pos),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
