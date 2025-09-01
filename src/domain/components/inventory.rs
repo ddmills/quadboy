@@ -54,7 +54,6 @@ impl Inventory {
         self.item_ids.len()
     }
 
-
     pub fn contains_id(&self, item_id: u64) -> bool {
         self.item_ids.contains(&item_id)
     }

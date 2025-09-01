@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{GameSettings, InInventory, Inventory, Zone},
-    engine::{save_zone, serialize, SerializableComponent, StableIdRegistry},
+    engine::{SerializableComponent, StableIdRegistry, save_zone, serialize},
 };
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]

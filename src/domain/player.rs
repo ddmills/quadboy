@@ -93,7 +93,7 @@ pub fn player_input(
     if keys.is_pressed(KeyCode::O) {
         // Check for adjacent containers
         let neighbors = Zone::get_neighbors((x, y, z), &q_zone);
-        
+
         for entities in neighbors {
             for entity in entities {
                 // Check if this entity is a container (has Inventory and InventoryAccessible)

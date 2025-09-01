@@ -13,8 +13,8 @@ pub fn spawn_chest(entity: Entity, world: &mut World, config: Prefab) {
         Position::new_world(config.pos),
         Glyph::new(125, Palette::Brown, Palette::Yellow).layer(Layer::Objects),
         Label::new("Chest"),
-        Inventory::new(20), // Chest can hold 20 items
-        InventoryAccessible, // Chest inventory can be accessed by players
+        Inventory::new(5),
+        InventoryAccessible,
         Collider,
         ApplyVisibilityEffects,
         RecordZonePosition,

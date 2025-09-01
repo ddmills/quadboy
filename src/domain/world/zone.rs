@@ -408,7 +408,7 @@ pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
     spawn_terrain(world, zone_data.idx, zone_entity_id, zone_data.terrain);
 
     deserialize_all(&zone_data.entities, world);
-    
+
     // Rebuild the StableIdRegistry mappings for the newly deserialized entities
     reconcile_stable_ids(world);
 }

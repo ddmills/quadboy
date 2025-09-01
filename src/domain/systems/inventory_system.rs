@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{InActiveZone, InInventory, Inventory, Item, Label, Player, Zone},
     engine::{KeyInput, StableId},
-    rendering::{world_to_zone_idx, Position, RecordZonePosition},
+    rendering::{Position, RecordZonePosition, world_to_zone_idx},
 };
 use macroquad::{input::KeyCode, prelude::trace};
 
@@ -49,15 +49,15 @@ pub fn handle_item_pickup(
                     .unwrap_or_else(|| "item".to_string());
 
                 // Remove item from zone before removing Position
-                let zone_idx = world_to_zone_idx(
-                    item_world_pos.0,
-                    item_world_pos.1,
-                    item_world_pos.2,
-                );
+                let zone_idx =
+                    world_to_zone_idx(item_world_pos.0, item_world_pos.1, item_world_pos.2);
 
                 for mut zone in q_zones.iter_mut() {
                     if zone.idx == zone_idx {
-                        trace!("Removing entity from zone {} {}", item_stable_id.0, zone_idx);
+                        trace!(
+                            "Removing entity from zone {} {}",
+                            item_stable_id.0, zone_idx
+                        );
                         zone.entities.remove(&item_entity);
                         break;
                     }

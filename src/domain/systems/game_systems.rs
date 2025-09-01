@@ -7,8 +7,8 @@ use macroquad::{prelude::trace, telemetry};
 
 use crate::{
     domain::{
-        PlayerPosition, TurnState, Zones, ai_turn, turn_scheduler,
-        update_entity_visibility_flags, update_player_position_resource, update_player_vision,
+        PlayerPosition, TurnState, Zones, ai_turn, turn_scheduler, update_entity_visibility_flags,
+        update_player_position_resource, update_player_vision,
     },
     rendering::update_entity_pos,
 };

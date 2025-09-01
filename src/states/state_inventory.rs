@@ -3,9 +3,11 @@ use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     common::Palette,
-    domain::{DropItemAction, Inventory, Label, Player, PlayerPosition, TransferItemAction, game_loop},
+    domain::{
+        DropItemAction, Inventory, Label, Player, PlayerPosition, TransferItemAction, game_loop,
+    },
     engine::{App, KeyInput, Plugin, StableIdRegistry},
-    rendering::{Layer, Position, Text},
+    rendering::{Glyph, Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
 };
 
@@ -48,15 +50,21 @@ pub struct InventoryStatePlugin;
 impl Plugin for InventoryStatePlugin {
     fn build(&self, app: &mut App) {
         app.register_event::<InventoryChangedEvent>();
-        
+
         GameStatePlugin::new(GameState::Inventory)
             .on_enter(app, setup_inventory_screen)
-            .on_update(app, (handle_inventory_input, refresh_inventory_display, game_loop))
+            .on_update(
+                app,
+                (handle_inventory_input, refresh_inventory_display, game_loop),
+            )
             .on_leave(app, cleanup_system::<CleanupStateInventory>);
 
         GameStatePlugin::new(GameState::Container)
             .on_enter(app, setup_container_screen)
-            .on_update(app, (handle_container_input, refresh_container_display, game_loop))
+            .on_update(
+                app,
+                (handle_container_input, refresh_container_display, game_loop),
+            )
             .on_leave(app, cleanup_system::<CleanupStateContainer>);
     }
 }
@@ -66,6 +74,7 @@ fn setup_inventory_screen(
     q_player: Query<Entity, With<Player>>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
+    q_glyphs: Query<&Glyph>,
     id_registry: Res<StableIdRegistry>,
 ) {
     let Ok(player_entity) = q_player.single() else {
@@ -123,7 +132,7 @@ fn setup_inventory_screen(
 
     let start_y = 3.5;
     for i in 0..inventory.capacity {
-        let y_pos = start_y + (i as f32 * 0.5);
+        let y_pos = start_y + (i as f32 * 1.0);
 
         // Spawn the slot marker
         cmds.spawn((
@@ -135,9 +144,23 @@ fn setup_inventory_screen(
             CleanupStateInventory,
         ));
 
-        // Spawn the item text
         if let Some(item_id) = inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                if let Ok(glyph) = q_glyphs.get(item_entity) {
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    item_glyph.fg1 = glyph.fg1;
+                    item_glyph.fg2 = glyph.fg2;
+                    item_glyph.bg = glyph.bg;
+                    item_glyph.outline = glyph.outline;
+
+                    cmds.spawn((
+                        item_glyph,
+                        Position::new_f32(left_x + 1.5, y_pos - 0.5, 0.),
+                        CleanupStateInventory,
+                        InventoryItemDisplay,
+                    ));
+                }
+
                 let text = if let Ok(label) = q_labels.get(item_entity) {
                     label.get().to_string()
                 } else {
@@ -146,7 +169,7 @@ fn setup_inventory_screen(
 
                 cmds.spawn((
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
-                    Position::new_f32(left_x + 4., y_pos, 0.),
+                    Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateInventory,
                     InventoryItemDisplay,
                 ));
@@ -154,7 +177,7 @@ fn setup_inventory_screen(
         } else {
             cmds.spawn((
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
-                Position::new_f32(left_x + 4., y_pos, 0.),
+                Position::new_f32(left_x + 3., y_pos, 0.),
                 CleanupStateInventory,
                 InventoryItemDisplay,
             ));
@@ -173,7 +196,7 @@ fn setup_inventory_screen(
     ));
 
     // Position help text based on inventory size
-    let help_y = start_y + (inventory.capacity as f32 * 0.5) + 1.0;
+    let help_y = start_y + (inventory.capacity as f32 * 1.0) + 1.0;
     cmds.spawn((
         Text::new("[{Y|I}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop")
             .fg1(Palette::White)
@@ -188,6 +211,7 @@ fn setup_container_screen(
     q_player: Query<Entity, With<Player>>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
+    q_glyphs: Query<&Glyph>,
     id_registry: Res<StableIdRegistry>,
     context: Option<Res<InventoryContext>>,
 ) {
@@ -201,13 +225,13 @@ fn setup_container_screen(
 
     // Get container entity from existing context if available
     let container_entity = context.and_then(|ctx| ctx.container_entity);
-    
+
     // Re-insert the context resource to ensure it persists
     if container_entity.is_none() {
         // If no container entity, return to explore state
         return;
     }
-    
+
     let container = container_entity.unwrap();
     let Ok(container_inventory) = q_inventory.get(container) else {
         return;
@@ -240,7 +264,7 @@ fn setup_container_screen(
 
     // Display player inventory items
     for i in 0..player_inventory.capacity {
-        let y_pos = start_y + (i as f32 * 0.5);
+        let y_pos = start_y + (i as f32 * 1.0);
 
         cmds.spawn((
             InventorySlot {
@@ -253,6 +277,22 @@ fn setup_container_screen(
 
         if let Some(item_id) = player_inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                // Spawn glyph if the item has one
+                if let Ok(glyph) = q_glyphs.get(item_entity) {
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    item_glyph.fg1 = glyph.fg1;
+                    item_glyph.fg2 = glyph.fg2;
+                    item_glyph.bg = glyph.bg;
+                    item_glyph.outline = glyph.outline;
+
+                    cmds.spawn((
+                        item_glyph,
+                        Position::new_f32(left_x + 1.5, y_pos - 0.5, 0.),
+                        CleanupStateContainer,
+                        InventoryItemDisplay,
+                    ));
+                }
+
                 let text = if let Ok(label) = q_labels.get(item_entity) {
                     label.get().to_string()
                 } else {
@@ -261,7 +301,7 @@ fn setup_container_screen(
 
                 cmds.spawn((
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
-                    Position::new_f32(left_x + 4., y_pos, 0.),
+                    Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     InventoryItemDisplay,
                 ));
@@ -269,7 +309,7 @@ fn setup_container_screen(
         } else {
             cmds.spawn((
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
-                Position::new_f32(left_x + 4., y_pos, 0.),
+                Position::new_f32(left_x + 3., y_pos, 0.),
                 CleanupStateContainer,
                 InventoryItemDisplay,
             ));
@@ -282,9 +322,11 @@ fn setup_container_screen(
     } else {
         "CONTAINER".to_string()
     };
-    
+
     cmds.spawn((
-        Text::new(&container_label).fg1(Palette::Yellow).layer(Layer::Ui),
+        Text::new(&container_label)
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
         Position::new_f32(right_x, 1., 0.),
         CleanupStateContainer,
     ));
@@ -303,10 +345,26 @@ fn setup_container_screen(
 
     // Display container inventory items
     for i in 0..container_inventory.capacity {
-        let y_pos = start_y + (i as f32 * 0.5);
+        let y_pos = start_y + (i as f32 * 1.0);
 
         if let Some(item_id) = container_inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                // Spawn glyph if the item has one
+                if let Ok(glyph) = q_glyphs.get(item_entity) {
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    item_glyph.fg1 = glyph.fg1;
+                    item_glyph.fg2 = glyph.fg2;
+                    item_glyph.bg = glyph.bg;
+                    item_glyph.outline = glyph.outline;
+
+                    cmds.spawn((
+                        item_glyph,
+                        Position::new_f32(right_x + 1.5, y_pos - 0.5, 0.),
+                        CleanupStateContainer,
+                        ContainerItemDisplay,
+                    ));
+                }
+
                 let text = if let Ok(label) = q_labels.get(item_entity) {
                     label.get().to_string()
                 } else {
@@ -315,7 +373,7 @@ fn setup_container_screen(
 
                 cmds.spawn((
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
-                    Position::new_f32(right_x + 2., y_pos, 0.),
+                    Position::new_f32(right_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     ContainerItemDisplay,
                 ));
@@ -323,7 +381,7 @@ fn setup_container_screen(
         } else {
             cmds.spawn((
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
-                Position::new_f32(right_x + 2., y_pos, 0.),
+                Position::new_f32(right_x + 3., y_pos, 0.),
                 CleanupStateContainer,
                 ContainerItemDisplay,
             ));
@@ -344,7 +402,7 @@ fn setup_container_screen(
 
     // Help text
     let max_capacity = player_inventory.capacity.max(container_inventory.capacity);
-    let help_y = start_y + (max_capacity as f32 * 0.5) + 1.0;
+    let help_y = start_y + (max_capacity as f32 * 1.0) + 1.0;
     cmds.spawn((
         Text::new("[{Y|I}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
             .fg1(Palette::White)
@@ -359,6 +417,7 @@ fn refresh_inventory_display(
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
+    q_glyphs: Query<&Glyph>,
     q_item_displays: Query<Entity, With<InventoryItemDisplay>>,
     q_player: Query<Entity, With<Player>>,
     id_registry: Res<StableIdRegistry>,
@@ -386,10 +445,26 @@ fn refresh_inventory_display(
     let start_y = 3.5;
 
     for i in 0..inventory.capacity {
-        let y_pos = start_y + (i as f32 * 0.5);
+        let y_pos = start_y + (i as f32 * 1.0);
 
         if let Some(item_id) = inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                // Spawn glyph if the item has one
+                if let Ok(glyph) = q_glyphs.get(item_entity) {
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    item_glyph.fg1 = glyph.fg1;
+                    item_glyph.fg2 = glyph.fg2;
+                    item_glyph.bg = glyph.bg;
+                    item_glyph.outline = glyph.outline;
+
+                    cmds.spawn((
+                        item_glyph,
+                        Position::new_f32(left_x + 1.5, y_pos - 0.5, 0.),
+                        CleanupStateInventory,
+                        InventoryItemDisplay,
+                    ));
+                }
+
                 let text = if let Ok(label) = q_labels.get(item_entity) {
                     label.get().to_string()
                 } else {
@@ -398,7 +473,7 @@ fn refresh_inventory_display(
 
                 cmds.spawn((
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
-                    Position::new_f32(left_x + 4., y_pos, 0.),
+                    Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateInventory,
                     InventoryItemDisplay,
                 ));
@@ -406,7 +481,7 @@ fn refresh_inventory_display(
         } else {
             cmds.spawn((
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
-                Position::new_f32(left_x + 4., y_pos, 0.),
+                Position::new_f32(left_x + 3., y_pos, 0.),
                 CleanupStateInventory,
                 InventoryItemDisplay,
             ));
@@ -419,6 +494,7 @@ fn refresh_container_display(
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
+    q_glyphs: Query<&Glyph>,
     q_player_displays: Query<Entity, With<InventoryItemDisplay>>,
     q_container_displays: Query<Entity, With<ContainerItemDisplay>>,
     context: Res<InventoryContext>,
@@ -451,10 +527,26 @@ fn refresh_container_display(
     };
 
     for i in 0..player_inventory.capacity {
-        let y_pos = start_y + (i as f32 * 0.5);
+        let y_pos = start_y + (i as f32 * 1.0);
 
         if let Some(item_id) = player_inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                // Spawn glyph if the item has one
+                if let Ok(glyph) = q_glyphs.get(item_entity) {
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    item_glyph.fg1 = glyph.fg1;
+                    item_glyph.fg2 = glyph.fg2;
+                    item_glyph.bg = glyph.bg;
+                    item_glyph.outline = glyph.outline;
+
+                    cmds.spawn((
+                        item_glyph,
+                        Position::new_f32(left_x + 1.5, y_pos - 0.5, 0.),
+                        CleanupStateContainer,
+                        InventoryItemDisplay,
+                    ));
+                }
+
                 let text = if let Ok(label) = q_labels.get(item_entity) {
                     label.get().to_string()
                 } else {
@@ -463,7 +555,7 @@ fn refresh_container_display(
 
                 cmds.spawn((
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
-                    Position::new_f32(left_x + 4., y_pos, 0.),
+                    Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     InventoryItemDisplay,
                 ));
@@ -471,7 +563,7 @@ fn refresh_container_display(
         } else {
             cmds.spawn((
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
-                Position::new_f32(left_x + 4., y_pos, 0.),
+                Position::new_f32(left_x + 3., y_pos, 0.),
                 CleanupStateContainer,
                 InventoryItemDisplay,
             ));
@@ -484,10 +576,26 @@ fn refresh_container_display(
     };
 
     for i in 0..container_inventory.capacity {
-        let y_pos = start_y + (i as f32 * 0.5);
+        let y_pos = start_y + (i as f32 * 1.0);
 
         if let Some(item_id) = container_inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                // Spawn glyph if the item has one
+                if let Ok(glyph) = q_glyphs.get(item_entity) {
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    item_glyph.fg1 = glyph.fg1;
+                    item_glyph.fg2 = glyph.fg2;
+                    item_glyph.bg = glyph.bg;
+                    item_glyph.outline = glyph.outline;
+
+                    cmds.spawn((
+                        item_glyph,
+                        Position::new_f32(right_x + 1.5, y_pos - 0.5, 0.),
+                        CleanupStateContainer,
+                        ContainerItemDisplay,
+                    ));
+                }
+
                 let text = if let Ok(label) = q_labels.get(item_entity) {
                     label.get().to_string()
                 } else {
@@ -496,7 +604,7 @@ fn refresh_container_display(
 
                 cmds.spawn((
                     Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
-                    Position::new_f32(right_x + 2., y_pos, 0.),
+                    Position::new_f32(right_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     ContainerItemDisplay,
                 ));
@@ -504,7 +612,7 @@ fn refresh_container_display(
         } else {
             cmds.spawn((
                 Text::new("(empty)").fg1(Palette::Gray).layer(Layer::Ui),
-                Position::new_f32(right_x + 2., y_pos, 0.),
+                Position::new_f32(right_x + 3., y_pos, 0.),
                 CleanupStateContainer,
                 ContainerItemDisplay,
             ));
@@ -533,12 +641,12 @@ fn handle_inventory_input(
 
     if keys.is_pressed(KeyCode::Up) && cursor.index > 0 {
         cursor.index -= 1;
-        cursor_pos.y -= 0.5;
+        cursor_pos.y -= 1.0;
     }
 
     if keys.is_pressed(KeyCode::Down) && cursor.index < cursor.max_index {
         cursor.index += 1;
-        cursor_pos.y += 0.5;
+        cursor_pos.y += 1.0;
     }
 
     if keys.is_pressed(KeyCode::D) {
@@ -595,7 +703,7 @@ fn handle_container_input(
     if keys.is_pressed(KeyCode::Tab) {
         cursor.is_player_side = !cursor.is_player_side;
         cursor.index = 0;
-        
+
         if cursor.is_player_side {
             cursor.max_index = player_inventory.capacity.saturating_sub(1);
             cursor_pos.x = 2.0; // left_x
@@ -613,12 +721,12 @@ fn handle_container_input(
     // Handle UP/DOWN navigation
     if keys.is_pressed(KeyCode::Up) && cursor.index > 0 {
         cursor.index -= 1;
-        cursor_pos.y -= 0.5;
+        cursor_pos.y -= 1.0;
     }
 
     if keys.is_pressed(KeyCode::Down) && cursor.index < cursor.max_index {
         cursor.index += 1;
-        cursor_pos.y += 0.5;
+        cursor_pos.y += 1.0;
     }
 
     // Handle ENTER to transfer items
