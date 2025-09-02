@@ -22,6 +22,7 @@ use crate::{
         Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
         SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer,
         Vision, VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
+        systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -120,6 +121,7 @@ async fn main() {
         .register_event::<PlayerMovedEvent>()
         .register_event::<SaveGameResult>()
         .register_event::<RefreshBitmask>()
+        .register_event::<EntityDestroyedEvent>()
         .insert_resource(tilesets)
         .insert_resource(reg)
         .insert_resource(LootTableRegistry::new())

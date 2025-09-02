@@ -6,7 +6,7 @@ pub fn spawn_gold_nugget(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
         .with_glyph(28, Palette::Yellow, Palette::White, Layer::Objects)
-        .with_label("{Y|Gold Nugget}")
+        .with_label("{Y-Y-Y-Y-Y-Y-Y-Y-Y-Y-Y-W scrollf|Gold Nugget}")
         .with_item(0.5)
         .with_needs_stable_id()
         .build();
