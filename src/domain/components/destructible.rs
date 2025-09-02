@@ -1,4 +1,4 @@
-use crate::engine::SerializableComponent;
+use crate::{engine::{SerializableComponent, AudioCollection}};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -11,9 +11,27 @@ pub enum MaterialType {
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Destructible {
-    pub durability: i32,     // Current "health"
-    pub max_durability: i32, // Original durability
+    pub durability: i32,
+    pub max_durability: i32,
     pub material_type: MaterialType,
+}
+
+impl MaterialType {
+    pub fn hit_audio_collection(self) -> Option<AudioCollection> {
+        match self {
+            MaterialType::Stone => Some(AudioCollection::Mining),
+            MaterialType::Wood => Some(AudioCollection::Chopping),
+            MaterialType::Flesh => None,
+        }
+    }
+
+    pub fn destroy_audio_collection(self) -> Option<AudioCollection> {
+        match self {
+            MaterialType::Stone => Some(AudioCollection::RockCrumble),
+            MaterialType::Wood => Some(AudioCollection::Vegetation),
+            MaterialType::Flesh => None,
+        }
+    }
 }
 
 impl Destructible {

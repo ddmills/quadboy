@@ -1,4 +1,5 @@
 mod app;
+mod audio;
 mod clock;
 mod entity_serializer;
 mod exit;
@@ -9,6 +10,7 @@ mod stable_id;
 mod time;
 
 pub use app::*;
+pub use audio::*;
 pub use clock::*;
 pub use entity_serializer::*;
 pub use exit::*;

@@ -1,11 +1,28 @@
 use super::destruction_system::EntityDestroyedEvent;
 use bevy_ecs::prelude::*;
+use crate::{
+    domain::Destructible,
+    engine::AudioRegistry,
+    common::Rand,
+};
 
 pub fn on_entity_destroyed_cleanup(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
+    q_destructible: Query<&Destructible>,
+    audio_registry: Option<Res<AudioRegistry>>,
+    mut rand: Option<ResMut<Rand>>,
     mut cmds: Commands,
 ) {
     for event in e_destroyed.read() {
+        // Play destruction audio if the entity has a destructible component
+        if let Ok(destructible) = q_destructible.get(event.entity) {
+            if let Some(audio_collection) = destructible.material_type.destroy_audio_collection() {
+                if let (Some(audio_registry), Some(rand)) = (&audio_registry, &mut rand) {
+                    audio_registry.play_random_from_collection(audio_collection, rand, 0.7);
+                }
+            }
+        }
+        
         cmds.entity(event.entity).despawn();
     }
 }

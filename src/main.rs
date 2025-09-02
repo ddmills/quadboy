@@ -25,7 +25,7 @@ use crate::{
         systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{
-        App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
+        App, AudioRegistry, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
         StableId, StableIdRegistry, update_mouse,
     },
     rendering::{CrtShader, Glyph, RecordZonePosition},
@@ -65,6 +65,7 @@ async fn main() {
     set_default_filter_mode(FilterMode::Nearest);
 
     let tilesets = load_tilesets().await;
+    let audio_registry = AudioRegistry::load_all();
 
     let mut app = App::new();
 
@@ -123,6 +124,7 @@ async fn main() {
         .register_event::<RefreshBitmask>()
         .register_event::<EntityDestroyedEvent>()
         .insert_resource(tilesets)
+        .insert_resource(audio_registry)
         .insert_resource(reg)
         .insert_resource(LootTableRegistry::new())
         .init_resource::<Mouse>()

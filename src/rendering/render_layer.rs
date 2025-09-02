@@ -6,7 +6,7 @@ use crate::{
     rendering::RenderTargetType,
 };
 
-use super::{GlyphBatch, TilesetTextures};
+use super::{GlyphBatch, TilesetRegistry};
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum GlyphTextureId {
@@ -101,7 +101,7 @@ pub struct Layers {
 
 impl FromWorld for Layers {
     fn from_world(world: &mut World) -> Self {
-        let textures = world.get_resource::<TilesetTextures>().unwrap();
+        let textures = world.get_resource::<TilesetRegistry>().unwrap();
         let texture_glyph = textures.glyph_texture.raw_miniquad_id();
         let texture_body_text = textures.font_body_texture.raw_miniquad_id();
 

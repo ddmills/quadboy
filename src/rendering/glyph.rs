@@ -30,7 +30,7 @@ pub struct Glyph {
 }
 
 #[derive(Resource)]
-pub struct TilesetTextures {
+pub struct TilesetRegistry {
     pub glyph_texture: Texture2D,
     pub font_body_texture: Texture2D,
 }
@@ -272,7 +272,7 @@ pub fn render_glyphs(
     telemetry::end_zone();
 }
 
-pub async fn load_tilesets() -> TilesetTextures {
+pub async fn load_tilesets() -> TilesetRegistry {
     let glyph_texture_fut = load_texture("./src/assets/textures/cowboy.png");
     let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
     // let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
@@ -281,7 +281,7 @@ pub async fn load_tilesets() -> TilesetTextures {
     let glyph_texture = glyph_texture_fut.await.unwrap();
     let font_body_texture = font_body_texture_fut.await.unwrap();
 
-    TilesetTextures {
+    TilesetRegistry {
         glyph_texture,
         font_body_texture,
     }

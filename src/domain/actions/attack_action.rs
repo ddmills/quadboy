@@ -6,8 +6,9 @@ use crate::{
         get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
-    engine::StableIdRegistry,
+    engine::{StableIdRegistry, AudioRegistry},
     rendering::Position,
+    common::Rand,
 };
 
 pub struct AttackAction {
@@ -104,10 +105,24 @@ impl Command for AttackAction {
                 if let Some((damage, can_damage)) = &weapon_damage {
                     // Check if weapon can damage this material type
                     if can_damage.contains(&destructible.material_type) {
+                        let material_type = destructible.material_type;
                         destructible.take_damage(*damage);
+                        let is_destroyed = destructible.is_destroyed();
+
+                        // Drop the borrow before accessing resources
+                        drop(destructible);
+
+                        // Play hit audio
+                        if let Some(audio_collection) = material_type.hit_audio_collection() {
+                            world.resource_scope(|world, audio_registry: Mut<AudioRegistry>| {
+                                if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+                                    audio_registry.play_random_from_collection(audio_collection, &mut rand, 0.5);
+                                }
+                            });
+                        }
 
                         // Check if target was destroyed
-                        if destructible.is_destroyed() {
+                        if is_destroyed {
                             // Fire destruction event instead of handling directly
                             if let Some(position) = world.get::<Position>(target_entity) {
                                 let event = EntityDestroyedEvent::new(
