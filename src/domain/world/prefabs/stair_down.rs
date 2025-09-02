@@ -1,21 +1,15 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Label, SaveFlag, StairDown},
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_stair_down(entity: Entity, world: &mut World, config: Prefab) {
-    world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
-        Glyph::new(107, Palette::White, Palette::Clear).layer(Layer::Objects),
-        Label::new("Stairs Down"),
-        StairDown,
-        RecordZonePosition,
-        ApplyVisibilityEffects,
-        SaveFlag,
-        CleanupStatePlay,
-    ));
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(107, Palette::White, Palette::Clear, Layer::Objects)
+        .with_label("Stairs Down")
+        .with_stair_down()
+        .build();
 }

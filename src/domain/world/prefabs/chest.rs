@@ -1,27 +1,18 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{
-        ApplyVisibilityEffects, Collider, Inventory, InventoryAccessible, Label, NeedsStableId,
-        SaveFlag,
-    },
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_chest(entity: Entity, world: &mut World, config: Prefab) {
-    world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
-        Glyph::new(125, Palette::Brown, Palette::Yellow).layer(Layer::Objects),
-        Label::new("Chest"),
-        Inventory::new(5),
-        InventoryAccessible,
-        Collider,
-        ApplyVisibilityEffects,
-        RecordZonePosition,
-        SaveFlag,
-        NeedsStableId,
-        CleanupStatePlay,
-    ));
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(125, Palette::Brown, Palette::Yellow, Layer::Objects)
+        .with_label("Chest")
+        .with_inventory(5)
+        .with_inventory_accessible()
+        .with_collider()
+        .with_needs_stable_id()
+        .build();
 }

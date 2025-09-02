@@ -274,7 +274,7 @@ pub fn render_glyphs(
 
 pub async fn load_tilesets() -> TilesetTextures {
     let glyph_texture_fut = load_texture("./src/assets/textures/cowboy.png");
-    let font_body_texture_fut = load_texture("./src/assets/textures/tocky_8x12.png");
+    let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
     // let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
     // let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
 

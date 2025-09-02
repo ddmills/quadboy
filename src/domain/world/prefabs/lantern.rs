@@ -1,28 +1,21 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{
-        ApplyVisibilityEffects, EquipmentSlot, Equippable, Item, Label, NeedsStableId, SaveFlag,
-    },
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    domain::{EquipmentSlot, EquipmentType, Equippable},
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
-    world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
-        Glyph::new(22, Palette::Gray, Palette::Yellow).layer(Layer::Objects),
-        Label::new("Lantern"),
-        Item::new(1.0),
-        Equippable::new(
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(22, Palette::Gray, Palette::Yellow, Layer::Objects)
+        .with_label("Lantern")
+        .with_item(1.0)
+        .with_equippable(Equippable::new(
             vec![EquipmentSlot::OffHand],
-            crate::domain::EquipmentType::Tool,
-        ),
-        ApplyVisibilityEffects,
-        RecordZonePosition,
-        SaveFlag,
-        NeedsStableId,
-        CleanupStatePlay,
-    ));
+            EquipmentType::Tool,
+        ))
+        .with_needs_stable_id()
+        .build();
 }

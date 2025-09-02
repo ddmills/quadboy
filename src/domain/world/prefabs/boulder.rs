@@ -1,27 +1,19 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{
-        ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Label,
-        MaterialType, SaveFlag, VisionBlocker,
-    },
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    domain::{BitmaskStyle, MaterialType},
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
-    world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
-        Glyph::new(68, Palette::Gray, Palette::Clear).layer(Layer::Objects),
-        BitmaskGlyph::new(BitmaskStyle::Wall),
-        Label::new("Boulder"),
-        Collider,
-        Destructible::new(10, MaterialType::Stone),
-        VisionBlocker,
-        ApplyVisibilityEffects,
-        RecordZonePosition,
-        SaveFlag,
-        CleanupStatePlay,
-    ));
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(68, Palette::Gray, Palette::Clear, Layer::Objects)
+        .with_bitmask(BitmaskStyle::Wall)
+        .with_label("Boulder")
+        .with_collider()
+        .with_destructible(10, MaterialType::Stone)
+        .with_vision_blocker()
+        .build();
 }

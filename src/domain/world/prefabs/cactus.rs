@@ -1,30 +1,22 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::common::Rand;
-use crate::domain::{ApplyVisibilityEffects, Label, VisionBlocker};
 use crate::{
     common::Palette,
-    domain::{Collider, SaveFlag},
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) {
-    let mut rand = world.get_resource_mut::<Rand>().unwrap();
-    let glyph_idx = rand.pick(&[67, 68]);
+    let glyph_idx = {
+        let mut rand = world.get_resource_mut::<Rand>().unwrap();
+        rand.pick(&[67, 68])
+    };
 
-    world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
-        Glyph::idx(glyph_idx)
-            .fg1(Palette::Green)
-            .fg2(Palette::Purple)
-            .layer(Layer::Objects),
-        Label::new("Cactus"),
-        Collider,
-        RecordZonePosition,
-        ApplyVisibilityEffects,
-        VisionBlocker,
-        SaveFlag,
-        CleanupStatePlay,
-    ));
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(glyph_idx, Palette::Green, Palette::Purple, Layer::Objects)
+        .with_label("Cactus")
+        .with_collider()
+        .with_vision_blocker()
+        .build();
 }

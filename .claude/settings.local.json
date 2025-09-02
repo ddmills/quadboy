@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(cargo clippy:*)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

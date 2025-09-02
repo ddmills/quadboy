@@ -1,28 +1,18 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{
-        ApplyVisibilityEffects, Collider, Energy, Health, HideWhenNotVisible, Label, SaveFlag,
-    },
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
-    let position = Position::new_world(config.pos);
-
-    world.entity_mut(entity).insert((
-        position,
-        Glyph::new(145, Palette::Red, Palette::White).layer(Layer::Actors),
-        Label::new("{R|Bandit}"),
-        Energy::new(-100),
-        Health::new(10),
-        Collider,
-        RecordZonePosition,
-        ApplyVisibilityEffects,
-        HideWhenNotVisible,
-        SaveFlag,
-        CleanupStatePlay,
-    ));
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(145, Palette::Red, Palette::White, Layer::Actors)
+        .with_label("{R|Bandit}")
+        .with_energy(-100)
+        .with_health(10)
+        .with_collider()
+        .with_hide_when_not_visible()
+        .build();
 }

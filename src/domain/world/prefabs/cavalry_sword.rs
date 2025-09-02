@@ -1,26 +1,19 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{
-        ApplyVisibilityEffects, Equippable, Item, Label, MeleeWeapon, NeedsStableId, SaveFlag,
-    },
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    domain::{Equippable, MaterialType, MeleeWeapon},
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_cavalry_sword(entity: Entity, world: &mut World, config: Prefab) {
-    world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
-        Glyph::new(20, Palette::Yellow, Palette::Gray).layer(Layer::Objects),
-        Label::new("Cavalry Sword"),
-        Item::new(3.0),
-        Equippable::weapon_one_handed(),
-        MeleeWeapon::new(5, vec![crate::domain::MaterialType::Flesh]),
-        ApplyVisibilityEffects,
-        RecordZonePosition,
-        SaveFlag,
-        NeedsStableId,
-        CleanupStatePlay,
-    ));
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(20, Palette::Yellow, Palette::Gray, Layer::Objects)
+        .with_label("Cavalry Sword")
+        .with_item(3.0)
+        .with_equippable(Equippable::weapon_one_handed())
+        .with_melee_weapon(MeleeWeapon::new(5, vec![MaterialType::Flesh]))
+        .with_needs_stable_id()
+        .build();
 }

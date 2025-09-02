@@ -1,28 +1,24 @@
-use super::Prefab;
+use super::{Prefab, PrefabBuilder};
 use crate::common::Rand;
-use crate::domain::{ApplyVisibilityEffects, Destructible, Label, MaterialType};
 use crate::{
     common::Palette,
-    domain::{Collider, SaveFlag, VisionBlocker},
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
-    states::CleanupStatePlay,
+    domain::MaterialType,
+    rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) {
-    let mut rand = world.get_resource_mut::<Rand>().unwrap();
-    let glyph_char = rand.pick(&[45, 46, 47]);
+    let glyph_char = {
+        let mut rand = world.get_resource_mut::<Rand>().unwrap();
+        rand.pick(&[45, 46, 47])
+    };
 
-    world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
-        Glyph::new(glyph_char, Palette::DarkCyan, Palette::Brown).layer(Layer::Objects),
-        Label::new("{G|P}ine {G|T}ree"),
-        Collider,
-        Destructible::new(5, MaterialType::Wood),
-        VisionBlocker,
-        RecordZonePosition,
-        ApplyVisibilityEffects,
-        SaveFlag,
-        CleanupStatePlay,
-    ));
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(glyph_char, Palette::DarkCyan, Palette::Brown, Layer::Objects)
+        .with_label("{G|P}ine {G|T}ree")
+        .with_collider()
+        .with_destructible(5, MaterialType::Wood)
+        .with_vision_blocker()
+        .build();
 }
