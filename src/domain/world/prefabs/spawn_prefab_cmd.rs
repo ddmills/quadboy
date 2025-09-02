@@ -1,14 +1,29 @@
+use crate::{
+    domain::{NeedsStableId, PickupItemAction},
+    engine::{StableId, StableIdRegistry},
+};
+
 use super::{Prefab, Prefabs};
-use bevy_ecs::{entity::Entity, world::World};
+use bevy_ecs::{entity::Entity, system::Command, world::World};
 
 pub struct SpawnPrefabCommand {
     pub entity: Entity,
     pub config: Prefab,
+    pub container_entity: Option<Entity>,
 }
 
 impl SpawnPrefabCommand {
     pub fn new(entity: Entity, config: Prefab) -> Self {
-        Self { entity, config }
+        Self {
+            entity,
+            config,
+            container_entity: None,
+        }
+    }
+
+    pub fn with_container(mut self, container_entity: Entity) -> Self {
+        self.container_entity = Some(container_entity);
+        self
     }
 
     pub fn execute(self, world: &mut World) -> Result<(), String> {
@@ -24,6 +39,28 @@ impl SpawnPrefabCommand {
         };
 
         spawn_fn(self.entity, world, self.config);
+
+        if let Some(container) = self.container_entity {
+            let item_stable_id = {
+                let mut stable_id_registry = world.resource_mut::<StableIdRegistry>();
+                let id = stable_id_registry.generate_id();
+                stable_id_registry.register(self.entity, id);
+                id
+            };
+
+            world
+                .entity_mut(self.entity)
+                .insert(StableId(item_stable_id))
+                .remove::<NeedsStableId>();
+
+            PickupItemAction {
+                entity: container,
+                item_stable_id,
+                spend_energy: false,
+            }
+            .apply(world);
+        }
+
         Ok(())
     }
 }

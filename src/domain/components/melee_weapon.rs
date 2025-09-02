@@ -18,7 +18,7 @@ impl MeleeWeapon {
     }
 
     pub fn hatchet() -> Self {
-        Self::new(2, vec![MaterialType::Wood])
+        Self::new(2, vec![MaterialType::Wood, MaterialType::Flesh])
     }
 
     pub fn sword() -> Self {

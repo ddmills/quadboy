@@ -1,6 +1,6 @@
 use crate::{
     common::LootTable,
-    domain::{Biome, PrefabId, Terrain, ZoneFactory},
+    domain::{Biome, LootTableId, PrefabId, Terrain, ZoneFactory},
 };
 
 use super::super::biome_helpers::*;
@@ -37,6 +37,18 @@ impl Biome for OpenAirBiome {
 
     fn road_terrain(&self) -> Terrain {
         Terrain::OpenAir
+    }
+
+    fn ground_loot_table_id(&self) -> LootTableId {
+        LootTableId::OpenAirGroundLoot
+    }
+
+    fn chest_loot_table_id(&self) -> LootTableId {
+        LootTableId::CommonChestLoot
+    }
+
+    fn enemy_table_id(&self) -> LootTableId {
+        LootTableId::OpenAirEnemies
     }
 
     fn generate(&self, zone: &mut ZoneFactory) {

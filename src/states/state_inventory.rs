@@ -5,7 +5,7 @@ use crate::{
     common::Palette,
     domain::{
         DropItemAction, EquipItemAction, EquipmentSlot, EquipmentSlots, Equippable, Equipped,
-        Inventory, Label, Player, PlayerPosition, TransferItemAction, game_loop,
+        Inventory, Label, Player, PlayerPosition, TransferItemAction, UnequipItemAction, game_loop,
     },
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, Text},
@@ -209,7 +209,7 @@ fn setup_inventory_screen(
     // Position help text based on inventory size
     let help_y = start_y + (inventory.capacity as f32 * 1.0) + 1.0;
     cmds.spawn((
-        Text::new("[{Y|I}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop   [{Y|E}] Equip")
+        Text::new("[{Y|I}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop   [{Y|E}] Equip   [{Y|U}] Unequip")
             .fg1(Palette::White)
             .layer(Layer::Ui),
         Position::new_f32(left_x, help_y.min(18.), 0.),
@@ -771,6 +771,7 @@ fn handle_inventory_input(
     mut q_cursor: Query<(&mut InventoryCursor, &mut Position)>,
     q_inventory: Query<&Inventory>,
     q_equippable: Query<&Equippable>,
+    q_equipped: Query<&Equipped>,
     player_pos: Res<PlayerPosition>,
     mut context: ResMut<InventoryContext>,
     id_registry: Res<StableIdRegistry>,
@@ -820,12 +821,39 @@ fn handle_inventory_input(
             // Check if item is equippable
             if let Some(item_entity) = id_registry.get_entity(item_id) {
                 if let Ok(equippable) = q_equippable.get(item_entity) {
-                    // Set up context for equipment slot selection
-                    context.selected_item_id = Some(item_id);
-                    context.available_slots = equippable.slot_requirements.clone();
+                    // If item only has one slot requirement, equip directly
+                    if equippable.slot_requirements.len() == 1 {
+                        if let Some(player_id) = id_registry.get_id(context.player_entity) {
+                            cmds.queue(EquipItemAction {
+                                entity_id: player_id,
+                                item_id,
+                            });
+                            e_inventory_changed.write(InventoryChangedEvent);
+                        }
+                    } else {
+                        // Set up context for equipment slot selection
+                        context.selected_item_id = Some(item_id);
+                        context.available_slots = equippable.slot_requirements.clone();
 
-                    // Transition to equipment slot selection
-                    game_state.next = GameState::EquipSlotSelect;
+                        // Transition to equipment slot selection
+                        game_state.next = GameState::EquipSlotSelect;
+                    }
+                }
+            }
+        }
+    }
+
+    if keys.is_pressed(KeyCode::U) {
+        let Ok(inventory) = q_inventory.get(context.player_entity) else {
+            return;
+        };
+
+        if let Some(item_id) = inventory.item_ids.get(cursor.index).copied() {
+            // Check if item is equipped
+            if let Some(item_entity) = id_registry.get_entity(item_id) {
+                if q_equipped.get(item_entity).is_ok() {
+                    cmds.queue(UnequipItemAction::new(item_id));
+                    e_inventory_changed.write(InventoryChangedEvent);
                 }
             }
         }

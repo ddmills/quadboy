@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{
     common::LootTable,
-    domain::{BiomeRegistry, PrefabId, Terrain, ZoneFactory},
+    domain::{BiomeRegistry, LootTableId, PrefabId, Terrain, ZoneFactory},
 };
 
 pub trait Biome: Send + Sync {
@@ -10,6 +10,9 @@ pub trait Biome: Send + Sync {
     fn loot_table(&self) -> &LootTable<PrefabId>;
     fn enemy_table(&self) -> &LootTable<PrefabId>;
     fn road_terrain(&self) -> Terrain;
+    fn ground_loot_table_id(&self) -> LootTableId;
+    fn chest_loot_table_id(&self) -> LootTableId;
+    fn enemy_table_id(&self) -> LootTableId;
     fn generate(&self, zone: &mut ZoneFactory);
 }
 

@@ -1,15 +1,17 @@
+use super::super::prefabs::SpawnValue;
 use crate::{
     cfg::ZONE_SIZE,
     common::{
         Grid, LootTable, Rand,
         algorithm::{ca_rules::*, cellular_automata::*},
     },
-    domain::{Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
+    domain::{LootTableId, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
 const LOOT_SPAWN_CHANCE: f32 = 0.01; // 1% chance for loot
 const ENEMY_SPAWN_CHANCE: f32 = 0.01; // 1% chance for enemies
+const CHEST_SPAWN_CHANCE: f32 = 0.003; // 0.3% chance for chests (rarer than regular loot)
 
 pub fn apply_base_terrain(zone: &mut ZoneFactory, terrain: Terrain) {
     for x in 0..ZONE_SIZE.0 {
@@ -66,6 +68,39 @@ pub fn spawn_loot_and_enemies(
             else if rand.bool(LOOT_SPAWN_CHANCE) && !loot_table.is_empty() {
                 let loot = loot_table.pick_guaranteed_cloned(rand);
                 zone.push_entity(x, y, Prefab::new(loot, wpos));
+            }
+        }
+    }
+}
+
+pub fn spawn_chests(
+    zone: &mut ZoneFactory,
+    chest_loot_table_id: LootTableId,
+    rand: &mut Rand,
+    exclude_grid: Option<&Grid<bool>>,
+) {
+    for x in 0..ZONE_SIZE.0 {
+        for y in 0..ZONE_SIZE.1 {
+            if zone.is_locked_tile(x, y) {
+                continue;
+            }
+
+            if let Some(grid) = exclude_grid {
+                if *grid.get(x, y).unwrap_or(&false) {
+                    continue;
+                }
+            }
+
+            let wpos = zone_local_to_world(zone.zone_idx, x, y);
+
+            // Check for chest spawn (0.3% chance)
+            if rand.bool(CHEST_SPAWN_CHANCE) {
+                let mut chest_prefab = Prefab::new(PrefabId::Chest, wpos);
+                chest_prefab.metadata.insert(
+                    "loot_table_id".to_string(),
+                    SpawnValue::LootTableId(chest_loot_table_id),
+                );
+                zone.push_entity(x, y, chest_prefab);
             }
         }
     }

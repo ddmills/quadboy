@@ -2,7 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, EquipmentSlots, Equippable, Equipped, Inventory, get_energy_cost,
+        Energy, EnergyActionType, EquipmentSlots, Equippable, Equipped, Inventory,
+        UnequipItemAction, get_energy_cost,
     },
     engine::StableIdRegistry,
 };
@@ -67,6 +68,28 @@ impl Command for EquipItemAction {
             }
 
             // inventory.remove_item(self.item_id);
+        }
+
+        // Auto-unequip existing items in target slots
+        {
+            let Some(equipment_slots) = world.get::<EquipmentSlots>(entity) else {
+                return;
+            };
+
+            // Collect items to unequip
+            let mut items_to_unequip = Vec::new();
+            for &slot in &slot_requirements {
+                if let Some(existing_item_id) = equipment_slots.get_equipped_item(slot) {
+                    items_to_unequip.push(existing_item_id);
+                }
+            }
+
+            // Unequip existing items
+            for existing_item_id in items_to_unequip {
+                // Create and apply UnequipItemAction for each existing item
+                let unequip_action = UnequipItemAction::new(existing_item_id);
+                unequip_action.apply(world);
+            }
         }
 
         // Add to equipment slots

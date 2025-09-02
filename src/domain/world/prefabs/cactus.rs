@@ -1,5 +1,6 @@
 use super::{Prefab, PrefabBuilder};
 use crate::common::Rand;
+use crate::domain::MaterialType;
 use crate::{common::Palette, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
@@ -15,5 +16,6 @@ pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) {
         .with_label("Cactus")
         .with_collider()
         .with_vision_blocker()
+        .with_destructible(10, MaterialType::Wood)
         .build();
 }

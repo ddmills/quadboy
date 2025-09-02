@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, LootTable, Rand},
-    domain::{Biome, Prefab, PrefabId, Terrain, ZoneFactory},
+    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
@@ -46,6 +46,18 @@ impl Biome for DesertBiome {
         Terrain::Dirt
     }
 
+    fn ground_loot_table_id(&self) -> LootTableId {
+        LootTableId::DesertGroundLoot
+    }
+
+    fn chest_loot_table_id(&self) -> LootTableId {
+        LootTableId::DesertChestLoot
+    }
+
+    fn enemy_table_id(&self) -> LootTableId {
+        LootTableId::DesertEnemies
+    }
+
     fn generate(&self, zone: &mut ZoneFactory) {
         let mut rand = Rand::seed(zone.zone_idx as u32);
 
@@ -62,6 +74,14 @@ impl Biome for DesertBiome {
             zone,
             &self.loot_table,
             &self.enemy_table,
+            &mut rand,
+            Some(&boulder_grid),
+        );
+
+        // Spawn chests with biome-specific loot
+        spawn_chests(
+            zone,
+            self.chest_loot_table_id(),
             &mut rand,
             Some(&boulder_grid),
         );

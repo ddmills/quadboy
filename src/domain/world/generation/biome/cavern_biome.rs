@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, LootTable, Rand},
-    domain::{Biome, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
+    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
@@ -46,6 +46,18 @@ impl Biome for CavernBiome {
         Terrain::Dirt
     }
 
+    fn ground_loot_table_id(&self) -> LootTableId {
+        LootTableId::CavernGroundLoot
+    }
+
+    fn chest_loot_table_id(&self) -> LootTableId {
+        LootTableId::CavernChestLoot
+    }
+
+    fn enemy_table_id(&self) -> LootTableId {
+        LootTableId::CavernEnemies
+    }
+
     fn generate(&self, zone: &mut ZoneFactory) {
         let mut rand = Rand::seed(zone.zone_idx as u32);
 
@@ -61,6 +73,14 @@ impl Biome for CavernBiome {
             zone,
             &self.loot_table,
             &self.enemy_table,
+            &mut rand,
+            Some(&boulder_grid),
+        );
+
+        // Spawn chests with biome-specific loot
+        spawn_chests(
+            zone,
+            self.chest_loot_table_id(),
             &mut rand,
             Some(&boulder_grid),
         );

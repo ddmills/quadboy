@@ -3,7 +3,10 @@ use super::{
     spawn_chest, spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_pickaxe,
     spawn_pine_tree, spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
 };
-use crate::domain::Terrain;
+use crate::{
+    domain::{LootTableId, PickupItemAction, Terrain},
+    engine::StableIdRegistry,
+};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
 use std::collections::HashMap;
 
@@ -39,6 +42,7 @@ pub enum SpawnValue {
     Int(i32),
     Float(f32),
     Bool(bool),
+    LootTableId(LootTableId),
 }
 
 impl Prefab {
@@ -122,6 +126,20 @@ impl Prefabs {
         let entity = world.spawn_empty().id();
 
         let command = SpawnPrefabCommand::new(entity, config);
+        let _ = command.execute(world);
+
+        entity
+    }
+
+    pub fn spawn_in_container(
+        world: &mut World,
+        config: Prefab,
+        container_entity: Entity,
+    ) -> Entity {
+        let entity = world.spawn_empty().id();
+
+        let command = SpawnPrefabCommand::new(entity, config).with_container(container_entity);
+
         let _ = command.execute(world);
 
         entity

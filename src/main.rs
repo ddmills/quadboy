@@ -18,10 +18,10 @@ use crate::{
         ApplyVisibilityEffects, Bitmasker, Collider, Destructible, Energy, EquipmentSlots,
         Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, InActiveZone, InInventory,
         Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, LoadGameResult,
-        LoadZoneEvent, MeleeWeapon, NeedsStableId, NewGameResult, Player, PlayerMovedEvent,
-        Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StairDown, StairUp,
-        TurnState, UnloadZoneEvent, Vision, VisionBlocker, Zones, on_bitmask_spawn,
-        on_refresh_bitmask,
+        LoadZoneEvent, LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult, Player,
+        PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent,
+        StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
+        Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -99,6 +99,7 @@ async fn main() {
     reg.register::<Health>();
     reg.register::<Destructible>();
     reg.register::<MeleeWeapon>();
+    reg.register::<UnopenedContainer>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)
@@ -120,6 +121,7 @@ async fn main() {
         .register_event::<RefreshBitmask>()
         .insert_resource(tilesets)
         .insert_resource(reg)
+        .insert_resource(LootTableRegistry::new())
         .init_resource::<Mouse>()
         .init_resource::<ScreenSize>()
         .init_resource::<Time>()

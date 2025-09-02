@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, LootTable, Rand},
-    domain::{Biome, PrefabId, Terrain, ZoneFactory},
+    domain::{Biome, LootTableId, PrefabId, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
@@ -43,6 +43,18 @@ impl Biome for ForestBiome {
         Terrain::Dirt
     }
 
+    fn ground_loot_table_id(&self) -> LootTableId {
+        LootTableId::ForestGroundLoot
+    }
+
+    fn chest_loot_table_id(&self) -> LootTableId {
+        LootTableId::ForestChestLoot
+    }
+
+    fn enemy_table_id(&self) -> LootTableId {
+        LootTableId::ForestEnemies
+    }
+
     fn generate(&self, zone: &mut ZoneFactory) {
         let mut rand = Rand::seed(zone.zone_idx as u32);
 
@@ -74,6 +86,9 @@ impl Biome for ForestBiome {
             &mut rand,
             Some(&exclude),
         );
+
+        // Spawn chests with biome-specific loot
+        spawn_chests(zone, self.chest_loot_table_id(), &mut rand, Some(&exclude));
     }
 }
 

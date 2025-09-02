@@ -72,3 +72,6 @@ impl InInventory {
         Self { owner_id }
     }
 }
+
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+pub struct UnopenedContainer(pub crate::domain::LootTableId);
