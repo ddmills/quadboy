@@ -3,7 +3,7 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
-        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label, 
+        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label,
         MaterialType, MeleeWeapon, NeedsStableId, SaveFlag, StairDown, StairUp, VisionBlocker,
     },
     rendering::{Glyph, Layer, Position, RecordZonePosition},
@@ -45,9 +45,7 @@ impl<'a> PrefabBuilder<'a> {
     }
 
     pub fn with_label(self, label: &str) -> Self {
-        self.world
-            .entity_mut(self.entity)
-            .insert(Label::new(label));
+        self.world.entity_mut(self.entity).insert(Label::new(label));
         self
     }
 
@@ -117,12 +115,16 @@ impl<'a> PrefabBuilder<'a> {
     }
 
     pub fn with_inventory(self, capacity: usize) -> Self {
-        self.world.entity_mut(self.entity).insert(Inventory::new(capacity));
+        self.world
+            .entity_mut(self.entity)
+            .insert(Inventory::new(capacity));
         self
     }
 
     pub fn with_inventory_accessible(self) -> Self {
-        self.world.entity_mut(self.entity).insert(InventoryAccessible);
+        self.world
+            .entity_mut(self.entity)
+            .insert(InventoryAccessible);
         self
     }
 

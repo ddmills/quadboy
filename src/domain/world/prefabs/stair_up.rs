@@ -1,8 +1,5 @@
 use super::{Prefab, PrefabBuilder};
-use crate::{
-    common::Palette,
-    rendering::Layer,
-};
+use crate::{common::Palette, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_stair_up(entity: Entity, world: &mut World, config: Prefab) {

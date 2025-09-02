@@ -1,5 +1,6 @@
 pub mod biome;
-pub mod biomes;
+pub mod biome_helpers;
+pub mod biome_registry;
 pub mod constraint_handler;
 pub mod grid_helpers;
 pub mod overworld;
@@ -14,7 +15,7 @@ pub mod zone_generator;
 pub mod zone_grid;
 
 pub use biome::*;
-pub use biomes::*;
+pub use biome_registry::*;
 pub use constraint_handler::*;
 pub use grid_helpers::*;
 pub use overworld::*;

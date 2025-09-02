@@ -10,18 +10,18 @@ pub struct ZoneFactory {
 }
 
 impl ZoneFactory {
-    pub fn new(ozone: OverworldZone) -> Self {
+    pub fn new(ozone: OverworldZone, registry: &crate::domain::BiomeRegistry) -> Self {
         Self {
-            grid_data: ZoneGridData::new(ozone.biome_type.get_primary_terrain()),
+            grid_data: ZoneGridData::new(ozone.biome_type.get_primary_terrain(registry)),
             zone_idx: ozone.zone_idx,
             ozone,
         }
     }
 
-    pub fn build(&mut self) -> ZoneData {
+    pub fn build(&mut self, registry: &crate::domain::BiomeRegistry) -> ZoneData {
         let mut road_builder = RoadBuilder::new();
         let mut river_builder = RiverBuilder::new();
-        let road_terrain = self.ozone.biome_type.get_road_terrain();
+        let road_terrain = self.ozone.biome_type.get_road_terrain(registry);
         let zone_idx = self.zone_idx;
         let biome_type = self.ozone.biome_type;
 
@@ -64,7 +64,7 @@ impl ZoneFactory {
         }
 
         // Apply biome-specific generation
-        biome_type.apply_to_zone(self);
+        biome_type.apply_to_zone(self, registry);
 
         self.to_zone_data()
     }

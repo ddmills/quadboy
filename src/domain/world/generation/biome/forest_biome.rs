@@ -1,73 +1,80 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{
-        Grid, LootTable, Rand,
-        algorithm::{ca_rules::*, cellular_automata::*},
-    },
-    domain::{BiomeBuilder, Prefab, PrefabId, Terrain, ZoneFactory},
+    common::{Grid, LootTable, Rand},
+    domain::{Biome, PrefabId, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
-pub struct ForestBiomeBuilder;
+use super::super::biome_helpers::*;
+use crate::common::algorithm::{ca_rules::*, cellular_automata::*};
 
-impl BiomeBuilder for ForestBiomeBuilder {
-    fn build(zone: &mut ZoneFactory) {
+pub struct ForestBiome {
+    loot_table: LootTable<PrefabId>,
+    enemy_table: LootTable<PrefabId>,
+}
+
+impl ForestBiome {
+    pub fn new() -> Self {
+        Self {
+            loot_table: LootTable::builder()
+                .add(PrefabId::Lantern, 3.0)
+                .add(PrefabId::Pickaxe, 3.0)
+                .add(PrefabId::Hatchet, 1.0)
+                .build(),
+            enemy_table: LootTable::builder().add(PrefabId::Bandit, 1.0).build(),
+        }
+    }
+}
+
+impl Biome for ForestBiome {
+    fn base_terrain(&self) -> Terrain {
+        Terrain::Grass
+    }
+
+    fn loot_table(&self) -> &LootTable<PrefabId> {
+        &self.loot_table
+    }
+
+    fn enemy_table(&self) -> &LootTable<PrefabId> {
+        &self.enemy_table
+    }
+
+    fn road_terrain(&self) -> Terrain {
+        Terrain::Dirt
+    }
+
+    fn generate(&self, zone: &mut ZoneFactory) {
         let mut rand = Rand::seed(zone.zone_idx as u32);
 
-        // Set base terrain
-        for x in 0..ZONE_SIZE.0 {
-            for y in 0..ZONE_SIZE.1 {
-                if !zone.is_locked_tile(x, y) {
-                    zone.set_terrain(x, y, Terrain::Grass);
-                }
-            }
-        }
+        // Apply base terrain
+        apply_base_terrain(zone, self.base_terrain());
 
         // Generate boulders first
-        let constraint_grid = collect_constraint_grid(zone);
-        let boulder_grid = generate_forest_boulder_ca(&constraint_grid, &mut rand);
+        let constraints = collect_constraint_grid(zone);
+        let boulder_grid = generate_forest_boulder_ca(&constraints, &mut rand);
 
         // Create combined constraint grid that includes boulders
         let boulder_constraint_grid = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
-            *constraint_grid.get(x, y).unwrap_or(&true) || *boulder_grid.get(x, y).unwrap_or(&false)
+            *constraints.get(x, y).unwrap_or(&true) || *boulder_grid.get(x, y).unwrap_or(&false)
         });
 
         // Generate trees using CA, avoiding boulders
         let tree_grid = generate_forest_tree_ca(&boulder_constraint_grid, &mut rand);
 
-        // Create loot table for random spawns
-        let forest_loot = LootTable::builder()
-            .add(Some(PrefabId::Bandit), 5.0)     // 0.005 probability -> 5 weight
-            .add(Some(PrefabId::Lantern), 3.0)    // 0.003 probability -> 3 weight  
-            .add(Some(PrefabId::Pickaxe), 3.0)    // 0.003 probability -> 3 weight
-            .add(Some(PrefabId::Hatchet), 1.0)    // 0.001 probability -> 1 weight
-            .add(None, 988.0)                     // No spawn (remainder to make ~1000 total)
-            .build();
+        // Place generated features
+        place_feature_grid(zone, &boulder_grid, PrefabId::Boulder);
+        place_feature_grid(zone, &tree_grid, PrefabId::PineTree);
 
-        // Place entities
-        for x in 0..ZONE_SIZE.0 {
-            for y in 0..ZONE_SIZE.1 {
-                if zone.is_locked_tile(x, y) {
-                    continue;
-                }
-
-                let wpos = zone_local_to_world(zone.zone_idx, x, y);
-
-                // Boulders take precedence
-                if *boulder_grid.get(x, y).unwrap_or(&false) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Boulder, wpos));
-                } else if *tree_grid.get(x, y).unwrap_or(&false) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::PineTree, wpos));
-                } else if let Some(prefab_id) = forest_loot.pick_cloned(&mut rand) {
-                    zone.push_entity(x, y, Prefab::new(prefab_id, wpos));
-                }
-            }
-        }
+        // Spawn loot and enemies with standard 1% chances
+        let exclude = combine_grids(&boulder_grid, &tree_grid);
+        spawn_loot_and_enemies(
+            zone,
+            &self.loot_table,
+            &self.enemy_table,
+            &mut rand,
+            Some(&exclude),
+        );
     }
-}
-
-fn collect_constraint_grid(zone: &mut ZoneFactory) -> Grid<bool> {
-    Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| zone.is_locked_tile(x, y))
 }
 
 fn generate_forest_boulder_ca(constraint_grid: &Grid<bool>, rand: &mut Rand) -> Grid<bool> {

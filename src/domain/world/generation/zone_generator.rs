@@ -2,7 +2,7 @@ use bevy_ecs::world::World;
 
 use crate::{
     common::Grid,
-    domain::{Overworld, Prefab, Terrain, ZoneFactory},
+    domain::{BiomeRegistry, Overworld, Prefab, Terrain, ZoneFactory},
 };
 
 pub struct ZoneData {
@@ -18,6 +18,9 @@ impl ZoneGenerator {
         let mut overworld = world.get_resource_mut::<Overworld>().unwrap();
         let ozone = overworld.get_overworld_zone(zone_idx);
 
-        ZoneFactory::new(ozone).build()
+        // Get or create BiomeRegistry (for now, create a new one each time)
+        let registry = BiomeRegistry::new();
+
+        ZoneFactory::new(ozone, &registry).build(&registry)
     }
 }
