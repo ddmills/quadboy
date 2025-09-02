@@ -75,3 +75,51 @@ impl InInventory {
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct UnopenedContainer(pub crate::domain::LootTableId);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum StackableType {
+    GoldNugget,
+}
+
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+pub struct Stackable {
+    pub stack_type: StackableType,
+}
+
+impl Stackable {
+    pub fn new(stack_type: StackableType) -> Self {
+        Self { stack_type }
+    }
+}
+
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+pub struct StackCount {
+    pub count: u32,
+}
+
+impl StackCount {
+    pub const MAX_STACK_SIZE: u32 = 99;
+
+    pub fn new(count: u32) -> Self {
+        Self {
+            count: count.min(Self::MAX_STACK_SIZE),
+        }
+    }
+
+    pub fn add(&mut self, amount: u32) -> u32 {
+        let space = Self::MAX_STACK_SIZE - self.count;
+        let to_add = amount.min(space);
+        self.count += to_add;
+        amount - to_add // Return overflow
+    }
+
+    pub fn remove(&mut self, amount: u32) -> u32 {
+        let to_remove = amount.min(self.count);
+        self.count -= to_remove;
+        to_remove // Return actual amount removed
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.count >= Self::MAX_STACK_SIZE
+    }
+}

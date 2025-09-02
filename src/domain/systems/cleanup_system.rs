@@ -1,10 +1,6 @@
 use super::destruction_system::EntityDestroyedEvent;
+use crate::{common::Rand, domain::Destructible, engine::AudioRegistry};
 use bevy_ecs::prelude::*;
-use crate::{
-    domain::Destructible,
-    engine::AudioRegistry,
-    common::Rand,
-};
 
 pub fn on_entity_destroyed_cleanup(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
@@ -22,7 +18,7 @@ pub fn on_entity_destroyed_cleanup(
                 }
             }
         }
-        
+
         cmds.entity(event.entity).despawn();
     }
 }

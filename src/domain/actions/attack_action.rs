@@ -1,14 +1,14 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
+    common::Rand,
     domain::{
         Destructible, Energy, EnergyActionType, EquipmentSlots, Health, MeleeWeapon, Zone,
         get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
-    engine::{StableIdRegistry, AudioRegistry},
+    engine::{AudioRegistry, StableIdRegistry},
     rendering::Position,
-    common::Rand,
 };
 
 pub struct AttackAction {
@@ -116,7 +116,11 @@ impl Command for AttackAction {
                         if let Some(audio_collection) = material_type.hit_audio_collection() {
                             world.resource_scope(|world, audio_registry: Mut<AudioRegistry>| {
                                 if let Some(mut rand) = world.get_resource_mut::<Rand>() {
-                                    audio_registry.play_random_from_collection(audio_collection, &mut rand, 0.5);
+                                    audio_registry.play_random_from_collection(
+                                        audio_collection,
+                                        &mut rand,
+                                        0.5,
+                                    );
                                 }
                             });
                         }

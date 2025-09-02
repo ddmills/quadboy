@@ -5,7 +5,8 @@ use crate::{
     common::Palette,
     domain::{
         DropItemAction, EquipItemAction, EquipmentSlot, EquipmentSlots, Equippable, Equipped,
-        Inventory, Label, Player, PlayerPosition, TransferItemAction, UnequipItemAction, game_loop,
+        Inventory, Label, Player, PlayerPosition, StackCount, TransferItemAction,
+        UnequipItemAction, game_loop,
     },
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, Text},
@@ -87,6 +88,7 @@ fn setup_inventory_screen(
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
+    q_stack_counts: Query<&StackCount>,
     id_registry: Res<StableIdRegistry>,
 ) {
     let Ok(player_entity) = q_player.single() else {
@@ -170,16 +172,27 @@ fn setup_inventory_screen(
                     "Unknown Item".to_string()
                 };
 
-                // Check if item is equipped
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let display_text = if is_equipped {
-                    format!("{} {{G|[E]}}", text)
+                // Check for stack count
+                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                    if stack_count.count > 1 {
+                        format!("{} x{}", text, stack_count.count)
+                    } else {
+                        text
+                    }
                 } else {
                     text
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let final_text = if is_equipped {
+                    format!("{} {{G|[E]}}", display_text)
+                } else {
+                    display_text
+                };
+
                 cmds.spawn((
-                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
+                    Text::new(&final_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateInventory,
                     InventoryItemDisplay,
@@ -224,6 +237,7 @@ fn setup_container_screen(
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
+    q_stack_counts: Query<&StackCount>,
     id_registry: Res<StableIdRegistry>,
     context: Option<Res<InventoryContext>>,
 ) {
@@ -300,16 +314,27 @@ fn setup_container_screen(
                     "Unknown Item".to_string()
                 };
 
-                // Check if item is equipped
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let display_text = if is_equipped {
-                    format!("{} {{G|[E]}}", text)
+                // Check for stack count
+                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                    if stack_count.count > 1 {
+                        format!("{} x{}", text, stack_count.count)
+                    } else {
+                        text
+                    }
                 } else {
                     text
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let final_text = if is_equipped {
+                    format!("{} {{G|[E]}}", display_text)
+                } else {
+                    display_text
+                };
+
                 cmds.spawn((
-                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
+                    Text::new(&final_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     InventoryItemDisplay,
@@ -379,16 +404,27 @@ fn setup_container_screen(
                     "Unknown Item".to_string()
                 };
 
-                // Check if item is equipped
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let display_text = if is_equipped {
-                    format!("{} {{G|[E]}}", text)
+                // Check for stack count
+                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                    if stack_count.count > 1 {
+                        format!("{} x{}", text, stack_count.count)
+                    } else {
+                        text
+                    }
                 } else {
                     text
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let final_text = if is_equipped {
+                    format!("{} {{G|[E]}}", display_text)
+                } else {
+                    display_text
+                };
+
                 cmds.spawn((
-                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
+                    Text::new(&final_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(right_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     ContainerItemDisplay,
@@ -436,6 +472,7 @@ fn refresh_inventory_display(
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
+    q_stack_counts: Query<&StackCount>,
     q_item_displays: Query<Entity, With<InventoryItemDisplay>>,
     q_player: Query<Entity, With<Player>>,
     id_registry: Res<StableIdRegistry>,
@@ -488,16 +525,27 @@ fn refresh_inventory_display(
                     "Unknown Item".to_string()
                 };
 
-                // Check if item is equipped
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let display_text = if is_equipped {
-                    format!("{} {{G|[E]}}", text)
+                // Check for stack count
+                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                    if stack_count.count > 1 {
+                        format!("{} x{}", text, stack_count.count)
+                    } else {
+                        text
+                    }
                 } else {
                     text
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let final_text = if is_equipped {
+                    format!("{} {{G|[E]}}", display_text)
+                } else {
+                    display_text
+                };
+
                 cmds.spawn((
-                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
+                    Text::new(&final_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateInventory,
                     InventoryItemDisplay,
@@ -625,6 +673,7 @@ fn refresh_container_display(
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
+    q_stack_counts: Query<&StackCount>,
     q_player_displays: Query<Entity, With<InventoryItemDisplay>>,
     q_container_displays: Query<Entity, With<ContainerItemDisplay>>,
     context: Res<InventoryContext>,
@@ -682,16 +731,27 @@ fn refresh_container_display(
                     "Unknown Item".to_string()
                 };
 
-                // Check if item is equipped
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let display_text = if is_equipped {
-                    format!("{} {{G|[E]}}", text)
+                // Check for stack count
+                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                    if stack_count.count > 1 {
+                        format!("{} x{}", text, stack_count.count)
+                    } else {
+                        text
+                    }
                 } else {
                     text
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let final_text = if is_equipped {
+                    format!("{} {{G|[E]}}", display_text)
+                } else {
+                    display_text
+                };
+
                 cmds.spawn((
-                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
+                    Text::new(&final_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     InventoryItemDisplay,
@@ -738,16 +798,27 @@ fn refresh_container_display(
                     "Unknown Item".to_string()
                 };
 
-                // Check if item is equipped
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let display_text = if is_equipped {
-                    format!("{} {{G|[E]}}", text)
+                // Check for stack count
+                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                    if stack_count.count > 1 {
+                        format!("{} x{}", text, stack_count.count)
+                    } else {
+                        text
+                    }
                 } else {
                     text
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let final_text = if is_equipped {
+                    format!("{} {{G|[E]}}", display_text)
+                } else {
+                    display_text
+                };
+
                 cmds.spawn((
-                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
+                    Text::new(&final_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(right_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     ContainerItemDisplay,

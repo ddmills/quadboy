@@ -1,4 +1,4 @@
-use crate::{engine::{SerializableComponent, AudioCollection}};
+use crate::engine::{AudioCollection, SerializableComponent};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 

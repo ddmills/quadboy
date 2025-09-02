@@ -20,13 +20,13 @@ use crate::{
         Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, LoadGameResult,
         LoadZoneEvent, LootDrop, LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult,
         Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
-        SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer,
-        Vision, VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
+        SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, TurnState, UnloadZoneEvent,
+        UnopenedContainer, Vision, VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
         systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{
-        App, AudioRegistry, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
-        StableId, StableIdRegistry, update_mouse,
+        App, AudioRegistry, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType,
+        SerializableComponentRegistry, StableId, StableIdRegistry, update_mouse,
     },
     rendering::{CrtShader, Glyph, RecordZonePosition},
     states::{
@@ -103,6 +103,8 @@ async fn main() {
     reg.register::<MeleeWeapon>();
     reg.register::<UnopenedContainer>();
     reg.register::<LootDrop>();
+    reg.register::<Stackable>();
+    reg.register::<StackCount>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

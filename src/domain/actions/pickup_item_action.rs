@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, EnergyActionType, InInventory, Inventory, Zone, get_energy_cost},
+    domain::{
+        Energy, EnergyActionType, InInventory, Inventory, StackCount, Stackable, StackableType,
+        Zone, get_energy_cost,
+    },
     engine::StableIdRegistry,
     rendering::Position,
 };
@@ -26,6 +29,70 @@ impl Command for PickupItemAction {
             return;
         };
 
+        // Check if item is stackable first (before any mutable borrows)
+        let stackable_info = world.get::<Stackable>(item_entity).map(|stackable| {
+            let stack_type = stackable.stack_type;
+            let pickup_count = world
+                .get::<StackCount>(item_entity)
+                .map(|sc| sc.count)
+                .unwrap_or(1);
+            (stack_type, pickup_count)
+        });
+
+        let mut q_inventory = world.query::<&mut Inventory>();
+        let mut q_items = world.query::<&Position>();
+        let mut q_zones = world.query::<&mut Zone>();
+
+        let Ok(mut inventory) = q_inventory.get_mut(world, self.entity) else {
+            return;
+        };
+
+        if let Some((stack_type, pickup_count)) = stackable_info {
+            // Collect inventory items to avoid borrow conflicts
+            let item_ids = inventory.item_ids.clone();
+            // Drop the inventory borrow before getting mutable access to the stack
+            drop(inventory);
+            drop(q_inventory);
+
+            // Find existing stack of same type in inventory
+            if let Some(existing_entity) = find_existing_stack(world, &item_ids, stack_type) {
+                if let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity) {
+                    let overflow = stack_count.add(pickup_count);
+
+                    if overflow == 0 {
+                        // All items fit in existing stack - despawn picked up item
+                        remove_item_from_zone(world, item_entity);
+                        world.entity_mut(item_entity).despawn();
+
+                        // Consume energy
+                        if self.spend_energy {
+                            if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
+                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                                energy.consume_energy(cost);
+                            }
+                        }
+                        return;
+                    } else {
+                        // Partial pickup - update the item on ground with remaining count
+                        if let Some(mut ground_stack) = world.get_mut::<StackCount>(item_entity) {
+                            ground_stack.count = overflow;
+                        }
+
+                        // Consume energy for partial pickup
+                        if self.spend_energy {
+                            if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
+                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                                energy.consume_energy(cost);
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Not stackable or no existing stack - use normal pickup logic
+        // Re-get inventory and queries if we dropped them for stackable handling
         let mut q_inventory = world.query::<&mut Inventory>();
         let mut q_items = world.query::<&Position>();
         let mut q_zones = world.query::<&mut Zone>();
@@ -60,6 +127,38 @@ impl Command for PickupItemAction {
         {
             let cost = get_energy_cost(EnergyActionType::PickUpItem);
             energy.consume_energy(cost);
+        }
+    }
+}
+
+fn find_existing_stack(
+    world: &World,
+    item_ids: &[u64],
+    stack_type: StackableType,
+) -> Option<Entity> {
+    let id_registry = world.get_resource::<StableIdRegistry>()?;
+
+    for &id in item_ids {
+        if let Some(entity) = id_registry.get_entity(id) {
+            if let Some(stackable) = world.get::<Stackable>(entity) {
+                if stackable.stack_type == stack_type {
+                    return Some(entity);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn remove_item_from_zone(world: &mut World, item_entity: Entity) {
+    if let Ok(position) = world.query::<&Position>().get(world, item_entity) {
+        let zone_idx = position.zone_idx();
+
+        for mut zone in world.query::<&mut Zone>().iter_mut(world) {
+            if zone.idx == zone_idx {
+                zone.entities.remove(&item_entity);
+                break;
+            }
         }
     }
 }

@@ -63,6 +63,8 @@ impl Command for DropItemAction {
             .insert(position)
             .remove::<InInventory>();
 
+        // Note: Stackable items keep their StackCount component when dropped
+
         let zone_idx = world_to_zone_idx(
             self.drop_position.0,
             self.drop_position.1,

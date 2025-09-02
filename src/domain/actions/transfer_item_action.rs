@@ -2,8 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, Equipped, InInventory, Inventory, UnequipItemAction,
-        get_energy_cost,
+        Energy, EnergyActionType, Equipped, InInventory, Inventory, StackCount, Stackable,
+        StackableType, UnequipItemAction, get_energy_cost,
     },
     engine::StableIdRegistry,
 };
@@ -35,6 +35,59 @@ impl Command for TransferItemAction {
             (item_entity, to_stable_id)
         };
 
+        // Check if item is stackable and handle stack merging
+        if let Some(stackable) = world.get::<Stackable>(item_entity) {
+            let stack_type = stackable.stack_type;
+            let transfer_count = world
+                .get::<StackCount>(item_entity)
+                .map(|sc| sc.count)
+                .unwrap_or(1);
+
+            // Check target inventory for existing stack
+            let to_inventory = world.get::<Inventory>(self.to_entity);
+            if let Some(to_inventory) = to_inventory {
+                if let Some(existing_entity) =
+                    find_existing_stack_transfer(world, &to_inventory.item_ids, stack_type)
+                {
+                    if let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity) {
+                        let overflow = stack_count.add(transfer_count);
+
+                        if overflow == 0 {
+                            // All items fit in existing stack - remove from source and despawn
+                            let Some(mut from_inventory) =
+                                world.get_mut::<Inventory>(self.from_entity)
+                            else {
+                                return;
+                            };
+                            from_inventory.remove_item(self.item_stable_id);
+                            world.entity_mut(item_entity).despawn();
+
+                            // Consume energy
+                            if let Some(mut energy) = world.get_mut::<Energy>(self.from_entity) {
+                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                                energy.consume_energy(cost);
+                            }
+                            return;
+                        } else {
+                            // Partial transfer - update source item with remaining count
+                            if let Some(mut source_stack) = world.get_mut::<StackCount>(item_entity)
+                            {
+                                source_stack.count = overflow;
+                            }
+
+                            // Consume energy for partial transfer
+                            if let Some(mut energy) = world.get_mut::<Energy>(self.from_entity) {
+                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                                energy.consume_energy(cost);
+                            }
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Not stackable or no existing stack - use normal transfer logic
         // Check and perform the transfer
         {
             let Some(mut from_inventory) = world.get_mut::<Inventory>(self.from_entity) else {
@@ -93,4 +146,23 @@ impl Command for TransferItemAction {
             energy.consume_energy(cost);
         }
     }
+}
+
+fn find_existing_stack_transfer(
+    world: &World,
+    item_ids: &[u64],
+    stack_type: StackableType,
+) -> Option<Entity> {
+    let id_registry = world.get_resource::<StableIdRegistry>()?;
+
+    for &id in item_ids {
+        if let Some(entity) = id_registry.get_entity(id) {
+            if let Some(stackable) = world.get::<Stackable>(entity) {
+                if stackable.stack_type == stack_type {
+                    return Some(entity);
+                }
+            }
+        }
+    }
+    None
 }

@@ -19,7 +19,10 @@ pub use energy::Energy;
 pub use equipment::{EquipmentSlot, EquipmentSlots, EquipmentType, Equippable, Equipped};
 pub use health::Health;
 pub use in_active_zone::InActiveZone;
-pub use inventory::{InInventory, Inventory, InventoryAccessible, Item, UnopenedContainer};
+pub use inventory::{
+    InInventory, Inventory, InventoryAccessible, Item, StackCount, Stackable, StackableType,
+    UnopenedContainer,
+};
 pub use label::Label;
 pub use loot_drop::LootDrop;
 pub use melee_weapon::MeleeWeapon;

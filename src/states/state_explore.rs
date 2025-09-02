@@ -6,7 +6,7 @@ use crate::{
     common::Palette,
     domain::{
         IsExplored, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
-        Zone, game_loop, handle_item_pickup, player_input, render_player_debug,
+        StackCount, Zone, game_loop, handle_item_pickup, player_input, render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
@@ -114,7 +114,7 @@ fn display_entity_names_at_mouse(
     mouse: Res<Mouse>,
     player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
-    q_names: Query<&Label, With<IsExplored>>,
+    q_names: Query<(&Label, Option<&StackCount>), With<IsExplored>>,
     mut q_hover_text: Query<(&mut Text, &mut Position, &mut Visibility), With<MouseHoverText>>,
 ) {
     let mouse_x = mouse.world.0.floor() as usize;
@@ -134,8 +134,16 @@ fn display_entity_names_at_mouse(
     };
 
     for entity in entities {
-        if let Ok(name) = q_names.get(*entity) {
-            names.push(name.get().to_string());
+        if let Ok((name, stack_count)) = q_names.get(*entity) {
+            let mut name = name.get().to_string();
+
+            if let Some(stack) = stack_count
+                && stack.count > 1
+            {
+                name = format!("{} x{}", name, stack.count)
+            }
+
+            names.push(name);
         }
     }
 
