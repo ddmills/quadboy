@@ -1,7 +1,7 @@
 use super::Prefab;
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Item, Label, NeedsStableId, SaveFlag},
+    domain::{ApplyVisibilityEffects, Equippable, Item, Label, NeedsStableId, SaveFlag},
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
@@ -13,6 +13,7 @@ pub fn spawn_pickaxe(entity: Entity, world: &mut World, config: Prefab) {
         Glyph::new(23, Palette::Brown, Palette::Gray).layer(Layer::Objects),
         Label::new("Pickaxe"),
         Item::new(2.0),
+        Equippable::tool(),
         ApplyVisibilityEffects,
         RecordZonePosition,
         SaveFlag,

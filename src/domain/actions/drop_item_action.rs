@@ -1,7 +1,11 @@
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
-    domain::{Energy, EnergyActionType, InInventory, Inventory, Zone, get_energy_cost},
+    domain::{
+        Energy, EnergyActionType, Equipped, InInventory, Inventory, UnequipItemAction, Zone,
+        get_energy_cost,
+    },
     engine::StableIdRegistry,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
@@ -26,6 +30,13 @@ impl Command for DropItemAction {
             );
             return;
         };
+
+        let mut q_equipped = world.query::<&Equipped>();
+
+        if q_equipped.get(world, item_entity).is_ok() {
+            trace!("eq? {}", self.item_stable_id);
+            UnequipItemAction::new(self.item_stable_id).apply(world);
+        }
 
         let Some(mut inventory) = world.get_mut::<Inventory>(self.entity) else {
             eprintln!("DropItemAction: Entity {:?} has no inventory", self.entity);

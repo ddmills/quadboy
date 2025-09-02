@@ -12,6 +12,8 @@ impl Command for OpenContainerAction {
         world.insert_resource(crate::states::InventoryContext {
             player_entity: self.player_entity,
             container_entity: Some(self.container_entity),
+            selected_item_id: None,
+            available_slots: Vec::new(),
         });
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {

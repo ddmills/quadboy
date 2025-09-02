@@ -15,12 +15,12 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, Bitmasker, Collider, Energy, GameSettings, HideWhenNotVisible,
-        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
-        Label, LoadGameResult, LoadZoneEvent, NeedsStableId, NewGameResult, Player,
-        PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent,
-        StairDown, StairUp, TurnState, UnloadZoneEvent, Vision, VisionBlocker, Zones,
-        on_bitmask_spawn, on_refresh_bitmask,
+        ApplyVisibilityEffects, Bitmasker, Collider, Energy, EquipmentSlots, Equippable, Equipped,
+        GameSettings, HideWhenNotVisible, InActiveZone, InInventory, Inventory,
+        InventoryAccessible, IsExplored, IsVisible, Item, Label, LoadGameResult, LoadZoneEvent,
+        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag,
+        SaveGameResult, SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, Vision,
+        VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -92,6 +92,9 @@ async fn main() {
     reg.register::<ApplyVisibilityEffects>();
     reg.register::<HideWhenNotVisible>();
     reg.register::<InventoryAccessible>();
+    reg.register::<EquipmentSlots>();
+    reg.register::<Equippable>();
+    reg.register::<Equipped>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

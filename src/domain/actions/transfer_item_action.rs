@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, EnergyActionType, InInventory, Inventory, get_energy_cost},
+    domain::{
+        Energy, EnergyActionType, Equipped, InInventory, Inventory, UnequipItemAction,
+        get_energy_cost,
+    },
     engine::StableIdRegistry,
 };
 
@@ -54,6 +57,11 @@ impl Command for TransferItemAction {
         }
 
         {
+            let mut q_equipped = world.query::<&Equipped>();
+            if q_equipped.get(world, item_entity).is_ok() {
+                UnequipItemAction::new(self.item_stable_id).apply(world);
+            }
+
             let Some(mut to_inventory) = world.get_mut::<Inventory>(self.to_entity) else {
                 eprintln!(
                     "TransferItemAction: Entity {:?} has no inventory",
@@ -81,7 +89,7 @@ impl Command for TransferItemAction {
 
         // Consume energy if from_entity has energy (for player actions)
         if let Some(mut energy) = world.get_mut::<Energy>(self.from_entity) {
-            let cost = get_energy_cost(EnergyActionType::DropItem); // Using same cost as drop
+            let cost = get_energy_cost(EnergyActionType::TransferItem);
             energy.consume_energy(cost);
         }
     }

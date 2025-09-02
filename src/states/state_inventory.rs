@@ -1,10 +1,11 @@
 use bevy_ecs::prelude::*;
-use macroquad::{input::KeyCode, prelude::trace};
+use macroquad::input::{KeyCode, is_key_pressed};
 
 use crate::{
     common::Palette,
     domain::{
-        DropItemAction, Inventory, Label, Player, PlayerPosition, TransferItemAction, game_loop,
+        DropItemAction, EquipItemAction, EquipmentSlot, EquipmentSlots, Equippable, Equipped,
+        Inventory, Label, Player, PlayerPosition, TransferItemAction, game_loop,
     },
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, Text},
@@ -16,6 +17,9 @@ pub struct InventoryChangedEvent;
 
 #[derive(Component)]
 pub struct CleanupStateInventory;
+
+#[derive(Component)]
+pub struct CleanupStateEquipSlotSelect;
 
 #[derive(Component)]
 pub struct CleanupStateContainer;
@@ -33,10 +37,18 @@ pub struct InventoryCursor {
     pub is_player_side: bool,
 }
 
+#[derive(Component)]
+pub struct EquipSlotCursor {
+    pub index: usize,
+    pub max_index: usize,
+}
+
 #[derive(Resource)]
 pub struct InventoryContext {
     pub player_entity: Entity,
     pub container_entity: Option<Entity>,
+    pub selected_item_id: Option<u64>,
+    pub available_slots: Vec<EquipmentSlot>,
 }
 
 pub struct InventoryStatePlugin;
@@ -60,6 +72,11 @@ impl Plugin for InventoryStatePlugin {
                 (handle_container_input, refresh_container_display, game_loop),
             )
             .on_leave(app, cleanup_system::<CleanupStateContainer>);
+
+        GameStatePlugin::new(GameState::EquipSlotSelect)
+            .on_enter(app, setup_equip_slot_screen)
+            .on_update(app, handle_equip_slot_input)
+            .on_leave(app, cleanup_system::<CleanupStateEquipSlotSelect>);
     }
 }
 
@@ -69,6 +86,7 @@ fn setup_inventory_screen(
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
+    q_equipped: Query<&Equipped>,
     id_registry: Res<StableIdRegistry>,
 ) {
     let Ok(player_entity) = q_player.single() else {
@@ -78,6 +96,8 @@ fn setup_inventory_screen(
     cmds.insert_resource(InventoryContext {
         player_entity,
         container_entity: None,
+        selected_item_id: None,
+        available_slots: Vec::new(),
     });
 
     let Ok(inventory) = q_inventory.get(player_entity) else {
@@ -131,10 +151,9 @@ fn setup_inventory_screen(
         if let Some(item_id) = inventory.item_ids.get(i) {
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
                 if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui).bg(Palette::Black);
                     item_glyph.fg1 = glyph.fg1;
                     item_glyph.fg2 = glyph.fg2;
-                    item_glyph.bg = glyph.bg;
                     item_glyph.outline = glyph.outline;
 
                     cmds.spawn((
@@ -151,8 +170,16 @@ fn setup_inventory_screen(
                     "Unknown Item".to_string()
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let display_text = if is_equipped {
+                    format!("{} {{G|[E]}}", text)
+                } else {
+                    text
+                };
+
                 cmds.spawn((
-                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateInventory,
                     InventoryItemDisplay,
@@ -182,7 +209,7 @@ fn setup_inventory_screen(
     // Position help text based on inventory size
     let help_y = start_y + (inventory.capacity as f32 * 1.0) + 1.0;
     cmds.spawn((
-        Text::new("[{Y|I}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop")
+        Text::new("[{Y|I}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop   [{Y|E}] Equip")
             .fg1(Palette::White)
             .layer(Layer::Ui),
         Position::new_f32(left_x, help_y.min(18.), 0.),
@@ -196,6 +223,7 @@ fn setup_container_screen(
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
+    q_equipped: Query<&Equipped>,
     id_registry: Res<StableIdRegistry>,
     context: Option<Res<InventoryContext>>,
 ) {
@@ -253,10 +281,9 @@ fn setup_container_screen(
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
                 // Spawn glyph if the item has one
                 if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui).bg(Palette::Black);
                     item_glyph.fg1 = glyph.fg1;
                     item_glyph.fg2 = glyph.fg2;
-                    item_glyph.bg = glyph.bg;
                     item_glyph.outline = glyph.outline;
 
                     cmds.spawn((
@@ -273,8 +300,16 @@ fn setup_container_screen(
                     "Unknown Item".to_string()
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let display_text = if is_equipped {
+                    format!("{} {{G|[E]}}", text)
+                } else {
+                    text
+                };
+
                 cmds.spawn((
-                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     InventoryItemDisplay,
@@ -325,10 +360,9 @@ fn setup_container_screen(
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
                 // Spawn glyph if the item has one
                 if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui).bg(Palette::Black);
                     item_glyph.fg1 = glyph.fg1;
                     item_glyph.fg2 = glyph.fg2;
-                    item_glyph.bg = glyph.bg;
                     item_glyph.outline = glyph.outline;
 
                     cmds.spawn((
@@ -345,8 +379,16 @@ fn setup_container_screen(
                     "Unknown Item".to_string()
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let display_text = if is_equipped {
+                    format!("{} {{G|[E]}}", text)
+                } else {
+                    text
+                };
+
                 cmds.spawn((
-                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(right_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     ContainerItemDisplay,
@@ -390,8 +432,10 @@ fn refresh_inventory_display(
     mut cmds: Commands,
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
     q_inventory: Query<&Inventory>,
+    _q_equipment: Query<&EquipmentSlots>,
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
+    q_equipped: Query<&Equipped>,
     q_item_displays: Query<Entity, With<InventoryItemDisplay>>,
     q_player: Query<Entity, With<Player>>,
     id_registry: Res<StableIdRegistry>,
@@ -425,10 +469,9 @@ fn refresh_inventory_display(
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
                 // Spawn glyph if the item has one
                 if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui).bg(Palette::Black);
                     item_glyph.fg1 = glyph.fg1;
                     item_glyph.fg2 = glyph.fg2;
-                    item_glyph.bg = glyph.bg;
                     item_glyph.outline = glyph.outline;
 
                     cmds.spawn((
@@ -445,8 +488,16 @@ fn refresh_inventory_display(
                     "Unknown Item".to_string()
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let display_text = if is_equipped {
+                    format!("{} {{G|[E]}}", text)
+                } else {
+                    text
+                };
+
                 cmds.spawn((
-                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateInventory,
                     InventoryItemDisplay,
@@ -463,12 +514,117 @@ fn refresh_inventory_display(
     }
 }
 
+fn setup_equip_slot_screen(
+    mut cmds: Commands,
+    ctx: Res<InventoryContext>,
+    registry: Res<StableIdRegistry>,
+    q_player: Query<(&Inventory, &EquipmentSlots), With<Player>>,
+    q_item: Query<(&Label, &Equippable)>,
+) {
+    // Get player components
+    let Ok((inventory, equipment_slots)) = q_player.get(ctx.player_entity) else {
+        return;
+    };
+
+    // Get selected item
+    let Some(item_id) = ctx.selected_item_id else {
+        return;
+    };
+
+    let Some(item_entity) = registry.get_entity(item_id) else {
+        return;
+    };
+
+    let Ok((label, equippable)) = q_item.get(item_entity) else {
+        return;
+    };
+
+    // Title
+    cmds.spawn((
+        Text::new(&format!("Equip {} to:", label.get()))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+        Position::new_f32(2., 2., 0.),
+        CleanupStateEquipSlotSelect,
+    ));
+
+    // List available slots
+    let mut y_offset = 4.;
+    for (i, slot) in ctx.available_slots.iter().enumerate() {
+        let is_selected = i == 0; // First slot selected by default
+        let color = if is_selected {
+            Palette::Yellow
+        } else {
+            Palette::White
+        };
+
+        let slot_name = format!("{:?}", slot);
+        let prefix = if is_selected { ">" } else { " " };
+
+        cmds.spawn((
+            Text::new(&format!("{} {}", prefix, slot_name))
+                .fg1(color)
+                .layer(Layer::Ui),
+            Position::new_f32(3., y_offset, 0.),
+            CleanupStateEquipSlotSelect,
+        ));
+
+        y_offset += 1.;
+    }
+
+    // Help text
+    cmds.spawn((
+        Text::new("Up/Down: Select | Enter: Equip | ESC: Cancel")
+            .fg1(Palette::Gray)
+            .layer(Layer::Ui),
+        Position::new_f32(2., y_offset + 2., 0.),
+        CleanupStateEquipSlotSelect,
+    ));
+}
+
+fn handle_equip_slot_input(
+    mut cmds: Commands,
+    mut game_state: ResMut<CurrentGameState>,
+    mut ctx: ResMut<InventoryContext>,
+    q_player: Query<Entity, With<Player>>,
+    registry: Res<StableIdRegistry>,
+) {
+    if is_key_pressed(KeyCode::Escape) {
+        game_state.next = GameState::Inventory;
+        return;
+    }
+
+    let Ok(player_entity) = q_player.single() else {
+        return;
+    };
+
+    let Some(player_id) = registry.get_id(player_entity) else {
+        return;
+    };
+
+    let Some(item_id) = ctx.selected_item_id else {
+        return;
+    };
+
+    // For now, just equip to first available slot on Enter
+    if is_key_pressed(KeyCode::Enter) && !ctx.available_slots.is_empty() {
+        // Equip new item (EquipItemAction should handle slot conflicts internally)
+        cmds.queue(EquipItemAction {
+            entity_id: player_id,
+            item_id,
+        });
+
+        game_state.next = GameState::Inventory;
+    }
+}
+
 fn refresh_container_display(
     mut cmds: Commands,
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
     q_glyphs: Query<&Glyph>,
+    q_equipped: Query<&Equipped>,
     q_player_displays: Query<Entity, With<InventoryItemDisplay>>,
     q_container_displays: Query<Entity, With<ContainerItemDisplay>>,
     context: Res<InventoryContext>,
@@ -507,10 +663,9 @@ fn refresh_container_display(
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
                 // Spawn glyph if the item has one
                 if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui).bg(Palette::Black);
                     item_glyph.fg1 = glyph.fg1;
                     item_glyph.fg2 = glyph.fg2;
-                    item_glyph.bg = glyph.bg;
                     item_glyph.outline = glyph.outline;
 
                     cmds.spawn((
@@ -527,8 +682,16 @@ fn refresh_container_display(
                     "Unknown Item".to_string()
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let display_text = if is_equipped {
+                    format!("{} {{G|[E]}}", text)
+                } else {
+                    text
+                };
+
                 cmds.spawn((
-                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(left_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     InventoryItemDisplay,
@@ -556,10 +719,9 @@ fn refresh_container_display(
             if let Some(item_entity) = id_registry.get_entity(*item_id) {
                 // Spawn glyph if the item has one
                 if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui);
+                    let mut item_glyph = Glyph::idx(glyph.idx).layer(Layer::Ui).bg(Palette::Black);
                     item_glyph.fg1 = glyph.fg1;
                     item_glyph.fg2 = glyph.fg2;
-                    item_glyph.bg = glyph.bg;
                     item_glyph.outline = glyph.outline;
 
                     cmds.spawn((
@@ -576,8 +738,16 @@ fn refresh_container_display(
                     "Unknown Item".to_string()
                 };
 
+                // Check if item is equipped
+                let is_equipped = q_equipped.get(item_entity).is_ok();
+                let display_text = if is_equipped {
+                    format!("{} {{G|[E]}}", text)
+                } else {
+                    text
+                };
+
                 cmds.spawn((
-                    Text::new(&text).fg1(Palette::White).layer(Layer::Ui),
+                    Text::new(&display_text).layer(Layer::Ui).bg(Palette::Black),
                     Position::new_f32(right_x + 3., y_pos, 0.),
                     CleanupStateContainer,
                     ContainerItemDisplay,
@@ -600,8 +770,10 @@ fn handle_inventory_input(
     mut game_state: ResMut<CurrentGameState>,
     mut q_cursor: Query<(&mut InventoryCursor, &mut Position)>,
     q_inventory: Query<&Inventory>,
+    q_equippable: Query<&Equippable>,
     player_pos: Res<PlayerPosition>,
-    context: Res<InventoryContext>,
+    mut context: ResMut<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
     mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
 ) {
     if keys.is_pressed(KeyCode::I) {
@@ -636,6 +808,26 @@ fn handle_inventory_input(
                 drop_position: world_pos,
             });
             e_inventory_changed.write(InventoryChangedEvent);
+        }
+    }
+
+    if keys.is_pressed(KeyCode::E) {
+        let Ok(inventory) = q_inventory.get(context.player_entity) else {
+            return;
+        };
+
+        if let Some(item_id) = inventory.item_ids.get(cursor.index).copied() {
+            // Check if item is equippable
+            if let Some(item_entity) = id_registry.get_entity(item_id) {
+                if let Ok(equippable) = q_equippable.get(item_entity) {
+                    // Set up context for equipment slot selection
+                    context.selected_item_id = Some(item_id);
+                    context.available_slots = equippable.slot_requirements.clone();
+
+                    // Transition to equipment slot selection
+                    game_state.next = GameState::EquipSlotSelect;
+                }
+            }
         }
     }
 }

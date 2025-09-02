@@ -11,6 +11,9 @@ pub enum EnergyActionType {
     Move,
     Wait,
     DropItem,
+    EquipItem,
+    UnequipItem,
+    TransferItem,
 }
 
 #[derive(Resource, Default)]
@@ -71,5 +74,8 @@ pub fn get_energy_cost(action: EnergyActionType) -> i32 {
         EnergyActionType::Move => 100,
         EnergyActionType::Wait => 200,
         EnergyActionType::DropItem => 50,
+        EnergyActionType::EquipItem => 75,
+        EnergyActionType::UnequipItem => 50,
+        EnergyActionType::TransferItem => 10,
     }
 }

@@ -23,6 +23,7 @@ pub struct Glyph {
     pub fg2: Option<u32>,
     pub bg: Option<u32>,
     pub outline: Option<u32>,
+    pub scale: f32,
     pub layer_id: Layer,
     pub texture_id: GlyphTextureId,
     pub is_dormant: bool,
@@ -59,6 +60,7 @@ impl Glyph {
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
+            scale: 1.,
         }
     }
 
@@ -72,6 +74,7 @@ impl Glyph {
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
+            scale: 1.,
         }
     }
 
@@ -85,6 +88,7 @@ impl Glyph {
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
+            scale: 1.,
         }
     }
 
@@ -125,6 +129,11 @@ impl Glyph {
 
     pub fn fg2<T: Into<u32>>(mut self, fg2: T) -> Self {
         self.fg2 = Some(fg2.into());
+        self
+    }
+
+    pub fn scale(mut self, value: f32) -> Self {
+        self.scale = value;
         self
     }
 
@@ -201,8 +210,8 @@ pub fn render_glyphs(
         }
 
         let texture_id = glyph.texture_id;
-        let w = texture_id.get_glyph_width();
-        let h = texture_id.get_glyph_height();
+        let w = texture_id.get_glyph_width() * glyph.scale;
+        let h = texture_id.get_glyph_height() * glyph.scale;
 
         let mut x = (pos.x * tile_w).floor();
         let mut y = (pos.y * tile_h).floor();

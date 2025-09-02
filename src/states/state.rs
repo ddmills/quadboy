@@ -54,6 +54,7 @@ pub enum GameState {
     Overworld,
     Inventory,
     Container,
+    EquipSlotSelect,
 }
 
 impl fmt::Display for GameState {
@@ -67,6 +68,7 @@ impl fmt::Display for GameState {
             GameState::Overworld => write!(f, "Overworld"),
             GameState::Inventory => write!(f, "Inventory"),
             GameState::Container => write!(f, "Container"),
+            GameState::EquipSlotSelect => write!(f, "Equip Slot Select"),
         }
     }
 }
