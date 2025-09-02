@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::{
-        Grid, Rand,
+        Grid, LootTable, Rand,
         algorithm::{ca_rules::*, cellular_automata::*},
     },
     domain::{BiomeBuilder, Prefab, PrefabId, Terrain, ZoneFactory},
@@ -27,6 +27,16 @@ impl BiomeBuilder for DesertBiomeBuilder {
         let constraint_grid = collect_constraint_grid(zone);
         let boulder_grid = generate_desert_boulder_ca(&constraint_grid, &mut rand);
 
+        // Create loot table for desert spawns
+        let desert_loot = LootTable::builder()
+            .add(Some(PrefabId::Cactus), 20.0)    // 0.02 probability -> 20 weight
+            .add(Some(PrefabId::Bandit), 5.0)     // 0.005 probability -> 5 weight
+            .add(Some(PrefabId::Lantern), 1.0)    // 0.001 probability -> 1 weight
+            .add(Some(PrefabId::Pickaxe), 1.0)    // 0.001 probability -> 1 weight
+            .add(Some(PrefabId::Hatchet), 1.0)    // 0.001 probability -> 1 weight
+            .add(None, 972.0)                     // No spawn (remainder to make 1000 total)
+            .build();
+
         // Place entities
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
@@ -38,16 +48,8 @@ impl BiomeBuilder for DesertBiomeBuilder {
 
                 if *boulder_grid.get(x, y).unwrap_or(&false) {
                     zone.push_entity(x, y, Prefab::new(PrefabId::Boulder, wpos));
-                } else if rand.bool(0.02) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Cactus, wpos));
-                } else if rand.bool(0.005) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Bandit, wpos));
-                } else if rand.bool(0.001) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Lantern, wpos));
-                } else if rand.bool(0.001) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Pickaxe, wpos));
-                } else if rand.bool(0.001) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Hatchet, wpos));
+                } else if let Some(prefab_id) = desert_loot.pick_cloned(&mut rand) {
+                    zone.push_entity(x, y, Prefab::new(prefab_id, wpos));
                 }
             }
         }

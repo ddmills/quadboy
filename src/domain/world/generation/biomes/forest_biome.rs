@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::{
-        Grid, Rand,
+        Grid, LootTable, Rand,
         algorithm::{ca_rules::*, cellular_automata::*},
     },
     domain::{BiomeBuilder, Prefab, PrefabId, Terrain, ZoneFactory},
@@ -35,6 +35,15 @@ impl BiomeBuilder for ForestBiomeBuilder {
         // Generate trees using CA, avoiding boulders
         let tree_grid = generate_forest_tree_ca(&boulder_constraint_grid, &mut rand);
 
+        // Create loot table for random spawns
+        let forest_loot = LootTable::builder()
+            .add(Some(PrefabId::Bandit), 5.0)     // 0.005 probability -> 5 weight
+            .add(Some(PrefabId::Lantern), 3.0)    // 0.003 probability -> 3 weight  
+            .add(Some(PrefabId::Pickaxe), 3.0)    // 0.003 probability -> 3 weight
+            .add(Some(PrefabId::Hatchet), 1.0)    // 0.001 probability -> 1 weight
+            .add(None, 988.0)                     // No spawn (remainder to make ~1000 total)
+            .build();
+
         // Place entities
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
@@ -49,14 +58,8 @@ impl BiomeBuilder for ForestBiomeBuilder {
                     zone.push_entity(x, y, Prefab::new(PrefabId::Boulder, wpos));
                 } else if *tree_grid.get(x, y).unwrap_or(&false) {
                     zone.push_entity(x, y, Prefab::new(PrefabId::PineTree, wpos));
-                } else if rand.bool(0.005) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Bandit, wpos));
-                } else if rand.bool(0.003) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Lantern, wpos));
-                } else if rand.bool(0.003) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Pickaxe, wpos));
-                } else if rand.bool(0.001) {
-                    zone.push_entity(x, y, Prefab::new(PrefabId::Hatchet, wpos));
+                } else if let Some(prefab_id) = forest_loot.pick_cloned(&mut rand) {
+                    zone.push_entity(x, y, Prefab::new(prefab_id, wpos));
                 }
             }
         }

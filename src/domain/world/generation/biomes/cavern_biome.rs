@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::{
-        Grid, Rand,
+        Grid, LootTable, Rand,
         algorithm::{ca_rules::CaveRule, cellular_automata::*},
     },
     domain::{BiomeBuilder, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
@@ -24,6 +24,15 @@ impl BiomeBuilder for CavernBiomeBuilder {
 
         let boulder_grid = generate_cave_ca(zone, &mut rand);
 
+        // Create loot table for cavern spawns (base rates)
+        let cavern_base_loot = LootTable::builder()
+            .add(Some(PrefabId::Bandit), 5.0)     // 0.005 probability -> 5 weight
+            .add(Some(PrefabId::Lantern), 1.0)    // 0.001 probability -> 1 weight
+            .add(Some(PrefabId::Pickaxe), 1.0)    // 0.001 probability -> 1 weight
+            .add(Some(PrefabId::Hatchet), 1.0)    // 0.001 probability -> 1 weight
+            .add(None, 992.0)                     // No spawn (remainder)
+            .build();
+
         // Place boulders based on CA result
         for x in 0..ZONE_SIZE.0 {
             for y in 0..ZONE_SIZE.1 {
@@ -32,16 +41,13 @@ impl BiomeBuilder for CavernBiomeBuilder {
 
                     if *boulder_grid.get(x, y).unwrap_or(&false) {
                         zone.push_entity(x, y, Prefab::new(PrefabId::Boulder, wpos));
-                    } else if rand.bool(0.005) {
-                        zone.push_entity(x, y, Prefab::new(PrefabId::Bandit, wpos));
-                    } else if rand.bool(0.0025 * wpos.2 as f32) {
-                        zone.push_entity(x, y, Prefab::new(PrefabId::GiantMushroom, wpos));
-                    } else if rand.bool(0.001) {
-                        zone.push_entity(x, y, Prefab::new(PrefabId::Lantern, wpos));
-                    } else if rand.bool(0.001) {
-                        zone.push_entity(x, y, Prefab::new(PrefabId::Pickaxe, wpos));
-                    } else if rand.bool(0.001) {
-                        zone.push_entity(x, y, Prefab::new(PrefabId::Hatchet, wpos));
+                    } else {
+                        // Check for giant mushroom with depth-based probability
+                        if rand.bool(0.0025 * wpos.2 as f32) {
+                            zone.push_entity(x, y, Prefab::new(PrefabId::GiantMushroom, wpos));
+                        } else if let Some(prefab_id) = cavern_base_loot.pick_cloned(&mut rand) {
+                            zone.push_entity(x, y, Prefab::new(prefab_id, wpos));
+                        }
                     }
                 }
             }
