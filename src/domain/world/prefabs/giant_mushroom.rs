@@ -2,7 +2,10 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Collider, Label, Prefab, SaveFlag, VisionBlocker},
+    domain::{
+        ApplyVisibilityEffects, Collider, Destructible, Label, MaterialType, Prefab, SaveFlag,
+        VisionBlocker,
+    },
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
@@ -18,6 +21,7 @@ pub fn spawn_giant_mushroom(_entity: Entity, world: &mut World, config: Prefab) 
         Label::new("{R|G}iant {R|M}ushroom"),
         Collider,
         VisionBlocker,
+        Destructible::new(5, MaterialType::Wood),
         RecordZonePosition,
         ApplyVisibilityEffects,
         SaveFlag,

@@ -1,7 +1,9 @@
 use super::Prefab;
 use crate::{
     common::Palette,
-    domain::{ApplyVisibilityEffects, Collider, Energy, HideWhenNotVisible, Label, SaveFlag},
+    domain::{
+        ApplyVisibilityEffects, Collider, Energy, Health, HideWhenNotVisible, Label, SaveFlag,
+    },
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
@@ -15,6 +17,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         Glyph::new(145, Palette::Red, Palette::White).layer(Layer::Actors),
         Label::new("{R|Bandit}"),
         Energy::new(-100),
+        Health::new(10),
         Collider,
         RecordZonePosition,
         ApplyVisibilityEffects,

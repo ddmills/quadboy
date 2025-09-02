@@ -40,6 +40,8 @@ impl BiomeBuilder for CavernBiomeBuilder {
                         zone.push_entity(x, y, Prefab::new(PrefabId::Lantern, wpos));
                     } else if rand.bool(0.001) {
                         zone.push_entity(x, y, Prefab::new(PrefabId::Pickaxe, wpos));
+                    } else if rand.bool(0.001) {
+                        zone.push_entity(x, y, Prefab::new(PrefabId::Hatchet, wpos));
                     }
                 }
             }

@@ -2,8 +2,8 @@ use super::Prefab;
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Label, SaveFlag,
-        VisionBlocker,
+        ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Label,
+        MaterialType, SaveFlag, VisionBlocker,
     },
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -17,6 +17,7 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
         BitmaskGlyph::new(BitmaskStyle::Wall),
         Label::new("Boulder"),
         Collider,
+        Destructible::new(10, MaterialType::Stone),
         VisionBlocker,
         ApplyVisibilityEffects,
         RecordZonePosition,

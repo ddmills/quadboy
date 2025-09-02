@@ -9,14 +9,14 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_pickaxe(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_cavalry_sword(entity: Entity, world: &mut World, config: Prefab) {
     world.entity_mut(entity).insert((
         Position::new_world(config.pos),
-        Glyph::new(23, Palette::Red, Palette::Gray).layer(Layer::Objects),
-        Label::new("Pickaxe"),
-        Item::new(2.0),
-        Equippable::tool(),
-        MeleeWeapon::pickaxe(),
+        Glyph::new(20, Palette::Yellow, Palette::Gray).layer(Layer::Objects),
+        Label::new("Cavalry Sword"),
+        Item::new(3.0),
+        Equippable::weapon_one_handed(),
+        MeleeWeapon::new(5, vec![crate::domain::MaterialType::Flesh]),
         ApplyVisibilityEffects,
         RecordZonePosition,
         SaveFlag,

@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        Collider, Energy, GameSettings, Inventory, InventoryAccessible, IsExplored, MoveAction,
-        OpenContainerAction, Prefabs, StairDown, StairUp, TurnState, WaitAction, Zone,
+        AttackAction, Collider, Energy, GameSettings, Inventory, InventoryAccessible, IsExplored,
+        MoveAction, OpenContainerAction, Prefabs, StairDown, StairUp, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
@@ -120,8 +120,16 @@ pub fn player_input(
         Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Pickaxe, (x, y, z)));
     }
 
+    if keys.is_pressed(KeyCode::H) {
+        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Hatchet, (x, y, z)));
+    }
+
     if keys.is_pressed(KeyCode::C) {
         Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Chest, (x, y, z)));
+    }
+
+    if keys.is_pressed(KeyCode::Y) {
+        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::CavalrySword, (x, y, z)));
     }
 
     if keys.is_down(KeyCode::LeftShift) {
@@ -245,14 +253,22 @@ pub fn player_input(
                     || (dz < 0 && is_on_stair_up(new_x, new_y, z, &q_stairs_up))
                     || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
 
-                if can_move_vertically
-                    && !has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone)
-                {
-                    cmds.queue(MoveAction {
-                        entity: player_entity,
-                        new_position: (new_x, new_y, new_z),
-                    });
-                    movement_timer.0 = now;
+                if can_move_vertically {
+                    if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
+                        // Bump attack - try to attack what we bumped into
+                        cmds.queue(AttackAction {
+                            attacker_entity: player_entity,
+                            target_pos: (new_x, new_y, new_z),
+                        });
+                        movement_timer.0 = now;
+                    } else {
+                        // Normal movement
+                        cmds.queue(MoveAction {
+                            entity: player_entity,
+                            new_position: (new_x, new_y, new_z),
+                        });
+                        movement_timer.0 = now;
+                    }
                 }
             }
         }

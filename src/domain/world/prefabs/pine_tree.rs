@@ -1,6 +1,6 @@
 use super::Prefab;
 use crate::common::Rand;
-use crate::domain::{ApplyVisibilityEffects, Label};
+use crate::domain::{ApplyVisibilityEffects, Destructible, Label, MaterialType};
 use crate::{
     common::Palette,
     domain::{Collider, SaveFlag, VisionBlocker},
@@ -18,6 +18,7 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) {
         Glyph::new(glyph_char, Palette::DarkCyan, Palette::Brown).layer(Layer::Objects),
         Label::new("{G|P}ine {G|T}ree"),
         Collider,
+        Destructible::new(5, MaterialType::Wood),
         VisionBlocker,
         RecordZonePosition,
         ApplyVisibilityEffects,
