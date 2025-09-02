@@ -83,12 +83,10 @@ impl Biome for ForestBiome {
             zone,
             &self.loot_table,
             &self.enemy_table,
+            self.chest_loot_table_id(),
             &mut rand,
             Some(&exclude),
         );
-
-        // Spawn chests with biome-specific loot
-        spawn_chests(zone, self.chest_loot_table_id(), &mut rand, Some(&exclude));
     }
 }
 

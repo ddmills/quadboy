@@ -42,6 +42,7 @@ pub fn spawn_loot_and_enemies(
     zone: &mut ZoneFactory,
     loot_table: &LootTable<PrefabId>,
     enemy_table: &LootTable<PrefabId>,
+    chest_loot_table_id: LootTableId,
     rand: &mut Rand,
     exclude_grid: Option<&Grid<bool>>,
 ) {
@@ -51,10 +52,10 @@ pub fn spawn_loot_and_enemies(
                 continue;
             }
 
-            if let Some(grid) = exclude_grid {
-                if *grid.get(x, y).unwrap_or(&false) {
-                    continue;
-                }
+            if let Some(grid) = exclude_grid
+                && *grid.get(x, y).unwrap_or(&false)
+            {
+                continue;
             }
 
             let wpos = zone_local_to_world(zone.zone_idx, x, y);
@@ -68,33 +69,7 @@ pub fn spawn_loot_and_enemies(
             else if rand.bool(LOOT_SPAWN_CHANCE) && !loot_table.is_empty() {
                 let loot = loot_table.pick_guaranteed_cloned(rand);
                 zone.push_entity(x, y, Prefab::new(loot, wpos));
-            }
-        }
-    }
-}
-
-pub fn spawn_chests(
-    zone: &mut ZoneFactory,
-    chest_loot_table_id: LootTableId,
-    rand: &mut Rand,
-    exclude_grid: Option<&Grid<bool>>,
-) {
-    for x in 0..ZONE_SIZE.0 {
-        for y in 0..ZONE_SIZE.1 {
-            if zone.is_locked_tile(x, y) {
-                continue;
-            }
-
-            if let Some(grid) = exclude_grid {
-                if *grid.get(x, y).unwrap_or(&false) {
-                    continue;
-                }
-            }
-
-            let wpos = zone_local_to_world(zone.zone_idx, x, y);
-
-            // Check for chest spawn (0.3% chance)
-            if rand.bool(CHEST_SPAWN_CHANCE) {
+            } else if rand.bool(CHEST_SPAWN_CHANCE) {
                 let mut chest_prefab = Prefab::new(PrefabId::Chest, wpos);
                 chest_prefab.metadata.insert(
                     "loot_table_id".to_string(),

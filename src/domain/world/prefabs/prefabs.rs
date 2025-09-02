@@ -3,10 +3,7 @@ use super::{
     spawn_chest, spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_pickaxe,
     spawn_pine_tree, spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
 };
-use crate::{
-    domain::{LootTableId, PickupItemAction, Terrain},
-    engine::StableIdRegistry,
-};
+use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
 use std::collections::HashMap;
 
@@ -14,6 +11,7 @@ use std::collections::HashMap;
 pub enum PrefabId {
     PineTree,
     Boulder,
+    GoldNugget,
     Cactus,
     CavalrySword,
     Chest,
@@ -97,6 +95,7 @@ impl Prefabs {
         self.register(PrefabId::Pickaxe, spawn_pickaxe);
         self.register(PrefabId::StairDown, spawn_stair_down);
         self.register(PrefabId::StairUp, spawn_stair_up);
+        self.register(PrefabId::GoldNugget, spawn_gold_nugget);
 
         self.register(PrefabId::TerrainTile(Terrain::Grass), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);

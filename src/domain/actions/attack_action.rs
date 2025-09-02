@@ -1,16 +1,54 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
+    common::Rand,
     domain::{
-        Destructible, Energy, EnergyActionType, EquipmentSlots, Equipped, Health, MeleeWeapon,
-        Zone, get_energy_cost,
+        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, LootDrop,
+        LootTableRegistry, MeleeWeapon, Prefab, Prefabs, Zone, get_energy_cost,
     },
     engine::StableIdRegistry,
+    rendering::Position,
 };
 
 pub struct AttackAction {
     pub attacker_entity: Entity,
     pub target_pos: (usize, usize, usize),
+}
+
+fn spawn_loot_drops(world: &mut World, entity: Entity) {
+    // Clone the values we need to avoid borrow conflicts
+    let loot_drop = if let Some(loot_drop) = world.get::<LootDrop>(entity) {
+        loot_drop.clone()
+    } else {
+        return;
+    };
+
+    let position_coords = if let Some(position) = world.get::<Position>(entity) {
+        position.world()
+    } else {
+        return;
+    };
+
+    // Use resource_scope to safely access both resources together
+    let items_to_spawn = world.resource_scope(|world, loot_registry: Mut<LootTableRegistry>| {
+        if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+            // Roll for drop chance
+            if rand.bool(loot_drop.drop_chance) {
+                // Success! Roll for loot items
+                loot_registry.roll_multiple(loot_drop.loot_table, loot_drop.drop_count, &mut rand)
+            } else {
+                Vec::new()
+            }
+        } else {
+            Vec::new()
+        }
+    });
+
+    // Spawn each item at the position
+    for item_id in items_to_spawn {
+        let config = Prefab::new(item_id, position_coords);
+        Prefabs::spawn_world(world, config);
+    }
 }
 
 impl Command for AttackAction {
@@ -84,6 +122,7 @@ impl Command for AttackAction {
 
                         // Check if target died
                         if health.is_dead() {
+                            spawn_loot_drops(world, target_entity);
                             world.entity_mut(target_entity).despawn();
                         }
                     }
@@ -98,6 +137,7 @@ impl Command for AttackAction {
 
                         // Check if target was destroyed
                         if destructible.is_destroyed() {
+                            spawn_loot_drops(world, target_entity);
                             world.entity_mut(target_entity).despawn();
                         }
                     }

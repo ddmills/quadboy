@@ -18,10 +18,10 @@ use crate::{
         ApplyVisibilityEffects, Bitmasker, Collider, Destructible, Energy, EquipmentSlots,
         Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, InActiveZone, InInventory,
         Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, LoadGameResult,
-        LoadZoneEvent, LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult, Player,
-        PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent,
-        StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
-        Zones, on_bitmask_spawn, on_refresh_bitmask,
+        LoadZoneEvent, LootDrop, LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult,
+        Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
+        SetZoneStatusEvent, StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer,
+        Vision, VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
     },
     engine::{
         App, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType, SerializableComponentRegistry,
@@ -100,6 +100,7 @@ async fn main() {
     reg.register::<Destructible>();
     reg.register::<MeleeWeapon>();
     reg.register::<UnopenedContainer>();
+    reg.register::<LootDrop>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

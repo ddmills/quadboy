@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{get_energy_cost, Energy, EnergyActionType, InInventory, Inventory, Zone},
+    domain::{Energy, EnergyActionType, InInventory, Inventory, Zone, get_energy_cost},
     engine::StableIdRegistry,
     rendering::Position,
 };
@@ -56,9 +56,10 @@ impl Command for PickupItemAction {
             .insert(InInventory::new(entity_stable_id));
 
         if self.spend_energy
-            && let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
-                let cost = get_energy_cost(EnergyActionType::PickUpItem);
-                energy.consume_energy(cost);
-            }
+            && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
+        {
+            let cost = get_energy_cost(EnergyActionType::PickUpItem);
+            energy.consume_energy(cost);
+        }
     }
 }

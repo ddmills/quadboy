@@ -25,6 +25,10 @@ pub enum LootTableId {
     DesertEnemies,
     CavernEnemies,
     OpenAirEnemies,
+
+    // Death loot tables
+    BanditLoot,
+    BoulderLoot,
 }
 
 #[derive(Resource)]
@@ -131,6 +135,17 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .build(),
+        );
+
+        // Death loot tables
+        self.tables.insert(
+            LootTableId::BanditLoot,
+            LootTable::builder().add(PrefabId::GoldNugget, 1.0).build(),
+        );
+
+        self.tables.insert(
+            LootTableId::BoulderLoot,
+            LootTable::builder().add(PrefabId::GoldNugget, 1.0).build(),
         );
     }
 

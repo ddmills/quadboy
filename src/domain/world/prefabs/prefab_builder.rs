@@ -4,7 +4,8 @@ use crate::{
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
         Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label,
-        MaterialType, MeleeWeapon, NeedsStableId, SaveFlag, StairDown, StairUp, VisionBlocker,
+        LootDrop, MaterialType, MeleeWeapon, NeedsStableId, SaveFlag, StairDown, StairUp,
+        VisionBlocker,
     },
     rendering::{Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -135,6 +136,11 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_stair_down(self) -> Self {
         self.world.entity_mut(self.entity).insert(StairDown);
+        self
+    }
+
+    pub fn with_loot_drop(self, loot_drop: LootDrop) -> Self {
+        self.world.entity_mut(self.entity).insert(loot_drop);
         self
     }
 

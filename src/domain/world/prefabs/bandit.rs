@@ -1,5 +1,9 @@
 use super::{Prefab, PrefabBuilder};
-use crate::{common::Palette, rendering::Layer};
+use crate::{
+    common::Palette,
+    domain::{LootDrop, LootTableId},
+    rendering::Layer,
+};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
@@ -11,5 +15,6 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         .with_health(10)
         .with_collider()
         .with_hide_when_not_visible()
+        .with_loot_drop(LootDrop::new(LootTableId::BanditLoot, 0.5))
         .build();
 }

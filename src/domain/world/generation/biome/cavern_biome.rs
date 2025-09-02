@@ -73,13 +73,6 @@ impl Biome for CavernBiome {
             zone,
             &self.loot_table,
             &self.enemy_table,
-            &mut rand,
-            Some(&boulder_grid),
-        );
-
-        // Spawn chests with biome-specific loot
-        spawn_chests(
-            zone,
             self.chest_loot_table_id(),
             &mut rand,
             Some(&boulder_grid),

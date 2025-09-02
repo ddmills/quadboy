@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{BitmaskStyle, MaterialType},
+    domain::{BitmaskStyle, LootDrop, LootTableId, MaterialType},
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -15,5 +15,6 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
         .with_collider()
         .with_destructible(10, MaterialType::Stone)
         .with_vision_blocker()
+        .with_loot_drop(LootDrop::new(LootTableId::BoulderLoot, 0.25))
         .build();
 }
