@@ -44,6 +44,8 @@ impl Default for GameSettings {
 pub struct PlayerSaveData {
     pub position: Position,
     pub entity: SerializedEntity,
+    #[serde(default)]
+    pub inventory_items: Vec<SerializedEntity>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

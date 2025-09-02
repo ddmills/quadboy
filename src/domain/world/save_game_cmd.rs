@@ -3,9 +3,9 @@ use macroquad::prelude::get_time;
 
 use crate::{
     domain::{
-        GameSaveData, GameSettings, Overworld, Player, PlayerSaveData, UnloadZoneCommand, Zone,
+        GameSaveData, GameSettings, Inventory, Overworld, Player, PlayerSaveData, UnloadZoneCommand, Zone,
     },
-    engine::{Clock, save_game, serialize},
+    engine::{Clock, StableIdRegistry, save_game, serialize},
     rendering::Position,
 };
 
@@ -60,9 +60,28 @@ impl SaveGameCommand {
 
         let serialized_player = serialize(player_entity, world);
 
+        // Collect and serialize player's inventory items (following unload_zone_cmd pattern)
+        let mut inventory_items = vec![];
+        let mut q_inventory = world.query::<&Inventory>();
+        let Some(id_registry) = world.get_resource::<StableIdRegistry>() else {
+            return SaveGameResult { success: false };
+        };
+
+        if let Ok(inventory) = q_inventory.get(world, player_entity) {
+            for item_id in inventory.item_ids.iter() {
+                let Some(item_entity) = id_registry.get_entity(*item_id) else {
+                    continue;
+                };
+
+                let serialized_item = serialize(item_entity, world);
+                inventory_items.push(serialized_item);
+            }
+        }
+
         let player_save = PlayerSaveData {
             position: player_position,
             entity: serialized_player,
+            inventory_items,
         };
         let game_data = GameSaveData::new(player_save, get_time(), current_tick, seed);
         save_game(&game_data, &save_name);

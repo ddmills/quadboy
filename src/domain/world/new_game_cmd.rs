@@ -86,6 +86,7 @@ impl NewGameCommand {
         let player_save_data = PlayerSaveData {
             position: starting_position,
             entity: serialized_player,
+            inventory_items: Vec::new(), // New game has empty inventory items
         };
 
         let game_save_data = GameSaveData::new(player_save_data, 0.0, 0, self.seed);

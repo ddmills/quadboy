@@ -55,6 +55,11 @@ impl LoadGameCommand {
 
         deserialize(game_data.player.entity, world);
 
+        // Deserialize player's inventory items
+        for item_data in game_data.player.inventory_items.iter() {
+            deserialize(item_data.clone(), world);
+        }
+
         if let Some(mut clock) = world.get_resource_mut::<Clock>() {
             clock.set_tick(game_data.tick);
         }
