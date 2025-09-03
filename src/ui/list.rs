@@ -1,11 +1,12 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::{input::KeyCode, prelude::trace};
+use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    engine::{KeyInput, Mouse},
-    rendering::{Glyph, Layer, Position, Text, Visibility, text_content_length},
-    ui::{Callback, Hotkey, Interactable, Interaction},
+    domain::GameSettings,
+    engine::{KeyInput, Mouse, Time},
+    rendering::{Glyph, Layer, Position, Text, Visibility},
+    ui::{Interactable, Interaction},
 };
 
 #[derive(Resource, Default)]
@@ -155,24 +156,61 @@ pub fn list_navigation(
     list_focus: Res<ListFocus>,
     mut q_lists: Query<(Entity, &List, &mut ListState)>,
     keys: Res<KeyInput>,
+    time: Res<Time>,
+    settings: Res<GameSettings>,
+    mut navigation_timer: Local<(f64, bool)>,
 ) {
     let Some(active_list) = list_focus.active_list else {
         return;
     };
 
-    for (entity, list, mut list_state) in q_lists.iter_mut() {
-        if entity != active_list || !list_state.has_focus {
-            continue;
-        }
+    let now = time.fixed_t;
+    let mut rate = settings.input_delay;
+    let delay = settings.input_initial_delay;
 
-        if keys.is_pressed(KeyCode::W) && list_state.selected_index > 0 {
-            list_state.selected_index -= 1;
-        }
+    let navigation_keys_down = keys.is_down(KeyCode::W) || keys.is_down(KeyCode::S);
+    let navigation_keys_pressed = keys.is_pressed(KeyCode::W) || keys.is_pressed(KeyCode::S);
 
-        if keys.is_pressed(KeyCode::S)
-            && list_state.selected_index < list.items.len().saturating_sub(1)
-        {
-            list_state.selected_index += 1;
+    if !navigation_keys_down {
+        navigation_timer.1 = false;
+    }
+
+    if keys.is_down(KeyCode::LeftShift) {
+        rate /= 2.0;
+    }
+
+    let can_navigate = if navigation_keys_pressed {
+        true
+    } else if navigation_keys_down {
+        if navigation_timer.1 {
+            now - navigation_timer.0 >= rate
+        } else if now - navigation_timer.0 >= delay {
+            navigation_timer.1 = true;
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    if navigation_keys_down && can_navigate {
+        for (entity, list, mut list_state) in q_lists.iter_mut() {
+            if entity != active_list || !list_state.has_focus {
+                continue;
+            }
+
+            if keys.is_down(KeyCode::W) && list_state.selected_index > 0 {
+                list_state.selected_index -= 1;
+                navigation_timer.0 = now;
+            }
+
+            if keys.is_down(KeyCode::S)
+                && list_state.selected_index < list.items.len().saturating_sub(1)
+            {
+                list_state.selected_index += 1;
+                navigation_timer.0 = now;
+            }
         }
     }
 }
