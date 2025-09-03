@@ -38,7 +38,7 @@ pub fn ui_interaction_system(
             && mouse_ui.1 < pos.1 + interactable.height;
 
         let new_interaction = if is_hovered {
-            if mouse.left_pressed {
+            if mouse.left_pressed && !mouse.is_captured {
                 Interaction::Pressed
             } else {
                 Interaction::Hovered

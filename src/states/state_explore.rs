@@ -110,7 +110,7 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     cmds.spawn((
         Text::new("")
             .fg1(Palette::White)
-            .bg(Palette::Black)
+            // .bg(Palette::Black)
             .layer(Layer::Overlay),
         Position::new_f32(0., 0., 0.),
         Visibility::Hidden,
