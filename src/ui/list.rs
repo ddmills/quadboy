@@ -140,11 +140,7 @@ pub fn setup_lists(
 
             cmds.spawn((
                 Text::new(&item_data.label).layer(Layer::Ui),
-                Position::new_f32(
-                    list_pos.x + 1.0,
-                    list_pos.y + item_y,
-                    list_pos.z,
-                ),
+                Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
                 ListItem {
                     index: i,
                     parent_list: list_entity,

@@ -5,7 +5,7 @@ use crate::{
     common::Palette,
     domain::{Equipped, Inventory, Label, Player, StackCount, TransferItemAction, game_loop},
     engine::{App, KeyInput, Plugin, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, Text},
+    rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{List, ListContext, ListFocus, ListItemData, ListState},
 };
@@ -116,7 +116,6 @@ fn transfer_item_from_container(
 fn build_player_list_items(
     inventory: &Inventory,
     q_labels: &Query<&Label>,
-    q_glyphs: &Query<&Glyph>,
     q_equipped: &Query<&Equipped>,
     q_stack_counts: &Query<&StackCount>,
     id_registry: &StableIdRegistry,
@@ -169,7 +168,6 @@ fn build_player_list_items(
 fn build_container_list_items(
     inventory: &Inventory,
     q_labels: &Query<&Label>,
-    q_glyphs: &Query<&Glyph>,
     q_equipped: &Query<&Equipped>,
     q_stack_counts: &Query<&StackCount>,
     id_registry: &StableIdRegistry,
@@ -225,7 +223,6 @@ fn setup_container_screen(
     q_player: Query<Entity, With<Player>>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
     id_registry: Res<StableIdRegistry>,
@@ -240,7 +237,6 @@ fn setup_container_screen(
         return;
     };
 
-    // Get container entity from existing context
     let Some(context) = context else {
         return;
     };
@@ -250,9 +246,8 @@ fn setup_container_screen(
     };
 
     let left_x = 2.0;
-    let right_x = 15.0;
+    let right_x = 21.0;
 
-    // Left side - Player inventory
     cmds.spawn((
         Text::new("PLAYER INVENTORY")
             .fg1(Palette::Yellow)
@@ -274,29 +269,25 @@ fn setup_container_screen(
         PlayerInventoryWeightText,
     ));
 
-    // Build player inventory list
     let player_list_items = build_player_list_items(
         player_inventory,
         &q_labels,
-        &q_glyphs,
         &q_equipped,
         &q_stack_counts,
         &id_registry,
         &callbacks,
     );
 
-    // Spawn player inventory list
     let player_list_entity = cmds
         .spawn((
             List::new(player_list_items),
             ListState::new().with_focus(true), // Start with focus on player inventory
-            Position::new_f32(left_x + 1., 3.5, 0.),
+            Position::new_f32(left_x, 3.5, 0.),
             CleanupStateContainer,
             PlayerInventoryList,
         ))
         .id();
 
-    // Right side - Container inventory
     let container_label = if let Ok(label) = q_labels.get(context.container_entity) {
         label.get().to_string()
     } else {
@@ -324,18 +315,15 @@ fn setup_container_screen(
         ContainerInventoryWeightText,
     ));
 
-    // Build container inventory list
     let container_list_items = build_container_list_items(
         container_inventory,
         &q_labels,
-        &q_glyphs,
         &q_equipped,
         &q_stack_counts,
         &id_registry,
         &callbacks,
     );
 
-    // Spawn container inventory list
     let start_y = 3.5;
     let _container_list_entity = cmds
         .spawn((
@@ -347,14 +335,11 @@ fn setup_container_screen(
         ))
         .id();
 
-    // Set focus to player list initially
     list_focus.active_list = Some(player_list_entity);
 
-    // Update focus states
     cmds.entity(player_list_entity)
         .insert(ListState::new().with_focus(true));
 
-    // Help text
     let help_y = 17.0; // Fixed position near bottom
     cmds.spawn((
         Text::new("[{Y|I}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
@@ -368,7 +353,6 @@ fn setup_container_screen(
 fn refresh_container_display(
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
     mut q_lists: ParamSet<(
@@ -391,18 +375,15 @@ fn refresh_container_display(
         return;
     };
 
-    // Update player list
     if let Ok(mut player_list) = q_lists.p0().single_mut() {
         let player_list_items = build_player_list_items(
             player_inventory,
             &q_labels,
-            &q_glyphs,
             &q_equipped,
             &q_stack_counts,
             &id_registry,
             &callbacks,
         );
-        // Only update if items have changed to prevent flickering
         if player_list.items.len() != player_list_items.len()
             || player_list
                 .items
@@ -414,18 +395,15 @@ fn refresh_container_display(
         }
     }
 
-    // Update container list
     if let Ok(mut container_list) = q_lists.p1().single_mut() {
         let container_list_items = build_container_list_items(
             container_inventory,
             &q_labels,
-            &q_glyphs,
             &q_equipped,
             &q_stack_counts,
             &id_registry,
             &callbacks,
         );
-        // Only update if items have changed to prevent flickering
         if container_list.items.len() != container_list_items.len()
             || container_list
                 .items
@@ -436,9 +414,6 @@ fn refresh_container_display(
             container_list.items = container_list_items;
         }
     }
-
-    // Update weight display texts
-    // Update player inventory weight text
     if let Ok(mut text) = q_weight_texts.p0().single_mut() {
         text.value = format!(
             "Weight: {:.1}/{:.1} kg",
@@ -447,7 +422,6 @@ fn refresh_container_display(
         );
     }
 
-    // Update container inventory weight text
     if let Ok(mut text) = q_weight_texts.p1().single_mut() {
         text.value = format!(
             "Weight: {:.1}/{:.1} kg",

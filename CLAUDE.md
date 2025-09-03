@@ -189,6 +189,7 @@ The game uses a command-based prefab system for entity spawning:
 - bevy `Commands` parameters should be named `cmds`
 - Leave very few, if any, comments
 - prefer importing bevy prelude over individual parts. eg `use bevy_ecs::prelude::*;`
+- prefer avoiding nested conditionals and utilizing early returns
 
 ### Formatting Text Glyphs in game
 - Text can be stylized in the game, for example: `{R-G-B-y repeat|Hello World}` will output the text "Hello World" in Red, Green, Blue, and Dark Yellow colors, repeating.

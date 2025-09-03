@@ -21,8 +21,6 @@ struct InventoryCallbacks {
     back_to_explore: SystemId,
     select_item: SystemId,
     drop_item: SystemId,
-    equip_item: SystemId,
-    unequip_item: SystemId,
     toggle_equip_item: SystemId,
 }
 
@@ -69,7 +67,6 @@ fn select_item() {
 fn build_inventory_list_items(
     inventory: &Inventory,
     q_labels: &Query<&Label>,
-    q_glyphs: &Query<&Glyph>,
     q_equipped: &Query<&Equipped>,
     q_stack_counts: &Query<&StackCount>,
     id_registry: &StableIdRegistry,
@@ -192,8 +189,6 @@ fn setup_inventory_callbacks(world: &mut World) {
         back_to_explore: world.register_system(back_to_explore),
         select_item: world.register_system(select_item),
         drop_item: world.register_system(drop_selected_item),
-        equip_item: world.register_system(equip_selected_item),
-        unequip_item: world.register_system(unequip_selected_item),
         toggle_equip_item: world.register_system(toggle_equip_selected_item),
     };
 
@@ -205,7 +200,6 @@ fn drop_selected_item(
     list_context: Res<ListContext>,
     context: Res<InventoryContext>,
     player_pos: Res<PlayerPosition>,
-    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
 ) {
     if let Some(item_id) = list_context.context_data {
         let world_pos = player_pos.world();
@@ -214,59 +208,6 @@ fn drop_selected_item(
             item_stable_id: item_id,
             drop_position: world_pos,
         });
-    }
-}
-
-fn equip_selected_item(
-    mut cmds: Commands,
-    mut game_state: ResMut<CurrentGameState>,
-    list_context: Res<ListContext>,
-    q_equippable: Query<&Equippable>,
-    mut context: ResMut<InventoryContext>,
-    id_registry: Res<StableIdRegistry>,
-    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
-) {
-    if let Some(item_id) = list_context.context_data {
-        // Check if item is equippable
-        if let Some(item_entity) = id_registry.get_entity(item_id) {
-            if let Ok(equippable) = q_equippable.get(item_entity) {
-                // If item only has one slot requirement, equip directly
-                if equippable.slot_requirements.len() == 1 {
-                    if let Some(player_id) = id_registry.get_id(context.player_entity) {
-                        cmds.queue(EquipItemAction {
-                            entity_id: player_id,
-                            item_id,
-                        });
-                        e_inventory_changed.write(InventoryChangedEvent);
-                    }
-                } else {
-                    // Set up context for equipment slot selection
-                    context.selected_item_id = Some(item_id);
-                    context.available_slots = equippable.slot_requirements.clone();
-
-                    // Transition to equipment slot selection
-                    game_state.next = GameState::EquipSlotSelect;
-                }
-            }
-        }
-    }
-}
-
-fn unequip_selected_item(
-    mut cmds: Commands,
-    list_context: Res<ListContext>,
-    q_equipped: Query<&Equipped>,
-    id_registry: Res<StableIdRegistry>,
-    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
-) {
-    if let Some(item_id) = list_context.context_data {
-        // Check if item is equipped
-        if let Some(item_entity) = id_registry.get_entity(item_id) {
-            if q_equipped.get(item_entity).is_ok() {
-                cmds.queue(UnequipItemAction::new(item_id));
-                e_inventory_changed.write(InventoryChangedEvent);
-            }
-        }
     }
 }
 
@@ -280,37 +221,40 @@ fn toggle_equip_selected_item(
     id_registry: Res<StableIdRegistry>,
     mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
 ) {
-    if let Some(item_id) = list_context.context_data {
-        if let Some(item_entity) = id_registry.get_entity(item_id) {
-            // Check if item is already equipped
-            if q_equipped.get(item_entity).is_ok() {
-                // Item is equipped, unequip it
-                cmds.queue(UnequipItemAction::new(item_id));
-                e_inventory_changed.write(InventoryChangedEvent);
-            } else {
-                // Item is not equipped, try to equip it
-                if let Ok(equippable) = q_equippable.get(item_entity) {
-                    // If item only has one slot requirement, equip directly
-                    if equippable.slot_requirements.len() == 1 {
-                        if let Some(player_id) = id_registry.get_id(context.player_entity) {
-                            cmds.queue(EquipItemAction {
-                                entity_id: player_id,
-                                item_id,
-                            });
-                            e_inventory_changed.write(InventoryChangedEvent);
-                        }
-                    } else {
-                        // Set up context for equipment slot selection
-                        context.selected_item_id = Some(item_id);
-                        context.available_slots = equippable.slot_requirements.clone();
+    let Some(item_id) = list_context.context_data else {
+        return;
+    };
 
-                        // Transition to equipment slot selection
-                        game_state.next = GameState::EquipSlotSelect;
-                    }
-                }
-            }
-        }
+    let Some(item_entity) = id_registry.get_entity(item_id) else {
+        return;
+    };
+
+    if q_equipped.get(item_entity).is_ok() {
+        cmds.queue(UnequipItemAction::new(item_id));
+        e_inventory_changed.write(InventoryChangedEvent);
+        return;
     }
+
+    let Ok(equippable) = q_equippable.get(item_entity) else {
+        return;
+    };
+
+    if equippable.slot_requirements.len() == 1 {
+        let Some(player_id) = id_registry.get_id(context.player_entity) else {
+            return;
+        };
+
+        cmds.queue(EquipItemAction {
+            entity_id: player_id,
+            item_id,
+        });
+        e_inventory_changed.write(InventoryChangedEvent);
+        return;
+    }
+
+    context.selected_item_id = Some(item_id);
+    context.available_slots = equippable.slot_requirements.clone();
+    game_state.next = GameState::EquipSlotSelect;
 }
 
 fn remove_inventory_callbacks(mut cmds: Commands) {
@@ -374,9 +318,7 @@ fn setup_inventory_screen(
         return;
     };
 
-    // Left side - Player inventory
     let left_x = 2.0;
-    let right_x = 15.0;
 
     cmds.spawn((
         Text::new("PLAYER INVENTORY")
@@ -384,21 +326,6 @@ fn setup_inventory_screen(
             .bg(Palette::Black)
             .layer(Layer::Ui),
         Position::new_f32(left_x, 1., 0.),
-        CleanupStateInventory,
-    ));
-
-    // Right side placeholder
-    cmds.spawn((
-        Text::new("CONTAINER").fg1(Palette::Gray).layer(Layer::Ui),
-        Position::new_f32(right_x, 1., 0.),
-        CleanupStateInventory,
-    ));
-
-    cmds.spawn((
-        Text::new("No container open")
-            .fg1(Palette::Gray)
-            .layer(Layer::Ui),
-        Position::new_f32(right_x, 2., 0.),
         CleanupStateInventory,
     ));
 
@@ -415,7 +342,6 @@ fn setup_inventory_screen(
         InventoryWeightText,
     ));
 
-    // Build list items from inventory - just show actual items (no empty slots for weight-based)
     let mut list_items = Vec::new();
 
     for (i, &item_id) in inventory.item_ids.iter().enumerate() {
@@ -426,7 +352,6 @@ fn setup_inventory_screen(
                 "Unknown Item".to_string()
             };
 
-            // Check for stack count
             let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
                 if stack_count.count > 1 {
                     format!("{} x{}", text, stack_count.count)
@@ -437,7 +362,6 @@ fn setup_inventory_screen(
                 text
             };
 
-            // Check if item is equipped
             let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
                 let slot_name = equipped
                     .slots
@@ -452,13 +376,12 @@ fn setup_inventory_screen(
             list_items.push(ListItemData {
                 label: final_text,
                 callback: callbacks.select_item,
-                hotkey: None,                    // Could add number keys 1-9 for quick selection
+                hotkey: None, // Could add number keys 1-9 for quick selection
                 context_data: Some(item_id),
             });
         }
     }
 
-    // Spawn the inventory list
     let list_entity = cmds
         .spawn((
             List::new(list_items),
@@ -468,10 +391,8 @@ fn setup_inventory_screen(
         ))
         .id();
 
-    // Set list focus
     list_focus.active_list = Some(list_entity);
 
-    // Position action buttons based on number of items in inventory
     let help_y = 3.5 + (inventory.count() as f32 * 0.5) + 1.0;
 
     cmds.spawn((
@@ -526,14 +447,12 @@ fn refresh_inventory_display(
     let list_items = build_inventory_list_items(
         player_inventory,
         &q_labels,
-        &q_glyphs,
         &q_equipped,
         &q_stack_counts,
         &id_registry,
         &callbacks,
     );
 
-    // Only update if items have changed to prevent flickering
     if list.items.len() != list_items.len()
         || list
             .items
@@ -544,7 +463,6 @@ fn refresh_inventory_display(
         list.items = list_items;
     }
 
-    // Update weight text display
     if let Ok(mut text) = q_weight_text.single_mut() {
         text.value = format!(
             "Weight: {:.1}/{:.1} kg",
