@@ -34,13 +34,13 @@ pub struct ListItemData {
     pub label: String,
     pub callback: SystemId,
     pub hotkey: Option<KeyCode>,
-    pub icon: Option<Glyph>,
     pub context_data: Option<u64>,
 }
 
 #[derive(Component)]
 pub struct List {
     pub items: Vec<ListItemData>,
+    pub width: f32,
 }
 
 #[derive(Component)]
@@ -51,7 +51,12 @@ pub struct ListState {
 
 impl List {
     pub fn new(items: Vec<ListItemData>) -> Self {
-        Self { items }
+        Self { items, width: 16. }
+    }
+
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = width;
+        self
     }
 }
 
@@ -86,12 +91,6 @@ pub struct ListCursor {
     pub parent_list: Entity,
 }
 
-#[derive(Component)]
-pub struct ListItemIcon {
-    pub index: usize,
-    pub parent_list: Entity,
-}
-
 pub fn setup_lists(
     mut cmds: Commands,
     mut q_lists: Query<
@@ -100,7 +99,6 @@ pub fn setup_lists(
     >,
 ) {
     for (list_entity, list, mut list_state, list_pos, existing_children) in q_lists.iter_mut() {
-        // Fix cursor position if it's out of bounds
         if list_state.selected_index >= list.items.len() && !list.items.is_empty() {
             list_state.selected_index = list.items.len() - 1;
         } else if list.items.is_empty() {
@@ -122,17 +120,14 @@ pub fn setup_lists(
             ChildOf(list_entity),
         ));
 
-        let has_icons = list.items.iter().any(|x| x.icon.is_some());
-        let item_x = if has_icons { 3. } else { 1.0 };
-
         for (i, item_data) in list.items.iter().enumerate() {
-            let item_spacing = if has_icons { 1.0 } else { 0.5 };
+            let item_spacing = 0.5;
             let item_y = i as f32 * item_spacing;
 
             cmds.spawn((
                 Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
                 Glyph::idx(6)
-                    .scale((10., item_spacing))
+                    .scale((list.width, item_spacing))
                     .layer(Layer::UiPanels),
                 ListItemBg {
                     index: i,
@@ -143,13 +138,11 @@ pub fn setup_lists(
                 ChildOf(list_entity),
             ));
 
-            let item_offset_y = if has_icons { 0.25 } else { 0. };
-
             cmds.spawn((
                 Text::new(&item_data.label).layer(Layer::Ui),
                 Position::new_f32(
-                    list_pos.x + item_x,
-                    list_pos.y + item_y + item_offset_y,
+                    list_pos.x + 1.0,
+                    list_pos.y + item_y,
                     list_pos.z,
                 ),
                 ListItem {
@@ -158,20 +151,6 @@ pub fn setup_lists(
                 },
                 ChildOf(list_entity),
             ));
-
-            // Note: List items don't use hotkeys directly - hotkeys are handled by buttons instead
-            // Add icon if provided
-            if let Some(icon) = &item_data.icon {
-                cmds.spawn((
-                    icon.clone().layer(Layer::Ui),
-                    Position::new_f32(list_pos.x + 1.5, list_pos.y + item_y, list_pos.z),
-                    ListItemIcon {
-                        index: i,
-                        parent_list: list_entity,
-                    },
-                    ChildOf(list_entity),
-                ));
-            }
         }
     }
 }
@@ -314,7 +293,6 @@ pub fn list_styles(
     mut q_items: Query<(&ListItemBg, &mut Glyph)>,
 ) {
     for (list_entity, list, list_state, list_pos, children) in q_lists.iter() {
-        let has_icons = list.items.iter().any(|x| x.icon.is_some());
         for child in children.iter() {
             if let Ok((cursor, mut cursor_pos, mut cursor_vis)) = q_cursors.get_mut(child)
                 && cursor.parent_list == list_entity
@@ -325,11 +303,8 @@ pub fn list_styles(
                     Visibility::Hidden
                 };
 
-                let cursor_spacing = if has_icons { 1.0 } else { 0.5 };
-                let cursor_gap = if has_icons { 1.0 } else { 0.0 };
                 cursor_pos.x = list_pos.x;
-                cursor_pos.y =
-                    list_pos.y + (list_state.selected_index as f32 * cursor_spacing) + cursor_gap;
+                cursor_pos.y = list_pos.y + (list_state.selected_index as f32 * 0.5);
                 cursor_pos.z = list_pos.z;
             }
         }
@@ -341,7 +316,7 @@ pub fn list_styles(
 
             if item.index == list_state.selected_index {
                 if list_state.has_focus {
-                    glyph.bg = Some(Palette::Gray.into());
+                    glyph.bg = Some(Palette::DarkGray.into());
                 } else {
                     glyph.bg = Some(Palette::DarkGray.into());
                 }

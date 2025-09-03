@@ -111,7 +111,6 @@ fn build_inventory_list_items(
                 label: final_text,
                 callback: callbacks.drop_item,
                 hotkey: None,
-                icon: None,
                 context_data: Some(item_id),
             });
         }
@@ -452,9 +451,8 @@ fn setup_inventory_screen(
 
             list_items.push(ListItemData {
                 label: final_text,
-                callback: callbacks.select_item, // Just selects the item, doesn't perform an action
+                callback: callbacks.select_item,
                 hotkey: None,                    // Could add number keys 1-9 for quick selection
-                icon: None,
                 context_data: Some(item_id),
             });
         }

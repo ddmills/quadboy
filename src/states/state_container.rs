@@ -158,7 +158,6 @@ fn build_player_list_items(
                 label: final_text,
                 callback: callbacks.transfer_from_player,
                 hotkey: None,
-                icon: None,
                 context_data: Some(item_id),
             });
         }
@@ -212,7 +211,6 @@ fn build_container_list_items(
                 label: final_text,
                 callback: callbacks.transfer_from_container,
                 hotkey: None,
-                icon: None,
                 context_data: Some(item_id),
             });
         }
