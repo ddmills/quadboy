@@ -1,4 +1,4 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::{KeyCode, is_key_pressed};
 
 use crate::{
@@ -11,10 +11,19 @@ use crate::{
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
+    ui::Button,
 };
 
 #[derive(Event)]
 pub struct InventoryChangedEvent;
+
+#[derive(Resource)]
+struct InventoryCallbacks {
+    back_to_explore: SystemId,
+    drop_item: SystemId,
+    equip_item: SystemId,
+    unequip_item: SystemId,
+}
 
 #[derive(Component)]
 pub struct CleanupStateInventory;
@@ -52,6 +61,124 @@ pub struct InventoryContext {
     pub available_slots: Vec<EquipmentSlot>,
 }
 
+fn setup_inventory_callbacks(world: &mut World) {
+    let callbacks = InventoryCallbacks {
+        back_to_explore: world.register_system(back_to_explore),
+        drop_item: world.register_system(drop_selected_item),
+        equip_item: world.register_system(equip_selected_item),
+        unequip_item: world.register_system(unequip_selected_item),
+    };
+
+    world.insert_resource(callbacks);
+}
+
+fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Explore;
+}
+
+fn drop_selected_item(
+    mut cmds: Commands,
+    q_cursor: Query<&InventoryCursor>,
+    q_inventory: Query<&Inventory>,
+    context: Res<InventoryContext>,
+    player_pos: Res<PlayerPosition>,
+    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
+) {
+    let Ok(cursor) = q_cursor.single() else {
+        return;
+    };
+
+    let Ok(inventory) = q_inventory.get(context.player_entity) else {
+        return;
+    };
+
+    if let Some(item_id) = inventory.item_ids.get(cursor.index).copied() {
+        let world_pos = player_pos.world();
+        cmds.queue(DropItemAction {
+            entity: context.player_entity,
+            item_stable_id: item_id,
+            drop_position: world_pos,
+        });
+        e_inventory_changed.write(InventoryChangedEvent);
+    }
+}
+
+fn equip_selected_item(
+    mut cmds: Commands,
+    mut game_state: ResMut<CurrentGameState>,
+    q_cursor: Query<&InventoryCursor>,
+    q_inventory: Query<&Inventory>,
+    q_equippable: Query<&Equippable>,
+    mut context: ResMut<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
+    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
+) {
+    let Ok(cursor) = q_cursor.single() else {
+        return;
+    };
+
+    let Ok(inventory) = q_inventory.get(context.player_entity) else {
+        return;
+    };
+
+    if let Some(item_id) = inventory.item_ids.get(cursor.index).copied() {
+        // Check if item is equippable
+        if let Some(item_entity) = id_registry.get_entity(item_id) {
+            if let Ok(equippable) = q_equippable.get(item_entity) {
+                // If item only has one slot requirement, equip directly
+                if equippable.slot_requirements.len() == 1 {
+                    if let Some(player_id) = id_registry.get_id(context.player_entity) {
+                        cmds.queue(EquipItemAction {
+                            entity_id: player_id,
+                            item_id,
+                        });
+                        e_inventory_changed.write(InventoryChangedEvent);
+                    }
+                } else {
+                    // Set up context for equipment slot selection
+                    context.selected_item_id = Some(item_id);
+                    context.available_slots = equippable.slot_requirements.clone();
+
+                    // Transition to equipment slot selection
+                    game_state.next = GameState::EquipSlotSelect;
+                }
+            }
+        }
+    }
+}
+
+fn unequip_selected_item(
+    mut cmds: Commands,
+    q_cursor: Query<&InventoryCursor>,
+    q_inventory: Query<&Inventory>,
+    q_equipped: Query<&Equipped>,
+    context: Res<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
+    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
+) {
+    let Ok(cursor) = q_cursor.single() else {
+        return;
+    };
+
+    let Ok(inventory) = q_inventory.get(context.player_entity) else {
+        return;
+    };
+
+    if let Some(item_id) = inventory.item_ids.get(cursor.index).copied() {
+        // Check if item is equipped
+        if let Some(item_entity) = id_registry.get_entity(item_id) {
+            if q_equipped.get(item_entity).is_ok() {
+                cmds.queue(UnequipItemAction::new(item_id));
+                e_inventory_changed.write(InventoryChangedEvent);
+            }
+        }
+    }
+}
+
+fn remove_inventory_callbacks(mut cmds: Commands) {
+    cmds.remove_resource::<InventoryCallbacks>();
+}
+
 pub struct InventoryStatePlugin;
 
 impl Plugin for InventoryStatePlugin {
@@ -59,12 +186,22 @@ impl Plugin for InventoryStatePlugin {
         app.register_event::<InventoryChangedEvent>();
 
         GameStatePlugin::new(GameState::Inventory)
-            .on_enter(app, setup_inventory_screen)
+            .on_enter(
+                app,
+                (setup_inventory_callbacks, setup_inventory_screen).chain(),
+            )
             .on_update(
                 app,
                 (handle_inventory_input, refresh_inventory_display, game_loop),
             )
-            .on_leave(app, cleanup_system::<CleanupStateInventory>);
+            .on_leave(
+                app,
+                (
+                    cleanup_system::<CleanupStateInventory>,
+                    remove_inventory_callbacks,
+                )
+                    .chain(),
+            );
 
         GameStatePlugin::new(GameState::Container)
             .on_enter(app, setup_container_screen)
@@ -83,6 +220,7 @@ impl Plugin for InventoryStatePlugin {
 
 fn setup_inventory_screen(
     mut cmds: Commands,
+    callbacks: Res<InventoryCallbacks>,
     q_player: Query<Entity, With<Player>>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
@@ -219,13 +357,43 @@ fn setup_inventory_screen(
         CleanupStateInventory,
     ));
 
-    // Position help text based on inventory size
+    // Position action buttons based on inventory size
     let help_y = start_y + (inventory.capacity as f32 * 1.0) + 1.0;
+
+    // Back button
     cmds.spawn((
-        Text::new("[{Y|I}] Back   [{Y|UP}/{Y|DOWN}] Navigate   [{Y|D}] Drop   [{Y|E}] Equip   [{Y|U}] Unequip")
+        Position::new_f32(left_x, help_y.min(18.), 0.),
+        Button::new("({Y|I}) BACK", callbacks.back_to_explore).hotkey(KeyCode::I),
+        CleanupStateInventory,
+    ));
+
+    // Drop button
+    cmds.spawn((
+        Position::new_f32(left_x + 6., help_y.min(18.), 0.),
+        Button::new("({Y|D}) DROP", callbacks.drop_item).hotkey(KeyCode::D),
+        CleanupStateInventory,
+    ));
+
+    // Equip button
+    cmds.spawn((
+        Position::new_f32(left_x + 12., help_y.min(18.), 0.),
+        Button::new("({Y|E}) EQUIP", callbacks.equip_item).hotkey(KeyCode::E),
+        CleanupStateInventory,
+    ));
+
+    // Unequip button
+    cmds.spawn((
+        Position::new_f32(left_x + 19., help_y.min(18.), 0.),
+        Button::new("({Y|U}) UNEQUIP", callbacks.unequip_item).hotkey(KeyCode::U),
+        CleanupStateInventory,
+    ));
+
+    // Navigation help text
+    cmds.spawn((
+        Text::new("[{Y|UP}/{Y|DOWN}] Navigate")
             .fg1(Palette::White)
             .layer(Layer::Ui),
-        Position::new_f32(left_x, help_y.min(18.), 0.),
+        Position::new_f32(left_x, help_y.min(18.) + 1., 0.),
         CleanupStateInventory,
     ));
 }

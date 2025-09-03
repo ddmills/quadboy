@@ -29,7 +29,7 @@ impl Text {
             value: value.into(),
             bg: None,
             fg1: Some(Palette::White.into()),
-            fg2: None,
+            fg2: Some(Palette::Black.into()),
             outline: Some(Palette::Black.into()),
             layer_id: Layer::Ui,
             glyphs: vec![],
