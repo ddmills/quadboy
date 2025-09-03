@@ -2,7 +2,6 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, LootTable, Rand},
     domain::{Biome, LootTableId, PrefabId, Terrain, ZoneFactory},
-    rendering::zone_local_to_world,
 };
 
 use super::super::biome_helpers::*;

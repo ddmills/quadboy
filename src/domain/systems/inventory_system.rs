@@ -1,9 +1,9 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{InActiveZone, InInventory, Inventory, Item, Label, PickupItemAction, Player, Zone},
+    domain::{InInventory, Item, PickupItemAction, Player},
     engine::{KeyInput, StableId},
-    rendering::{Position, RecordZonePosition, world_to_zone_idx},
+    rendering::Position,
 };
 use macroquad::input::KeyCode;
 

@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, LootTable, Rand},
-    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
+    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
@@ -91,11 +91,10 @@ fn generate_giant_mushrooms(
                 continue;
             }
 
-            if let Some(grid) = exclude_grid {
-                if *grid.get(x, y).unwrap_or(&false) {
+            if let Some(grid) = exclude_grid
+                && *grid.get(x, y).unwrap_or(&false) {
                     continue;
                 }
-            }
 
             let wpos = zone_local_to_world(zone.zone_idx, x, y);
             if rand.bool(0.0025 * wpos.2 as f32) {

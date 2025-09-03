@@ -92,11 +92,10 @@ fn generate_desert_cacti(
                 continue;
             }
 
-            if let Some(grid) = exclude_grid {
-                if *grid.get(x, y).unwrap_or(&false) {
+            if let Some(grid) = exclude_grid
+                && *grid.get(x, y).unwrap_or(&false) {
                     continue;
                 }
-            }
 
             if rand.bool(0.02) {
                 let wpos = zone_local_to_world(zone.zone_idx, x, y);

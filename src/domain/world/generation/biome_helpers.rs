@@ -144,11 +144,9 @@ pub fn generate_cavern_boulder_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<b
 
         if zone.grid_data.is_locked_tile(x, y)
             && let Some(terrain) = zone.grid_data.terrain.get(x, y)
-        {
-            if matches!(terrain, Terrain::River | Terrain::Shallows | Terrain::Dirt) {
+            && matches!(terrain, Terrain::River | Terrain::Shallows | Terrain::Dirt) {
                 return true;
             }
-        }
 
         false
     });

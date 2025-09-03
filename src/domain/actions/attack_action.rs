@@ -37,11 +37,7 @@ impl Command for AttackAction {
 
             if let Some(weapon_id) = weapon_id {
                 if let Some(weapon_entity) = registry.get_entity(weapon_id) {
-                    if let Some(weapon) = world.get::<MeleeWeapon>(weapon_entity) {
-                        Some((weapon.damage, weapon.can_damage.clone()))
-                    } else {
-                        None
-                    }
+                    world.get::<MeleeWeapon>(weapon_entity).map(|weapon| (weapon.damage, weapon.can_damage.clone()))
                 } else {
                     None
                 }
@@ -101,8 +97,8 @@ impl Command for AttackAction {
                 }
             }
             // Check if target has Destructible (object)
-            else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity) {
-                if let Some((damage, can_damage)) = &weapon_damage {
+            else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
+                && let Some((damage, can_damage)) = &weapon_damage {
                     // Check if weapon can damage this material type
                     if can_damage.contains(&destructible.material_type) {
                         let material_type = destructible.material_type;
@@ -139,7 +135,6 @@ impl Command for AttackAction {
                         }
                     }
                 }
-            }
         }
 
         // Consume energy

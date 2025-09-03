@@ -142,11 +142,10 @@ impl EquipmentSlots {
         let mut seen = std::collections::HashSet::new();
 
         for &item_id in self.slots.values() {
-            if let Some(id) = item_id {
-                if seen.insert(id) {
+            if let Some(id) = item_id
+                && seen.insert(id) {
                     items.push(id);
                 }
-            }
         }
 
         items

@@ -21,8 +21,8 @@ use crate::{
         LoadZoneEvent, LootDrop, LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult,
         Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
         SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, TurnState, UnloadZoneEvent,
-        UnopenedContainer, Vision, VisionBlocker, Zones, on_bitmask_spawn, on_refresh_bitmask,
-        systems::destruction_system::EntityDestroyedEvent,
+        UnopenedContainer, Vision, VisionBlocker, Zones, inventory::InventoryChangedEvent,
+        on_bitmask_spawn, on_refresh_bitmask, systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{
         App, AudioRegistry, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType,
@@ -132,6 +132,7 @@ async fn main() {
         .register_event::<SaveGameResult>()
         .register_event::<RefreshBitmask>()
         .register_event::<EntityDestroyedEvent>()
+        .register_event::<InventoryChangedEvent>()
         .insert_resource(tileset_registry)
         .insert_resource(audio_registry)
         .insert_resource(reg)

@@ -3,10 +3,9 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, StackCount, Stackable,
-        StackableType, UnequipItemAction, get_energy_cost,
+        StackableType, UnequipItemAction, get_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
-    states::InventoryChangedEvent,
 };
 
 pub struct TransferItemAction {
@@ -51,11 +50,10 @@ impl Command for TransferItemAction {
 
             // Check target inventory for existing stack
             let to_inventory = world.get::<Inventory>(self.to_entity);
-            if let Some(to_inventory) = to_inventory {
-                if let Some(existing_entity) =
+            if let Some(to_inventory) = to_inventory
+                && let Some(existing_entity) =
                     find_existing_stack_transfer(world, &to_inventory.item_ids, stack_type)
-                {
-                    if let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity) {
+                    && let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity) {
                         let overflow = stack_count.add(transfer_count);
 
                         if overflow == 0 {
@@ -89,8 +87,6 @@ impl Command for TransferItemAction {
                             return;
                         }
                     }
-                }
-            }
         }
 
         // Not stackable or no existing stack - use normal transfer logic
@@ -155,7 +151,6 @@ impl Command for TransferItemAction {
             energy.consume_energy(cost);
         }
 
-        // Trigger inventory changed event for UI updates
         world.send_event(InventoryChangedEvent);
     }
 }
@@ -168,13 +163,11 @@ fn find_existing_stack_transfer(
     let id_registry = world.get_resource::<StableIdRegistry>()?;
 
     for &id in item_ids {
-        if let Some(entity) = id_registry.get_entity(id) {
-            if let Some(stackable) = world.get::<Stackable>(entity) {
-                if stackable.stack_type == stack_type {
+        if let Some(entity) = id_registry.get_entity(id)
+            && let Some(stackable) = world.get::<Stackable>(entity)
+                && stackable.stack_type == stack_type {
                     return Some(entity);
                 }
-            }
-        }
     }
     None
 }

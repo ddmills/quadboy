@@ -4,11 +4,9 @@ use macroquad::prelude::trace;
 use crate::{
     common::Rand,
     domain::{
-        InInventory, Inventory, LootTableRegistry, PickupItemAction, Prefab, Prefabs,
+        Inventory, LootTableRegistry, Prefab, Prefabs,
         UnopenedContainer,
     },
-    engine::{StableId, StableIdRegistry},
-    rendering::Position,
     states::{CurrentGameState, GameState},
 };
 

@@ -4,11 +4,10 @@ use macroquad::prelude::trace;
 use crate::{
     domain::{
         Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, UnequipItemAction, Zone,
-        get_energy_cost,
+        get_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
-    states::InventoryChangedEvent,
 };
 
 pub struct DropItemAction {
@@ -96,7 +95,6 @@ impl Command for DropItemAction {
             energy.consume_energy(cost);
         }
 
-        // Trigger inventory changed event for UI updates
         world.send_event(InventoryChangedEvent);
     }
 }

@@ -175,6 +175,6 @@ impl LootTableRegistry {
     }
 
     pub fn is_empty(&self, id: LootTableId) -> bool {
-        self.get(id).map_or(true, |table| table.is_empty())
+        self.get(id).is_none_or(|table| table.is_empty())
     }
 }

@@ -1,10 +1,10 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::{input::KeyCode, prelude::trace};
+use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
     rendering::{Text, text_content_length},
-    ui::{Callback, Hotkey, Interactable, Interaction, button},
+    ui::{Callback, Hotkey, Interactable, Interaction},
 };
 
 #[derive(Component)]

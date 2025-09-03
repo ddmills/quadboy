@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, EquipmentSlots, Equippable, Equipped, Inventory,
-        UnequipItemAction, get_energy_cost,
+        UnequipItemAction, get_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
 };
@@ -42,7 +42,7 @@ impl Command for EquipItemAction {
 
         // Check inventory and remove item
         {
-            let Some(mut inventory) = world.get_mut::<Inventory>(entity) else {
+            let Some(inventory) = world.get_mut::<Inventory>(entity) else {
                 return;
             };
 
@@ -93,5 +93,7 @@ impl Command for EquipItemAction {
             let cost = get_energy_cost(EnergyActionType::EquipItem);
             energy.consume_energy(cost);
         }
+
+        world.send_event(InventoryChangedEvent);
     }
 }

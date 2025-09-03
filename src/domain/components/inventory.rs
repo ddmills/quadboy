@@ -75,6 +75,9 @@ impl Inventory {
     }
 }
 
+#[derive(Event)]
+pub struct InventoryChangedEvent;
+
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct InventoryAccessible;
 

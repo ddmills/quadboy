@@ -3,7 +3,10 @@ use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    domain::{Equipped, Inventory, Label, Player, StackCount, TransferItemAction, game_loop},
+    domain::{
+        Equipped, Inventory, Label, Player, StackCount, TransferItemAction, game_loop,
+        inventory::InventoryChangedEvent,
+    },
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
@@ -366,7 +369,14 @@ fn refresh_container_display(
     context: Res<ContainerContext>,
     id_registry: Res<StableIdRegistry>,
     callbacks: Res<ContainerCallbacks>,
+    mut e_inventory_changed: EventReader<InventoryChangedEvent>,
 ) {
+    // Only update when inventory changes
+    if e_inventory_changed.is_empty() {
+        return;
+    }
+    e_inventory_changed.clear();
+
     let Ok(player_inventory) = q_inventory.get(context.player_entity) else {
         return;
     };
@@ -384,15 +394,7 @@ fn refresh_container_display(
             &id_registry,
             &callbacks,
         );
-        if player_list.items.len() != player_list_items.len()
-            || player_list
-                .items
-                .iter()
-                .zip(player_list_items.iter())
-                .any(|(a, b)| a.label != b.label)
-        {
-            player_list.items = player_list_items;
-        }
+        player_list.items = player_list_items;
     }
 
     if let Ok(mut container_list) = q_lists.p1().single_mut() {
@@ -404,15 +406,7 @@ fn refresh_container_display(
             &id_registry,
             &callbacks,
         );
-        if container_list.items.len() != container_list_items.len()
-            || container_list
-                .items
-                .iter()
-                .zip(container_list_items.iter())
-                .any(|(a, b)| a.label != b.label)
-        {
-            container_list.items = container_list_items;
-        }
+        container_list.items = container_list_items;
     }
     if let Ok(mut text) = q_weight_texts.p0().single_mut() {
         text.value = format!(
@@ -434,7 +428,6 @@ fn refresh_container_display(
 fn handle_container_input(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
     if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Explore;
-        return;
     }
     // Tab switching and item selection are now handled by List components
 }

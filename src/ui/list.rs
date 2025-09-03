@@ -94,60 +94,141 @@ pub struct ListCursor {
 
 pub fn setup_lists(
     mut cmds: Commands,
-    mut q_lists: Query<
-        (Entity, &List, &mut ListState, &Position, Option<&Children>),
-        Changed<List>,
-    >,
+    mut q_lists: Query<(Entity, &List, &mut ListState, Option<&Children>), Changed<List>>,
+    mut q_cursors: Query<&mut ListCursor>,
+    mut q_items: ParamSet<(
+        Query<
+            (
+                &mut ListItemBg,
+                &mut Position,
+                &mut Glyph,
+                &mut Interactable,
+            ),
+            Without<Text>,
+        >,
+        Query<(&mut ListItem, &mut Text, &mut Position), With<Text>>,
+        Query<&Position>,
+    )>,
 ) {
-    for (list_entity, list, mut list_state, list_pos, existing_children) in q_lists.iter_mut() {
+    for (list_entity, list, mut list_state, existing_children) in q_lists.iter_mut() {
+        // Get and copy the position data first
+        let list_pos = {
+            let q_pos = q_items.p2();
+            let Ok(pos) = q_pos.get(list_entity) else {
+                continue;
+            };
+            pos.clone() // Clone the position so we don't hold a borrow
+        };
+
+        // Fix cursor bounds
         if list_state.selected_index >= list.items.len() && !list.items.is_empty() {
             list_state.selected_index = list.items.len() - 1;
         } else if list.items.is_empty() {
             list_state.selected_index = 0;
         }
+
+        let mut existing_cursors = Vec::new();
+        let mut existing_bg_items = Vec::new();
+        let mut existing_text_items = Vec::new();
+
+        // Collect existing children by type
         if let Some(children) = existing_children {
             for child in children.iter() {
-                cmds.entity(child).despawn();
+                if q_cursors.get_mut(child).is_ok() {
+                    existing_cursors.push(child);
+                } else if q_items.p0().get_mut(child).is_ok() {
+                    existing_bg_items.push(child);
+                } else if q_items.p1().get_mut(child).is_ok() {
+                    existing_text_items.push(child);
+                }
             }
         }
 
-        cmds.spawn((
-            Text::new("→").fg1(Palette::Yellow).layer(Layer::Ui),
-            Position::new_f32(0., 0., 0.),
-            ListCursor {
-                parent_list: list_entity,
-            },
-            Visibility::Visible,
-            ChildOf(list_entity),
-        ));
+        // Ensure we have exactly one cursor
+        if existing_cursors.is_empty() {
+            cmds.spawn((
+                Text::new("→").fg1(Palette::Yellow).layer(Layer::Ui),
+                Position::new_f32(0., 0., 0.),
+                ListCursor {
+                    parent_list: list_entity,
+                },
+                Visibility::Visible,
+                ChildOf(list_entity),
+            ));
+        }
 
         for (i, item_data) in list.items.iter().enumerate() {
             let item_spacing = 0.5;
             let item_y = i as f32 * item_spacing;
 
-            cmds.spawn((
-                Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
-                Glyph::idx(6)
-                    .scale((list.width, item_spacing))
-                    .layer(Layer::UiPanels),
-                ListItemBg {
-                    index: i,
-                    parent_list: list_entity,
-                },
-                Interaction::None,
-                Interactable::new(14., item_spacing),
-                ChildOf(list_entity),
-            ));
+            if let Some(&bg_entity) = existing_bg_items.get(i) {
+                if let Ok((mut bg_item, mut pos, mut glyph, mut interactable)) =
+                    q_items.p0().get_mut(bg_entity)
+                {
+                    bg_item.index = i;
+                    pos.x = list_pos.x + 1.0;
+                    pos.y = list_pos.y + item_y;
+                    pos.z = list_pos.z;
 
-            cmds.spawn((
-                Text::new(&item_data.label).layer(Layer::Ui),
-                Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
-                ListItem {
-                    index: i,
-                    parent_list: list_entity,
-                },
-                ChildOf(list_entity),
-            ));
+                    // Only update glyph properties if they changed to avoid triggering change detection
+                    if glyph.idx != 6 {
+                        glyph.idx = 6;
+                    }
+                    if glyph.scale != (list.width, item_spacing) {
+                        glyph.scale = (list.width, item_spacing);
+                    }
+                    if glyph.layer_id != Layer::UiPanels {
+                        glyph.layer_id = Layer::UiPanels;
+                    }
+
+                    *interactable = Interactable::new(14., item_spacing);
+                }
+            } else {
+                cmds.spawn((
+                    Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
+                    Glyph::idx(6)
+                        .scale((list.width, item_spacing))
+                        .layer(Layer::UiPanels),
+                    ListItemBg {
+                        index: i,
+                        parent_list: list_entity,
+                    },
+                    Interaction::None,
+                    Interactable::new(14., item_spacing),
+                    ChildOf(list_entity),
+                ));
+            }
+
+            // Update or create text item
+            if let Some(&text_entity) = existing_text_items.get(i) {
+                if let Ok((mut text_item, mut text, mut pos)) = q_items.p1().get_mut(text_entity) {
+                    // Update existing text item
+                    text_item.index = i;
+                    text.value = item_data.label.clone();
+                    pos.x = list_pos.x + 1.0;
+                    pos.y = list_pos.y + item_y;
+                    pos.z = list_pos.z;
+                }
+            } else {
+                // Create new text item
+                cmds.spawn((
+                    Text::new(&item_data.label).layer(Layer::Ui),
+                    Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
+                    ListItem {
+                        index: i,
+                        parent_list: list_entity,
+                    },
+                    ChildOf(list_entity),
+                ));
+            }
+        }
+
+        // Despawn excess items if list got shorter
+        for bg_entity in existing_bg_items.iter().skip(list.items.len()) {
+            cmds.entity(*bg_entity).despawn();
+        }
+        for text_entity in existing_text_items.iter().skip(list.items.len()) {
+            cmds.entity(*text_entity).despawn();
         }
     }
 }
@@ -348,14 +429,19 @@ pub fn list_styles(
                 continue;
             }
 
-            if item.index == list_state.selected_index {
+            let target_bg = if item.index == list_state.selected_index {
                 if list_state.has_focus {
-                    glyph.bg = Some(Palette::DarkGray.into());
+                    Some(Palette::DarkGray.into())
                 } else {
-                    glyph.bg = Some(Palette::DarkGray.into());
+                    Some(Palette::Black.into())
                 }
             } else {
-                glyph.bg = Some(Palette::Clear.into());
+                Some(Palette::Clear.into())
+            };
+
+            // Only update background if it's different to avoid triggering change detection
+            if glyph.bg != target_bg {
+                glyph.bg = target_bg;
             }
         }
     }

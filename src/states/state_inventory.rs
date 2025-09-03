@@ -6,15 +6,13 @@ use crate::{
     domain::{
         DropItemAction, EquipItemAction, EquipmentSlot, EquipmentSlots, Equippable, Equipped,
         Inventory, Label, Player, PlayerPosition, StackCount, UnequipItemAction, game_loop,
+        inventory::InventoryChangedEvent,
     },
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{Button, List, ListContext, ListFocus, ListItemData, ListState},
 };
-
-#[derive(Event)]
-pub struct InventoryChangedEvent;
 
 #[derive(Resource)]
 struct InventoryCallbacks {
@@ -74,7 +72,7 @@ fn build_inventory_list_items(
 ) -> Vec<ListItemData> {
     let mut items = Vec::new();
 
-    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
+    for &item_id in inventory.item_ids.iter() {
         if let Some(item_entity) = id_registry.get_entity(item_id) {
             let text = if let Ok(label) = q_labels.get(item_entity) {
                 label.get().to_string()
@@ -93,7 +91,6 @@ fn build_inventory_list_items(
             };
 
             let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
-                // Get the first slot name (most items only use one slot)
                 let slot_name = equipped
                     .slots
                     .first()
@@ -123,12 +120,10 @@ fn setup_equip_slot_screen(
     q_player: Query<(&Inventory, &EquipmentSlots), With<Player>>,
     q_item: Query<(&Label, &Equippable)>,
 ) {
-    // Get player components
     let Ok((inventory, equipment_slots)) = q_player.get(ctx.player_entity) else {
         return;
     };
 
-    // Get selected item
     let Some(item_id) = ctx.selected_item_id else {
         return;
     };
@@ -141,7 +136,6 @@ fn setup_equip_slot_screen(
         return;
     };
 
-    // Title
     cmds.spawn((
         Text::new(&format!("Equip {} to:", label.get()))
             .fg1(Palette::White)
@@ -150,7 +144,6 @@ fn setup_equip_slot_screen(
         CleanupStateEquipSlotSelect,
     ));
 
-    // List available slots
     let mut y_offset = 4.;
     for (i, slot) in ctx.available_slots.iter().enumerate() {
         let is_selected = i == 0; // First slot selected by default
@@ -174,7 +167,6 @@ fn setup_equip_slot_screen(
         y_offset += 1.;
     }
 
-    // Help text
     cmds.spawn((
         Text::new("Up/Down: Select | Enter: Equip | ESC: Cancel")
             .fg1(Palette::Gray)
@@ -219,7 +211,6 @@ fn toggle_equip_selected_item(
     q_equipped: Query<&Equipped>,
     mut context: ResMut<InventoryContext>,
     id_registry: Res<StableIdRegistry>,
-    mut e_inventory_changed: EventWriter<InventoryChangedEvent>,
 ) {
     let Some(item_id) = list_context.context_data else {
         return;
@@ -231,7 +222,6 @@ fn toggle_equip_selected_item(
 
     if q_equipped.get(item_entity).is_ok() {
         cmds.queue(UnequipItemAction::new(item_id));
-        e_inventory_changed.write(InventoryChangedEvent);
         return;
     }
 
@@ -248,7 +238,6 @@ fn toggle_equip_selected_item(
             entity_id: player_id,
             item_id,
         });
-        e_inventory_changed.write(InventoryChangedEvent);
         return;
     }
 
@@ -265,8 +254,6 @@ pub struct InventoryStatePlugin;
 
 impl Plugin for InventoryStatePlugin {
     fn build(&self, app: &mut App) {
-        app.register_event::<InventoryChangedEvent>();
-
         GameStatePlugin::new(GameState::Inventory)
             .on_enter(
                 app,
@@ -274,7 +261,7 @@ impl Plugin for InventoryStatePlugin {
             )
             .on_update(
                 app,
-                (handle_inventory_input, refresh_inventory_display, game_loop),
+                (game_loop, handle_inventory_input, refresh_inventory_display).chain(),
             )
             .on_leave(
                 app,
@@ -427,11 +414,11 @@ fn refresh_inventory_display(
     context: Res<InventoryContext>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
     id_registry: Res<StableIdRegistry>,
     callbacks: Res<InventoryCallbacks>,
+    mut e_inventory_changed: EventReader<InventoryChangedEvent>,
 ) {
     let Ok(player_inventory) = q_inventory.get(context.player_entity) else {
         return;
@@ -441,34 +428,29 @@ fn refresh_inventory_display(
         return;
     };
 
-    // Set focus to this list
     list_focus.active_list = Some(list_entity);
 
-    let list_items = build_inventory_list_items(
-        player_inventory,
-        &q_labels,
-        &q_equipped,
-        &q_stack_counts,
-        &id_registry,
-        &callbacks,
-    );
+    if !e_inventory_changed.is_empty() {
+        e_inventory_changed.clear();
 
-    if list.items.len() != list_items.len()
-        || list
-            .items
-            .iter()
-            .zip(list_items.iter())
-            .any(|(a, b)| a.label != b.label)
-    {
-        list.items = list_items;
-    }
-
-    if let Ok(mut text) = q_weight_text.single_mut() {
-        text.value = format!(
-            "Weight: {:.1}/{:.1} kg",
-            player_inventory.get_total_weight(),
-            player_inventory.capacity
+        let list_items = build_inventory_list_items(
+            player_inventory,
+            &q_labels,
+            &q_equipped,
+            &q_stack_counts,
+            &id_registry,
+            &callbacks,
         );
+
+        list.items = list_items;
+
+        if let Ok(mut text) = q_weight_text.single_mut() {
+            text.value = format!(
+                "Weight: {:.1}/{:.1} kg",
+                player_inventory.get_total_weight(),
+                player_inventory.capacity
+            );
+        }
     }
 }
 

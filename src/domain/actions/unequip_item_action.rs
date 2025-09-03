@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, EnergyActionType, EquipmentSlots, Equipped, get_energy_cost},
+    domain::{
+        Energy, EnergyActionType, EquipmentSlots, Equipped, get_energy_cost,
+        inventory::InventoryChangedEvent,
+    },
     engine::StableIdRegistry,
 };
 
@@ -70,5 +73,7 @@ impl Command for UnequipItemAction {
             let cost = get_energy_cost(EnergyActionType::UnequipItem);
             energy.consume_energy(cost);
         }
+
+        world.send_event(InventoryChangedEvent);
     }
 }

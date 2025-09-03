@@ -3,7 +3,7 @@ use macroquad::prelude::trace;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{GameSettings, InInventory, Inventory, Zone},
+    domain::{GameSettings, Inventory, Zone},
     engine::{SerializableComponent, StableIdRegistry, save_zone, serialize},
 };
 
