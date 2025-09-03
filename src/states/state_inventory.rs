@@ -33,6 +33,9 @@ pub struct CleanupStateInventory;
 pub struct CleanupStateEquipSlotSelect;
 
 #[derive(Component)]
+pub struct InventoryWeightText;
+
+#[derive(Component)]
 pub struct InventoryItemDisplay;
 
 #[derive(Component)]
@@ -74,53 +77,42 @@ fn build_inventory_list_items(
 ) -> Vec<ListItemData> {
     let mut items = Vec::new();
 
-    for i in 0..inventory.capacity {
-        if let Some(item_id) = inventory.item_ids.get(i).copied() {
-            if let Some(item_entity) = id_registry.get_entity(item_id) {
-                let text = if let Ok(label) = q_labels.get(item_entity) {
-                    label.get().to_string()
-                } else {
-                    "Unknown Item".to_string()
-                };
+    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
+        if let Some(item_entity) = id_registry.get_entity(item_id) {
+            let text = if let Ok(label) = q_labels.get(item_entity) {
+                label.get().to_string()
+            } else {
+                "Unknown Item".to_string()
+            };
 
-                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
-                    if stack_count.count > 1 {
-                        format!("{} x{}", text, stack_count.count)
-                    } else {
-                        text
-                    }
+            let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                if stack_count.count > 1 {
+                    format!("{} x{}", text, stack_count.count)
                 } else {
                     text
-                };
+                }
+            } else {
+                text
+            };
 
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let final_text = if is_equipped {
-                    format!("{} {{G|[E]}}", display_text)
-                } else {
-                    display_text
-                };
+            let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
+                // Get the first slot name (most items only use one slot)
+                let slot_name = equipped
+                    .slots
+                    .first()
+                    .map(|slot| slot.display_name())
+                    .unwrap_or("Unknown");
+                format!("{} {{G|[{}]}}", display_text, slot_name)
+            } else {
+                display_text
+            };
 
-                let icon = if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    Some(glyph.clone())
-                } else {
-                    None
-                };
-
-                items.push(ListItemData {
-                    label: final_text,
-                    callback: callbacks.drop_item,
-                    hotkey: None,
-                    icon,
-                    context_data: Some(item_id),
-                });
-            }
-        } else {
             items.push(ListItemData {
-                label: "(empty)".to_string(),
-                callback: callbacks.select_item,
+                label: final_text,
+                callback: callbacks.drop_item,
                 hotkey: None,
                 icon: None,
-                context_data: Some(i as u64),
+                context_data: Some(item_id),
             });
         }
     }
@@ -223,7 +215,6 @@ fn drop_selected_item(
             item_stable_id: item_id,
             drop_position: world_pos,
         });
-        e_inventory_changed.write(InventoryChangedEvent);
     }
 }
 
@@ -414,66 +405,57 @@ fn setup_inventory_screen(
 
     cmds.spawn((
         Text::new(&format!(
-            "Items: {}/{}",
-            inventory.count(),
+            "Weight: {:.1}/{:.1} kg",
+            inventory.get_total_weight(),
             inventory.capacity
         ))
         .fg1(Palette::White)
         .layer(Layer::Ui),
         Position::new_f32(left_x, 2., 0.),
         CleanupStateInventory,
+        InventoryWeightText,
     ));
 
-    // Build list items from inventory
+    // Build list items from inventory - just show actual items (no empty slots for weight-based)
     let mut list_items = Vec::new();
 
-    for i in 0..inventory.capacity {
-        if let Some(item_id) = inventory.item_ids.get(i).copied() {
-            if let Some(item_entity) = id_registry.get_entity(item_id) {
-                let text = if let Ok(label) = q_labels.get(item_entity) {
-                    label.get().to_string()
-                } else {
-                    "Unknown Item".to_string()
-                };
+    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
+        if let Some(item_entity) = id_registry.get_entity(item_id) {
+            let text = if let Ok(label) = q_labels.get(item_entity) {
+                label.get().to_string()
+            } else {
+                "Unknown Item".to_string()
+            };
 
-                // Check for stack count
-                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
-                    if stack_count.count > 1 {
-                        format!("{} x{}", text, stack_count.count)
-                    } else {
-                        text
-                    }
+            // Check for stack count
+            let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                if stack_count.count > 1 {
+                    format!("{} x{}", text, stack_count.count)
                 } else {
                     text
-                };
+                }
+            } else {
+                text
+            };
 
-                // Check if item is equipped
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let final_text = if is_equipped {
-                    format!("{} {{G|[E]}}", display_text)
-                } else {
-                    display_text
-                };
+            // Check if item is equipped
+            let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
+                let slot_name = equipped
+                    .slots
+                    .first()
+                    .map(|slot| slot.display_name())
+                    .unwrap_or("Unknown");
+                format!("{} {{G|[{}]}}", display_text, slot_name)
+            } else {
+                display_text
+            };
 
-                // Get item icon
-                let icon = q_glyphs.get(item_entity).ok().cloned();
-
-                list_items.push(ListItemData {
-                    label: final_text,
-                    callback: callbacks.select_item, // Just selects the item, doesn't perform an action
-                    hotkey: None, // Could add number keys 1-9 for quick selection
-                    icon,
-                    context_data: Some(item_id),
-                });
-            }
-        } else {
-            // Empty slot
             list_items.push(ListItemData {
-                label: "(empty)".to_string(),
-                callback: callbacks.select_item, // No-op for empty slots
-                hotkey: None,
+                label: final_text,
+                callback: callbacks.select_item, // Just selects the item, doesn't perform an action
+                hotkey: None,                    // Could add number keys 1-9 for quick selection
                 icon: None,
-                context_data: None,
+                context_data: Some(item_id),
             });
         }
     }
@@ -483,7 +465,7 @@ fn setup_inventory_screen(
         .spawn((
             List::new(list_items),
             ListState::new().with_focus(true),
-            Position::new_f32(left_x + 1., 3.5, 0.),
+            Position::new_f32(left_x + 1., 3., 0.),
             CleanupStateInventory,
         ))
         .id();
@@ -491,24 +473,21 @@ fn setup_inventory_screen(
     // Set list focus
     list_focus.active_list = Some(list_entity);
 
-    // Position action buttons based on inventory size
-    let help_y = 3.5 + (inventory.capacity as f32 * 1.0) + 1.0;
+    // Position action buttons based on number of items in inventory
+    let help_y = 3.5 + (inventory.count() as f32 * 0.5) + 1.0;
 
-    // Back button
     cmds.spawn((
         Position::new_f32(left_x, help_y.min(18.), 0.),
         Button::new("({Y|I}) BACK", callbacks.back_to_explore).hotkey(KeyCode::I),
         CleanupStateInventory,
     ));
 
-    // Drop button
     cmds.spawn((
         Position::new_f32(left_x + 6., help_y.min(18.), 0.),
         Button::new("({Y|U}) DROP", callbacks.drop_item).hotkey(KeyCode::U),
         CleanupStateInventory,
     ));
 
-    // Toggle Equip/Unequip button
     cmds.spawn((
         Position::new_f32(left_x + 12., help_y.min(18.), 0.),
         Button::new("({Y|E}) TOGGLE EQUIP", callbacks.toggle_equip_item).hotkey(KeyCode::E),
@@ -516,22 +495,16 @@ fn setup_inventory_screen(
     ));
 }
 
-fn handle_equip_slot_input(
-    mut cmds: Commands,
-    mut game_state: ResMut<CurrentGameState>,
-    mut ctx: ResMut<InventoryContext>,
-    q_player: Query<Entity, With<Player>>,
-    registry: Res<StableIdRegistry>,
-) {
+fn handle_equip_slot_input(mut game_state: ResMut<CurrentGameState>) {
     if is_key_pressed(KeyCode::Escape) {
         game_state.next = GameState::Inventory;
     }
 }
 
 fn refresh_inventory_display(
-    mut e_inventory_changed: EventReader<InventoryChangedEvent>,
     mut list_focus: ResMut<ListFocus>,
     mut q_list: Query<(&mut List, Entity), With<CleanupStateInventory>>,
+    mut q_weight_text: Query<&mut Text, With<InventoryWeightText>>,
     context: Res<InventoryContext>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
@@ -541,11 +514,6 @@ fn refresh_inventory_display(
     id_registry: Res<StableIdRegistry>,
     callbacks: Res<InventoryCallbacks>,
 ) {
-    if e_inventory_changed.is_empty() {
-        return;
-    }
-    e_inventory_changed.clear();
-
     let Ok(player_inventory) = q_inventory.get(context.player_entity) else {
         return;
     };
@@ -576,6 +544,15 @@ fn refresh_inventory_display(
             .any(|(a, b)| a.label != b.label)
     {
         list.items = list_items;
+    }
+
+    // Update weight text display
+    if let Ok(mut text) = q_weight_text.single_mut() {
+        text.value = format!(
+            "Weight: {:.1}/{:.1} kg",
+            player_inventory.get_total_weight(),
+            player_inventory.capacity
+        );
     }
 }
 

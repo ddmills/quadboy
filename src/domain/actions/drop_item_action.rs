@@ -3,11 +3,12 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, Equipped, InInventory, Inventory, UnequipItemAction, Zone,
+        Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, UnequipItemAction, Zone,
         get_energy_cost,
     },
     engine::StableIdRegistry,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
+    states::InventoryChangedEvent,
 };
 
 pub struct DropItemAction {
@@ -38,24 +39,25 @@ impl Command for DropItemAction {
             UnequipItemAction::new(self.item_stable_id).apply(world);
         }
 
+        // Get item weight before removing from inventory
+        let item_weight = world
+            .get::<Item>(item_entity)
+            .map(|item| item.weight)
+            .unwrap_or(1.0);
+
         let Some(mut inventory) = world.get_mut::<Inventory>(self.entity) else {
             eprintln!("DropItemAction: Entity {:?} has no inventory", self.entity);
             return;
         };
 
-        let Some(item_index) = inventory
-            .item_ids
-            .iter()
-            .position(|&id| id == self.item_stable_id)
-        else {
+        // Use the inventory's remove_item method to properly handle weight tracking
+        if !inventory.remove_item(self.item_stable_id, item_weight) {
             eprintln!(
                 "DropItemAction: Item {} not found in inventory",
                 self.item_stable_id
             );
             return;
         };
-
-        inventory.item_ids.remove(item_index);
 
         let position = Position::new_world(self.drop_position);
         world
@@ -93,5 +95,8 @@ impl Command for DropItemAction {
             let cost = get_energy_cost(EnergyActionType::DropItem);
             energy.consume_energy(cost);
         }
+
+        // Trigger inventory changed event for UI updates
+        world.send_event(InventoryChangedEvent);
     }
 }

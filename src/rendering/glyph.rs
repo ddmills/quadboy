@@ -38,9 +38,9 @@ pub struct TilesetRegistry {
 impl TilesetRegistry {
     pub async fn load() -> Self {
         let glyph_texture_fut = load_texture("./src/assets/textures/cowboy.png");
-        let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
+        // let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
         // let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
-        // let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
+        let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
 
         let glyph_texture = glyph_texture_fut.await.unwrap();
         let font_body_texture = font_body_texture_fut.await.unwrap();
@@ -180,7 +180,7 @@ impl Glyph {
 }
 
 pub fn render_glyphs(
-    q_glyphs: Query<(Entity, &Glyph, &Position)>,
+    q_glyphs: Query<(Entity, &Glyph, &Position, &Visibility)>,
     q_visibility: Query<
         (
             Option<&IsVisible>,
@@ -219,7 +219,10 @@ pub fn render_glyphs(
     let world_top = -tile_h;
     let world_bottom = camera_height + tile_h;
 
-    for (entity, glyph, pos) in q_glyphs.iter() {
+    for (entity, glyph, pos, visibility) in q_glyphs.iter() {
+        if *visibility == Visibility::Hidden {
+            continue;
+        }
         let is_world_layer = glyph.layer_id.get_target_type() == RenderTargetType::World;
 
         if glyph.is_dormant || (is_world_layer && pos.z.floor() != player_z) {

@@ -26,6 +26,12 @@ pub struct PlayerInventoryList;
 #[derive(Component)]
 pub struct ContainerInventoryList;
 
+#[derive(Component)]
+pub struct PlayerInventoryWeightText;
+
+#[derive(Component)]
+pub struct ContainerInventoryWeightText;
+
 #[derive(Resource)]
 pub struct ContainerContext {
     pub player_entity: Entity,
@@ -118,53 +124,42 @@ fn build_player_list_items(
 ) -> Vec<ListItemData> {
     let mut items = Vec::new();
 
-    for i in 0..inventory.capacity {
-        if let Some(item_id) = inventory.item_ids.get(i).copied() {
-            if let Some(item_entity) = id_registry.get_entity(item_id) {
-                let text = if let Ok(label) = q_labels.get(item_entity) {
-                    label.get().to_string()
-                } else {
-                    "Unknown Item".to_string()
-                };
+    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
+        if let Some(item_entity) = id_registry.get_entity(item_id) {
+            let text = if let Ok(label) = q_labels.get(item_entity) {
+                label.get().to_string()
+            } else {
+                "Unknown Item".to_string()
+            };
 
-                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
-                    if stack_count.count > 1 {
-                        format!("{} x{}", text, stack_count.count)
-                    } else {
-                        text
-                    }
+            let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                if stack_count.count > 1 {
+                    format!("{} x{}", text, stack_count.count)
                 } else {
                     text
-                };
+                }
+            } else {
+                text
+            };
 
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let final_text = if is_equipped {
-                    format!("{} {{G|[E]}}", display_text)
-                } else {
-                    display_text
-                };
+            let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
+                // Get the first slot name (most items only use one slot)
+                let slot_name = equipped
+                    .slots
+                    .first()
+                    .map(|slot| slot.display_name())
+                    .unwrap_or("Unknown");
+                format!("{} {{G|[{}]}}", display_text, slot_name)
+            } else {
+                display_text
+            };
 
-                let icon = if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    Some(glyph.clone())
-                } else {
-                    None
-                };
-
-                items.push(ListItemData {
-                    label: final_text,
-                    callback: callbacks.transfer_from_player,
-                    hotkey: None,
-                    icon,
-                    context_data: Some(item_id),
-                });
-            }
-        } else {
             items.push(ListItemData {
-                label: "(empty)".to_string(),
-                callback: callbacks.select_item,
+                label: final_text,
+                callback: callbacks.transfer_from_player,
                 hotkey: None,
                 icon: None,
-                context_data: Some(i as u64),
+                context_data: Some(item_id),
             });
         }
     }
@@ -183,53 +178,42 @@ fn build_container_list_items(
 ) -> Vec<ListItemData> {
     let mut items = Vec::new();
 
-    for i in 0..inventory.capacity {
-        if let Some(item_id) = inventory.item_ids.get(i).copied() {
-            if let Some(item_entity) = id_registry.get_entity(item_id) {
-                let text = if let Ok(label) = q_labels.get(item_entity) {
-                    label.get().to_string()
-                } else {
-                    "Unknown Item".to_string()
-                };
+    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
+        if let Some(item_entity) = id_registry.get_entity(item_id) {
+            let text = if let Ok(label) = q_labels.get(item_entity) {
+                label.get().to_string()
+            } else {
+                "Unknown Item".to_string()
+            };
 
-                let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
-                    if stack_count.count > 1 {
-                        format!("{} x{}", text, stack_count.count)
-                    } else {
-                        text
-                    }
+            let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
+                if stack_count.count > 1 {
+                    format!("{} x{}", text, stack_count.count)
                 } else {
                     text
-                };
+                }
+            } else {
+                text
+            };
 
-                let is_equipped = q_equipped.get(item_entity).is_ok();
-                let final_text = if is_equipped {
-                    format!("{} {{G|[E]}}", display_text)
-                } else {
-                    display_text
-                };
+            let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
+                // Get the first slot name (most items only use one slot)
+                let slot_name = equipped
+                    .slots
+                    .first()
+                    .map(|slot| slot.display_name())
+                    .unwrap_or("Unknown");
+                format!("{} {{G|[{}]}}", display_text, slot_name)
+            } else {
+                display_text
+            };
 
-                let icon = if let Ok(glyph) = q_glyphs.get(item_entity) {
-                    Some(glyph.clone())
-                } else {
-                    None
-                };
-
-                items.push(ListItemData {
-                    label: final_text,
-                    callback: callbacks.transfer_from_container,
-                    hotkey: None,
-                    icon,
-                    context_data: Some(item_id),
-                });
-            }
-        } else {
             items.push(ListItemData {
-                label: "(empty)".to_string(),
-                callback: callbacks.select_item,
+                label: final_text,
+                callback: callbacks.transfer_from_container,
                 hotkey: None,
                 icon: None,
-                context_data: Some(i as u64),
+                context_data: Some(item_id),
             });
         }
     }
@@ -281,14 +265,15 @@ fn setup_container_screen(
 
     cmds.spawn((
         Text::new(&format!(
-            "Items: {}/{}",
-            player_inventory.count(),
+            "Weight: {:.1}/{:.1} kg",
+            player_inventory.get_total_weight(),
             player_inventory.capacity
         ))
         .fg1(Palette::White)
         .layer(Layer::Ui),
         Position::new_f32(left_x, 2., 0.),
         CleanupStateContainer,
+        PlayerInventoryWeightText,
     ));
 
     // Build player inventory list
@@ -330,14 +315,15 @@ fn setup_container_screen(
 
     cmds.spawn((
         Text::new(&format!(
-            "Items: {}/{}",
-            container_inventory.count(),
+            "Weight: {:.1}/{:.1} kg",
+            container_inventory.get_total_weight(),
             container_inventory.capacity
         ))
         .fg1(Palette::White)
         .layer(Layer::Ui),
         Position::new_f32(right_x, 2., 0.),
         CleanupStateContainer,
+        ContainerInventoryWeightText,
     ));
 
     // Build container inventory list
@@ -390,6 +376,10 @@ fn refresh_container_display(
     mut q_lists: ParamSet<(
         Query<&mut List, With<PlayerInventoryList>>,
         Query<&mut List, With<ContainerInventoryList>>,
+    )>,
+    mut q_weight_texts: ParamSet<(
+        Query<&mut Text, With<PlayerInventoryWeightText>>,
+        Query<&mut Text, With<ContainerInventoryWeightText>>,
     )>,
     context: Res<ContainerContext>,
     id_registry: Res<StableIdRegistry>,
@@ -447,6 +437,25 @@ fn refresh_container_display(
         {
             container_list.items = container_list_items;
         }
+    }
+
+    // Update weight display texts
+    // Update player inventory weight text
+    if let Ok(mut text) = q_weight_texts.p0().single_mut() {
+        text.value = format!(
+            "Weight: {:.1}/{:.1} kg",
+            player_inventory.get_total_weight(),
+            player_inventory.capacity
+        );
+    }
+
+    // Update container inventory weight text
+    if let Ok(mut text) = q_weight_texts.p1().single_mut() {
+        text.value = format!(
+            "Weight: {:.1}/{:.1} kg",
+            container_inventory.get_total_weight(),
+            container_inventory.capacity
+        );
     }
 }
 

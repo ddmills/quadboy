@@ -10,8 +10,8 @@ use crate::{
 pub enum Palette {
     White = 0xFFEAC5,
     Black = 0x140E08,
-    Gray = 0x9C978E,
-    DarkGray = 0x64645A,
+    Gray = 0xAD9FAD,
+    DarkGray = 0x575057,
     Green = 0x89CA43,
     DarkGreen = 0x395C20,
     Brown = 0x9E5423,

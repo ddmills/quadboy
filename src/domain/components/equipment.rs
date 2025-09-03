@@ -19,6 +19,23 @@ pub enum EquipmentSlot {
     Neck,
 }
 
+impl EquipmentSlot {
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            EquipmentSlot::Head => "Head",
+            EquipmentSlot::Body => "Body",
+            EquipmentSlot::Legs => "Legs",
+            EquipmentSlot::Feet => "Feet",
+            EquipmentSlot::MainHand => "Main Hand",
+            EquipmentSlot::OffHand => "Off Hand",
+            EquipmentSlot::BothHands => "Both Hands",
+            EquipmentSlot::Ring1 => "Ring 1",
+            EquipmentSlot::Ring2 => "Ring 2",
+            EquipmentSlot::Neck => "Neck",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EquipmentType {
     Weapon,

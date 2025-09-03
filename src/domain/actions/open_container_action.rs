@@ -56,35 +56,48 @@ fn generate_container_loot(
 
     let mut rand = Rand::seed(container_pos.0 + container_pos.1 + container_pos.2);
 
-    // Get the container's inventory capacity
-    let inventory_capacity = if let Some(inventory) = world.get::<Inventory>(container_entity) {
-        inventory.capacity.saturating_sub(inventory.item_ids.len())
+    // Get the container's inventory available weight
+    let available_weight = if let Some(inventory) = world.get::<Inventory>(container_entity) {
+        inventory.get_available_weight()
     } else {
         return; // No inventory component
     };
 
-    // Determine how many items to spawn (1-3 items)
-    let item_count = rand.range_n(1, 4) as usize;
-    let max_items = item_count.min(inventory_capacity);
+    // Determine how many items to spawn (1-3 items) - but we'll check weight as we go
+    let max_item_attempts = rand.range_n(1, 4) as usize;
 
-    // Generate items from the loot table
-    let item_prefabs = {
-        let loot_registry = world.resource::<LootTableRegistry>();
-        loot_registry.roll_multiple(loot_table_id, max_items, &mut rand)
-    };
+    // Generate items from the loot table one by one, checking weight constraints
+    for _ in 0..max_item_attempts {
+        // Check if container still has weight capacity
+        let current_available = if let Some(inventory) = world.get::<Inventory>(container_entity) {
+            inventory.get_available_weight()
+        } else {
+            break;
+        };
 
-    for item_prefab_id in item_prefabs {
-        trace!("Spawning item in container!");
+        if current_available <= 0.0 {
+            break; // Container is full
+        }
 
-        // Spawn the item prefab and get the entity it creates
-        let item_config = Prefab::new(
-            item_prefab_id.clone(),
-            (
-                container_pos.0 as usize,
-                container_pos.1 as usize,
-                container_pos.2 as usize,
-            ),
-        );
-        let _ = Prefabs::spawn_in_container(world, item_config, container_entity);
+        // Roll for one item (get registry each time to avoid borrowing issues)
+        let item_prefab_id = {
+            let loot_registry = world.resource::<LootTableRegistry>();
+            loot_registry.roll(loot_table_id, &mut rand)
+        };
+
+        if let Some(item_prefab_id) = item_prefab_id {
+            trace!("Spawning item in container!");
+
+            // Spawn the item prefab and get the entity it creates
+            let item_config = Prefab::new(
+                item_prefab_id.clone(),
+                (
+                    container_pos.0 as usize,
+                    container_pos.1 as usize,
+                    container_pos.2 as usize,
+                ),
+            );
+            let _ = Prefabs::spawn_in_container(world, item_config, container_entity);
+        }
     }
 }

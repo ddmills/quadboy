@@ -2,10 +2,11 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, Equipped, InInventory, Inventory, StackCount, Stackable,
+        Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, StackCount, Stackable,
         StackableType, UnequipItemAction, get_energy_cost,
     },
     engine::StableIdRegistry,
+    states::InventoryChangedEvent,
 };
 
 pub struct TransferItemAction {
@@ -16,8 +17,8 @@ pub struct TransferItemAction {
 
 impl Command for TransferItemAction {
     fn apply(self, world: &mut World) {
-        // Get item entity and to_stable_id first
-        let (item_entity, to_stable_id) = {
+        // Get item entity, weight, and to_stable_id first
+        let (item_entity, item_weight, to_stable_id) = {
             let Some(id_registry) = world.get_resource::<StableIdRegistry>() else {
                 eprintln!("TransferItemAction: StableIdRegistry not found");
                 return;
@@ -31,8 +32,13 @@ impl Command for TransferItemAction {
                 return;
             };
 
+            let item_weight = world
+                .get::<Item>(item_entity)
+                .map(|item| item.weight)
+                .unwrap_or(1.0);
+
             let to_stable_id = id_registry.get_id(self.to_entity).unwrap_or(0);
-            (item_entity, to_stable_id)
+            (item_entity, item_weight, to_stable_id)
         };
 
         // Check if item is stackable and handle stack merging
@@ -59,7 +65,7 @@ impl Command for TransferItemAction {
                             else {
                                 return;
                             };
-                            from_inventory.remove_item(self.item_stable_id);
+                            from_inventory.remove_item(self.item_stable_id, item_weight);
                             world.entity_mut(item_entity).despawn();
 
                             // Consume energy
@@ -106,7 +112,7 @@ impl Command for TransferItemAction {
                 return;
             }
 
-            from_inventory.remove_item(self.item_stable_id);
+            from_inventory.remove_item(self.item_stable_id, item_weight);
         }
 
         {
@@ -123,16 +129,19 @@ impl Command for TransferItemAction {
                 return;
             };
 
-            if to_inventory.is_full() {
-                eprintln!("TransferItemAction: Target inventory is full");
+            if !to_inventory.has_space_for_weight(item_weight) {
+                eprintln!(
+                    "TransferItemAction: Target inventory cannot hold item weight ({} kg)",
+                    item_weight
+                );
                 // Re-add to source inventory since transfer failed
                 if let Some(mut from_inventory) = world.get_mut::<Inventory>(self.from_entity) {
-                    from_inventory.add_item(self.item_stable_id);
+                    from_inventory.add_item(self.item_stable_id, item_weight);
                 }
                 return;
             }
 
-            to_inventory.add_item(self.item_stable_id);
+            to_inventory.add_item(self.item_stable_id, item_weight);
         }
 
         // Update the InInventory component
@@ -145,6 +154,9 @@ impl Command for TransferItemAction {
             let cost = get_energy_cost(EnergyActionType::TransferItem);
             energy.consume_energy(cost);
         }
+
+        // Trigger inventory changed event for UI updates
+        world.send_event(InventoryChangedEvent);
     }
 }
 

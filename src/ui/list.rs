@@ -1,5 +1,5 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::input::KeyCode;
+use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     common::Palette,
@@ -94,19 +94,26 @@ pub struct ListItemIcon {
 
 pub fn setup_lists(
     mut cmds: Commands,
-    mut q_lists: Query<(Entity, &List, &Position, Option<&Children>), Changed<List>>,
+    mut q_lists: Query<
+        (Entity, &List, &mut ListState, &Position, Option<&Children>),
+        Changed<List>,
+    >,
 ) {
-    for (list_entity, list, list_pos, existing_children) in q_lists.iter() {
-        // Clean up existing children if any
+    for (list_entity, list, mut list_state, list_pos, existing_children) in q_lists.iter_mut() {
+        // Fix cursor position if it's out of bounds
+        if list_state.selected_index >= list.items.len() && !list.items.is_empty() {
+            list_state.selected_index = list.items.len() - 1;
+        } else if list.items.is_empty() {
+            list_state.selected_index = 0;
+        }
         if let Some(children) = existing_children {
             for child in children.iter() {
                 cmds.entity(child).despawn();
             }
         }
 
-        // Spawn cursor
         cmds.spawn((
-            Text::new(">").fg1(Palette::Cyan).layer(Layer::Ui),
+            Text::new("→").fg1(Palette::Yellow).layer(Layer::Ui),
             Position::new_f32(0., 0., 0.),
             ListCursor {
                 parent_list: list_entity,
@@ -116,34 +123,39 @@ pub fn setup_lists(
         ));
 
         let has_icons = list.items.iter().any(|x| x.icon.is_some());
-        let item_x = if has_icons { 3. } else { 2. };
+        let item_x = if has_icons { 3. } else { 1.0 };
 
-        // Spawn list items
         for (i, item_data) in list.items.iter().enumerate() {
-            let text_length = text_content_length(&item_data.label);
-
-            let item_spacing = 1.0;
+            let item_spacing = if has_icons { 1.0 } else { 0.5 };
             let item_y = i as f32 * item_spacing;
 
             cmds.spawn((
                 Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
-                Glyph::idx(6).scale((10., 1.)).layer(Layer::UiPanels),
+                Glyph::idx(6)
+                    .scale((10., item_spacing))
+                    .layer(Layer::UiPanels),
                 ListItemBg {
                     index: i,
                     parent_list: list_entity,
                 },
+                Interaction::None,
+                Interactable::new(14., item_spacing),
                 ChildOf(list_entity),
             ));
 
+            let item_offset_y = if has_icons { 0.25 } else { 0. };
+
             cmds.spawn((
                 Text::new(&item_data.label).layer(Layer::Ui),
-                Position::new_f32(list_pos.x + item_x, list_pos.y + item_y + 0.25, list_pos.z),
+                Position::new_f32(
+                    list_pos.x + item_x,
+                    list_pos.y + item_y + item_offset_y,
+                    list_pos.z,
+                ),
                 ListItem {
                     index: i,
                     parent_list: list_entity,
                 },
-                Interactable::new(text_length as f32 / 2., 0.5),
-                Interaction::None,
                 ChildOf(list_entity),
             ));
 
@@ -207,7 +219,6 @@ pub fn list_focus_switching(
             let next_index = (current_index + 1) % lists.len();
             let next_list = lists[next_index];
 
-            // Update focus state
             for (entity, _, mut list_state) in q_lists.iter_mut() {
                 list_state.has_focus = entity == next_list;
             }
@@ -219,8 +230,8 @@ pub fn list_focus_switching(
 
 pub fn list_mouse_hover(
     mut list_focus: ResMut<ListFocus>,
-    mut q_lists: Query<(Entity, &List, &mut ListState, &Position), With<List>>,
-    q_items: Query<(&ListItem, &Interactable, &Position)>,
+    mut q_lists: Query<(Entity, &List, &mut ListState), With<List>>,
+    q_items: Query<(&ListItemBg, &Interactable, &Position)>,
     mouse: Res<Mouse>,
 ) {
     for (item, interactable, pos) in q_items.iter() {
@@ -230,11 +241,9 @@ pub fn list_mouse_hover(
             && mouse.ui.1 < pos.y + interactable.height;
 
         if is_hovered {
-            // Update focus to this list
             list_focus.active_list = Some(item.parent_list);
 
-            // Update all lists' focus and selection
-            for (entity, _, mut list_state, _) in q_lists.iter_mut() {
+            for (entity, _, mut list_state) in q_lists.iter_mut() {
                 if entity == item.parent_list {
                     list_state.has_focus = true;
                     list_state.selected_index = item.index;
@@ -300,11 +309,12 @@ pub fn update_list_context(
 }
 
 pub fn list_styles(
-    q_lists: Query<(Entity, &ListState, &Position, &Children), With<List>>,
+    q_lists: Query<(Entity, &List, &ListState, &Position, &Children)>,
     mut q_cursors: Query<(&ListCursor, &mut Position, &mut Visibility), Without<List>>,
     mut q_items: Query<(&ListItemBg, &mut Glyph)>,
 ) {
-    for (list_entity, list_state, list_pos, children) in q_lists.iter() {
+    for (list_entity, list, list_state, list_pos, children) in q_lists.iter() {
+        let has_icons = list.items.iter().any(|x| x.icon.is_some());
         for child in children.iter() {
             if let Ok((cursor, mut cursor_pos, mut cursor_vis)) = q_cursors.get_mut(child)
                 && cursor.parent_list == list_entity
@@ -315,10 +325,11 @@ pub fn list_styles(
                     Visibility::Hidden
                 };
 
-                let cursor_spacing = 1.0;
+                let cursor_spacing = if has_icons { 1.0 } else { 0.5 };
+                let cursor_gap = if has_icons { 1.0 } else { 0.0 };
                 cursor_pos.x = list_pos.x;
                 cursor_pos.y =
-                    list_pos.y + (list_state.selected_index as f32 * cursor_spacing) + 0.25;
+                    list_pos.y + (list_state.selected_index as f32 * cursor_spacing) + cursor_gap;
                 cursor_pos.z = list_pos.z;
             }
         }
@@ -335,7 +346,7 @@ pub fn list_styles(
                     glyph.bg = Some(Palette::DarkGray.into());
                 }
             } else {
-                glyph.bg = None;
+                glyph.bg = Some(Palette::Clear.into());
             }
         }
     }

@@ -2,11 +2,12 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, InInventory, Inventory, StackCount, Stackable, StackableType,
-        Zone, get_energy_cost,
+        Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable,
+        StackableType, Zone, get_energy_cost,
     },
     engine::StableIdRegistry,
     rendering::Position,
+    states::InventoryChangedEvent,
 };
 
 pub struct PickupItemAction {
@@ -97,11 +98,18 @@ impl Command for PickupItemAction {
         let mut q_items = world.query::<&Position>();
         let mut q_zones = world.query::<&mut Zone>();
 
+        // Get item weight before borrowing inventory
+        let item_weight = if let Some(item) = world.get::<Item>(item_entity) {
+            item.weight
+        } else {
+            1.0 // Default weight if Item component missing
+        };
+
         let Ok(mut inventory) = q_inventory.get_mut(world, self.entity) else {
             return;
         };
 
-        if !inventory.add_item(self.item_stable_id) {
+        if !inventory.add_item(self.item_stable_id, item_weight) {
             return;
         }
 
@@ -128,6 +136,9 @@ impl Command for PickupItemAction {
             let cost = get_energy_cost(EnergyActionType::PickUpItem);
             energy.consume_energy(cost);
         }
+
+        // Trigger inventory changed event for UI updates
+        world.send_event(InventoryChangedEvent);
     }
 }
 

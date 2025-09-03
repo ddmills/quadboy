@@ -115,7 +115,7 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
-    pub fn with_inventory(self, capacity: usize) -> Self {
+    pub fn with_inventory(self, capacity: f32) -> Self {
         self.world
             .entity_mut(self.entity)
             .insert(Inventory::new(capacity));

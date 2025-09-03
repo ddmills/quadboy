@@ -51,7 +51,7 @@ impl NewGameCommand {
                 Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
                 Player,
                 StableId::new(player_id),
-                Inventory::new(10),
+                Inventory::new(50.0),
                 EquipmentSlots::humanoid(),
                 Vision::new(16, 8),
                 ApplyVisibilityEffects,

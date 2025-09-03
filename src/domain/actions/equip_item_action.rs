@@ -40,23 +40,6 @@ impl Command for EquipItemAction {
             equippable.slot_requirements.clone()
         };
 
-        // Check if can equip
-        let can_equip = {
-            let Some(equippable) = world.get::<Equippable>(item_entity) else {
-                return;
-            };
-
-            let Some(equipment_slots) = world.get::<EquipmentSlots>(entity) else {
-                return;
-            };
-
-            equipment_slots.can_equip(&equippable)
-        };
-
-        if !can_equip {
-            return;
-        }
-
         // Check inventory and remove item
         {
             let Some(mut inventory) = world.get_mut::<Inventory>(entity) else {

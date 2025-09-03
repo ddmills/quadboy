@@ -16,30 +16,34 @@ impl Item {
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Inventory {
-    pub capacity: usize,
+    pub capacity: f32,
     pub item_ids: Vec<u64>,
+    pub current_weight: f32,
 }
 
 impl Inventory {
-    pub fn new(capacity: usize) -> Self {
+    pub fn new(capacity: f32) -> Self {
         Self {
             capacity,
             item_ids: Vec::new(),
+            current_weight: 0.0,
         }
     }
 
-    pub fn add_item(&mut self, item_id: u64) -> bool {
-        if self.item_ids.len() < self.capacity {
+    pub fn add_item(&mut self, item_id: u64, weight: f32) -> bool {
+        if self.current_weight + weight <= self.capacity {
             self.item_ids.push(item_id);
+            self.current_weight += weight;
             true
         } else {
             false
         }
     }
 
-    pub fn remove_item(&mut self, item_id: u64) -> bool {
+    pub fn remove_item(&mut self, item_id: u64, weight: f32) -> bool {
         if let Some(index) = self.item_ids.iter().position(|&id| id == item_id) {
             self.item_ids.remove(index);
+            self.current_weight -= weight;
             true
         } else {
             false
@@ -47,7 +51,7 @@ impl Inventory {
     }
 
     pub fn is_full(&self) -> bool {
-        self.item_ids.len() >= self.capacity
+        self.current_weight >= self.capacity
     }
 
     pub fn count(&self) -> usize {
@@ -56,6 +60,18 @@ impl Inventory {
 
     pub fn contains_id(&self, item_id: u64) -> bool {
         self.item_ids.contains(&item_id)
+    }
+
+    pub fn has_space_for_weight(&self, weight: f32) -> bool {
+        self.current_weight + weight <= self.capacity
+    }
+
+    pub fn get_total_weight(&self) -> f32 {
+        self.current_weight
+    }
+
+    pub fn get_available_weight(&self) -> f32 {
+        (self.capacity - self.current_weight).max(0.0)
     }
 }
 
