@@ -45,7 +45,7 @@ pub struct AudioRegistry {
 }
 
 impl AudioRegistry {
-    pub fn load_all() -> Self {
+    pub fn load() -> Self {
         let ctx = Arc::new(Mutex::new(AudioContext::new()));
         let ctx_guard = ctx.lock().unwrap();
 

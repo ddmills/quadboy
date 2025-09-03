@@ -29,7 +29,7 @@ use crate::{
         SerializableComponentRegistry, StableId, StableIdRegistry, update_mouse,
         update_mouse_input,
     },
-    rendering::{CrtShader, Glyph, RecordZonePosition},
+    rendering::{CrtShader, Glyph, RecordZonePosition, TilesetRegistry},
     states::{
         CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
         ExploreStatePlugin, InventoryStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin,
@@ -66,8 +66,8 @@ fn window_conf() -> Conf {
 async fn main() {
     set_default_filter_mode(FilterMode::Nearest);
 
-    let tilesets = load_tilesets().await;
-    let audio_registry = AudioRegistry::load_all();
+    let tileset_registry = TilesetRegistry::load().await;
+    let audio_registry = AudioRegistry::load();
 
     let mut app = App::new();
 
@@ -127,7 +127,7 @@ async fn main() {
         .register_event::<SaveGameResult>()
         .register_event::<RefreshBitmask>()
         .register_event::<EntityDestroyedEvent>()
-        .insert_resource(tilesets)
+        .insert_resource(tileset_registry)
         .insert_resource(audio_registry)
         .insert_resource(reg)
         .insert_resource(LootTableRegistry::new())

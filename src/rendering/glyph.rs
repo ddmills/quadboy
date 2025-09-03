@@ -35,6 +35,23 @@ pub struct TilesetRegistry {
     pub font_body_texture: Texture2D,
 }
 
+impl TilesetRegistry {
+    pub async fn load() -> Self {
+        let glyph_texture_fut = load_texture("./src/assets/textures/cowboy.png");
+        let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
+        // let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
+        // let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
+
+        let glyph_texture = glyph_texture_fut.await.unwrap();
+        let font_body_texture = font_body_texture_fut.await.unwrap();
+
+        TilesetRegistry {
+            glyph_texture,
+            font_body_texture,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct GlyphStyle {
     pub fg1: Vec4,
@@ -270,21 +287,6 @@ pub fn render_glyphs(
     }
 
     telemetry::end_zone();
-}
-
-pub async fn load_tilesets() -> TilesetRegistry {
-    let glyph_texture_fut = load_texture("./src/assets/textures/cowboy.png");
-    let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
-    // let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
-    // let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
-
-    let glyph_texture = glyph_texture_fut.await.unwrap();
-    let font_body_texture = font_body_texture_fut.await.unwrap();
-
-    TilesetRegistry {
-        glyph_texture,
-        font_body_texture,
-    }
 }
 
 pub fn on_zone_status_change(mut q_changed: Query<(&mut Glyph, &ZoneStatus), Changed<ZoneStatus>>) {
