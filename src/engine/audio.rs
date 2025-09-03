@@ -8,9 +8,11 @@ use std::sync::{Arc, Mutex};
 pub enum AudioKey {
     Mining1,
     Mining2,
+    Digging,
     RockBreak,
     Vegetation,
-    Woodcut,
+    Woodcut1,
+    Woodcut2,
 }
 
 impl AudioKey {
@@ -18,9 +20,11 @@ impl AudioKey {
         match self {
             AudioKey::Mining1 => include_bytes!("../assets/audio/mining_1.wav"),
             AudioKey::Mining2 => include_bytes!("../assets/audio/mining_2.wav"),
+            AudioKey::Digging => include_bytes!("../assets/audio/digging_1.wav"),
             AudioKey::RockBreak => include_bytes!("../assets/audio/rock_break.wav"),
             AudioKey::Vegetation => include_bytes!("../assets/audio/vegetation.wav"),
-            AudioKey::Woodcut => include_bytes!("../assets/audio/woodcut.wav"),
+            AudioKey::Woodcut1 => include_bytes!("../assets/audio/woodcut_1.wav"),
+            AudioKey::Woodcut2 => include_bytes!("../assets/audio/woodcut_2.wav"),
         }
     }
 }
@@ -55,6 +59,10 @@ impl AudioRegistry {
             Sound::load(&ctx_guard, AudioKey::Mining2.bytes()),
         );
         sounds.insert(
+            AudioKey::Digging,
+            Sound::load(&ctx_guard, AudioKey::Digging.bytes()),
+        );
+        sounds.insert(
             AudioKey::RockBreak,
             Sound::load(&ctx_guard, AudioKey::RockBreak.bytes()),
         );
@@ -63,17 +71,24 @@ impl AudioRegistry {
             Sound::load(&ctx_guard, AudioKey::Vegetation.bytes()),
         );
         sounds.insert(
-            AudioKey::Woodcut,
-            Sound::load(&ctx_guard, AudioKey::Woodcut.bytes()),
+            AudioKey::Woodcut1,
+            Sound::load(&ctx_guard, AudioKey::Woodcut1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Woodcut2,
+            Sound::load(&ctx_guard, AudioKey::Woodcut2.bytes()),
         );
 
         let mut collections = HashMap::new();
         collections.insert(
             AudioCollection::Mining,
-            vec![AudioKey::Mining1, AudioKey::Mining2],
+            vec![AudioKey::Mining1, AudioKey::Mining2, AudioKey::Digging],
         );
         collections.insert(AudioCollection::RockCrumble, vec![AudioKey::RockBreak]);
-        collections.insert(AudioCollection::Chopping, vec![AudioKey::Woodcut]);
+        collections.insert(
+            AudioCollection::Chopping,
+            vec![AudioKey::Woodcut1, AudioKey::Woodcut2],
+        );
         collections.insert(AudioCollection::Vegetation, vec![AudioKey::Vegetation]);
 
         Self {

@@ -3,7 +3,8 @@ use macroquad::prelude::get_time;
 
 use crate::{
     domain::{
-        GameSaveData, GameSettings, Inventory, Overworld, Player, PlayerSaveData, UnloadZoneCommand, Zone,
+        GameSaveData, GameSettings, Inventory, Overworld, Player, PlayerSaveData,
+        UnloadZoneCommand, Zone,
     },
     engine::{Clock, StableIdRegistry, save_game, serialize},
     rendering::Position,

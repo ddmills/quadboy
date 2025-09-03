@@ -27,6 +27,7 @@ use crate::{
     engine::{
         App, AudioRegistry, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType,
         SerializableComponentRegistry, StableId, StableIdRegistry, update_mouse,
+        update_mouse_input,
     },
     rendering::{CrtShader, Glyph, RecordZonePosition},
     states::{
@@ -35,6 +36,7 @@ use crate::{
         NewGameStatePlugin, OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin,
         SettingsStatePlugin, update_app_states, update_game_states,
     },
+    ui::{button_styles, on_btn_pressed, on_key_pressed, setup_buttons, ui_interaction_system},
 };
 
 mod cfg;
@@ -148,12 +150,20 @@ async fn main() {
         .init_resource::<Prefabs>()
         .init_resource::<Rand>()
         .init_resource::<StableIdRegistry>()
-        .add_systems(ScheduleType::PreUpdate, (update_time, update_key_input))
+        .add_systems(
+            ScheduleType::PreUpdate,
+            (update_time, update_key_input, update_mouse_input),
+        )
         .add_systems(
             ScheduleType::Update,
             (
                 update_screen_size,
                 update_mouse,
+                setup_buttons,
+                ui_interaction_system,
+                button_styles,
+                on_btn_pressed,
+                on_key_pressed,
                 update_crt_uniforms,
                 render_fps,
                 (on_refresh_bitmask, on_bitmask_spawn).chain(),

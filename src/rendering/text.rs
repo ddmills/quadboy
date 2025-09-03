@@ -160,3 +160,38 @@ pub fn render_text(
 
     telemetry::end_zone();
 }
+
+pub fn text_content_length(value: &str) -> usize {
+    let mut in_seq = false;
+    let mut in_flags = false;
+    let mut length = 0;
+
+    for c in value.chars() {
+        if c == START_SEQ {
+            in_seq = true;
+            in_flags = true;
+            continue;
+        }
+
+        if in_seq && c == END_SEQ {
+            in_seq = false;
+            in_flags = false;
+            continue;
+        }
+
+        if in_seq && c == FLAG_SEQ {
+            in_flags = false;
+            continue;
+        }
+
+        if in_flags {
+            continue;
+        }
+
+        if in_seq || !in_seq {
+            length += 1;
+        }
+    }
+
+    length
+}

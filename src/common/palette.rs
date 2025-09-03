@@ -11,6 +11,7 @@ pub enum Palette {
     White = 0xFFEAC5,
     Black = 0x140E08,
     Gray = 0x9C978E,
+    DarkGray = 0x474745,
     Green = 0x89CA43,
     DarkGreen = 0x395C20,
     Brown = 0x9E5423,
@@ -145,6 +146,7 @@ enum PaletteSequenceType {
     Repeat,
     Stretch,
     Border,
+    Flash,
     Scroll,
     ScrollFast,
 }
@@ -156,6 +158,7 @@ impl PaletteSequenceType {
             "repeat" => Self::Repeat,
             "stretch" => Self::Stretch,
             "border" => Self::Border,
+            "flash" => Self::Flash,
             "scroll" => Self::Scroll,
             "scrollf" => Self::ScrollFast,
             _ => Self::Solid,
@@ -220,6 +223,7 @@ impl PaletteSequence {
                     PaletteSequenceType::ScrollFast => {
                         *self.seq_colors.get((idx + tick) % color_len).unwrap()
                     }
+                    PaletteSequenceType::Flash => *self.seq_colors.get((tick) % color_len).unwrap(),
                 };
 
                 Glyph {

@@ -1,5 +1,8 @@
 use bevy_ecs::prelude::*;
-use macroquad::input::mouse_position;
+use macroquad::input::{
+    MouseButton, is_mouse_button_down, is_mouse_button_pressed, is_mouse_button_released,
+    mouse_position,
+};
 use macroquad::prelude::*;
 
 use crate::{
@@ -15,6 +18,12 @@ pub struct Mouse {
     pub ui: (f32, f32),
     pub world: (f32, f32),
     pub uv: (f32, f32),
+    pub left_pressed: bool,
+    pub left_just_pressed: bool,
+    pub left_just_released: bool,
+    pub right_pressed: bool,
+    pub right_just_pressed: bool,
+    pub right_just_released: bool,
 }
 
 fn crt_curve_uv(uv: (f32, f32), crt_curvature: &crate::rendering::CrtCurvature) -> (f32, f32) {
@@ -82,4 +91,14 @@ pub fn update_mouse(
     cursor.ui = ui;
     cursor.uv = uv;
     cursor.world = world;
+}
+
+pub fn update_mouse_input(mut mouse: ResMut<Mouse>) {
+    mouse.left_pressed = is_mouse_button_down(MouseButton::Left);
+    mouse.left_just_pressed = is_mouse_button_pressed(MouseButton::Left);
+    mouse.left_just_released = is_mouse_button_released(MouseButton::Left);
+
+    mouse.right_pressed = is_mouse_button_down(MouseButton::Right);
+    mouse.right_just_pressed = is_mouse_button_pressed(MouseButton::Right);
+    mouse.right_just_released = is_mouse_button_released(MouseButton::Right);
 }

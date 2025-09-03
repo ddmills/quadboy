@@ -1,29 +1,69 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
-    engine::{App, ExitAppEvent, KeyInput, Plugin},
+    engine::{App, ExitAppEvent, Plugin},
     rendering::{Position, Text},
     states::{
         AppState, AppStatePlugin, CurrentAppState, CurrentGameState, GameState, cleanup_system,
     },
+    ui::Button,
 };
+
+#[derive(Resource)]
+struct MainMenuCallbacks {
+    on_btn_new_game: SystemId,
+    on_btn_load: SystemId,
+    on_btn_settings: SystemId,
+    on_btn_quit: SystemId,
+}
 
 pub struct MainMenuStatePlugin;
 
 impl Plugin for MainMenuStatePlugin {
     fn build(&self, app: &mut App) {
         AppStatePlugin::new(AppState::MainMenu)
-            .on_enter(app, render_menu)
-            .on_update(app, main_menu_input)
+            .on_enter(app, (setup_callbacks, render_menu).chain())
             .on_leave(app, cleanup_system::<CleanupMainMenu>);
     }
+}
+
+fn setup_callbacks(world: &mut World) {
+    let callbacks = MainMenuCallbacks {
+        on_btn_new_game: world.register_system(on_btn_new_game),
+        on_btn_load: world.register_system(on_btn_load),
+        on_btn_quit: world.register_system(on_btn_quit),
+        on_btn_settings: world.register_system(on_btn_settings),
+    };
+
+    world.insert_resource(callbacks);
+}
+
+fn on_btn_new_game(
+    mut app_state: ResMut<CurrentAppState>,
+    mut game_state: ResMut<CurrentGameState>,
+) {
+    app_state.next = AppState::Play;
+    game_state.next = GameState::NewGame;
+}
+
+fn on_btn_settings(mut app_state: ResMut<CurrentAppState>) {
+    app_state.next = AppState::Settings;
+}
+
+fn on_btn_quit(mut e_exit_app: EventWriter<ExitAppEvent>) {
+    e_exit_app.write(ExitAppEvent);
+}
+
+fn on_btn_load(mut app_state: ResMut<CurrentAppState>, mut game_state: ResMut<CurrentGameState>) {
+    app_state.next = AppState::Play;
+    game_state.next = GameState::LoadGame;
 }
 
 #[derive(Component)]
 struct CleanupMainMenu;
 
-fn render_menu(mut cmds: Commands) {
+fn render_menu(mut cmds: Commands, callbacks: Res<MainMenuCallbacks>) {
     trace!("EnterAppState::<MainMenu>");
 
     cmds.spawn((
@@ -39,51 +79,26 @@ fn render_menu(mut cmds: Commands) {
     ));
 
     cmds.spawn((
-        Text::new("({Y|N}) NEW GAME"),
         Position::new_f32(4., 4., 0.),
+        Button::new("({Y|N}) NEW GAME", callbacks.on_btn_new_game).hotkey(KeyCode::N),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("({Y|L}) LOAD"),
         Position::new_f32(4., 4.5, 0.),
+        Button::new("({Y|L}) LOAD", callbacks.on_btn_load).hotkey(KeyCode::L),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("({Y|S}) SETTINGS"),
         Position::new_f32(4., 5., 0.),
+        Button::new("({Y|S}) SETTINGS", callbacks.on_btn_settings).hotkey(KeyCode::S),
         CleanupMainMenu,
     ));
 
     cmds.spawn((
-        Text::new("({R|Q}) QUIT"),
         Position::new_f32(4., 6., 0.),
+        Button::new("({Y|Q}) {R|QUIT}", callbacks.on_btn_quit).hotkey(KeyCode::Q),
         CleanupMainMenu,
     ));
-}
-
-fn main_menu_input(
-    keys: Res<KeyInput>,
-    mut app_state: ResMut<CurrentAppState>,
-    mut game_state: ResMut<CurrentGameState>,
-    mut e_exit_app: EventWriter<ExitAppEvent>,
-) {
-    if keys.is_pressed(KeyCode::N) {
-        app_state.next = AppState::Play;
-        game_state.next = GameState::NewGame;
-    }
-
-    if keys.is_pressed(KeyCode::L) {
-        app_state.next = AppState::Play;
-        game_state.next = GameState::LoadGame;
-    }
-
-    if keys.is_pressed(KeyCode::S) {
-        app_state.next = AppState::Settings;
-    }
-
-    if keys.is_pressed(KeyCode::Q) {
-        e_exit_app.write(ExitAppEvent);
-    }
 }
