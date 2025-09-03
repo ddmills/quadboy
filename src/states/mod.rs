@@ -1,4 +1,5 @@
 mod state;
+mod state_container;
 mod state_explore;
 mod state_inventory;
 mod state_load_game;
@@ -10,6 +11,7 @@ mod state_play;
 mod state_settings;
 
 pub use state::*;
+pub use state_container::*;
 pub use state_explore::*;
 pub use state_inventory::*;
 pub use state_load_game::*;

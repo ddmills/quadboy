@@ -30,11 +30,9 @@ impl Command for OpenContainerAction {
                 .remove::<UnopenedContainer>();
         }
 
-        world.insert_resource(crate::states::InventoryContext {
+        world.insert_resource(crate::states::ContainerContext {
             player_entity: self.player_entity,
-            container_entity: Some(self.container_entity),
-            selected_item_id: None,
-            available_slots: Vec::new(),
+            container_entity: self.container_entity,
         });
 
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {

@@ -235,7 +235,7 @@ impl PaletteSequence {
                     layer_id: text.layer_id,
                     texture_id: text.texture_id,
                     is_dormant: false,
-                    scale: 1.0,
+                    scale: (1.0, 1.0),
                 }
             })
             .collect()

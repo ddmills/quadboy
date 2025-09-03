@@ -23,7 +23,7 @@ pub struct Glyph {
     pub fg2: Option<u32>,
     pub bg: Option<u32>,
     pub outline: Option<u32>,
-    pub scale: f32,
+    pub scale: (f32, f32),
     pub layer_id: Layer,
     pub texture_id: GlyphTextureId,
     pub is_dormant: bool,
@@ -77,7 +77,7 @@ impl Glyph {
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
-            scale: 1.,
+            scale: (1., 1.),
         }
     }
 
@@ -91,7 +91,7 @@ impl Glyph {
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
-            scale: 1.,
+            scale: (1., 1.),
         }
     }
 
@@ -105,7 +105,7 @@ impl Glyph {
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
-            scale: 1.,
+            scale: (1., 1.),
         }
     }
 
@@ -149,7 +149,7 @@ impl Glyph {
         self
     }
 
-    pub fn scale(mut self, value: f32) -> Self {
+    pub fn scale(mut self, value: (f32, f32)) -> Self {
         self.scale = value;
         self
     }
@@ -227,8 +227,8 @@ pub fn render_glyphs(
         }
 
         let texture_id = glyph.texture_id;
-        let w = texture_id.get_glyph_width() * glyph.scale;
-        let h = texture_id.get_glyph_height() * glyph.scale;
+        let w = texture_id.get_glyph_width() * glyph.scale.0;
+        let h = texture_id.get_glyph_height() * glyph.scale.1;
 
         let mut x = (pos.x * tile_w).floor();
         let mut y = (pos.y * tile_h).floor();

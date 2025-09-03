@@ -6,8 +6,8 @@ use macroquad::{
     prelude::*,
 };
 use rendering::{
-    GameCamera, Layers, Position, RenderTargets, ScreenSize, Text, load_tilesets, render_all,
-    render_glyphs, render_text, update_crt_uniforms, update_screen_size,
+    GameCamera, Layers, Position, RenderTargets, ScreenSize, Text, render_all, render_glyphs,
+    render_text, update_crt_uniforms, update_screen_size,
 };
 use ui::UiLayout;
 
@@ -31,12 +31,16 @@ use crate::{
     },
     rendering::{CrtShader, Glyph, RecordZonePosition, TilesetRegistry},
     states::{
-        CleanupStateExplore, CleanupStatePlay, CurrentAppState, CurrentGameState,
-        ExploreStatePlugin, InventoryStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin,
-        NewGameStatePlugin, OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin,
-        SettingsStatePlugin, update_app_states, update_game_states,
+        CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin, CurrentAppState,
+        CurrentGameState, ExploreStatePlugin, InventoryStatePlugin, LoadGameStatePlugin,
+        MainMenuStatePlugin, NewGameStatePlugin, OverworldStatePlugin, PauseStatePlugin,
+        PlayStatePlugin, SettingsStatePlugin, update_app_states, update_game_states,
     },
-    ui::{button_styles, on_btn_pressed, on_key_pressed, setup_buttons, ui_interaction_system},
+    ui::{
+        ListContext, ListFocus, button_styles, list_focus_switching, list_item_activation,
+        list_mouse_hover, list_navigation, list_styles, on_btn_pressed, on_key_pressed,
+        setup_buttons, setup_lists, ui_interaction_system, update_list_context,
+    },
 };
 
 mod cfg;
@@ -116,6 +120,7 @@ async fn main() {
         .add_plugin(LoadGameStatePlugin)
         .add_plugin(ExploreStatePlugin)
         .add_plugin(InventoryStatePlugin)
+        .add_plugin(ContainerStatePlugin::new())
         .add_plugin(OverworldStatePlugin)
         .add_plugin(PauseStatePlugin)
         .register_event::<LoadGameResult>()
@@ -133,6 +138,8 @@ async fn main() {
         .insert_resource(LootTableRegistry::new())
         .init_resource::<Mouse>()
         .init_resource::<ScreenSize>()
+        .init_resource::<ListFocus>()
+        .init_resource::<ListContext>()
         .init_resource::<Time>()
         .init_resource::<RenderTargets>()
         .init_resource::<Layers>()
@@ -159,10 +166,17 @@ async fn main() {
             (
                 update_screen_size,
                 update_mouse,
-                setup_buttons,
                 ui_interaction_system,
+                setup_buttons,
+                setup_lists,
+                list_navigation,
+                list_focus_switching,
+                list_mouse_hover,
+                update_list_context,
                 button_styles,
+                list_styles,
                 on_btn_pressed,
+                list_item_activation,
                 on_key_pressed,
                 update_crt_uniforms,
                 render_fps,
