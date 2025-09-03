@@ -1,27 +1,41 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     cfg::MAP_SIZE,
     common::Palette,
     domain::{BiomeType, Overworld, PlayerPosition},
-    engine::{KeyInput, Mouse, Plugin},
+    engine::{Mouse, Plugin},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
+    ui::Button,
 };
 
 use super::GameState;
+
+#[derive(Resource)]
+struct OverworldCallbacks {
+    back_to_explore: SystemId,
+}
 
 pub struct OverworldStatePlugin;
 
 impl Plugin for OverworldStatePlugin {
     fn build(&self, app: &mut crate::engine::App) {
         GameStatePlugin::new(GameState::Overworld)
-            .on_enter(app, (on_enter_overworld, render_overworld_map).chain())
-            .on_update(app, (listen_for_inputs, display_overworld_debug_at_mouse))
+            .on_enter(
+                app,
+                (setup_callbacks, on_enter_overworld, render_overworld_map).chain(),
+            )
+            .on_update(app, display_overworld_debug_at_mouse)
             .on_leave(
                 app,
-                (on_leave_overworld, cleanup_system::<CleanupStateOverworld>),
+                (
+                    on_leave_overworld,
+                    cleanup_system::<CleanupStateOverworld>,
+                    remove_overworld_callbacks,
+                )
+                    .chain(),
             );
     }
 }
@@ -39,7 +53,23 @@ pub struct OverworldMapTile;
 #[derive(Component)]
 pub struct OverworldDebugText;
 
-fn on_enter_overworld(mut cmds: Commands) {
+fn setup_callbacks(world: &mut World) {
+    let callbacks = OverworldCallbacks {
+        back_to_explore: world.register_system(back_to_explore),
+    };
+
+    world.insert_resource(callbacks);
+}
+
+fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Explore;
+}
+
+fn remove_overworld_callbacks(mut cmds: Commands) {
+    cmds.remove_resource::<OverworldCallbacks>();
+}
+
+fn on_enter_overworld(mut cmds: Commands, callbacks: Res<OverworldCallbacks>) {
     cmds.spawn((
         Text::new("{Y|OVERWORLD MAP}").bg(Palette::Black),
         Position::new_f32(2., 1., 0.),
@@ -54,8 +84,8 @@ fn on_enter_overworld(mut cmds: Commands) {
     ));
 
     cmds.spawn((
-        Text::new("({Y|M}) BACK TO EXPLORE").bg(Palette::Black),
         Position::new_f32(2., MAP_SIZE.1 as f32 + 3., 0.),
+        Button::new("({Y|M}) BACK TO EXPLORE", callbacks.back_to_explore).hotkey(KeyCode::M),
         CleanupStateOverworld,
     ));
 }
@@ -123,12 +153,6 @@ fn render_overworld_map(
                 CleanupStateOverworld,
             ));
         }
-    }
-}
-
-fn listen_for_inputs(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
-    if keys.is_pressed(KeyCode::M) {
-        game_state.next = GameState::Explore;
     }
 }
 

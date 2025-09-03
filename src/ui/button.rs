@@ -49,7 +49,7 @@ pub fn setup_buttons(
 
         let mut ecmds = cmds.entity(entity);
 
-        ecmds.insert(Interactable::new(len as f32, 0.5));
+        ecmds.insert(Interactable::new(len as f32 / 2., 0.5));
 
         if interaction_opt.is_none() {
             ecmds.insert(Interaction::None);
@@ -89,7 +89,7 @@ pub fn button_styles(mut q_buttons: Query<(&mut Text, &Button, &Interaction)>) {
     for (mut text, _button, interaction) in q_buttons.iter_mut() {
         let bg = match interaction {
             Interaction::Pressed => Palette::DarkBlue,
-            Interaction::Hovered => Palette::DarkGray,
+            Interaction::Hovered => Palette::DarkBlue,
             Interaction::None => Palette::Black,
         };
 

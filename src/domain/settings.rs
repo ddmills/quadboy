@@ -31,9 +31,9 @@ impl Default for GameSettings {
             save_name: "test".to_string(),
             camera_mode: CameraMode::Smooth(0.1),
             crt_curvature: CrtCurvature::Off,
-            crt_scanline: true,
-            crt_film_grain: true,
-            crt_flicker: true,
+            crt_scanline: false,
+            crt_film_grain: false,
+            crt_flicker: false,
             crt_vignette: true,
             crt_chromatic_ab: true,
         }

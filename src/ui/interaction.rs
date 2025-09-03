@@ -34,8 +34,8 @@ pub fn ui_interaction_system(
 
         let is_hovered = mouse_ui.0 >= pos.0
             && mouse_ui.0 <= pos.0 + interactable.width
-            && mouse_ui.1 >= pos.1
-            && mouse_ui.1 <= pos.1 + interactable.height;
+            && mouse_ui.1 > pos.1
+            && mouse_ui.1 < pos.1 + interactable.height;
 
         let new_interaction = if is_hovered {
             if mouse.left_pressed {

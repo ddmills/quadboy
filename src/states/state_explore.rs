@@ -1,5 +1,5 @@
-use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
+use bevy_ecs::{prelude::*, system::SystemId};
+use macroquad::{input::KeyCode, prelude::trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -10,10 +10,17 @@ use crate::{
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
-    states::{GameStatePlugin, cleanup_system},
+    states::{CurrentGameState, GameStatePlugin, cleanup_system},
+    ui::Button,
 };
 
 use super::GameState;
+
+#[derive(Resource)]
+struct ExploreCallbacks {
+    open_map: SystemId,
+    open_inventory: SystemId,
+}
 
 pub struct ExploreStatePlugin;
 
@@ -22,7 +29,10 @@ impl Plugin for ExploreStatePlugin {
         app.register_event::<PickupEvent>();
 
         GameStatePlugin::new(GameState::Explore)
-            .on_enter(app, (on_enter_explore, center_camera_on_player).chain())
+            .on_enter(
+                app,
+                (setup_callbacks, on_enter_explore, center_camera_on_player).chain(),
+            )
             .on_update(
                 app,
                 (
@@ -37,7 +47,12 @@ impl Plugin for ExploreStatePlugin {
             )
             .on_leave(
                 app,
-                (on_leave_explore, cleanup_system::<CleanupStateExplore>).chain(),
+                (
+                    on_leave_explore,
+                    cleanup_system::<CleanupStateExplore>,
+                    remove_explore_callbacks,
+                )
+                    .chain(),
             );
     }
 }
@@ -45,7 +60,28 @@ impl Plugin for ExploreStatePlugin {
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct CleanupStateExplore;
 
-fn on_enter_explore(mut cmds: Commands) {
+fn setup_callbacks(world: &mut World) {
+    let callbacks = ExploreCallbacks {
+        open_map: world.register_system(open_map),
+        open_inventory: world.register_system(open_inventory),
+    };
+
+    world.insert_resource(callbacks);
+}
+
+fn open_map(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Overworld;
+}
+
+fn open_inventory(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Inventory;
+}
+
+fn remove_explore_callbacks(mut cmds: Commands) {
+    cmds.remove_resource::<ExploreCallbacks>();
+}
+
+fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     trace!("EnterGameState::<Explore>");
 
     cmds.spawn((
@@ -79,6 +115,18 @@ fn on_enter_explore(mut cmds: Commands) {
         Position::new_f32(0., 0., 0.),
         Visibility::Hidden,
         MouseHoverText,
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(3., 1.5, 0.),
+        Button::new("({Y|M}) MAP", callbacks.open_map).hotkey(KeyCode::M),
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(7., 1.5, 0.),
+        Button::new("({Y|I}) INVENTORY", callbacks.open_inventory).hotkey(KeyCode::I),
         CleanupStateExplore,
     ));
 }

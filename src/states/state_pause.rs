@@ -1,39 +1,46 @@
 use bevy_ecs::{
     component::Component,
     event::EventReader,
+    prelude::*,
     query::With,
     schedule::IntoScheduleConfigs,
-    system::{Commands, Local, Query, Res, ResMut},
+    system::{Commands, Local, Query, Res, ResMut, SystemId},
 };
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     common::Palette,
     domain::{GameSettings, SaveGameCommand, SaveGameResult},
-    engine::{KeyInput, Plugin, Time},
+    engine::{Plugin, Time},
     rendering::{Position, Text},
     states::{AppState, CurrentAppState, CurrentGameState, GameStatePlugin, cleanup_system},
+    ui::Button,
 };
 
 use super::GameState;
+
+#[derive(Resource)]
+struct PauseCallbacks {
+    continue_game: SystemId,
+    save_game: SystemId,
+    quit_to_menu: SystemId,
+}
 
 pub struct PauseStatePlugin;
 
 impl Plugin for PauseStatePlugin {
     fn build(&self, app: &mut crate::engine::App) {
         GameStatePlugin::new(GameState::Pause)
-            .on_enter(app, on_enter_pause)
-            .on_update(
-                app,
-                (
-                    listen_for_inputs,
-                    update_save_status_display,
-                    handle_save_result,
-                ),
-            )
+            .on_enter(app, (setup_callbacks, on_enter_pause).chain())
+            .on_update(app, (update_save_status_display, handle_save_result))
             .on_leave(
                 app,
-                (on_leave_pause, cleanup_system::<CleanupStatePause>).chain(),
+                (
+                    on_leave_pause,
+                    cleanup_system::<CleanupStatePause>,
+                    remove_pause_callbacks,
+                )
+                    .chain(),
             );
     }
 }
@@ -48,65 +55,24 @@ pub struct CleanupStatePause;
 #[derive(Component)]
 pub struct SaveStatusDisplay;
 
-fn on_enter_pause(mut cmds: Commands) {
-    cmds.spawn((
-        Text::new("PAUSED").bg(Palette::Black),
-        Position::new_f32(4., 2., 0.),
-        CleanupStatePause,
-    ));
+fn setup_callbacks(world: &mut World) {
+    let callbacks = PauseCallbacks {
+        continue_game: world.register_system(continue_game),
+        save_game: world.register_system(save_game_callback),
+        quit_to_menu: world.register_system(quit_to_menu),
+    };
 
-    cmds.spawn((
-        Text::new("({Y|ESC}) CONTINUE").bg(Palette::Black),
-        Position::new_f32(4., 3.5, 0.),
-        CleanupStatePause,
-    ));
-
-    cmds.spawn((
-        Text::new("({Y|S}) SAVE GAME").bg(Palette::Black),
-        Position::new_f32(4., 4., 0.),
-        CleanupStatePause,
-    ));
-
-    cmds.spawn((
-        Text::new("({R|Q}) QUIT TO MAIN MENU").bg(Palette::Black),
-        Position::new_f32(4., 5., 0.),
-        CleanupStatePause,
-    ));
-
-    cmds.spawn((
-        Text::new("").bg(Palette::Black),
-        Position::new_f32(4., 6., 0.),
-        CleanupStatePause,
-        SaveStatusDisplay,
-    ));
+    world.insert_resource(callbacks);
 }
 
-fn listen_for_inputs(
+fn continue_game(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Explore;
+}
+
+fn save_game_callback(
     mut cmds: Commands,
-    keys: Res<KeyInput>,
-    mut app_state: ResMut<CurrentAppState>,
-    mut game_state: ResMut<CurrentGameState>,
     settings: Res<GameSettings>,
     mut q_save_status: Query<&mut Text, With<SaveStatusDisplay>>,
-) {
-    if keys.is_pressed(KeyCode::Escape) {
-        game_state.next = GameState::Explore;
-    }
-
-    if keys.is_pressed(KeyCode::S) {
-        save_game(&mut cmds, &settings, &mut q_save_status);
-    }
-
-    if keys.is_pressed(KeyCode::Q) {
-        game_state.next = GameState::None;
-        app_state.next = AppState::MainMenu;
-    }
-}
-
-fn save_game(
-    cmds: &mut Commands,
-    settings: &GameSettings,
-    q_save_status: &mut Query<&mut Text, With<SaveStatusDisplay>>,
 ) {
     if !settings.enable_saves {
         if let Ok(mut text) = q_save_status.single_mut() {
@@ -120,6 +86,48 @@ fn save_game(
     if let Ok(mut text) = q_save_status.single_mut() {
         text.value = format!("Saving game to '{}'...", settings.save_name);
     }
+}
+
+fn quit_to_menu(mut app_state: ResMut<CurrentAppState>, mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::None;
+    app_state.next = AppState::MainMenu;
+}
+
+fn remove_pause_callbacks(mut cmds: Commands) {
+    cmds.remove_resource::<PauseCallbacks>();
+}
+
+fn on_enter_pause(mut cmds: Commands, callbacks: Res<PauseCallbacks>) {
+    cmds.spawn((
+        Text::new("PAUSED").bg(Palette::Black),
+        Position::new_f32(4., 2., 0.),
+        CleanupStatePause,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(4., 3.5, 0.),
+        Button::new("({Y|ESC}) CONTINUE", callbacks.continue_game).hotkey(KeyCode::Escape),
+        CleanupStatePause,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(4., 4., 0.),
+        Button::new("({Y|S}) SAVE GAME", callbacks.save_game).hotkey(KeyCode::S),
+        CleanupStatePause,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(4., 5., 0.),
+        Button::new("({R|Q}) QUIT TO MAIN MENU", callbacks.quit_to_menu).hotkey(KeyCode::Q),
+        CleanupStatePause,
+    ));
+
+    cmds.spawn((
+        Text::new("").bg(Palette::Black),
+        Position::new_f32(4., 6., 0.),
+        CleanupStatePause,
+        SaveStatusDisplay,
+    ));
 }
 
 fn update_save_status_display(

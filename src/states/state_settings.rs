@@ -368,12 +368,10 @@ fn update_settings_display(
         );
     }
 
-    // Update save name
     if let Ok(mut text) = q_text.get_mut(ui_entities.save_name) {
         text.value = format!("({{Y|9}}) Save Name: {{G|{}}}", settings.save_name);
     }
 
-    // Update input rate
     if let Ok(mut text) = q_text.get_mut(ui_entities.input_rate) {
         text.value = format!(
             "({{Y|↑}}/{{Y|↓}}) Input Rate: {{G|{:.3}}}",
@@ -381,7 +379,6 @@ fn update_settings_display(
         );
     }
 
-    // Update input delay
     if let Ok(mut text) = q_text.get_mut(ui_entities.input_delay) {
         text.value = format!(
             "({{Y|←}}/{{Y|→}}) Input Delay: {{G|{:.3}}}",
