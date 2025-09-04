@@ -94,6 +94,7 @@ pub fn setup_buttons(
 pub fn button_styles(mut q_buttons: Query<(&mut Text, &Button, &Interaction)>) {
     for (mut text, _button, interaction) in q_buttons.iter_mut() {
         let bg = match interaction {
+            Interaction::Released => Palette::DarkBlue,
             Interaction::Pressed => Palette::DarkBlue,
             Interaction::Hovered => Palette::Gray,
             Interaction::None => Palette::Black,

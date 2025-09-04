@@ -9,6 +9,7 @@ use crate::{
 #[derive(Component, Default, PartialEq, Eq)]
 pub enum Interaction {
     Pressed,
+    Released,
     Hovered,
     #[default]
     None,
@@ -46,8 +47,10 @@ pub fn ui_interaction_system(
         let new_interaction = if is_hovered {
             if dialog_state.is_open && q_dialog_content.get(entity).is_err() {
                 Interaction::None
-            } else if mouse.left_pressed && !mouse.is_captured {
+            } else if mouse.left_pressed {
                 Interaction::Pressed
+            } else if mouse.left_just_released && !mouse.is_captured {
+                Interaction::Released
             } else {
                 Interaction::Hovered
             }

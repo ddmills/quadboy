@@ -2,7 +2,7 @@ use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
 
 use crate::{
-    engine::{KeyInput, Mouse},
+    engine::{AudioKey, AudioRegistry, KeyInput, Mouse},
     ui::{DialogContent, DialogState, Interaction},
 };
 
@@ -21,19 +21,19 @@ pub fn on_btn_pressed(
     q_btns: Query<(Entity, &Interaction, &Callback), Changed<Interaction>>,
     q_dialog_content: Query<&DialogContent>,
     dialog_state: Res<DialogState>,
+    audio: Res<AudioRegistry>,
 ) {
     for (entity, interaction, callback) in q_btns.iter() {
-        if matches!(interaction, Interaction::Pressed) {
+        if matches!(interaction, Interaction::Released) {
             // If a dialog is open, only allow buttons from dialog content
-            if dialog_state.is_open {
-                if q_dialog_content.get(entity).is_err() {
-                    continue; // Skip this button since it's not part of a dialog
+            if dialog_state.is_open
+                && q_dialog_content.get(entity).is_err() {
+                    continue;
                 }
-            }
 
-            // Capture the mouse to prevent other buttons from triggering
             mouse.is_captured = true;
 
+            audio.play(AudioKey::Button1, 0.7);
             cmd.entity(entity).insert(Triggered);
             cmd.run_system(callback.0);
             cmd.entity(entity).remove::<Triggered>();
