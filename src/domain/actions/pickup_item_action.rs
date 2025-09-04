@@ -56,36 +56,39 @@ impl Command for PickupItemAction {
 
             // Find existing stack of same type in inventory
             if let Some(existing_entity) = find_existing_stack(world, &item_ids, stack_type)
-                && let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity) {
-                    let overflow = stack_count.add(pickup_count);
+                && let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity)
+            {
+                let overflow = stack_count.add(pickup_count);
 
-                    if overflow == 0 {
-                        // All items fit in existing stack - despawn picked up item
-                        remove_item_from_zone(world, item_entity);
-                        world.entity_mut(item_entity).despawn();
+                if overflow == 0 {
+                    // All items fit in existing stack - despawn picked up item
+                    remove_item_from_zone(world, item_entity);
+                    world.entity_mut(item_entity).despawn();
 
-                        // Consume energy
-                        if self.spend_energy
-                            && let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
-                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
-                                energy.consume_energy(cost);
-                            }
-                        return;
-                    } else {
-                        // Partial pickup - update the item on ground with remaining count
-                        if let Some(mut ground_stack) = world.get_mut::<StackCount>(item_entity) {
-                            ground_stack.count = overflow;
-                        }
-
-                        // Consume energy for partial pickup
-                        if self.spend_energy
-                            && let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
-                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
-                                energy.consume_energy(cost);
-                            }
-                        return;
+                    // Consume energy
+                    if self.spend_energy
+                        && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
+                    {
+                        let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                        energy.consume_energy(cost);
                     }
+                    return;
+                } else {
+                    // Partial pickup - update the item on ground with remaining count
+                    if let Some(mut ground_stack) = world.get_mut::<StackCount>(item_entity) {
+                        ground_stack.count = overflow;
+                    }
+
+                    // Consume energy for partial pickup
+                    if self.spend_energy
+                        && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
+                    {
+                        let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                        energy.consume_energy(cost);
+                    }
+                    return;
                 }
+            }
         }
 
         // Not stackable or no existing stack - use normal pickup logic
@@ -147,9 +150,10 @@ fn find_existing_stack(
     for &id in item_ids {
         if let Some(entity) = id_registry.get_entity(id)
             && let Some(stackable) = world.get::<Stackable>(entity)
-                && stackable.stack_type == stack_type {
-                    return Some(entity);
-                }
+            && stackable.stack_type == stack_type
+        {
+            return Some(entity);
+        }
     }
     None
 }

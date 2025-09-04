@@ -3,7 +3,7 @@ use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    rendering::{Text, text_content_length},
+    rendering::{Layer, Text, text_content_length},
     ui::{Callback, Hotkey, Interactable, Interaction},
 };
 
@@ -11,7 +11,7 @@ use crate::{
 pub struct Button {
     pub label: String,
     pub hotkey: Option<KeyCode>,
-    // pub width: Option<f32>,
+    pub layer: Layer,
     pub callback: SystemId,
 }
 
@@ -20,8 +20,14 @@ impl Button {
         Self {
             label: label.into(),
             hotkey: None,
+            layer: Layer::Ui,
             callback,
         }
+    }
+
+    pub fn layer(mut self, layer: Layer) -> Self {
+        self.layer = layer;
+        self
     }
 
     pub fn hotkey(mut self, key: KeyCode) -> Self {
@@ -60,7 +66,7 @@ pub fn setup_buttons(
                 text.value = btn.label.clone();
             }
         } else {
-            ecmds.insert(Text::new(&btn.label));
+            ecmds.insert(Text::new(&btn.label).layer(btn.layer));
         }
 
         if let Some(callback) = callback_opt {

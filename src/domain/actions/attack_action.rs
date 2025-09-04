@@ -37,7 +37,9 @@ impl Command for AttackAction {
 
             if let Some(weapon_id) = weapon_id {
                 if let Some(weapon_entity) = registry.get_entity(weapon_id) {
-                    world.get::<MeleeWeapon>(weapon_entity).map(|weapon| (weapon.damage, weapon.can_damage.clone()))
+                    world
+                        .get::<MeleeWeapon>(weapon_entity)
+                        .map(|weapon| (weapon.damage, weapon.can_damage.clone()))
                 } else {
                     None
                 }
@@ -98,43 +100,44 @@ impl Command for AttackAction {
             }
             // Check if target has Destructible (object)
             else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
-                && let Some((damage, can_damage)) = &weapon_damage {
-                    // Check if weapon can damage this material type
-                    if can_damage.contains(&destructible.material_type) {
-                        let material_type = destructible.material_type;
-                        destructible.take_damage(*damage);
-                        let is_destroyed = destructible.is_destroyed();
+                && let Some((damage, can_damage)) = &weapon_damage
+            {
+                // Check if weapon can damage this material type
+                if can_damage.contains(&destructible.material_type) {
+                    let material_type = destructible.material_type;
+                    destructible.take_damage(*damage);
+                    let is_destroyed = destructible.is_destroyed();
 
-                        // Drop the borrow before accessing resources
-                        drop(destructible);
+                    // Drop the borrow before accessing resources
+                    drop(destructible);
 
-                        // Play hit audio
-                        if let Some(audio_collection) = material_type.hit_audio_collection() {
-                            world.resource_scope(|world, audio_registry: Mut<AudioRegistry>| {
-                                if let Some(mut rand) = world.get_resource_mut::<Rand>() {
-                                    audio_registry.play_random_from_collection(
-                                        audio_collection,
-                                        &mut rand,
-                                        0.5,
-                                    );
-                                }
-                            });
-                        }
-
-                        // Check if target was destroyed
-                        if is_destroyed {
-                            // Fire destruction event instead of handling directly
-                            if let Some(position) = world.get::<Position>(target_entity) {
-                                let event = EntityDestroyedEvent::new(
-                                    target_entity,
-                                    position.world(),
-                                    DestructionCause::Attack,
+                    // Play hit audio
+                    if let Some(audio_collection) = material_type.hit_audio_collection() {
+                        world.resource_scope(|world, audio_registry: Mut<AudioRegistry>| {
+                            if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+                                audio_registry.play_random_from_collection(
+                                    audio_collection,
+                                    &mut rand,
+                                    0.5,
                                 );
-                                world.send_event(event);
                             }
+                        });
+                    }
+
+                    // Check if target was destroyed
+                    if is_destroyed {
+                        // Fire destruction event instead of handling directly
+                        if let Some(position) = world.get::<Position>(target_entity) {
+                            let event = EntityDestroyedEvent::new(
+                                target_entity,
+                                position.world(),
+                                DestructionCause::Attack,
+                            );
+                            world.send_event(event);
                         }
                     }
                 }
+            }
         }
 
         // Consume energy

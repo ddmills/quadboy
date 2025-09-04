@@ -143,9 +143,10 @@ impl EquipmentSlots {
 
         for &item_id in self.slots.values() {
             if let Some(id) = item_id
-                && seen.insert(id) {
-                    items.push(id);
-                }
+                && seen.insert(id)
+            {
+                items.push(id);
+            }
         }
 
         items

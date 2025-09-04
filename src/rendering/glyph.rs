@@ -7,7 +7,7 @@ use crate::{
         ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Player, ZoneStatus,
     },
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
-    ui::UiLayout,
+    ui::{DialogState, UiLayout},
 };
 use bevy_ecs::prelude::*;
 use macroquad::{prelude::*, telemetry};
@@ -39,8 +39,8 @@ impl TilesetRegistry {
     pub async fn load() -> Self {
         let glyph_texture_fut = load_texture("./src/assets/textures/cowboy.png");
         // let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
-        // let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
-        let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
+        let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
+        // let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
 
         let glyph_texture = glyph_texture_fut.await.unwrap();
         let font_body_texture = font_body_texture_fut.await.unwrap();
@@ -64,6 +64,7 @@ pub const TRANSPARENT: Vec4 = Vec4::splat(0.);
 pub const SHROUD_FG_COLOR: u32 = 0x8F8F8F;
 pub const SHROUD_BG_COLOR: u32 = 0x535353;
 pub const SHROUD_OUTLINE_COLOR: u32 = 0x1F1F1F;
+pub const DIMMING_FACTOR: f32 = 0.8;
 
 #[allow(dead_code)]
 impl Glyph {
@@ -179,6 +180,36 @@ impl Glyph {
     }
 }
 
+/// Apply dimming and desaturation effect to glyph style when dialog is open
+fn dim_glyph_style(style: GlyphStyle) -> GlyphStyle {
+    fn dim_and_desaturate_color(color: Vec4, dim_factor: f32, desat_factor: f32) -> Vec4 {
+        // Calculate luminance (grayscale value)
+        let luminance = 0.299 * color.x + 0.587 * color.y + 0.114 * color.z;
+
+        // Mix original color with grayscale (desaturate)
+        let desaturated_r = color.x * (1.0 - desat_factor) + luminance * desat_factor;
+        let desaturated_g = color.y * (1.0 - desat_factor) + luminance * desat_factor;
+        let desaturated_b = color.z * (1.0 - desat_factor) + luminance * desat_factor;
+
+        // Apply dimming to the desaturated color
+        Vec4::new(
+            desaturated_r * dim_factor,
+            desaturated_g * dim_factor,
+            desaturated_b * dim_factor,
+            color.w,
+        )
+    }
+
+    const DESATURATION_FACTOR: f32 = 0.9;
+
+    GlyphStyle {
+        fg1: dim_and_desaturate_color(style.fg1, DIMMING_FACTOR, DESATURATION_FACTOR),
+        fg2: dim_and_desaturate_color(style.fg2, DIMMING_FACTOR, DESATURATION_FACTOR),
+        bg: dim_and_desaturate_color(style.bg, DIMMING_FACTOR, DESATURATION_FACTOR),
+        outline: dim_and_desaturate_color(style.outline, DIMMING_FACTOR, DESATURATION_FACTOR),
+    }
+}
+
 pub fn render_glyphs(
     q_glyphs: Query<(Entity, &Glyph, &Position, &Visibility)>,
     q_visibility: Query<
@@ -195,6 +226,7 @@ pub fn render_glyphs(
     screen: Res<ScreenSize>,
     ui: Res<UiLayout>,
     player: Query<&Position, With<Player>>,
+    dialog_state: Res<DialogState>,
 ) {
     layers.iter_mut().for_each(|layer| {
         layer.clear();
@@ -271,7 +303,16 @@ pub fn render_glyphs(
             continue;
         }
 
-        let style = glyph.get_style();
+        let mut style = glyph.get_style();
+
+        // Dim non-dialog layers when dialog is open
+        if dialog_state.is_open
+            && glyph.layer_id != Layer::DialogPanels
+            && glyph.layer_id != Layer::DialogContent
+        {
+            style = dim_glyph_style(style);
+        }
+
         let layer = layers.get_mut(glyph.layer_id);
 
         layer.add(Renderable {

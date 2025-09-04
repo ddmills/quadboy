@@ -51,6 +51,8 @@ pub enum Layer {
     Overlay,
     UiPanels,
     Ui,
+    DialogPanels,
+    DialogContent,
 }
 
 impl Layer {
@@ -63,6 +65,8 @@ impl Layer {
             Self::Overlay,
             Self::UiPanels,
             Self::Ui,
+            Self::DialogPanels,
+            Self::DialogContent,
         ]
     }
 
@@ -76,10 +80,12 @@ impl Layer {
             Self::Overlay => 4,
             Self::UiPanels => 5,
             Self::Ui => 6,
+            Self::DialogPanels => 7,
+            Self::DialogContent => 8,
         }
     }
 
-    pub const COUNT: usize = 7;
+    pub const COUNT: usize = 9;
 
     pub fn get_target_type(&self) -> RenderTargetType {
         match self {
@@ -90,6 +96,8 @@ impl Layer {
             Self::Overlay => RenderTargetType::World,
             Self::UiPanels => RenderTargetType::Screen,
             Self::Ui => RenderTargetType::Screen,
+            Self::DialogPanels => RenderTargetType::Screen,
+            Self::DialogContent => RenderTargetType::Screen,
         }
     }
 }

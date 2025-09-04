@@ -37,9 +37,9 @@ use crate::{
         PlayStatePlugin, SettingsStatePlugin, update_app_states, update_game_states,
     },
     ui::{
-        ListContext, ListFocus, button_styles, list_focus_switching, list_item_activation,
-        list_mouse_hover, list_navigation, list_styles, on_btn_pressed, on_key_pressed,
-        setup_buttons, setup_lists, ui_interaction_system, update_list_context,
+        DialogState, ListContext, ListFocus, button_styles, list_focus_switching,
+        list_item_activation, list_mouse_hover, list_navigation, list_styles, on_btn_pressed,
+        on_key_pressed, setup_buttons, setup_lists, ui_interaction_system, update_list_context,
     },
 };
 
@@ -149,6 +149,7 @@ async fn main() {
         .init_resource::<CurrentGameState>()
         .init_resource::<GameCamera>()
         .init_resource::<UiLayout>()
+        .init_resource::<DialogState>()
         .init_resource::<CrtShader>()
         .init_resource::<Zones>()
         .init_resource::<GameSettings>()

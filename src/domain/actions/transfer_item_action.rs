@@ -53,40 +53,39 @@ impl Command for TransferItemAction {
             if let Some(to_inventory) = to_inventory
                 && let Some(existing_entity) =
                     find_existing_stack_transfer(world, &to_inventory.item_ids, stack_type)
-                    && let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity) {
-                        let overflow = stack_count.add(transfer_count);
+                && let Some(mut stack_count) = world.get_mut::<StackCount>(existing_entity)
+            {
+                let overflow = stack_count.add(transfer_count);
 
-                        if overflow == 0 {
-                            // All items fit in existing stack - remove from source and despawn
-                            let Some(mut from_inventory) =
-                                world.get_mut::<Inventory>(self.from_entity)
-                            else {
-                                return;
-                            };
-                            from_inventory.remove_item(self.item_stable_id, item_weight);
-                            world.entity_mut(item_entity).despawn();
+                if overflow == 0 {
+                    // All items fit in existing stack - remove from source and despawn
+                    let Some(mut from_inventory) = world.get_mut::<Inventory>(self.from_entity)
+                    else {
+                        return;
+                    };
+                    from_inventory.remove_item(self.item_stable_id, item_weight);
+                    world.entity_mut(item_entity).despawn();
 
-                            // Consume energy
-                            if let Some(mut energy) = world.get_mut::<Energy>(self.from_entity) {
-                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
-                                energy.consume_energy(cost);
-                            }
-                            return;
-                        } else {
-                            // Partial transfer - update source item with remaining count
-                            if let Some(mut source_stack) = world.get_mut::<StackCount>(item_entity)
-                            {
-                                source_stack.count = overflow;
-                            }
-
-                            // Consume energy for partial transfer
-                            if let Some(mut energy) = world.get_mut::<Energy>(self.from_entity) {
-                                let cost = get_energy_cost(EnergyActionType::PickUpItem);
-                                energy.consume_energy(cost);
-                            }
-                            return;
-                        }
+                    // Consume energy
+                    if let Some(mut energy) = world.get_mut::<Energy>(self.from_entity) {
+                        let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                        energy.consume_energy(cost);
                     }
+                    return;
+                } else {
+                    // Partial transfer - update source item with remaining count
+                    if let Some(mut source_stack) = world.get_mut::<StackCount>(item_entity) {
+                        source_stack.count = overflow;
+                    }
+
+                    // Consume energy for partial transfer
+                    if let Some(mut energy) = world.get_mut::<Energy>(self.from_entity) {
+                        let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                        energy.consume_energy(cost);
+                    }
+                    return;
+                }
+            }
         }
 
         // Not stackable or no existing stack - use normal transfer logic
@@ -165,9 +164,10 @@ fn find_existing_stack_transfer(
     for &id in item_ids {
         if let Some(entity) = id_registry.get_entity(id)
             && let Some(stackable) = world.get::<Stackable>(entity)
-                && stackable.stack_type == stack_type {
-                    return Some(entity);
-                }
+            && stackable.stack_type == stack_type
+        {
+            return Some(entity);
+        }
     }
     None
 }

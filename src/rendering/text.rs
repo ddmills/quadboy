@@ -188,9 +188,7 @@ pub fn text_content_length(value: &str) -> usize {
             continue;
         }
 
-        if in_seq || !in_seq {
-            length += 1;
-        }
+        length += 1;
     }
 
     length

@@ -343,7 +343,7 @@ fn setup_container_screen(
     cmds.entity(player_list_entity)
         .insert(ListState::new().with_focus(true));
 
-    let help_y = 17.0; // Fixed position near bottom
+    let help_y = 12.0; // Fixed position near bottom
     cmds.spawn((
         Text::new("[{Y|I}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
             .fg1(Palette::White)

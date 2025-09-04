@@ -68,10 +68,11 @@ pub fn validate_equipment_state(
 
                 // Try to add back to inventory
                 if let Ok(inventory) = q_inventory.get(owner_entity)
-                    && !inventory.contains_id(item_id) {
-                        cmds.entity(item_entity)
-                            .insert(InInventory::new(equipped.owner_id));
-                    }
+                    && !inventory.contains_id(item_id)
+                {
+                    cmds.entity(item_entity)
+                        .insert(InInventory::new(equipped.owner_id));
+                }
             }
         }
     }

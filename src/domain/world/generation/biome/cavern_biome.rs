@@ -92,9 +92,10 @@ fn generate_giant_mushrooms(
             }
 
             if let Some(grid) = exclude_grid
-                && *grid.get(x, y).unwrap_or(&false) {
-                    continue;
-                }
+                && *grid.get(x, y).unwrap_or(&false)
+            {
+                continue;
+            }
 
             let wpos = zone_local_to_world(zone.zone_idx, x, y);
             if rand.bool(0.0025 * wpos.2 as f32) {

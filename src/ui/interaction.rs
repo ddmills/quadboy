@@ -1,6 +1,10 @@
 use bevy_ecs::prelude::*;
 
-use crate::{engine::Mouse, rendering::Position};
+use crate::{
+    engine::Mouse,
+    rendering::Position,
+    ui::{DialogContent, DialogState},
+};
 
 #[derive(Component, Default, PartialEq, Eq)]
 pub enum Interaction {
@@ -26,7 +30,9 @@ impl Interactable {
 pub fn ui_interaction_system(
     mut cmds: Commands,
     q_interactions: Query<(Entity, &Position, &Interactable, &Interaction)>,
+    q_dialog_content: Query<&DialogContent>,
     mouse: Res<Mouse>,
+    dialog_state: Res<DialogState>,
 ) {
     for (entity, position, interactable, current_interaction) in q_interactions.iter() {
         let mouse_ui = mouse.ui;
@@ -38,7 +44,9 @@ pub fn ui_interaction_system(
             && mouse_ui.1 < pos.1 + interactable.height;
 
         let new_interaction = if is_hovered {
-            if mouse.left_pressed && !mouse.is_captured {
+            if dialog_state.is_open && q_dialog_content.get(entity).is_err() {
+                Interaction::None
+            } else if mouse.left_pressed && !mouse.is_captured {
                 Interaction::Pressed
             } else {
                 Interaction::Hovered

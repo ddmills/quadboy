@@ -121,10 +121,11 @@ impl AudioRegistry {
         volume: f32,
     ) {
         if let Some(keys) = self.collections.get(&collection)
-            && !keys.is_empty() {
-                let index = rand.pick_idx(keys);
-                let key = keys[index];
-                self.play(key, volume);
-            }
+            && !keys.is_empty()
+        {
+            let index = rand.pick_idx(keys);
+            let key = keys[index];
+            self.play(key, volume);
+        }
     }
 }
