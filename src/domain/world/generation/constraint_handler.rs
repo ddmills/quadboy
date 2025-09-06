@@ -336,6 +336,7 @@ impl ConstraintHandler {
             crate::domain::BiomeType::Forest => PrefabId::PineTree,
             crate::domain::BiomeType::Desert => PrefabId::Cactus,
             crate::domain::BiomeType::Cavern => PrefabId::GiantMushroom,
+            crate::domain::BiomeType::Mountain => PrefabId::PineTree,
             _ => return,
         };
 

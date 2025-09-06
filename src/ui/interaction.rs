@@ -59,8 +59,9 @@ pub fn ui_interaction_system(
         };
 
         if *current_interaction != new_interaction
-            && let Ok(mut entity_cmds) = cmds.get_entity(entity) {
-                entity_cmds.try_insert(new_interaction);
-            }
+            && let Ok(mut entity_cmds) = cmds.get_entity(entity)
+        {
+            entity_cmds.try_insert(new_interaction);
+        }
     }
 }

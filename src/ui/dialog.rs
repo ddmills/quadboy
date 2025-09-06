@@ -9,12 +9,10 @@ use crate::{
 };
 
 /// Resource to track if any dialog is currently open
-#[derive(Resource)]
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct DialogState {
     pub is_open: bool,
 }
-
 
 /// Main dialog component with title and dimensions
 #[derive(Component)]

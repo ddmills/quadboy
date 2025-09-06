@@ -112,6 +112,7 @@ fn render_overworld_map(
                 BiomeType::Forest => (1, Palette::Green),
                 BiomeType::Desert => (33, Palette::Yellow),
                 BiomeType::Cavern => (129, Palette::Gray),
+                BiomeType::Mountain => (30, Palette::White),
             };
 
             let is_player_zone = x == player_zone_pos.0 && y == player_zone_pos.1;

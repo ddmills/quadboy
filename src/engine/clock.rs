@@ -88,7 +88,7 @@ impl Clock {
             },
             DaylightPhase {
                 progress: 0.21,
-                color: 0xFFCC66,
+                color: 0xFFEAC0,
                 intensity: 0.8,
             },
             DaylightPhase {
@@ -98,7 +98,7 @@ impl Clock {
             },
             DaylightPhase {
                 progress: 0.83,
-                color: 0xFFCC66,
+                color: 0xFFEAC0,
                 intensity: 0.8,
             },
             DaylightPhase {

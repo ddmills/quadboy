@@ -13,18 +13,21 @@ pub enum LootTableId {
     DesertGroundLoot,
     CavernGroundLoot,
     OpenAirGroundLoot,
+    MountainGroundLoot,
 
     // Chest loot tables
     ForestChestLoot,
     DesertChestLoot,
     CavernChestLoot,
     CommonChestLoot,
+    MountainChestLoot,
 
     // Enemy tables
     ForestEnemies,
     DesertEnemies,
     CavernEnemies,
     OpenAirEnemies,
+    MountainEnemies,
 
     // Death loot tables
     BanditLoot,
@@ -111,6 +114,27 @@ impl LootTableRegistry {
         self.tables
             .insert(LootTableId::OpenAirGroundLoot, LootTable::builder().build());
 
+        // Mountain loot
+        self.tables.insert(
+            LootTableId::MountainGroundLoot,
+            LootTable::builder()
+                .add(PrefabId::Lantern, 2.0)
+                .add(PrefabId::Pickaxe, 5.0) // More mining tools in mountains
+                .add(PrefabId::Campfire, 2.0)
+                .add(PrefabId::Hatchet, 2.0)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::MountainChestLoot,
+            LootTable::builder()
+                .add(PrefabId::Pickaxe, 6.0)
+                .add(PrefabId::Hatchet, 4.0)
+                .add(PrefabId::Lantern, 3.0)
+                .add(PrefabId::CavalrySword, 1.0)
+                .build(),
+        );
+
         // Enemy tables
         self.tables.insert(
             LootTableId::ForestEnemies,
@@ -129,6 +153,11 @@ impl LootTableRegistry {
 
         self.tables
             .insert(LootTableId::OpenAirEnemies, LootTable::builder().build());
+
+        self.tables.insert(
+            LootTableId::MountainEnemies,
+            LootTable::builder().add(PrefabId::Bandit, 1.0).build(),
+        );
 
         // Common chest loot (fallback)
         self.tables.insert(

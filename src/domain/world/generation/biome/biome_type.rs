@@ -18,6 +18,7 @@ pub enum BiomeType {
     Forest,
     Desert,
     Cavern,
+    Mountain,
 }
 
 impl BiomeType {
@@ -27,6 +28,7 @@ impl BiomeType {
             BiomeType::Forest => 0x151F19,
             BiomeType::Desert => 0x18100C,
             BiomeType::Cavern => 0x17111B,
+            BiomeType::Mountain => 0x182830,
         }
     }
 
@@ -36,12 +38,15 @@ impl BiomeType {
             BiomeType::Forest => 0.9,
             BiomeType::Desert => 1.0,
             BiomeType::Cavern => 0.25,
+            BiomeType::Mountain => 0.85,
         }
     }
 
     pub fn uses_daylight_cycle(&self) -> bool {
         match self {
-            BiomeType::OpenAir | BiomeType::Forest | BiomeType::Desert => true,
+            BiomeType::OpenAir | BiomeType::Forest | BiomeType::Desert | BiomeType::Mountain => {
+                true
+            }
             BiomeType::Cavern => false,
         }
     }
@@ -56,6 +61,7 @@ impl BiomeType {
                 BiomeType::Forest => Terrain::Dirt,
                 BiomeType::Desert => Terrain::Dirt,
                 BiomeType::Cavern => Terrain::Dirt,
+                BiomeType::Mountain => Terrain::Dirt,
             }
         }
     }
@@ -70,6 +76,7 @@ impl BiomeType {
                 BiomeType::Forest => Terrain::Grass,
                 BiomeType::Desert => Terrain::Sand,
                 BiomeType::Cavern => Terrain::Sand,
+                BiomeType::Mountain => Terrain::Grass,
             }
         }
     }
@@ -82,6 +89,7 @@ impl Display for BiomeType {
             BiomeType::Forest => write!(f, "Forest"),
             BiomeType::Desert => write!(f, "Desert"),
             BiomeType::Cavern => write!(f, "Cavern"),
+            BiomeType::Mountain => write!(f, "Mountain"),
         }
     }
 }

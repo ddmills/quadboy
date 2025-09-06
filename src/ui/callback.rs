@@ -50,10 +50,9 @@ pub fn on_key_pressed(
     for (entity, hotkey, callback) in q_hotkeys.iter() {
         if keys.is_pressed(hotkey.0) {
             // If a dialog is open, only allow hotkeys from dialog content
-            if dialog_state.is_open
-                && q_dialog_content.get(entity).is_err() {
-                    continue; // Skip this hotkey since it's not part of a dialog
-                }
+            if dialog_state.is_open && q_dialog_content.get(entity).is_err() {
+                continue; // Skip this hotkey since it's not part of a dialog
+            }
 
             cmd.entity(entity).insert(Triggered);
             cmd.run_system(callback.0);
