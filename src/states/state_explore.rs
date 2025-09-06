@@ -3,7 +3,7 @@ use macroquad::{input::KeyCode, prelude::trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{Palette, hex},
+    common::Palette,
     domain::{
         IgnoreLighting, IsExplored, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent,
         PlayerPosition, StackCount, Zone, game_loop, handle_item_pickup, player_input,

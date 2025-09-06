@@ -715,7 +715,15 @@ fn refresh_inventory_display(
     }
 }
 
-fn handle_inventory_input(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
+fn handle_inventory_input(
+    keys: Res<KeyInput>, 
+    mut game_state: ResMut<CurrentGameState>,
+    dialog_state: Res<DialogState>,
+) {
+    if dialog_state.is_open {
+        return;
+    }
+    
     if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Explore;
     }

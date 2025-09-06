@@ -2,10 +2,7 @@ use bevy_ecs::component::Component;
 use macroquad::miniquad::*;
 use macroquad::prelude::*;
 
-use crate::{
-    common::{MacroquadColorable, Palette},
-    rendering::RenderTargetType,
-};
+use crate::rendering::RenderTargetType;
 
 use super::Renderable;
 use super::get_render_target_size;

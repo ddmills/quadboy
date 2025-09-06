@@ -174,7 +174,7 @@ fn apply_light_source(
             // Store ALL fragments together (don't separate walls/floors yet)
             all_fragments
                 .entry((x, y))
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(contribution);
         },
     };

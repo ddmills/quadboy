@@ -58,8 +58,9 @@ pub fn ui_interaction_system(
             Interaction::None
         };
 
-        if *current_interaction != new_interaction {
-            cmds.entity(entity).insert(new_interaction);
-        }
+        if *current_interaction != new_interaction
+            && let Ok(mut entity_cmds) = cmds.get_entity(entity) {
+                entity_cmds.try_insert(new_interaction);
+            }
     }
 }

@@ -3,7 +3,6 @@ use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 
 use crate::{
     cfg::{TEXEL_SIZE_F32, TILE_SIZE},
-    common::{MacroquadColorable, Palette},
     rendering::CrtShader,
 };
 
