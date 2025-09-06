@@ -1,9 +1,9 @@
-use bevy_ecs::world::World;
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, Rand},
     domain::{Biome, LootTableId, PrefabId, Terrain, ZoneFactory},
 };
+use bevy_ecs::world::World;
 
 use super::super::biome_helpers::*;
 use crate::common::algorithm::{ca_rules::*, cellular_automata::*};

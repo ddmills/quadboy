@@ -7,6 +7,7 @@ pub mod health;
 pub mod in_active_zone;
 pub mod inventory;
 pub mod label;
+pub mod lighting;
 pub mod loot_drop;
 pub mod melee_weapon;
 pub mod stairs;
@@ -24,6 +25,7 @@ pub use inventory::{
     UnopenedContainer,
 };
 pub use label::Label;
+pub use lighting::{IgnoreLighting, LightBlocker, LightSource};
 pub use loot_drop::LootDrop;
 pub use melee_weapon::MeleeWeapon;
 pub use stairs::{StairDown, StairUp};

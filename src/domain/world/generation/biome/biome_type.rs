@@ -1,9 +1,7 @@
-use std::fmt::Display;
 use bevy_ecs::world::World;
+use std::fmt::Display;
 
-use crate::{
-    domain::{BiomeRegistry, LootTableId, Terrain, ZoneFactory},
-};
+use crate::domain::{BiomeRegistry, LootTableId, Terrain, ZoneFactory};
 
 pub trait Biome: Send + Sync {
     fn base_terrain(&self) -> Terrain;
@@ -23,9 +21,28 @@ pub enum BiomeType {
 }
 
 impl BiomeType {
-    pub fn apply_to_zone(&self, zone_factory: &mut ZoneFactory, registry: &BiomeRegistry, world: &World) {
-        if let Some(biome) = registry.get(*self) {
-            biome.generate(zone_factory, world);
+    pub fn get_ambient_color(&self) -> u32 {
+        match self {
+            BiomeType::OpenAir => 0xFFFFFF,
+            BiomeType::Forest => 0x151F19,
+            BiomeType::Desert => 0x18100C,
+            BiomeType::Cavern => 0x17111B,
+        }
+    }
+
+    pub fn get_ambient_intensity(&self) -> f32 {
+        match self {
+            BiomeType::OpenAir => 1.0,
+            BiomeType::Forest => 0.9,
+            BiomeType::Desert => 1.0,
+            BiomeType::Cavern => 0.25,
+        }
+    }
+
+    pub fn uses_daylight_cycle(&self) -> bool {
+        match self {
+            BiomeType::OpenAir | BiomeType::Forest | BiomeType::Desert => true,
+            BiomeType::Cavern => false,
         }
     }
 

@@ -77,7 +77,7 @@ impl TerrainNoise {
 
         Style {
             idx: sand_tiles[tile_idx],
-            fg1: Palette::Red.into(),
+            fg1: Palette::DarkRed.into(),
             fg2: None,
             bg: None,
             outline: None,
@@ -93,7 +93,7 @@ impl TerrainNoise {
 
         Style {
             idx: grass_tiles[tile_idx],
-            fg1: Palette::DarkGreen.into(),
+            fg1: Palette::DarkGray.into(),
             fg2: None,
             bg: None,
             outline: None,

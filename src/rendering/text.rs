@@ -3,6 +3,7 @@ use macroquad::telemetry;
 
 use crate::{
     common::{END_SEQ, FLAG_SEQ, Palette, PaletteSequence, START_SEQ, cp437_idx},
+    domain::IgnoreLighting,
     engine::Time,
     rendering::{GlyphTextureId, Visibility},
 };
@@ -121,7 +122,13 @@ pub fn render_text(
     mut cmds: Commands,
     mut q_text: ParamSet<(
         Query<Entity, Or<(Changed<Text>, Changed<Visibility>, Changed<Position>)>>,
-        Query<(Entity, &mut Text, &Position, &Visibility)>,
+        Query<(
+            Entity,
+            &mut Text,
+            &Position,
+            &Visibility,
+            Option<&IgnoreLighting>,
+        )>,
     )>,
     time: Res<Time>,
 ) {
@@ -130,7 +137,7 @@ pub fn render_text(
 
     let changed = q_text.p0().iter().collect::<Vec<_>>();
 
-    for (entity, mut text, position, visibility) in q_text.p1().iter_mut() {
+    for (entity, mut text, position, visibility, ignore_lighting_opt) in q_text.p1().iter_mut() {
         let is_scroller = text.value.contains("scroll");
 
         if !(is_scroller || changed.contains(&entity)) {
@@ -142,18 +149,25 @@ pub fn render_text(
             cmds.entity(*glyph_id).despawn();
         }
 
+        let ignore_lighting = ignore_lighting_opt.is_some();
+
         text.glyphs = text
             .get_glyphs(tick)
             .iter()
             .enumerate()
             .map(|(i, g)| {
-                cmds.spawn((
+                let mut ecmds = cmds.spawn((
                     g.to_owned(),
                     Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
                     visibility.clone(),
                     ChildOf(entity),
-                ))
-                .id()
+                ));
+
+                if ignore_lighting {
+                    ecmds.insert(IgnoreLighting);
+                }
+
+                ecmds.id()
             })
             .collect();
     }

@@ -42,6 +42,11 @@ impl PlayerPosition {
         )
     }
 
+    #[inline]
+    pub fn zone_local(&self) -> (usize, usize) {
+        world_to_zone_local(self.x as usize, self.y as usize)
+    }
+
     pub fn zone_idx(&self) -> usize {
         let (x, y, z) = self.world();
         world_to_zone_idx(x, y, z)

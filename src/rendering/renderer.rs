@@ -42,6 +42,9 @@ pub struct Renderable {
     pub w: f32,
     pub h: f32,
     pub is_shrouded: u32,
+    pub light_rgba: Vec4,
+    pub light_flicker: f32,
+    pub ignore_lighting: f32,
 }
 
 pub fn render_all(
@@ -49,6 +52,7 @@ pub fn render_all(
     mut ren: ResMut<RenderTargets>,
     screen: Res<ScreenSize>,
     crt: Res<CrtShader>,
+    lighting_data: Res<super::LightingData>,
 ) {
     telemetry::begin_zone("render_all");
     let target_size = uvec2(
@@ -63,10 +67,13 @@ pub fn render_all(
 
     clear_background(Color::from_hex(0x0E0505));
 
+    let time = get_time() as f32;
+    let ambient = lighting_data.get_ambient_vec4();
+
     start_pass(&ren.world);
     layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::World {
-            l.render();
+            l.render(time, ambient);
         }
     });
     end_pass();
@@ -74,7 +81,7 @@ pub fn render_all(
     start_pass(&ren.screen);
     layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::Screen {
-            l.render();
+            l.render(time, ambient);
         }
     });
     end_pass();
@@ -95,7 +102,7 @@ pub fn render_all(
         y,
         target_size.x as f32 * TEXEL_SIZE_F32,
         target_size.y as f32 * TEXEL_SIZE_F32,
-        Palette::Clear.to_macroquad_color(),
+        Color::from_vec(ambient),
     );
 
     draw_texture_ex(

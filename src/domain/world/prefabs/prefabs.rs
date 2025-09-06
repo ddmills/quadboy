@@ -1,7 +1,7 @@
 use super::{
-    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_campfire, spawn_cavalry_sword,
-    spawn_chest, spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_pickaxe,
-    spawn_pine_tree, spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
+    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_campfire,
+    spawn_cavalry_sword, spawn_chest, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
+    spawn_pickaxe, spawn_pine_tree, spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};

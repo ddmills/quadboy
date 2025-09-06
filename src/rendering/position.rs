@@ -53,6 +53,11 @@ impl Position {
     pub fn world(&self) -> (usize, usize, usize) {
         (self.x as usize, self.y as usize, self.z as usize)
     }
+
+    #[inline]
+    pub fn zone_local(&self) -> (usize, usize) {
+        world_to_zone_local(self.x as usize, self.y as usize)
+    }
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]

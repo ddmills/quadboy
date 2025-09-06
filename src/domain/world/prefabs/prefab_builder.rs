@@ -3,9 +3,9 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
-        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label,
-        LootDrop, MaterialType, MeleeWeapon, NeedsStableId, SaveFlag, StackCount, Stackable,
-        StackableType, StairDown, StairUp, VisionBlocker,
+        Equippable, Health, HideWhenNotVisible, IgnoreLighting, Inventory, InventoryAccessible,
+        Item, Label, LightBlocker, LightSource, LootDrop, MaterialType, MeleeWeapon, NeedsStableId,
+        SaveFlag, StackCount, Stackable, StackableType, StairDown, StairUp, VisionBlocker,
     },
     rendering::{AnimatedGlyph, Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -45,10 +45,18 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
-    pub fn with_animated_glyph(self, frames: Vec<usize>, speed_hz: f32, fg1: Palette, fg2: Palette, layer: Layer, loop_animation: bool) -> Self {
+    pub fn with_animated_glyph(
+        self,
+        frames: Vec<usize>,
+        speed_hz: f32,
+        fg1: Palette,
+        fg2: Palette,
+        layer: Layer,
+        loop_animation: bool,
+    ) -> Self {
         let base_glyph = Glyph::new(frames[0], fg1, fg2).layer(layer);
         let animated_glyph = AnimatedGlyph::new(frames, speed_hz).with_loop(loop_animation);
-        
+
         self.world
             .entity_mut(self.entity)
             .insert((base_glyph, animated_glyph));
@@ -67,6 +75,11 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_vision_blocker(self) -> Self {
         self.world.entity_mut(self.entity).insert(VisionBlocker);
+        self
+    }
+
+    pub fn with_light_blocker(self) -> Self {
+        self.world.entity_mut(self.entity).insert(LightBlocker);
         self
     }
 
@@ -158,6 +171,16 @@ impl<'a> PrefabBuilder<'a> {
         self.world
             .entity_mut(self.entity)
             .insert((Stackable::new(stack_type), StackCount::new(count)));
+        self
+    }
+
+    pub fn with_light_source(self, light: LightSource) -> Self {
+        self.world.entity_mut(self.entity).insert(light);
+        self
+    }
+
+    pub fn with_ignore_lighting(self) -> Self {
+        self.world.entity_mut(self.entity).insert(IgnoreLighting);
         self
     }
 

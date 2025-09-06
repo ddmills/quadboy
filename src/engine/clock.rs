@@ -1,4 +1,9 @@
+use std::f32::consts::PI;
+
 use bevy_ecs::prelude::*;
+use macroquad::math::Vec3;
+
+use crate::common::MacroquadColorable;
 
 #[derive(Resource, Default)]
 pub struct Clock {
@@ -46,4 +51,108 @@ impl Clock {
     pub fn sub_turn(&self) -> u32 {
         self.tick % 1000
     }
+
+    pub fn get_minute(&self) -> u32 {
+        self.tick / 100
+    }
+
+    pub fn get_hour(&self) -> u32 {
+        (self.get_minute() / 60) % 24
+    }
+
+    pub fn get_day(&self) -> u32 {
+        self.get_minute() / 1440 // 24 * 60 minutes per day
+    }
+
+    pub fn get_minute_of_day(&self) -> u32 {
+        self.get_minute() % 1440
+    }
+
+    pub fn get_day_progress(&self) -> f32 {
+        self.get_minute_of_day() as f32 / 1440.0
+    }
+
+    pub fn get_light_amount(&self) -> f32 {
+        let progress = self.get_day_progress();
+        1.0 - ((f32::cos(2.0 * PI * progress) + 1.0) / 2.0).powf(2.0)
+    }
+
+    pub fn get_daylight(&self) -> DaylightInfo {
+        let progress = self.get_day_progress();
+
+        let phases = [
+            DaylightPhase {
+                progress: 0.0,
+                color: 0x1970C2,
+                intensity: 0.35,
+            },
+            DaylightPhase {
+                progress: 0.21,
+                color: 0xFFCC66,
+                intensity: 0.8,
+            },
+            DaylightPhase {
+                progress: 0.5,
+                color: 0xFFFFFF,
+                intensity: 1.0,
+            },
+            DaylightPhase {
+                progress: 0.83,
+                color: 0xFFCC66,
+                intensity: 0.8,
+            },
+            DaylightPhase {
+                progress: 1.0,
+                color: 0x1970C2,
+                intensity: 0.35,
+            },
+        ];
+
+        let mut before_idx = 0;
+        let mut after_idx = 1;
+
+        for i in 0..(phases.len() - 1) {
+            if progress >= phases[i].progress && progress <= phases[i + 1].progress {
+                before_idx = i;
+                after_idx = i + 1;
+                break;
+            }
+        }
+
+        let before = &phases[before_idx];
+        let after = &phases[after_idx];
+
+        let range = after.progress - before.progress;
+        let t = if range > 0.0 {
+            (progress - before.progress) / range
+        } else {
+            0.0
+        };
+
+        let before_rgba = before.color.to_rgba(1.0);
+        let after_rgba = after.color.to_rgba(1.0);
+
+        let color = Vec3::new(
+            before_rgba[0] + (after_rgba[0] - before_rgba[0]) * t,
+            before_rgba[1] + (after_rgba[1] - before_rgba[1]) * t,
+            before_rgba[2] + (after_rgba[2] - before_rgba[2]) * t,
+        );
+
+        let intensity = before.intensity + (after.intensity - before.intensity) * t;
+
+        DaylightInfo { color, intensity }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct DaylightPhase {
+    progress: f32,
+    color: u32,
+    intensity: f32,
+}
+
+#[derive(Clone, Copy)]
+pub struct DaylightInfo {
+    pub color: Vec3,
+    pub intensity: f32,
 }

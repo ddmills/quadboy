@@ -1,10 +1,10 @@
-use bevy_ecs::world::World;
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, Rand},
     domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
+use bevy_ecs::world::World;
 
 use super::super::biome_helpers::*;
 

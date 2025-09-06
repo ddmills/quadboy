@@ -48,12 +48,12 @@ impl NewGameCommand {
         let player_entity = world
             .spawn((
                 starting_position.clone(),
-                Glyph::new(147, Palette::Yellow, Palette::Blue).layer(Layer::Actors),
+                Glyph::new(147, Palette::White, Palette::Blue).layer(Layer::Actors),
                 Player,
                 StableId::new(player_id),
                 Inventory::new(50.0),
                 EquipmentSlots::humanoid(),
-                Vision::new(16, 8),
+                Vision::new(60),
                 ApplyVisibilityEffects,
                 Collider,
                 Energy::new(-10),

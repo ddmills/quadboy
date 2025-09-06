@@ -1,8 +1,8 @@
-use bevy_ecs::world::World;
 use crate::domain::{
     ConstraintHandler, OverworldZone, Prefab, RiverBuilder, RoadBuilder, Terrain, ZoneData,
     ZoneGridData,
 };
+use bevy_ecs::world::World;
 
 pub struct ZoneFactory {
     pub zone_idx: usize,
@@ -64,8 +64,9 @@ impl ZoneFactory {
             road_builder.apply_roads_to_terrain(terrain, locked, road_terrain);
         }
 
-        // Apply biome-specific generation
-        biome_type.apply_to_zone(self, registry, world);
+        if let Some(biome) = registry.get(biome_type) {
+            biome.generate(self, world);
+        }
 
         self.to_zone_data()
     }

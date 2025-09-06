@@ -1,0 +1,2 @@
+- sox audio (https://github.com/chirlu/sox) for bitcrushing audio
+- 

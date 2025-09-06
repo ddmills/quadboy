@@ -64,7 +64,7 @@ pub fn update_camera(
     let zone_pos = zone_local_to_world(player.zone_idx(), 0, 0);
     let player_local_pos = world_to_zone_local(player.x as usize, player.y as usize);
 
-    let edge_pad = (0., 0.);
+    let edge_pad = (5., 3.);
 
     let mut target = player_pos;
 

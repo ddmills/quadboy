@@ -1,5 +1,5 @@
 use super::{Prefab, PrefabBuilder};
-use crate::{common::Palette, rendering::Layer};
+use crate::{common::Palette, domain::LightSource, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_campfire(entity: Entity, world: &mut World, config: Prefab) {
@@ -14,5 +14,6 @@ pub fn spawn_campfire(entity: Entity, world: &mut World, config: Prefab) {
             true,
         )
         .with_label("{R|C}ampfire")
+        .with_light_source(LightSource::campfire())
         .build();
 }

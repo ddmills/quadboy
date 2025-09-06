@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{EquipmentSlot, EquipmentType, Equippable},
+    domain::{EquipmentSlot, EquipmentType, Equippable, LightSource},
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -16,6 +16,7 @@ pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
             vec![EquipmentSlot::OffHand],
             EquipmentType::Tool,
         ))
+        .with_light_source(LightSource::lantern())
         .with_needs_stable_id()
         .build();
 }

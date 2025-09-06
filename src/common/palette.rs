@@ -10,16 +10,16 @@ use crate::{
 pub enum Palette {
     White = 0xFFEAC5,
     Black = 0x140E08,
-    Gray = 0xAD9FAD,
+    Gray = 0x939FAC,
     DarkGray = 0x575057,
-    Green = 0x89CA43,
+    Green = 0x7DB441,
     DarkGreen = 0x395C20,
     Brown = 0x9E5423,
     DarkBrown = 0xBF6F2A,
     Blue = 0x53ACE7,
     DarkBlue = 0x1E435C,
     Red = 0xF32A13,
-    DarkRed = 0xA7362A,
+    DarkRed = 0x58241F,
     Orange = 0xFF7A27,
     DarkOrange = 0xC2722D,
     Yellow = 0xFFD208,
@@ -27,8 +27,8 @@ pub enum Palette {
     Purple = 0xC467EC,
     DarkPurple = 0x8E44AD,
     Cyan = 0x43D4B7,
-    DarkCyan = 0x23816A,
-    Clear = 0x1A131A,
+    DarkCyan = 0x15755D,
+    Clear = 0xFFFF00,
 }
 
 #[allow(dead_code)]

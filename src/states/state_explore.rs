@@ -3,13 +3,17 @@ use macroquad::{input::KeyCode, prelude::trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::Palette,
+    common::{Palette, hex},
     domain::{
-        IsExplored, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
-        StackCount, Zone, game_loop, handle_item_pickup, player_input, render_player_debug,
+        IgnoreLighting, IsExplored, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent,
+        PlayerPosition, StackCount, Zone, game_loop, handle_item_pickup, player_input,
+        render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
-    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
+    rendering::{
+        Glyph, Layer, LightingData, Position, Text, Visibility, world_to_zone_idx,
+        world_to_zone_local,
+    },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::Button,
 };
@@ -38,6 +42,8 @@ impl Plugin for ExploreStatePlugin {
                 (
                     render_player_debug,
                     render_tick_display,
+                    render_lighting_debug,
+                    render_lighting_ambient_debug,
                     render_cursor,
                     display_entity_names_at_mouse,
                     player_input,
@@ -99,6 +105,19 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     ));
 
     cmds.spawn((
+        Text::new("Light: R:0.0 G:0.0 B:0.0 I:0.0").bg(Palette::Black),
+        Position::new_f32(0., 1.0, 0.),
+        LightingDebugText,
+        CleanupStateExplore,
+    ));
+    cmds.spawn((
+        Text::new("#ff00ff").fg1(Palette::White).bg(0xff00ff_u32),
+        Position::new_f32(0., 2.5, 0.),
+        LightingDebugAmbient,
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
         Glyph::new(0, Palette::Orange, Palette::Orange)
             .bg(Palette::Orange)
             .layer(Layer::GroundOverlay),
@@ -110,11 +129,12 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     cmds.spawn((
         Text::new("")
             .fg1(Palette::White)
-            // .bg(Palette::Black)
+            .bg(Palette::Black)
             .layer(Layer::Overlay),
         Position::new_f32(0., 0., 0.),
         Visibility::Hidden,
         MouseHoverText,
+        IgnoreLighting,
         CleanupStateExplore,
     ));
 
@@ -143,6 +163,12 @@ struct MouseHoverText;
 
 #[derive(Component)]
 struct TickDisplay;
+
+#[derive(Component)]
+struct LightingDebugText;
+
+#[derive(Component)]
+struct LightingDebugAmbient;
 
 fn render_cursor(
     mouse: Res<Mouse>,
@@ -217,9 +243,12 @@ fn render_tick_display(clock: Res<Clock>, mut q_tick_display: Query<&mut Text, W
     };
 
     text.value = format!(
-        "{{G|{}}}.{{g|{:03}}}",
+        "{{G|{}}}.{{g|{:03}}} {{G|Day {}}} {{Y|{:02}}}:{{g|{:02}}}",
         clock.current_turn(),
         clock.sub_turn(),
+        clock.get_day() + 1,
+        clock.get_hour(),
+        clock.get_minute() % 60,
     );
 }
 
@@ -233,4 +262,79 @@ fn center_camera_on_player(
         y: p.1,
         z: p.2,
     });
+}
+
+fn render_lighting_ambient_debug(
+    lighting_data: Res<LightingData>,
+    mut q_debug_ambient_text: Query<&mut Text, With<LightingDebugAmbient>>,
+) {
+    let Ok(mut text) = q_debug_ambient_text.single_mut() else {
+        return;
+    };
+
+    // Get lighting at cursor position
+    let light_value = lighting_data.get_ambient_vec4();
+
+    let r = light_value.x;
+    let g = light_value.y;
+    let b = light_value.z;
+    let intensity = light_value.w;
+
+    // Convert to hex for comparison
+    let hex_r = (r * 255.0) as u32;
+    let hex_g = (g * 255.0) as u32;
+    let hex_b = (b * 255.0) as u32;
+    let hex_color = (hex_r << 16) | (hex_g << 8) | hex_b;
+
+    text.bg = Some(lighting_data.get_ambient_color());
+
+    text.value = format!("#{:06X} ({:.2})", hex_color, intensity);
+}
+
+fn render_lighting_debug(
+    mouse: Res<Mouse>,
+    lighting_data: Res<LightingData>,
+    mut q_debug_text: Query<&mut Text, With<LightingDebugText>>,
+) {
+    let Ok(mut text) = q_debug_text.single_mut() else {
+        return;
+    };
+
+    let mouse_x = mouse.world.0.floor() as usize;
+    let mouse_y = mouse.world.1.floor() as usize;
+    let (local_x, local_y) = world_to_zone_local(mouse_x, mouse_y);
+
+    // Get lighting at cursor position
+    let light_info = if let Some(light_value) = lighting_data.get_light(local_x, local_y) {
+        let r = light_value.rgba.x;
+        let g = light_value.rgba.y;
+        let b = light_value.rgba.z;
+        let intensity = light_value.rgba.w;
+        let flicker = light_value.flicker_params.x;
+
+        // Convert to hex for comparison
+        let hex_r = (r * 255.0) as u32;
+        let hex_g = (g * 255.0) as u32;
+        let hex_b = (b * 255.0) as u32;
+        let hex_color = (hex_r << 16) | (hex_g << 8) | hex_b;
+
+        format!(
+            "Light: R:{:.2} G:{:.2} B:{:.2} I:{:.2} F:{:.2} (#{:06X})",
+            r, g, b, intensity, flicker, hex_color
+        )
+    } else {
+        "Light: No data".to_string()
+    };
+
+    // Get ambient info for comparison
+    let ambient_color = lighting_data.get_ambient_color();
+    let ambient_intensity = lighting_data.get_ambient_intensity();
+    let ambient_r = ((ambient_color >> 16) & 0xFF) as f32 / 255.0;
+    let ambient_g = ((ambient_color >> 8) & 0xFF) as f32 / 255.0;
+    let ambient_b = (ambient_color & 0xFF) as f32 / 255.0;
+
+    text.value = format!(
+        "{}\nAmbient: R:{:.2} G:{:.2} B:{:.2} I:{:.2} (#{:06X})",
+        light_info, ambient_r, ambient_g, ambient_b, ambient_intensity, ambient_color
+    );
 }

@@ -1,8 +1,8 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::engine::{SerializableComponent, Time};
 use super::Glyph;
+use crate::engine::{SerializableComponent, Time};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct AnimatedGlyph {
@@ -51,7 +51,9 @@ impl AnimatedGlyph {
     }
 
     pub fn is_finished(&self) -> bool {
-        !self.loop_animation && self.current_frame >= self.frames.len().saturating_sub(1) && !self.is_playing
+        !self.loop_animation
+            && self.current_frame >= self.frames.len().saturating_sub(1)
+            && !self.is_playing
     }
 }
 
@@ -63,14 +65,14 @@ pub fn update_animated_glyphs(
         if !anim_glyph.is_playing || anim_glyph.frames.is_empty() {
             continue;
         }
-        
+
         let frame_duration = 1.0 / anim_glyph.speed_hz;
         anim_glyph.timer += time.dt;
-        
+
         if anim_glyph.timer >= frame_duration {
             anim_glyph.timer -= frame_duration;
             anim_glyph.current_frame += 1;
-            
+
             if anim_glyph.current_frame >= anim_glyph.frames.len() {
                 if anim_glyph.loop_animation {
                     anim_glyph.current_frame = 0;
@@ -79,7 +81,7 @@ pub fn update_animated_glyphs(
                     anim_glyph.is_playing = false;
                 }
             }
-            
+
             glyph.idx = anim_glyph.frames[anim_glyph.current_frame];
         }
     }

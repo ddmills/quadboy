@@ -1,4 +1,3 @@
-use bevy_ecs::world::World;
 use super::super::prefabs::SpawnValue;
 use crate::{
     cfg::ZONE_SIZE,
@@ -6,9 +5,12 @@ use crate::{
         Grid, Rand,
         algorithm::{ca_rules::*, cellular_automata::*},
     },
-    domain::{LootTableId, LootTableRegistry, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
+    domain::{
+        LootTableId, LootTableRegistry, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory,
+    },
     rendering::zone_local_to_world,
 };
+use bevy_ecs::world::World;
 
 const LOOT_SPAWN_CHANCE: f32 = 0.01; // 1% chance for loot
 const ENEMY_SPAWN_CHANCE: f32 = 0.01; // 1% chance for enemies
@@ -49,7 +51,7 @@ pub fn spawn_loot_and_enemies(
     exclude_grid: Option<&Grid<bool>>,
 ) {
     let loot_registry = world.get_resource::<LootTableRegistry>().unwrap();
-    
+
     for x in 0..ZONE_SIZE.0 {
         for y in 0..ZONE_SIZE.1 {
             if zone.is_locked_tile(x, y) {

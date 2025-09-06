@@ -1,7 +1,5 @@
+use crate::domain::{Biome, LootTableId, Terrain, ZoneFactory};
 use bevy_ecs::world::World;
-use crate::{
-    domain::{Biome, LootTableId, Terrain, ZoneFactory},
-};
 
 use super::super::biome_helpers::*;
 

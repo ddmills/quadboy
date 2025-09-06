@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 
 use crate::{
-    cfg::SURFACE_LEVEL_Z,
+    cfg::ZONE_SIZE,
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, InActiveZone, IsExplored, IsVisible, Player,
         PlayerPosition, RefreshBitmask, Vision, VisionBlocker, Zone, Zones,
     },
     engine::Clock,
-    rendering::{Position, world_to_zone_idx, world_to_zone_local},
+    rendering::{LightingData, Position, world_to_zone_idx, world_to_zone_local},
 };
 use bevy_ecs::prelude::*;
 use macroquad::telemetry;
+use ordered_float::Pow;
 
 pub fn update_player_vision(
     q_player: Query<&Vision, With<Player>>,
@@ -20,6 +21,7 @@ pub fn update_player_vision(
     q_vision_blockers: Query<&Position, (With<VisionBlocker>, With<InActiveZone>)>,
     clock: Res<Clock>,
     zones: Res<Zones>,
+    lighting_data: Res<LightingData>,
 ) {
     telemetry::begin_zone("update_player_vision");
 
@@ -34,6 +36,7 @@ pub fn update_player_vision(
     };
 
     let player_world_pos = player_pos.world();
+    let player_local_pos = player_pos.zone_local();
     let player_zone_idx =
         world_to_zone_idx(player_world_pos.0, player_world_pos.1, player_world_pos.2);
 
@@ -50,42 +53,45 @@ pub fn update_player_vision(
     zone.visible.clear(false);
     let mut vis = vec![];
 
-    let mut blocker_cache: HashMap<(i32, i32, i32), bool> = HashMap::new();
+    let mut blocker_cache: HashMap<(i32, i32), bool> = HashMap::new();
     for blocker_pos in q_vision_blockers.iter() {
-        let world_pos = blocker_pos.world();
-        blocker_cache.insert(
-            (world_pos.0 as i32, world_pos.1 as i32, world_pos.2 as i32),
-            true,
-        );
+        if blocker_pos.zone_idx() == player_zone_idx {
+            let local_pos = blocker_pos.zone_local();
+            blocker_cache.insert((local_pos.0 as i32, local_pos.1 as i32), true);
+        }
     }
 
-    let player_x = player_world_pos.0 as i32;
-    let player_y = player_world_pos.1 as i32;
-    let player_z = player_world_pos.2 as i32;
+    let player_x = player_local_pos.0 as i32;
+    let player_y = player_local_pos.1 as i32;
 
-    let is_underground = player_world_pos.2 > SURFACE_LEVEL_Z;
-    let vision_range = if is_underground {
-        vision.underground_range
-    } else {
-        vision.range
-    };
+    let max_vision_range = vision.range;
+
+    let daylight = lighting_data.get_ambient_intensity().pow(3.);
+    let vision_range = (daylight * max_vision_range as f32).round().max(2.0) as f64;
 
     let settings = ShadowcastSettings {
         start_x: player_x,
         start_y: player_y,
-        distance: vision_range as i32,
-        is_blocker: |x: i32, y: i32| blocker_cache.contains_key(&(x, y, player_z)),
-        on_light: |x: i32, y: i32, _distance: f64| {
-            if x < 0 || y < 0 {
+        distance: max_vision_range as i32,
+        is_blocker: |x: i32, y: i32| blocker_cache.contains_key(&(x, y)),
+        on_light: |x: i32, y: i32, distance: f64| {
+            if x < 0 || y < 0 || x >= ZONE_SIZE.0 as i32 || y >= ZONE_SIZE.1 as i32 {
                 return;
             }
 
-            let world_x = x as usize;
-            let world_y = y as usize;
-            let world_z = player_z as usize;
-            let zone_idx = world_to_zone_idx(world_x, world_y, world_z);
+            let local_x = x as usize;
+            let local_y = y as usize;
 
-            if zone_idx == player_zone_idx {
+            if distance > vision_range {
+                let light_intensity = lighting_data
+                    .get_light(local_x, local_y)
+                    .map(|light| light.rgba.w)
+                    .unwrap_or(0.0);
+
+                if light_intensity > 0.0 {
+                    vis.push((x as usize, y as usize));
+                }
+            } else {
                 vis.push((x as usize, y as usize));
             }
         },
@@ -93,8 +99,7 @@ pub fn update_player_vision(
 
     shadowcast(settings);
 
-    for (world_x, world_y) in vis {
-        let (local_x, local_y) = world_to_zone_local(world_x, world_y);
+    for (local_x, local_y) in vis {
         zone.visible.set(local_x, local_y, true);
         zone.explored.set(local_x, local_y, true);
     }

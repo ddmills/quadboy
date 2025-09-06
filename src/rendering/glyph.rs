@@ -1,10 +1,12 @@
 use crate::domain::Style;
 use crate::engine::SerializableComponent;
+use crate::rendering::{LightValue, world_to_zone_local};
 use crate::{
     cfg::TILE_SIZE_F32,
     common::{MacroquadColorable, Palette},
     domain::{
-        ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Player, ZoneStatus,
+        ApplyVisibilityEffects, HideWhenNotVisible, IgnoreLighting, IsExplored, IsVisible, Player,
+        ZoneStatus,
     },
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
     ui::{DialogState, UiLayout},
@@ -13,7 +15,7 @@ use bevy_ecs::prelude::*;
 use macroquad::{prelude::*, telemetry};
 use serde::{Deserialize, Serialize};
 
-use super::{GameCamera, Layer, Layers, Position, Renderable, ScreenSize};
+use super::{GameCamera, Layer, Layers, LightingData, Position, Renderable, ScreenSize};
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, SerializableComponent)]
 #[require(Visibility)]
@@ -218,6 +220,7 @@ pub fn render_glyphs(
             Option<&IsExplored>,
             Option<&ApplyVisibilityEffects>,
             Option<&HideWhenNotVisible>,
+            Option<&IgnoreLighting>,
         ),
         With<Glyph>,
     >,
@@ -227,6 +230,7 @@ pub fn render_glyphs(
     ui: Res<UiLayout>,
     player: Query<&Position, With<Player>>,
     dialog_state: Res<DialogState>,
+    lighting_data: Res<LightingData>,
 ) {
     layers.iter_mut().for_each(|layer| {
         layer.clear();
@@ -269,13 +273,21 @@ pub fn render_glyphs(
         let mut y = (pos.y * tile_h).floor();
 
         let mut is_shrouded = false;
+        let mut ignore_lighting = true;
 
         if is_world_layer {
-            let Ok((is_visible, is_explored, apply_visibility_effects, hide_when_not_visible)) =
-                q_visibility.get(entity)
+            let Ok((
+                is_visible,
+                is_explored,
+                apply_visibility_effects,
+                hide_when_not_visible,
+                ignore_lighting_opt,
+            )) = q_visibility.get(entity)
             else {
                 continue;
             };
+
+            ignore_lighting = ignore_lighting_opt.is_some();
 
             if (hide_when_not_visible.is_some() && is_visible.is_none())
                 || (apply_visibility_effects.is_some() && is_explored.is_none())
@@ -313,6 +325,24 @@ pub fn render_glyphs(
             style = dim_glyph_style(style);
         }
 
+        let light_value = if is_world_layer && !ignore_lighting {
+            let world_pos = pos.world();
+            let (local_x, local_y) = world_to_zone_local(world_pos.0, world_pos.1);
+
+            lighting_data
+                .get_light(local_x, local_y)
+                .cloned()
+                .unwrap_or_else(|| LightValue {
+                    rgba: Vec4::new(1.0, 1.0, 1.0, 1.0),
+                    flicker_params: Vec2::ZERO,
+                })
+        } else {
+            LightValue {
+                rgba: Vec4::new(1.0, 1.0, 1.0, 1.0),
+                flicker_params: Vec2::ZERO,
+            }
+        };
+
         let layer = layers.get_mut(glyph.layer_id);
 
         layer.add(Renderable {
@@ -327,6 +357,9 @@ pub fn render_glyphs(
             h,
             tex_idx: texture_id.get_texture_idx(),
             is_shrouded: is_shrouded as u32,
+            light_rgba: light_value.rgba,
+            light_flicker: light_value.flicker_params.x,
+            ignore_lighting: if ignore_lighting { 1.0 } else { 0.0 },
         });
     }
 

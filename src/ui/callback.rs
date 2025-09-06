@@ -26,10 +26,9 @@ pub fn on_btn_pressed(
     for (entity, interaction, callback) in q_btns.iter() {
         if matches!(interaction, Interaction::Released) {
             // If a dialog is open, only allow buttons from dialog content
-            if dialog_state.is_open
-                && q_dialog_content.get(entity).is_err() {
-                    continue;
-                }
+            if dialog_state.is_open && q_dialog_content.get(entity).is_err() {
+                continue;
+            }
 
             mouse.is_captured = true;
 

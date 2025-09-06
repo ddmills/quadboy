@@ -9,18 +9,21 @@ varying vec4 fg2;
 varying vec4 bg;
 varying vec4 outline;
 varying float is_shrouded;
+varying vec4 light_rgba;
+varying float light_flicker;
+varying float ignore_lighting;
 
 uniform sampler2D tex_1;
 uniform sampler2D tex_2;
+uniform float time;
+uniform vec4 ambient;
 
 vec4 apply_shroud(vec4 color) {
     if (color.a == 0.0) return color;
-    
-    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-    vec3 desaturated = mix(color.rgb, vec3(gray), 0.9);
-    vec3 darkened = desaturated * 0.5;
-    
-    return vec4(darkened, color.a);
+
+    vec3 shrouded = mix(color.rgb, ambient.rgb, 0.8);
+
+    return vec4(shrouded, color.a);
 }
 
 void main() {
@@ -35,6 +38,8 @@ void main() {
 
     vec4 v = vec4(0.0);
 
+    bool apply_lighting = ignore_lighting < 0.5;
+
     if (abs(tex_idx - 0.0) < 0.5) {
         v = texture2D(tex_1, tex_uv);
     } else {
@@ -48,19 +53,39 @@ void main() {
     } else if (v.r == 1.0 && v.g == 1.0 && v.b == 1.0 && fg2.a > 0.0) { // White (Secondary)
         gl_FragColor = fg2;
     } else if (v.r == 1.0 && v.g == 0.0 && v.b == 0.0 && outline.a > 0.0) { // Red (Outline)
-        if (is_shrouded > 0.5) {
-            gl_FragColor = bg;
-        }
         gl_FragColor = outline;
     } else { // debug
         gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
     }
 
-    if (is_shrouded > 0.5 && !(v.r == 1.0 && v.g == 0.0 && v.b == 0.0)) {
-        gl_FragColor = apply_shroud(gl_FragColor);
+    if (gl_FragColor.r == 1.0 && gl_FragColor.g == 1.0 && gl_FragColor.b == 0.0) { // Clear color
+        gl_FragColor = vec4(ambient.rgb, 1.0);
+        apply_lighting = false;
     }
 
     if (gl_FragColor.a == 0.0) {
         discard;
+    }
+
+    if (apply_lighting) {
+        if (is_shrouded > 0.5) {
+            gl_FragColor = apply_shroud(gl_FragColor);
+        } else {
+            vec3 dynamic_color = light_rgba.rgb;
+            float dynamic_intensity = light_rgba.w;
+            vec3 ambient_color = ambient.rgb;
+            float ambient_intensity = ambient.w;
+
+            // Apply dynamic lighting if present
+            if (dynamic_intensity > 0.0) {
+                float dynamic_strength = (1.0 - ambient_intensity) * 0.4 + 0.4; // Range: 0.4 to 1.0
+                float effective_dynamic = dynamic_intensity * dynamic_strength;
+                gl_FragColor.rgb = mix(gl_FragColor.rgb, dynamic_color, effective_dynamic);
+            }
+
+            // Bring everything toward ambient color (NOTE: darkens all non-dynamics!)
+            float darkness = (1.0 - max(ambient.w, dynamic_intensity)) * 0.6;
+            gl_FragColor = mix(gl_FragColor, vec4(ambient_color, 1.0), darkness);
+        }
     }
 }

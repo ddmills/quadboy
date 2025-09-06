@@ -11,8 +11,8 @@ use crate::{
         systems::{
             cleanup_system::on_entity_destroyed_cleanup, loot_drop_system::on_entity_destroyed_loot,
         },
-        turn_scheduler, update_entity_visibility_flags, update_player_position_resource,
-        update_player_vision,
+        turn_scheduler, update_entity_visibility_flags, update_lighting_system,
+        update_player_position_resource, update_player_vision,
     },
     rendering::update_entity_pos,
 };
@@ -29,6 +29,7 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(update_entity_pos),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
+        world.register_system(update_lighting_system),
         world.register_system(turn_scheduler),
         world.register_system(ai_turn),
         world.register_system(on_entity_destroyed_loot),

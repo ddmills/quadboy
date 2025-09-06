@@ -73,7 +73,7 @@ pub fn turn_scheduler(
 pub fn get_energy_cost(action: EnergyActionType) -> i32 {
     match action {
         EnergyActionType::Move => 100,
-        EnergyActionType::Wait => 200,
+        EnergyActionType::Wait => 1000,
         EnergyActionType::DropItem => 50,
         EnergyActionType::PickUpItem => 75,
         EnergyActionType::EquipItem => 75,

@@ -2,7 +2,10 @@ use bevy_ecs::component::Component;
 use macroquad::miniquad::*;
 use macroquad::prelude::*;
 
-use crate::rendering::RenderTargetType;
+use crate::{
+    common::{MacroquadColorable, Palette},
+    rendering::RenderTargetType,
+};
 
 use super::Renderable;
 use super::get_render_target_size;
@@ -41,11 +44,16 @@ struct InstanceData {
     bg: Vec4,
     outline: Vec4,
     is_shrouded: f32,
+    light_rgba: Vec4,
+    light_flicker: f32,
+    ignore_lighting: f32,
 }
 
 #[repr(C)]
 pub struct BaseShaderUniforms {
     pub projection: Mat4,
+    pub time: f32,
+    pub ambient: Vec4,
 }
 
 impl GlyphBatch {
@@ -103,7 +111,11 @@ impl GlyphBatch {
                 ShaderMeta {
                     images: vec!["tex_1".to_string(), "tex_2".to_string()],
                     uniforms: UniformBlockLayout {
-                        uniforms: vec![UniformDesc::new("projection", UniformType::Mat4)],
+                        uniforms: vec![
+                            UniformDesc::new("projection", UniformType::Mat4),
+                            UniformDesc::new("time", UniformType::Float1),
+                            UniformDesc::new("ambient", UniformType::Float4),
+                        ],
                     },
                 },
             )
@@ -136,6 +148,9 @@ impl GlyphBatch {
                 VertexAttribute::with_buffer("in_bg", VertexFormat::Float4, 1),
                 VertexAttribute::with_buffer("in_outline", VertexFormat::Float4, 1),
                 VertexAttribute::with_buffer("in_is_shrouded", VertexFormat::Float1, 1),
+                VertexAttribute::with_buffer("in_light_rgba", VertexFormat::Float4, 1),
+                VertexAttribute::with_buffer("in_light_flicker", VertexFormat::Float1, 1),
+                VertexAttribute::with_buffer("in_ignore_lighting", VertexFormat::Float1, 1),
             ],
             shader,
             Default::default(),
@@ -190,6 +205,9 @@ impl GlyphBatch {
             bg: r.bg,
             outline: r.outline,
             is_shrouded: r.is_shrouded as f32,
+            light_rgba: r.light_rgba,
+            light_flicker: r.light_flicker,
+            ignore_lighting: r.ignore_lighting,
         };
 
         self.size += 1;
@@ -199,7 +217,7 @@ impl GlyphBatch {
         self.size = 0;
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, time: f32, ambient: Vec4) {
         if self.size == 0 {
             return;
         }
@@ -217,7 +235,11 @@ impl GlyphBatch {
         let projection = Mat4::orthographic_rh_gl(0., target_size.x, target_size.y, 0., 0., 1.);
 
         gl.quad_context
-            .apply_uniforms(UniformsSource::table(&BaseShaderUniforms { projection }));
+            .apply_uniforms(UniformsSource::table(&BaseShaderUniforms {
+                projection,
+                time,
+                ambient,
+            }));
 
         gl.quad_context.draw(0, 6, self.size as i32);
         gl.flush();
@@ -241,6 +263,9 @@ attribute vec4 in_fg2;
 attribute vec4 in_bg;
 attribute vec4 in_outline;
 attribute float in_is_shrouded;
+attribute vec4 in_light_rgba;
+attribute float in_light_flicker;
+attribute float in_ignore_lighting;
 
 varying lowp float idx;
 varying lowp float tex_idx;
@@ -250,6 +275,9 @@ varying vec4 fg2;
 varying vec4 bg;
 varying vec4 outline;
 varying lowp float is_shrouded;
+varying vec4 light_rgba;
+varying float light_flicker;
+varying float ignore_lighting;
 
 void main() {
     // Calculate world position by scaling unit quad and translating
@@ -264,6 +292,9 @@ void main() {
     bg = in_bg;
     outline = in_outline;
     is_shrouded = in_is_shrouded;
+    light_rgba = in_light_rgba;
+    light_flicker = in_light_flicker;
+    ignore_lighting = in_ignore_lighting;
 }";
 
 const FRAGMENT: &str = include_str!("../assets/shaders/glyph-shader.glsl");

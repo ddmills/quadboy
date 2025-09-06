@@ -11,15 +11,11 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
-        .with_glyph(
-            glyph_char,
-            Palette::DarkCyan,
-            Palette::Brown,
-            Layer::Objects,
-        )
+        .with_glyph(glyph_char, Palette::DarkCyan, Palette::Red, Layer::Objects)
         .with_label("{G|P}ine {G|T}ree")
         .with_collider()
         .with_destructible(5, MaterialType::Wood)
         .with_vision_blocker()
+        .with_light_blocker()
         .build();
 }
