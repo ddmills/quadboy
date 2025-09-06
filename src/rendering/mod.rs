@@ -1,3 +1,4 @@
+mod animated_glyph;
 mod camera;
 mod crt_material;
 mod glyph;
@@ -10,6 +11,7 @@ mod renderer;
 mod text;
 mod visibility;
 
+pub use animated_glyph::*;
 pub use camera::*;
 pub use crt_material::*;
 pub use glyph::*;

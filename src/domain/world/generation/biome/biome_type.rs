@@ -1,19 +1,17 @@
 use std::fmt::Display;
+use bevy_ecs::world::World;
 
 use crate::{
-    common::LootTable,
-    domain::{BiomeRegistry, LootTableId, PrefabId, Terrain, ZoneFactory},
+    domain::{BiomeRegistry, LootTableId, Terrain, ZoneFactory},
 };
 
 pub trait Biome: Send + Sync {
     fn base_terrain(&self) -> Terrain;
-    fn loot_table(&self) -> &LootTable<PrefabId>;
-    fn enemy_table(&self) -> &LootTable<PrefabId>;
     fn road_terrain(&self) -> Terrain;
     fn ground_loot_table_id(&self) -> LootTableId;
     fn chest_loot_table_id(&self) -> LootTableId;
     fn enemy_table_id(&self) -> LootTableId;
-    fn generate(&self, zone: &mut ZoneFactory);
+    fn generate(&self, zone: &mut ZoneFactory, world: &World);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -25,9 +23,9 @@ pub enum BiomeType {
 }
 
 impl BiomeType {
-    pub fn apply_to_zone(&self, zone_factory: &mut ZoneFactory, registry: &BiomeRegistry) {
+    pub fn apply_to_zone(&self, zone_factory: &mut ZoneFactory, registry: &BiomeRegistry, world: &World) {
         if let Some(biome) = registry.get(*self) {
-            biome.generate(zone_factory);
+            biome.generate(zone_factory, world);
         }
     }
 

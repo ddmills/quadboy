@@ -1,41 +1,24 @@
+use bevy_ecs::world::World;
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, LootTable, Rand},
+    common::{Grid, Rand},
     domain::{Biome, LootTableId, PrefabId, Terrain, ZoneFactory},
 };
 
 use super::super::biome_helpers::*;
 use crate::common::algorithm::{ca_rules::*, cellular_automata::*};
 
-pub struct ForestBiome {
-    loot_table: LootTable<PrefabId>,
-    enemy_table: LootTable<PrefabId>,
-}
+pub struct ForestBiome;
 
 impl ForestBiome {
     pub fn new() -> Self {
-        Self {
-            loot_table: LootTable::builder()
-                .add(PrefabId::Lantern, 3.0)
-                .add(PrefabId::Pickaxe, 3.0)
-                .add(PrefabId::Hatchet, 1.0)
-                .build(),
-            enemy_table: LootTable::builder().add(PrefabId::Bandit, 1.0).build(),
-        }
+        Self
     }
 }
 
 impl Biome for ForestBiome {
     fn base_terrain(&self) -> Terrain {
         Terrain::Grass
-    }
-
-    fn loot_table(&self) -> &LootTable<PrefabId> {
-        &self.loot_table
-    }
-
-    fn enemy_table(&self) -> &LootTable<PrefabId> {
-        &self.enemy_table
     }
 
     fn road_terrain(&self) -> Terrain {
@@ -54,7 +37,7 @@ impl Biome for ForestBiome {
         LootTableId::ForestEnemies
     }
 
-    fn generate(&self, zone: &mut ZoneFactory) {
+    fn generate(&self, zone: &mut ZoneFactory, world: &World) {
         let mut rand = Rand::seed(zone.zone_idx as u32);
 
         // Apply base terrain
@@ -80,9 +63,10 @@ impl Biome for ForestBiome {
         let exclude = combine_grids(&boulder_grid, &tree_grid);
         spawn_loot_and_enemies(
             zone,
-            &self.loot_table,
-            &self.enemy_table,
+            self.ground_loot_table_id(),
+            self.enemy_table_id(),
             self.chest_loot_table_id(),
+            world,
             &mut rand,
             Some(&exclude),
         );

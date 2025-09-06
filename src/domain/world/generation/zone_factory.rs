@@ -1,3 +1,4 @@
+use bevy_ecs::world::World;
 use crate::domain::{
     ConstraintHandler, OverworldZone, Prefab, RiverBuilder, RoadBuilder, Terrain, ZoneData,
     ZoneGridData,
@@ -18,7 +19,7 @@ impl ZoneFactory {
         }
     }
 
-    pub fn build(&mut self, registry: &crate::domain::BiomeRegistry) -> ZoneData {
+    pub fn build(&mut self, registry: &crate::domain::BiomeRegistry, world: &World) -> ZoneData {
         let mut road_builder = RoadBuilder::new();
         let mut river_builder = RiverBuilder::new();
         let road_terrain = self.ozone.biome_type.get_road_terrain(registry);
@@ -64,7 +65,7 @@ impl ZoneFactory {
         }
 
         // Apply biome-specific generation
-        biome_type.apply_to_zone(self, registry);
+        biome_type.apply_to_zone(self, registry, world);
 
         self.to_zone_data()
     }

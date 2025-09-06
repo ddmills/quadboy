@@ -1,6 +1,7 @@
 mod bandit;
 mod boulder;
 mod cactus;
+mod campfire;
 mod cavalry_sword;
 mod chest;
 mod giant_mushroom;
@@ -19,6 +20,7 @@ mod terrain_tile;
 pub use bandit::*;
 pub use boulder::*;
 pub use cactus::*;
+pub use campfire::*;
 pub use cavalry_sword::*;
 pub use chest::*;
 pub use giant_mushroom::*;

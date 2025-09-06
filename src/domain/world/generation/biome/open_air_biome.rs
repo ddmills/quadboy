@@ -1,38 +1,21 @@
+use bevy_ecs::world::World;
 use crate::{
-    common::LootTable,
-    domain::{Biome, LootTableId, PrefabId, Terrain, ZoneFactory},
+    domain::{Biome, LootTableId, Terrain, ZoneFactory},
 };
 
 use super::super::biome_helpers::*;
 
-pub struct OpenAirBiome {
-    loot_table: LootTable<PrefabId>,
-    enemy_table: LootTable<PrefabId>,
-}
+pub struct OpenAirBiome;
 
 impl OpenAirBiome {
     pub fn new() -> Self {
-        let loot_table = LootTable::builder().build();
-        let enemy_table = LootTable::builder().build();
-
-        Self {
-            loot_table,
-            enemy_table,
-        }
+        Self
     }
 }
 
 impl Biome for OpenAirBiome {
     fn base_terrain(&self) -> Terrain {
         Terrain::OpenAir
-    }
-
-    fn loot_table(&self) -> &LootTable<PrefabId> {
-        &self.loot_table
-    }
-
-    fn enemy_table(&self) -> &LootTable<PrefabId> {
-        &self.enemy_table
     }
 
     fn road_terrain(&self) -> Terrain {
@@ -51,7 +34,7 @@ impl Biome for OpenAirBiome {
         LootTableId::OpenAirEnemies
     }
 
-    fn generate(&self, zone: &mut ZoneFactory) {
+    fn generate(&self, zone: &mut ZoneFactory, _world: &World) {
         apply_base_terrain(zone, self.base_terrain());
     }
 }

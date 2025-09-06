@@ -118,7 +118,7 @@ pub fn setup_dialogs(
             Glyph::idx(6) // Solid fill
                 .scale((dialog.width, dialog.height))
                 .layer(Layer::DialogPanels)
-                .bg(Palette::Black),
+                .bg(Palette::Clear),
             Position::new_f32(dialog_pos.x, dialog_pos.y, dialog_pos.z),
             ChildOf(dialog_entity),
         ));
@@ -143,7 +143,7 @@ pub fn setup_dialogs(
                 Glyph::idx(6)
                     .scale((dialog.width - 2.0, 1.0))
                     .layer(Layer::DialogPanels)
-                    .bg(Palette::DarkBlue),
+                    .bg(Palette::Clear),
                 Position::new_f32(dialog_pos.x + 1.0, dialog_pos.y + 1.0, dialog_pos.z),
                 ChildOf(dialog_entity),
             ));

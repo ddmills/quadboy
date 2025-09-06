@@ -1,45 +1,24 @@
+use bevy_ecs::world::World;
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, LootTable, Rand},
+    common::{Grid, Rand},
     domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
 use super::super::biome_helpers::*;
 
-pub struct CavernBiome {
-    loot_table: LootTable<PrefabId>,
-    enemy_table: LootTable<PrefabId>,
-}
+pub struct CavernBiome;
 
 impl CavernBiome {
     pub fn new() -> Self {
-        let loot_table = LootTable::builder()
-            .add(PrefabId::Lantern, 1.0)
-            .add(PrefabId::Pickaxe, 1.0)
-            .add(PrefabId::Hatchet, 1.0)
-            .build();
-
-        let enemy_table = LootTable::builder().add(PrefabId::Bandit, 1.0).build();
-
-        Self {
-            loot_table,
-            enemy_table,
-        }
+        Self
     }
 }
 
 impl Biome for CavernBiome {
     fn base_terrain(&self) -> Terrain {
         Terrain::Sand
-    }
-
-    fn loot_table(&self) -> &LootTable<PrefabId> {
-        &self.loot_table
-    }
-
-    fn enemy_table(&self) -> &LootTable<PrefabId> {
-        &self.enemy_table
     }
 
     fn road_terrain(&self) -> Terrain {
@@ -58,7 +37,7 @@ impl Biome for CavernBiome {
         LootTableId::CavernEnemies
     }
 
-    fn generate(&self, zone: &mut ZoneFactory) {
+    fn generate(&self, zone: &mut ZoneFactory, world: &World) {
         let mut rand = Rand::seed(zone.zone_idx as u32);
 
         apply_base_terrain(zone, self.base_terrain());
@@ -71,9 +50,10 @@ impl Biome for CavernBiome {
 
         spawn_loot_and_enemies(
             zone,
-            &self.loot_table,
-            &self.enemy_table,
+            self.ground_loot_table_id(),
+            self.enemy_table_id(),
             self.chest_loot_table_id(),
+            world,
             &mut rand,
             Some(&boulder_grid),
         );

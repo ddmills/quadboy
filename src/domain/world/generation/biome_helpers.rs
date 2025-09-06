@@ -1,11 +1,12 @@
+use bevy_ecs::world::World;
 use super::super::prefabs::SpawnValue;
 use crate::{
     cfg::ZONE_SIZE,
     common::{
-        Grid, LootTable, Rand,
+        Grid, Rand,
         algorithm::{ca_rules::*, cellular_automata::*},
     },
-    domain::{LootTableId, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
+    domain::{LootTableId, LootTableRegistry, Prefab, PrefabId, Terrain, ZoneConstraintType, ZoneFactory},
     rendering::zone_local_to_world,
 };
 
@@ -40,12 +41,15 @@ pub fn place_feature_grid(zone: &mut ZoneFactory, feature_grid: &Grid<bool>, pre
 
 pub fn spawn_loot_and_enemies(
     zone: &mut ZoneFactory,
-    loot_table: &LootTable<PrefabId>,
-    enemy_table: &LootTable<PrefabId>,
-    chest_loot_table_id: LootTableId,
+    ground_loot_id: LootTableId,
+    enemy_table_id: LootTableId,
+    chest_loot_id: LootTableId,
+    world: &World,
     rand: &mut Rand,
     exclude_grid: Option<&Grid<bool>>,
 ) {
+    let loot_registry = world.get_resource::<LootTableRegistry>().unwrap();
+    
     for x in 0..ZONE_SIZE.0 {
         for y in 0..ZONE_SIZE.1 {
             if zone.is_locked_tile(x, y) {
@@ -61,19 +65,19 @@ pub fn spawn_loot_and_enemies(
             let wpos = zone_local_to_world(zone.zone_idx, x, y);
 
             // Check for enemy spawn (1% chance)
-            if rand.bool(ENEMY_SPAWN_CHANCE) && !enemy_table.is_empty() {
-                let enemy = enemy_table.pick_guaranteed_cloned(rand);
+            if rand.bool(ENEMY_SPAWN_CHANCE) && !loot_registry.is_empty(enemy_table_id) {
+                let enemy = loot_registry.roll_guaranteed(enemy_table_id, rand);
                 zone.push_entity(x, y, Prefab::new(enemy, wpos));
             }
             // Check for loot spawn (1% chance, only if no enemy)
-            else if rand.bool(LOOT_SPAWN_CHANCE) && !loot_table.is_empty() {
-                let loot = loot_table.pick_guaranteed_cloned(rand);
+            else if rand.bool(LOOT_SPAWN_CHANCE) && !loot_registry.is_empty(ground_loot_id) {
+                let loot = loot_registry.roll_guaranteed(ground_loot_id, rand);
                 zone.push_entity(x, y, Prefab::new(loot, wpos));
             } else if rand.bool(CHEST_SPAWN_CHANCE) {
                 let mut chest_prefab = Prefab::new(PrefabId::Chest, wpos);
                 chest_prefab.metadata.insert(
                     "loot_table_id".to_string(),
-                    SpawnValue::LootTableId(chest_loot_table_id),
+                    SpawnValue::LootTableId(chest_loot_id),
                 );
                 zone.push_entity(x, y, chest_prefab);
             }

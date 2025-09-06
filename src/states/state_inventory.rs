@@ -644,19 +644,19 @@ fn setup_inventory_screen(
     ));
 
     cmds.spawn((
-        Position::new_f32(left_x + 6., help_y.min(18.), 0.),
+        Position::new_f32(left_x + 4.5, help_y.min(18.), 0.),
         Button::new("({Y|U}) DROP", callbacks.drop_item).hotkey(KeyCode::U),
         CleanupStateInventory,
     ));
 
     cmds.spawn((
-        Position::new_f32(left_x + 12., help_y.min(18.), 0.),
+        Position::new_f32(left_x + 9., help_y.min(18.), 0.),
         Button::new("({Y|E}) TOGGLE EQUIP", callbacks.toggle_equip_item).hotkey(KeyCode::E),
         CleanupStateInventory,
     ));
 
     cmds.spawn((
-        Position::new_f32(left_x + 24., help_y.min(18.), 0.),
+        Position::new_f32(left_x + 17.5, help_y.min(18.), 0.),
         Button::new("({Y|X}) EXAMINE", callbacks.examine_item).hotkey(KeyCode::X),
         CleanupStateInventory,
     ));

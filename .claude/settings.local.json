@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cargo clippy:*)",
       "Bash(cargo check:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Read(/D:\\code\\quadboy\\src/**)"
     ],
     "deny": [],
     "ask": []

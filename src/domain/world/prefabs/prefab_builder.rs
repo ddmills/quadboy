@@ -7,7 +7,7 @@ use crate::{
         LootDrop, MaterialType, MeleeWeapon, NeedsStableId, SaveFlag, StackCount, Stackable,
         StackableType, StairDown, StairUp, VisionBlocker,
     },
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
+    rendering::{AnimatedGlyph, Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -42,6 +42,16 @@ impl<'a> PrefabBuilder<'a> {
         self.world
             .entity_mut(self.entity)
             .insert(Glyph::new(glyph_char, fg1, fg2).layer(layer));
+        self
+    }
+
+    pub fn with_animated_glyph(self, frames: Vec<usize>, speed_hz: f32, fg1: Palette, fg2: Palette, layer: Layer, loop_animation: bool) -> Self {
+        let base_glyph = Glyph::new(frames[0], fg1, fg2).layer(layer);
+        let animated_glyph = AnimatedGlyph::new(frames, speed_hz).with_loop(loop_animation);
+        
+        self.world
+            .entity_mut(self.entity)
+            .insert((base_glyph, animated_glyph));
         self
     }
 

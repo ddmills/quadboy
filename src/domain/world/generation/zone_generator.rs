@@ -21,6 +21,6 @@ impl ZoneGenerator {
         // Get or create BiomeRegistry (for now, create a new one each time)
         let registry = BiomeRegistry::new();
 
-        ZoneFactory::new(ozone, &registry).build(&registry)
+        ZoneFactory::new(ozone, &registry).build(&registry, world)
     }
 }

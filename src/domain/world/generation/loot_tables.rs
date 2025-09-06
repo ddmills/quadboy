@@ -52,6 +52,7 @@ impl LootTableRegistry {
             LootTable::builder()
                 .add(PrefabId::Lantern, 3.0)
                 .add(PrefabId::Pickaxe, 3.0)
+                .add(PrefabId::Campfire, 3.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .build(),
         );
@@ -73,6 +74,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Lantern, 1.0)
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
+                .add(PrefabId::Campfire, 3.0)
                 .build(),
         );
 
@@ -92,6 +94,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Lantern, 1.0)
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
+                .add(PrefabId::Campfire, 3.0)
                 .build(),
         );
 

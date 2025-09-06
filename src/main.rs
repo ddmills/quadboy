@@ -6,8 +6,8 @@ use macroquad::{
     prelude::*,
 };
 use rendering::{
-    GameCamera, Layers, Position, RenderTargets, ScreenSize, Text, render_all, render_glyphs,
-    render_text, update_crt_uniforms, update_screen_size,
+    AnimatedGlyph, GameCamera, Layers, Position, RenderTargets, ScreenSize, Text, render_all, render_glyphs,
+    render_text, update_animated_glyphs, update_crt_uniforms, update_screen_size,
 };
 use ui::UiLayout;
 
@@ -79,6 +79,7 @@ async fn main() {
     reg.register::<Position>();
     reg.register::<RecordZonePosition>();
     reg.register::<Glyph>();
+    reg.register::<AnimatedGlyph>();
     reg.register::<SaveFlag>();
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
@@ -187,7 +188,7 @@ async fn main() {
         )
         .add_systems(
             ScheduleType::PostUpdate,
-            (render_glyphs, render_text).chain(),
+            (update_animated_glyphs, render_glyphs, render_text).chain(),
         )
         .add_systems(
             ScheduleType::FrameFinal,

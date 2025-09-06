@@ -1,5 +1,5 @@
 use super::{
-    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_cavalry_sword,
+    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_campfire, spawn_cavalry_sword,
     spawn_chest, spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_pickaxe,
     spawn_pine_tree, spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
 };
@@ -11,6 +11,7 @@ use std::collections::HashMap;
 pub enum PrefabId {
     PineTree,
     Boulder,
+    Campfire,
     GoldNugget,
     Cactus,
     CavalrySword,
@@ -85,6 +86,7 @@ impl Prefabs {
     fn register_all_prefabs(&mut self) {
         self.register(PrefabId::PineTree, spawn_pine_tree);
         self.register(PrefabId::Boulder, spawn_boulder);
+        self.register(PrefabId::Campfire, spawn_campfire);
         self.register(PrefabId::Cactus, spawn_cactus);
         self.register(PrefabId::CavalrySword, spawn_cavalry_sword);
         self.register(PrefabId::Chest, spawn_chest);
