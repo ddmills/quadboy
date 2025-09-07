@@ -13,7 +13,6 @@ use crate::{
     states::{CurrentGameState, GameState},
 };
 
-
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Player;
 

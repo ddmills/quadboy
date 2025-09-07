@@ -347,10 +347,11 @@ pub fn unified_keyboard_activation_system(
 
             // Check if this is a list item in a selectable list
             if let Ok(list_item) = q_list_items.get(entity)
-                && q_selectable_lists.get(list_item.parent_list).is_ok() {
-                    // This is a selectable list item, don't activate - let selectable system handle it
-                    return;
-                }
+                && q_selectable_lists.get(list_item.parent_list).is_ok()
+            {
+                // This is a selectable list item, don't activate - let selectable system handle it
+                return;
+            }
 
             activatable.activate(&mut cmds, &audio);
 
@@ -372,10 +373,11 @@ pub fn unified_click_system(
         if matches!(interaction, Interaction::Released) {
             // Check if this is a list item in a selectable list
             if let Ok(list_item) = q_list_items.get(entity)
-                && q_selectable_lists.get(list_item.parent_list).is_ok() {
-                    // This is a selectable list item, don't activate - let selectable system handle it
-                    continue;
-                }
+                && q_selectable_lists.get(list_item.parent_list).is_ok()
+            {
+                // This is a selectable list item, don't activate - let selectable system handle it
+                continue;
+            }
 
             mouse.is_captured = true;
             activatable.activate(&mut cmds, &audio);

@@ -37,7 +37,7 @@ impl BiomeType {
             BiomeType::OpenAir => 1.0,
             BiomeType::Forest => 0.9,
             BiomeType::Desert => 1.0,
-            BiomeType::Cavern => 0.25,
+            BiomeType::Cavern => 0.3,
             BiomeType::Mountain => 0.85,
         }
     }

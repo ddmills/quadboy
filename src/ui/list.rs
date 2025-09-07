@@ -346,11 +346,12 @@ pub fn setup_lists(
 
             // Update selection state if it changed
             if valid_indices != selectable_state.selected_indices
-                && let Ok(mut entity_cmds) = cmds.get_entity(list_entity) {
-                    entity_cmds.try_insert(SelectableListState {
-                        selected_indices: valid_indices.clone(),
-                    });
-                }
+                && let Ok(mut entity_cmds) = cmds.get_entity(list_entity)
+            {
+                entity_cmds.try_insert(SelectableListState {
+                    selected_indices: valid_indices.clone(),
+                });
+            }
 
             // Apply ListItemSelected markers to text items based on selection state
             for (i, &text_entity) in existing_text_items
@@ -446,26 +447,26 @@ pub fn selectable_list_interaction(
     // Handle Enter key for focused item
     if keys.is_pressed(KeyCode::Enter)
         && let Some(focused_entity) = ui_focus.focused_element
-            && ui_focus.focus_type == FocusType::Keyboard
-                && let Ok(list_item) = q_focused_items.get(focused_entity)
-            {
-                // Find parent selectable list
-                for (list_entity, selectable_list, mut state) in q_selectable_lists.iter_mut() {
-                    if list_item.parent_list == list_entity {
-                        toggle_selection(
-                            &mut cmds,
-                            focused_entity,
-                            list_item.index,
-                            list_entity,
-                            selectable_list,
-                            &mut state,
-                            &q_all_list_items,
-                            &audio,
-                        );
-                        break;
-                    }
-                }
+        && ui_focus.focus_type == FocusType::Keyboard
+        && let Ok(list_item) = q_focused_items.get(focused_entity)
+    {
+        // Find parent selectable list
+        for (list_entity, selectable_list, mut state) in q_selectable_lists.iter_mut() {
+            if list_item.parent_list == list_entity {
+                toggle_selection(
+                    &mut cmds,
+                    focused_entity,
+                    list_item.index,
+                    list_entity,
+                    selectable_list,
+                    &mut state,
+                    &q_all_list_items,
+                    &audio,
+                );
+                break;
             }
+        }
+    }
 
     // Handle mouse clicks (Interaction::Released)
     for (item_entity, list_item, interaction, _selected) in q_list_items.iter() {
@@ -519,9 +520,10 @@ fn toggle_selection(
                 // Clear all previous selections for this list visually
                 for (entity, list_item) in q_all_list_items.iter() {
                     if list_item.parent_list == list_entity
-                        && let Ok(mut entity_cmds) = cmds.get_entity(entity) {
-                            entity_cmds.remove::<ListItemSelected>();
-                        }
+                        && let Ok(mut entity_cmds) = cmds.get_entity(entity)
+                    {
+                        entity_cmds.remove::<ListItemSelected>();
+                    }
                 }
 
                 // Set new selection

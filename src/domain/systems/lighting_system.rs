@@ -8,8 +8,11 @@ use crate::{
         MacroquadColorable,
         algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     },
-    domain::{InActiveZone, LightBlocker, LightSource, Overworld, PlayerPosition},
-    engine::Clock,
+    domain::{
+        EquipmentSlots, Equipped, InActiveZone, LightBlocker, LightSource, Overworld,
+        PlayerPosition,
+    },
+    engine::{Clock, StableIdRegistry},
     rendering::{LightingData, Position, world_to_zone_local},
 };
 
@@ -28,8 +31,11 @@ pub fn update_lighting_system(
     player_pos: Res<PlayerPosition>,
     overworld: Res<Overworld>,
     mut lighting_data: ResMut<LightingData>,
+    registry: Res<StableIdRegistry>,
     q_lights: Query<(Entity, &Position, &LightSource), With<InActiveZone>>,
     q_blockers: Query<&Position, (With<LightBlocker>, With<InActiveZone>)>,
+    q_equipped_lights: Query<&LightSource, With<Equipped>>,
+    q_entities_with_equipment: Query<(&Position, &EquipmentSlots), With<InActiveZone>>,
 ) {
     telemetry::begin_zone("update_lighting_system");
 
@@ -85,6 +91,29 @@ pub fn update_lighting_system(
         }
 
         apply_light_source(pos, light, entity, &blocker_positions, &mut all_fragments);
+    }
+
+    // Process equipped light sources
+    for (owner_pos, equipment_slots) in q_entities_with_equipment.iter() {
+        if owner_pos.zone_idx() != player_zone_idx {
+            continue;
+        }
+
+        for slot_id in equipment_slots.slots.values().filter_map(|&id| id) {
+            if let Some(item_entity) = registry.get_entity(slot_id) {
+                if let Ok(light) = q_equipped_lights.get(item_entity) {
+                    if light.is_enabled {
+                        apply_light_source(
+                            owner_pos,
+                            light,
+                            item_entity,
+                            &blocker_positions,
+                            &mut all_fragments,
+                        );
+                    }
+                }
+            }
+        }
     }
 
     // Phase 2: Separate floors and walls, apply floors immediately
