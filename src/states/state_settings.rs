@@ -3,10 +3,10 @@ use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     domain::GameSettings,
-    engine::{App, Plugin},
-    rendering::{CameraMode, CrtCurvature, Position, Text},
+    engine::{App, AudioKey, Plugin},
+    rendering::{CameraMode, CrtCurvature, Layer, Position, Text},
     states::{AppState, AppStatePlugin, CurrentAppState, cleanup_system},
-    ui::Button,
+    ui::{ActivatableBuilder, Button},
 };
 
 #[derive(Resource)]
@@ -135,7 +135,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let curvature = cmds
         .spawn((
             Position::new_f32(6., 4.5, 0.),
-            Button::new("", callbacks.toggle_curvature).hotkey(KeyCode::Key1),
+            ActivatableBuilder::new("", callbacks.toggle_curvature)
+                .with_hotkey(KeyCode::Key1)
+                .with_focus_order(1000)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -143,7 +146,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let scanlines = cmds
         .spawn((
             Position::new_f32(6., 5., 0.),
-            Button::new("", callbacks.toggle_scanlines).hotkey(KeyCode::Key2),
+            ActivatableBuilder::new("", callbacks.toggle_scanlines)
+                .with_hotkey(KeyCode::Key2)
+                .with_focus_order(1100)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -151,7 +157,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let film_grain = cmds
         .spawn((
             Position::new_f32(6., 5.5, 0.),
-            Button::new("", callbacks.toggle_film_grain).hotkey(KeyCode::Key3),
+            ActivatableBuilder::new("", callbacks.toggle_film_grain)
+                .with_hotkey(KeyCode::Key3)
+                .with_focus_order(1200)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -159,7 +168,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let flicker = cmds
         .spawn((
             Position::new_f32(6., 6., 0.),
-            Button::new("", callbacks.toggle_flicker).hotkey(KeyCode::Key4),
+            ActivatableBuilder::new("", callbacks.toggle_flicker)
+                .with_hotkey(KeyCode::Key4)
+                .with_focus_order(1300)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -167,7 +179,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let vignette = cmds
         .spawn((
             Position::new_f32(6., 6.5, 0.),
-            Button::new("", callbacks.toggle_vignette).hotkey(KeyCode::Key5),
+            ActivatableBuilder::new("", callbacks.toggle_vignette)
+                .with_hotkey(KeyCode::Key5)
+                .with_focus_order(1400)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -175,7 +190,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let chromatic_ab = cmds
         .spawn((
             Position::new_f32(6., 7., 0.),
-            Button::new("", callbacks.toggle_chromatic_ab).hotkey(KeyCode::Key6),
+            ActivatableBuilder::new("", callbacks.toggle_chromatic_ab)
+                .with_hotkey(KeyCode::Key6)
+                .with_focus_order(1500)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -190,7 +208,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let camera_mode = cmds
         .spawn((
             Position::new_f32(6., 9., 0.),
-            Button::new("", callbacks.toggle_camera_mode).hotkey(KeyCode::Key7),
+            ActivatableBuilder::new("", callbacks.toggle_camera_mode)
+                .with_hotkey(KeyCode::Key7)
+                .with_focus_order(2000)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -205,7 +226,10 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     let saves_enabled = cmds
         .spawn((
             Position::new_f32(6., 11., 0.),
-            Button::new("", callbacks.toggle_saves).hotkey(KeyCode::Key8),
+            ActivatableBuilder::new("", callbacks.toggle_saves)
+                .with_hotkey(KeyCode::Key8)
+                .with_focus_order(3000)
+                .as_button(Layer::Ui),
             CleanupSettings,
         ))
         .id();
@@ -244,7 +268,11 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
     // Controls
     cmds.spawn((
         Position::new_f32(4., 15., 0.),
-        Button::new("({R|ESC}) BACK TO MAIN MENU", callbacks.back_to_menu).hotkey(KeyCode::Escape),
+        ActivatableBuilder::new("({R|ESC}) BACK TO MAIN MENU", callbacks.back_to_menu)
+            .with_hotkey(KeyCode::Escape)
+            .with_audio(AudioKey::ButtonBack1)
+            .with_focus_order(9000)
+            .as_button(Layer::Ui),
         CleanupSettings,
     ));
 
@@ -280,92 +308,92 @@ fn update_settings_display(
 
     // Update curvature
     if let Ok(mut button) = q_button.get_mut(ui_entities.curvature) {
-        button.label = match settings.crt_curvature {
+        button.set_label(match settings.crt_curvature {
             CrtCurvature::Off => "({Y|1}) Curvature: {R|OFF}".to_string(),
             CrtCurvature::Curve(x, y) => format!("({{Y|1}}) Curvature: {{G|{:.1}, {:.1}}}", x, y),
-        };
+        });
     }
 
     // Update scanlines
     if let Ok(mut button) = q_button.get_mut(ui_entities.scanlines) {
-        button.label = format!(
+        button.set_label(format!(
             "({{Y|2}}) Scanlines: {}",
             if settings.crt_scanline {
                 "{G|ON}"
             } else {
                 "{R|OFF}"
             }
-        );
+        ));
     }
 
     // Update film grain
     if let Ok(mut button) = q_button.get_mut(ui_entities.film_grain) {
-        button.label = format!(
+        button.set_label(format!(
             "({{Y|3}}) Film Grain: {}",
             if settings.crt_film_grain {
                 "{G|ON}"
             } else {
                 "{R|OFF}"
             }
-        );
+        ));
     }
 
     // Update flicker
     if let Ok(mut button) = q_button.get_mut(ui_entities.flicker) {
-        button.label = format!(
+        button.set_label(format!(
             "({{Y|4}}) Flicker: {}",
             if settings.crt_flicker {
                 "{G|ON}"
             } else {
                 "{R|OFF}"
             }
-        );
+        ));
     }
 
     // Update vignette
     if let Ok(mut button) = q_button.get_mut(ui_entities.vignette) {
-        button.label = format!(
+        button.set_label(format!(
             "({{Y|5}}) Vignette: {}",
             if settings.crt_vignette {
                 "{G|ON}"
             } else {
                 "{R|OFF}"
             }
-        );
+        ));
     }
 
     // Update chromatic aberration
     if let Ok(mut button) = q_button.get_mut(ui_entities.chromatic_ab) {
-        button.label = format!(
+        button.set_label(format!(
             "({{Y|6}}) Chromatic Aberration: {}",
             if settings.crt_chromatic_ab {
                 "{G|ON}"
             } else {
                 "{R|OFF}"
             }
-        );
+        ));
     }
 
     // Update camera mode
     if let Ok(mut button) = q_button.get_mut(ui_entities.camera_mode) {
-        button.label = match settings.camera_mode {
+        button.set_label(match settings.camera_mode {
             CameraMode::Snap => "({Y|7}) Camera Mode: {G|SNAP}".to_string(),
             CameraMode::Smooth(speed) => {
                 format!("({{Y|7}}) Camera Mode: {{G|SMOOTH ({:.3})}}", speed)
             }
-        };
+        });
     }
 
     // Update saves enabled
     if let Ok(mut button) = q_button.get_mut(ui_entities.saves_enabled) {
-        button.label = format!(
+        button.set_label(format!(
             "({{Y|8}}) Saves Enabled: {}",
             if settings.enable_saves {
                 "{G|ON}"
             } else {
                 "{R|OFF}"
             }
-        );
+        ));
     }
 
     if let Ok(mut text) = q_text.get_mut(ui_entities.save_name) {

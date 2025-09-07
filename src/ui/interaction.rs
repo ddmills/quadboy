@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     engine::Mouse,
     rendering::Position,
-    ui::{DialogContent, DialogState},
+    ui::{DialogContent, DialogState, UiFocus},
 };
 
 #[derive(Component, Default, PartialEq, Eq)]
@@ -34,6 +34,7 @@ pub fn ui_interaction_system(
     q_dialog_content: Query<&DialogContent>,
     mouse: Res<Mouse>,
     dialog_state: Res<DialogState>,
+    ui_focus: Res<UiFocus>,
 ) {
     for (entity, position, interactable, current_interaction) in q_interactions.iter() {
         let mouse_ui = mouse.ui;
@@ -55,7 +56,12 @@ pub fn ui_interaction_system(
                 Interaction::Hovered
             }
         } else {
-            Interaction::None
+            // If not hovered by mouse, check if element has keyboard focus
+            if ui_focus.has_keyboard_focus(entity) {
+                Interaction::Hovered
+            } else {
+                Interaction::None
+            }
         };
 
         if *current_interaction != new_interaction

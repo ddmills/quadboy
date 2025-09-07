@@ -40,8 +40,6 @@ impl Command for PickupItemAction {
         });
 
         let mut q_inventory = world.query::<&mut Inventory>();
-        let q_items = world.query::<&Position>();
-        let q_zones = world.query::<&mut Zone>();
 
         let Ok(inventory) = q_inventory.get_mut(world, self.entity) else {
             return;
@@ -50,9 +48,6 @@ impl Command for PickupItemAction {
         if let Some((stack_type, pickup_count)) = stackable_info {
             // Collect inventory items to avoid borrow conflicts
             let item_ids = inventory.item_ids.clone();
-            // Drop the inventory borrow before getting mutable access to the stack
-            drop(inventory);
-            drop(q_inventory);
 
             // Find existing stack of same type in inventory
             if let Some(existing_entity) = find_existing_stack(world, &item_ids, stack_type)

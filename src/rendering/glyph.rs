@@ -208,7 +208,7 @@ fn dim_glyph_style(style: GlyphStyle) -> GlyphStyle {
         fg1: dim_and_desaturate_color(style.fg1, DIMMING_FACTOR, DESATURATION_FACTOR),
         fg2: dim_and_desaturate_color(style.fg2, DIMMING_FACTOR, DESATURATION_FACTOR),
         bg: dim_and_desaturate_color(style.bg, DIMMING_FACTOR, DESATURATION_FACTOR),
-        outline: dim_and_desaturate_color(style.outline, DIMMING_FACTOR, DESATURATION_FACTOR),
+        outline: Palette::Clear.to_vec4_a(1.),
     }
 }
 
@@ -333,13 +333,15 @@ pub fn render_glyphs(
                 .get_light(local_x, local_y)
                 .cloned()
                 .unwrap_or_else(|| LightValue {
-                    rgba: Vec4::new(1.0, 1.0, 1.0, 1.0),
-                    flicker_params: Vec2::ZERO,
+                    rgb: Vec3::new(1.0, 1.0, 1.0),
+                    intensity: 1.,
+                    flicker: 0.,
                 })
         } else {
             LightValue {
-                rgba: Vec4::new(1.0, 1.0, 1.0, 1.0),
-                flicker_params: Vec2::ZERO,
+                rgb: Vec3::new(1.0, 1.0, 1.0),
+                intensity: 1.,
+                flicker: 0.,
             }
         };
 
@@ -357,8 +359,13 @@ pub fn render_glyphs(
             h,
             tex_idx: texture_id.get_texture_idx(),
             is_shrouded: is_shrouded as u32,
-            light_rgba: light_value.rgba,
-            light_flicker: light_value.flicker_params.x,
+            light_rgba: Vec4::new(
+                light_value.rgb.x,
+                light_value.rgb.y,
+                light_value.rgb.z,
+                light_value.intensity,
+            ),
+            light_flicker: light_value.flicker,
             ignore_lighting: if ignore_lighting { 1.0 } else { 0.0 },
         });
     }

@@ -14,6 +14,7 @@ pub enum AudioKey {
     Woodcut1,
     Woodcut2,
     Button1,
+    ButtonBack1,
 }
 
 impl AudioKey {
@@ -27,6 +28,7 @@ impl AudioKey {
             AudioKey::Woodcut1 => include_bytes!("../assets/audio/woodcut_1.wav"),
             AudioKey::Woodcut2 => include_bytes!("../assets/audio/woodcut_2.wav"),
             AudioKey::Button1 => include_bytes!("../assets/audio/button_1.wav"),
+            AudioKey::ButtonBack1 => include_bytes!("../assets/audio/button_back_1.wav"),
         }
     }
 }
@@ -83,6 +85,10 @@ impl AudioRegistry {
         sounds.insert(
             AudioKey::Button1,
             Sound::load(&ctx_guard, AudioKey::Button1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::ButtonBack1,
+            Sound::load(&ctx_guard, AudioKey::ButtonBack1.bytes()),
         );
 
         let mut collections = HashMap::new();

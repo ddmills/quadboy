@@ -17,10 +17,6 @@ impl Health {
         self.current = (self.current - damage).max(0);
     }
 
-    pub fn heal(&mut self, amount: i32) {
-        self.current = (self.current + amount).min(self.max);
-    }
-
     pub fn is_dead(&self) -> bool {
         self.current <= 0
     }

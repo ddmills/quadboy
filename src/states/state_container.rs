@@ -10,7 +10,7 @@ use crate::{
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
-    ui::{List, ListContext, ListFocus, ListItemData, ListState},
+    ui::{List, ListContext, ListItemData, ListState},
 };
 
 #[derive(Resource)]
@@ -156,12 +156,10 @@ fn build_player_list_items(
                 display_text
             };
 
-            items.push(ListItemData {
-                label: final_text,
-                callback: callbacks.transfer_from_player,
-                hotkey: None,
-                context_data: Some(item_id),
-            });
+            items.push(
+                ListItemData::new(&final_text, callbacks.transfer_from_player)
+                    .with_context(item_id),
+            );
         }
     }
 
@@ -178,7 +176,7 @@ fn build_container_list_items(
 ) -> Vec<ListItemData> {
     let mut items = Vec::new();
 
-    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
+    for &item_id in inventory.item_ids.iter() {
         if let Some(item_entity) = id_registry.get_entity(item_id) {
             let text = if let Ok(label) = q_labels.get(item_entity) {
                 label.get().to_string()
@@ -208,12 +206,10 @@ fn build_container_list_items(
                 display_text
             };
 
-            items.push(ListItemData {
-                label: final_text,
-                callback: callbacks.transfer_from_container,
-                hotkey: None,
-                context_data: Some(item_id),
-            });
+            items.push(
+                ListItemData::new(&final_text, callbacks.transfer_from_container)
+                    .with_context(item_id),
+            );
         }
     }
 
@@ -229,7 +225,6 @@ fn setup_container_screen(
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
     id_registry: Res<StableIdRegistry>,
-    mut list_focus: ResMut<ListFocus>,
     context: Option<Res<ContainerContext>>,
 ) {
     let Ok(player_entity) = q_player.single() else {
@@ -283,8 +278,8 @@ fn setup_container_screen(
 
     let player_list_entity = cmds
         .spawn((
-            List::new(player_list_items),
-            ListState::new().with_focus(true), // Start with focus on player inventory
+            List::new(player_list_items).with_focus_order(1000),
+            ListState::new(),
             Position::new_f32(left_x, 3.5, 0.),
             CleanupStateContainer,
             PlayerInventoryList,
@@ -330,7 +325,7 @@ fn setup_container_screen(
     let start_y = 3.5;
     let _container_list_entity = cmds
         .spawn((
-            List::new(container_list_items),
+            List::new(container_list_items).with_focus_order(2000),
             ListState::new(),
             Position::new_f32(right_x, start_y, 0.),
             CleanupStateContainer,
@@ -338,10 +333,7 @@ fn setup_container_screen(
         ))
         .id();
 
-    list_focus.active_list = Some(player_list_entity);
-
-    cmds.entity(player_list_entity)
-        .insert(ListState::new().with_focus(true));
+    cmds.entity(player_list_entity).insert(ListState::new());
 
     let help_y = 12.0; // Fixed position near bottom
     cmds.spawn((

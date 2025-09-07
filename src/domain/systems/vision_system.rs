@@ -85,7 +85,7 @@ pub fn update_player_vision(
             if distance > vision_range {
                 let light_intensity = lighting_data
                     .get_light(local_x, local_y)
-                    .map(|light| light.rgba.w)
+                    .map(|light| light.intensity)
                     .unwrap_or(0.0);
 
                 if light_intensity > 0.0 {

@@ -18,6 +18,8 @@ pub struct Mouse {
     pub ui: (f32, f32),
     pub world: (f32, f32),
     pub uv: (f32, f32),
+    pub prev_ui: (f32, f32),
+    pub has_moved: bool,
     pub left_pressed: bool,
     pub left_just_pressed: bool,
     pub left_just_released: bool,
@@ -87,6 +89,10 @@ pub fn update_mouse(
         (camera.y + ui.1 - layout.game_panel.y as f32)
             .clamp(0., (MAP_SIZE.1 * ZONE_SIZE.1 - 1) as f32 + 0.99),
     );
+
+    // Check if mouse moved in UI space
+    cursor.has_moved = cursor.ui != ui;
+    cursor.prev_ui = cursor.ui;
 
     cursor.px = px;
     cursor.ui = ui;

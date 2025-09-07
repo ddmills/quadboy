@@ -17,9 +17,4 @@ impl LootDrop {
             drop_count: 1,
         }
     }
-
-    pub fn with_count(mut self, count: usize) -> Self {
-        self.drop_count = count;
-        self
-    }
 }

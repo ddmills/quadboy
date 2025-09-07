@@ -304,15 +304,6 @@ fn get_river_neighbors(pos: (usize, usize), river_type: RiverType) -> Vec<[usize
 }
 
 impl RiverType {
-    fn max(self, other: RiverType) -> RiverType {
-        match (self, other) {
-            (RiverType::MightyRiver, _) | (_, RiverType::MightyRiver) => RiverType::MightyRiver,
-            (RiverType::River, _) | (_, RiverType::River) => RiverType::River,
-            (RiverType::Stream, _) | (_, RiverType::Stream) => RiverType::Stream,
-            (RiverType::Creek, RiverType::Creek) => RiverType::Creek,
-        }
-    }
-
     fn min(self, other: RiverType) -> RiverType {
         match (self, other) {
             (RiverType::Creek, _) | (_, RiverType::Creek) => RiverType::Creek,

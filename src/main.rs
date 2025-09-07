@@ -38,9 +38,10 @@ use crate::{
         PlayStatePlugin, SettingsStatePlugin, update_app_states, update_game_states,
     },
     ui::{
-        DialogState, ListContext, ListFocus, button_styles, list_focus_switching,
-        list_item_activation, list_mouse_hover, list_navigation, list_styles, on_btn_pressed,
-        on_key_pressed, setup_buttons, setup_lists, ui_interaction_system, update_list_context,
+        DialogState, ListContext, UiFocus, hotkey_pressed_timer_system, list_cursor_visibility,
+        setup_buttons, setup_lists, sync_focus_to_interaction, tab_navigation,
+        ui_interaction_system, unified_click_system, unified_keyboard_activation_system,
+        unified_style_system, update_focus_from_mouse, update_list_context,
     },
 };
 
@@ -142,7 +143,7 @@ async fn main() {
         .insert_resource(LootTableRegistry::new())
         .init_resource::<Mouse>()
         .init_resource::<ScreenSize>()
-        .init_resource::<ListFocus>()
+        .init_resource::<UiFocus>()
         .init_resource::<ListContext>()
         .init_resource::<Time>()
         .init_resource::<RenderTargets>()
@@ -175,18 +176,24 @@ async fn main() {
                 ui_interaction_system,
                 setup_buttons,
                 setup_lists,
-                list_navigation,
-                list_focus_switching,
-                list_mouse_hover,
+                tab_navigation,
+                list_cursor_visibility,
                 update_list_context,
-                button_styles,
-                list_styles,
-                on_btn_pressed,
-                list_item_activation,
-                on_key_pressed,
+                update_focus_from_mouse,
+                sync_focus_to_interaction,
+                unified_style_system,
+                hotkey_pressed_timer_system,
                 update_crt_uniforms,
                 render_fps,
                 (on_refresh_bitmask, on_bitmask_spawn).chain(),
+            ),
+        )
+        .add_systems(
+            ScheduleType::Update,
+            (
+                // New unified activation systems
+                unified_keyboard_activation_system,
+                unified_click_system,
             ),
         )
         .add_systems(

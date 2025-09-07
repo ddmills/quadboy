@@ -73,7 +73,6 @@ impl ZoneFactory {
 
     pub fn to_zone_data(&self) -> ZoneData {
         ZoneData {
-            zone_idx: self.zone_idx,
             terrain: self.grid_data.terrain.clone(),
             entities: self.grid_data.entities.clone(),
         }

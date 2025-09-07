@@ -51,13 +51,6 @@ fn generate_container_loot(
 
     let mut rand = Rand::seed(container_pos.0 + container_pos.1 + container_pos.2);
 
-    // Get the container's inventory available weight
-    let available_weight = if let Some(inventory) = world.get::<Inventory>(container_entity) {
-        inventory.get_available_weight()
-    } else {
-        return; // No inventory component
-    };
-
     // Determine how many items to spawn (1-3 items) - but we'll check weight as we go
     let max_item_attempts = rand.range_n(1, 4) as usize;
 

@@ -37,38 +37,8 @@ impl ZoneGridData {
         *self.locked.get(x, y).unwrap_or(&false)
     }
 
-    pub fn terrain_grid(&self) -> &Grid<Terrain> {
-        &self.terrain
-    }
-
-    pub fn terrain_grid_mut(&mut self) -> &mut Grid<Terrain> {
-        &mut self.terrain
-    }
-
-    pub fn entities_grid(&self) -> &Grid<Vec<Prefab>> {
-        &self.entities
-    }
-
-    pub fn entities_grid_mut(&mut self) -> &mut Grid<Vec<Prefab>> {
-        &mut self.entities
-    }
-
     pub fn locked_grid(&self) -> &Grid<bool> {
         &self.locked
-    }
-
-    pub fn locked_grid_mut(&mut self) -> &mut Grid<bool> {
-        &mut self.locked
-    }
-
-    pub fn fill_unlocked_terrain(&mut self, terrain: Terrain) {
-        for x in 0..ZONE_SIZE.0 {
-            for y in 0..ZONE_SIZE.1 {
-                if !self.is_locked_tile(x, y) {
-                    self.set_terrain(x, y, terrain);
-                }
-            }
-        }
     }
 
     pub fn get_all_grids_mut(

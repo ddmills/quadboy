@@ -67,19 +67,6 @@ impl RiverType {
             RiverType::MightyRiver => RiverType::MightyRiver,
         }
     }
-
-    pub fn can_merge_with(self, other: RiverType) -> bool {
-        match (self, other) {
-            (RiverType::Creek, RiverType::Creek) => true,
-            (RiverType::Stream, RiverType::Creek) => true,
-            (RiverType::Creek, RiverType::Stream) => true,
-            (RiverType::Stream, RiverType::Stream) => true,
-            (RiverType::River, _) => true,
-            (_, RiverType::River) => true,
-            (RiverType::MightyRiver, _) => true,
-            (_, RiverType::MightyRiver) => true,
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -105,14 +92,12 @@ pub struct RiverSegment {
     pub river_type: RiverType,
     pub flow_direction: Direction,
     pub depth: f32,
-    pub length: f32,
 }
 
 #[derive(Default, Clone)]
 pub struct RiverNetwork {
     pub edges: HashMap<(usize, usize), RiverSegment>,
     pub nodes: HashSet<usize>,
-    pub sources: Vec<usize>,
     pub confluences: Vec<usize>,
 }
 

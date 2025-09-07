@@ -3,9 +3,6 @@ use bevy_ecs::prelude::*;
 #[derive(Debug, Clone, Copy)]
 pub enum DestructionCause {
     Attack,
-    Environmental,
-    Spell,
-    Trap,
 }
 
 #[derive(Event)]

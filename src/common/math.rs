@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub fn max_3<T: Ord>(a: T, b: T, c: T) -> T {
     std::cmp::max(std::cmp::max(a, b), c)
 }

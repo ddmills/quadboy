@@ -1,11 +1,10 @@
-use bevy_ecs::{prelude::*, system::SystemId};
+use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
     engine::KeyInput,
     rendering::{Glyph, Layer, Position, Text},
-    ui::Button,
 };
 
 /// Resource to track if any dialog is currently open
@@ -20,7 +19,6 @@ pub struct Dialog {
     pub title: String,
     pub width: f32,
     pub height: f32,
-    pub modal: bool,
 }
 
 impl Dialog {
@@ -29,7 +27,6 @@ impl Dialog {
             title: title.to_string(),
             width,
             height,
-            modal: true,
         }
     }
 }
@@ -80,29 +77,18 @@ pub struct DialogProperty {
     pub value: String,
 }
 
-/// Button within a dialog
-#[derive(Component)]
-pub struct DialogButton {
-    pub label: String,
-    pub callback: SystemId,
-    pub hotkey: Option<KeyCode>,
-}
-
 /// Visual divider/separator
 #[derive(Component)]
 pub struct DialogDivider;
 
-/// System to set up dialog components when a Dialog is spawned
 pub fn setup_dialogs(
     mut cmds: Commands,
     mut q_dialogs: Query<(Entity, &Dialog, &Position), Changed<Dialog>>,
     mut dialog_state: ResMut<DialogState>,
 ) {
     for (dialog_entity, dialog, dialog_pos) in q_dialogs.iter_mut() {
-        // Mark that a dialog is now open
         dialog_state.is_open = true;
 
-        // Create dialog background (renders first on UiPanels)
         cmds.spawn((
             DialogBackground,
             DialogContent {
@@ -269,14 +255,11 @@ fn create_dialog_border(
     }
 }
 
-/// System to render dialog content components
 pub fn render_dialog_content(
     mut cmds: Commands,
-    q_dialogs: Query<Entity, With<Dialog>>,
     q_text: Query<(Entity, &DialogText, &Position), (With<DialogContent>, Without<Text>)>,
     q_icons: Query<(Entity, &DialogIcon, &Position), (With<DialogContent>, Without<Glyph>)>,
     q_properties: Query<(Entity, &DialogProperty, &Position), (With<DialogContent>, Without<Text>)>,
-    q_buttons: Query<(Entity, &DialogButton, &Position), (With<DialogContent>, Without<Button>)>,
     q_dividers: Query<(Entity, &DialogDivider, &Position), (With<DialogContent>, Without<Glyph>)>,
 ) {
     // Render DialogText components as Text
@@ -322,18 +305,6 @@ pub fn render_dialog_content(
                     .fg1(Palette::White)
                     .layer(Layer::DialogContent),
             );
-        }
-    }
-
-    // Render DialogButton components as Button
-    for (entity, dialog_button, _pos) in q_buttons.iter() {
-        let mut button =
-            Button::new(&dialog_button.label, dialog_button.callback).layer(Layer::DialogContent);
-        if let Some(hotkey) = dialog_button.hotkey {
-            button = button.hotkey(hotkey);
-        }
-        if let Ok(mut entity_cmds) = cmds.get_entity(entity) {
-            entity_cmds.insert(button);
         }
     }
 

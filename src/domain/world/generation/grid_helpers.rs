@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, Perlin, Rand},

@@ -22,10 +22,6 @@ impl MeleeWeapon {
     }
 
     pub fn sword() -> Self {
-        Self::new(3, vec![MaterialType::Flesh])
-    }
-
-    pub fn can_damage_material(&self, material: MaterialType) -> bool {
-        self.can_damage.contains(&material)
+        Self::new(4, vec![MaterialType::Flesh])
     }
 }

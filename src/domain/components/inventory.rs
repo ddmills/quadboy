@@ -50,10 +50,6 @@ impl Inventory {
         }
     }
 
-    pub fn is_full(&self) -> bool {
-        self.current_weight >= self.capacity
-    }
-
     pub fn count(&self) -> usize {
         self.item_ids.len()
     }
@@ -130,15 +126,5 @@ impl StackCount {
         let to_add = amount.min(space);
         self.count += to_add;
         amount - to_add // Return overflow
-    }
-
-    pub fn remove(&mut self, amount: u32) -> u32 {
-        let to_remove = amount.min(self.count);
-        self.count -= to_remove;
-        to_remove // Return actual amount removed
-    }
-
-    pub fn is_full(&self) -> bool {
-        self.count >= Self::MAX_STACK_SIZE
     }
 }

@@ -330,7 +330,6 @@ impl OverworldRiverGenerator {
                         river_type,
                         flow_direction: direction,
                         depth: Self::calculate_depth(river_type),
-                        length: 1.0,
                     },
                 );
 
@@ -424,7 +423,6 @@ impl OverworldRiverGenerator {
                             river_type,
                             flow_direction: direction.clone(),
                             depth: Self::calculate_depth(river_type),
-                            length: 1.0,
                         },
                     );
 

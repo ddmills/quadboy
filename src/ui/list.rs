@@ -3,16 +3,10 @@ use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    domain::GameSettings,
-    engine::{KeyInput, Mouse, Time},
+    engine::AudioKey,
     rendering::{Glyph, Layer, Position, Text, Visibility},
-    ui::{Interactable, Interaction},
+    ui::{Activatable, ActivatableBuilder, Interactable, Interaction, UiFocus},
 };
-
-#[derive(Resource, Default)]
-pub struct ListFocus {
-    pub active_list: Option<Entity>,
-}
 
 #[derive(Resource)]
 pub struct ListContext {
@@ -36,42 +30,100 @@ pub struct ListItemData {
     pub callback: SystemId,
     pub hotkey: Option<KeyCode>,
     pub context_data: Option<u64>,
+    pub audio_key: Option<AudioKey>,
+}
+
+impl ListItemData {
+    pub fn new(label: &str, callback: SystemId) -> Self {
+        Self {
+            label: label.to_owned(),
+            callback,
+            hotkey: None,
+            context_data: None,
+            audio_key: None,
+        }
+    }
+
+    pub fn with_hotkey(mut self, hotkey: KeyCode) -> Self {
+        self.hotkey = Some(hotkey);
+        self
+    }
+
+    pub fn with_context(mut self, context_data: u64) -> Self {
+        self.context_data = Some(context_data);
+        self
+    }
+
+    pub fn with_audio(mut self, audio_key: AudioKey) -> Self {
+        self.audio_key = Some(audio_key);
+        self
+    }
+
+    // Helper to convert to Activatable::ListItem
+    pub fn to_activatable(
+        &self,
+        index: usize,
+        parent_list: Entity,
+        parent_focus_order: Option<i32>,
+    ) -> Activatable {
+        let mut builder = ActivatableBuilder::new(&self.label, self.callback);
+
+        if let Some(hotkey) = self.hotkey {
+            builder = builder.with_hotkey(hotkey);
+        }
+
+        if let Some(audio_key) = self.audio_key {
+            builder = builder.with_audio(audio_key);
+        }
+
+        // Add focus order if parent has one, with index offset for sub-ordering
+        if let Some(focus_order) = parent_focus_order {
+            builder = builder.with_focus_order(focus_order + index as i32);
+        }
+
+        if let Some(context_data) = self.context_data {
+            builder.as_list_item_with_context(index, parent_list, context_data)
+        } else {
+            builder.as_list_item(index, parent_list)
+        }
+    }
 }
 
 #[derive(Component)]
 pub struct List {
     pub items: Vec<ListItemData>,
     pub width: f32,
+    pub focus_order: Option<i32>,
 }
 
 #[derive(Component)]
 pub struct ListState {
     pub selected_index: usize,
-    pub has_focus: bool,
 }
 
 impl List {
     pub fn new(items: Vec<ListItemData>) -> Self {
-        Self { items, width: 16. }
+        Self {
+            items,
+            width: 16.,
+            focus_order: None,
+        }
     }
 
     pub fn width(mut self, width: f32) -> Self {
         self.width = width;
         self
     }
+
+    pub fn with_focus_order(mut self, focus_order: i32) -> Self {
+        self.focus_order = Some(focus_order);
+        self
+    }
 }
 
 impl ListState {
     pub fn new() -> Self {
-        Self {
-            selected_index: 0,
-            has_focus: false,
-        }
-    }
-
-    pub fn with_focus(mut self, focus: bool) -> Self {
-        self.has_focus = focus;
-        self
+        Self { selected_index: 0 }
     }
 }
 
@@ -144,6 +196,9 @@ pub fn setup_lists(
             }
         }
 
+        // Lists are no longer focusable - only their items are focusable
+        // This prevents duplicate tab stops and simplifies navigation
+
         // Ensure we have exactly one cursor
         if existing_cursors.is_empty() {
             cmds.spawn((
@@ -209,8 +264,16 @@ pub fn setup_lists(
                     pos.y = list_pos.y + item_y;
                     pos.z = list_pos.z;
                 }
+                // Add/update Activatable and Interaction components for existing items
+                let activatable = item_data.to_activatable(i, list_entity, list.focus_order);
+                cmds.entity(text_entity).insert((
+                    activatable,
+                    Interaction::None,
+                    Interactable::new(list.width, 0.5),
+                ));
             } else {
-                // Create new text item
+                // Create new text item with Activatable component
+                let activatable = item_data.to_activatable(i, list_entity, list.focus_order);
                 cmds.spawn((
                     Text::new(&item_data.label).layer(Layer::Ui),
                     Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
@@ -218,6 +281,9 @@ pub fn setup_lists(
                         index: i,
                         parent_list: list_entity,
                     },
+                    activatable,
+                    Interaction::None,
+                    Interactable::new(list.width, 0.5),
                     ChildOf(list_entity),
                 ));
             }
@@ -233,215 +299,60 @@ pub fn setup_lists(
     }
 }
 
-pub fn list_navigation(
-    list_focus: Res<ListFocus>,
-    mut q_lists: Query<(Entity, &List, &mut ListState)>,
-    keys: Res<KeyInput>,
-    time: Res<Time>,
-    settings: Res<GameSettings>,
-    mut navigation_timer: Local<(f64, bool)>,
-) {
-    let Some(active_list) = list_focus.active_list else {
-        return;
-    };
-
-    let now = time.fixed_t;
-    let mut rate = settings.input_delay;
-    let delay = settings.input_initial_delay;
-
-    let navigation_keys_down = keys.is_down(KeyCode::W) || keys.is_down(KeyCode::S);
-    let navigation_keys_pressed = keys.is_pressed(KeyCode::W) || keys.is_pressed(KeyCode::S);
-
-    if !navigation_keys_down {
-        navigation_timer.1 = false;
-    }
-
-    if keys.is_down(KeyCode::LeftShift) {
-        rate /= 2.0;
-    }
-
-    let can_navigate = if navigation_keys_pressed {
-        true
-    } else if navigation_keys_down {
-        if navigation_timer.1 {
-            now - navigation_timer.0 >= rate
-        } else if now - navigation_timer.0 >= delay {
-            navigation_timer.1 = true;
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
-
-    if navigation_keys_down && can_navigate {
-        for (entity, list, mut list_state) in q_lists.iter_mut() {
-            if entity != active_list || !list_state.has_focus {
-                continue;
-            }
-
-            if keys.is_down(KeyCode::W) && list_state.selected_index > 0 {
-                list_state.selected_index -= 1;
-                navigation_timer.0 = now;
-            }
-
-            if keys.is_down(KeyCode::S)
-                && list_state.selected_index < list.items.len().saturating_sub(1)
-            {
-                list_state.selected_index += 1;
-                navigation_timer.0 = now;
-            }
-        }
-    }
-}
-
-pub fn list_focus_switching(
-    mut list_focus: ResMut<ListFocus>,
-    mut q_lists: Query<(Entity, &List, &mut ListState)>,
-    keys: Res<KeyInput>,
-) {
-    if keys.is_pressed(KeyCode::Tab) {
-        let lists: Vec<Entity> = q_lists.iter().map(|(e, _, _)| e).collect();
-
-        if lists.len() > 1 {
-            let current_index = lists
-                .iter()
-                .position(|&e| Some(e) == list_focus.active_list)
-                .unwrap_or(0);
-
-            let next_index = (current_index + 1) % lists.len();
-            let next_list = lists[next_index];
-
-            for (entity, _, mut list_state) in q_lists.iter_mut() {
-                list_state.has_focus = entity == next_list;
-            }
-
-            list_focus.active_list = Some(next_list);
-        }
-    }
-}
-
-pub fn list_mouse_hover(
-    mut list_focus: ResMut<ListFocus>,
-    mut q_lists: Query<(Entity, &List, &mut ListState), With<List>>,
-    q_items: Query<(&ListItemBg, &Interactable, &Position)>,
-    mouse: Res<Mouse>,
-) {
-    for (item, interactable, pos) in q_items.iter() {
-        let is_hovered = mouse.ui.0 >= pos.x
-            && mouse.ui.0 <= pos.x + interactable.width
-            && mouse.ui.1 > pos.y
-            && mouse.ui.1 < pos.y + interactable.height;
-
-        if is_hovered {
-            list_focus.active_list = Some(item.parent_list);
-
-            for (entity, _, mut list_state) in q_lists.iter_mut() {
-                if entity == item.parent_list {
-                    list_state.has_focus = true;
-                    list_state.selected_index = item.index;
-                } else {
-                    list_state.has_focus = false;
-                }
-            }
-        }
-    }
-}
-
-pub fn list_item_activation(
-    mut cmds: Commands,
-    mut list_context: ResMut<ListContext>,
-    list_focus: Res<ListFocus>,
-    q_lists: Query<(Entity, &List, &ListState)>,
-    keys: Res<KeyInput>,
-) {
-    // Activate selected item with Enter key
-    if keys.is_pressed(KeyCode::Enter) {
-        let Some(active_list) = list_focus.active_list else {
-            return;
-        };
-
-        for (entity, list, list_state) in q_lists.iter() {
-            if entity != active_list || !list_state.has_focus {
-                continue;
-            }
-
-            if list_state.selected_index < list.items.len() {
-                let selected_item = &list.items[list_state.selected_index];
-
-                // Store context before running callback
-                list_context.activated_item_index = list_state.selected_index;
-                list_context.activated_list = entity;
-                list_context.context_data = selected_item.context_data;
-
-                // Run the callback
-                cmds.run_system(selected_item.callback);
-            }
-        }
-    }
-}
-
 pub fn update_list_context(
     mut list_context: ResMut<ListContext>,
-    list_focus: Res<ListFocus>,
+    ui_focus: Res<UiFocus>,
     q_lists: Query<(&List, &ListState)>,
+    q_list_items: Query<&ListItem>,
 ) {
-    let Some(active_list) = list_focus.active_list else {
+    let Some(focused_element) = ui_focus.focused_element else {
         return;
     };
 
-    if let Ok((list, list_state)) = q_lists.get(active_list)
-        && list_state.has_focus
-        && list_state.selected_index < list.items.len()
+    // Check if the focused element is a list item
+    if let Ok(list_item) = q_list_items.get(focused_element)
+        && let Ok((list, list_state)) = q_lists.get(list_item.parent_list)
+        && list_item.index < list.items.len()
     {
-        let selected_item = &list.items[list_state.selected_index];
-        list_context.activated_item_index = list_state.selected_index;
-        list_context.activated_list = active_list;
+        let selected_item = &list.items[list_item.index];
+        list_context.activated_item_index = list_item.index;
+        list_context.activated_list = list_item.parent_list;
         list_context.context_data = selected_item.context_data;
     }
 }
 
-pub fn list_styles(
+pub fn list_cursor_visibility(
     q_lists: Query<(Entity, &List, &ListState, &Position, &Children)>,
     mut q_cursors: Query<(&ListCursor, &mut Position, &mut Visibility), Without<List>>,
-    mut q_items: Query<(&ListItemBg, &mut Glyph)>,
+    q_list_items: Query<&ListItem>,
+    ui_focus: Res<UiFocus>,
 ) {
-    for (list_entity, list, list_state, list_pos, children) in q_lists.iter() {
+    for (list_entity, _list, list_state, list_pos, children) in q_lists.iter() {
         for child in children.iter() {
             if let Ok((cursor, mut cursor_pos, mut cursor_vis)) = q_cursors.get_mut(child)
                 && cursor.parent_list == list_entity
             {
-                *cursor_vis = if list_state.has_focus {
-                    Visibility::Visible
+                // Check if any item in this list has focus and get its index
+                if let Some(focused_entity) = ui_focus.focused_element {
+                    if let Ok(focused_list_item) = q_list_items.get(focused_entity) {
+                        if focused_list_item.parent_list == list_entity {
+                            // Show cursor and position it at the focused item
+                            *cursor_vis = Visibility::Visible;
+                            cursor_pos.x = list_pos.x;
+                            cursor_pos.y = list_pos.y + (focused_list_item.index as f32 * 0.5);
+                            cursor_pos.z = list_pos.z;
+                        } else {
+                            // Hide cursor if no item in this list is focused
+                            *cursor_vis = Visibility::Hidden;
+                        }
+                    } else {
+                        // Hide cursor if focused entity is not a list item
+                        *cursor_vis = Visibility::Hidden;
+                    }
                 } else {
-                    Visibility::Hidden
-                };
-
-                cursor_pos.x = list_pos.x;
-                cursor_pos.y = list_pos.y + (list_state.selected_index as f32 * 0.5);
-                cursor_pos.z = list_pos.z;
-            }
-        }
-
-        for (item, mut glyph) in q_items.iter_mut() {
-            if item.parent_list != list_entity {
-                continue;
-            }
-
-            let target_bg = if item.index == list_state.selected_index {
-                if list_state.has_focus {
-                    Some(Palette::DarkGray.into())
-                } else {
-                    Some(Palette::Black.into())
+                    // Hide cursor if nothing is focused
+                    *cursor_vis = Visibility::Hidden;
                 }
-            } else {
-                Some(Palette::Clear.into())
-            };
-
-            // Only update background if it's different to avoid triggering change detection
-            if glyph.bg != target_bg {
-                glyph.bg = target_bg;
             }
         }
     }

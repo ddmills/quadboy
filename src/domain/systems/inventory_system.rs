@@ -7,11 +7,6 @@ use crate::{
 };
 use macroquad::input::KeyCode;
 
-#[derive(Event)]
-pub struct PickupEvent {
-    pub item_name: String,
-}
-
 pub fn handle_item_pickup(
     mut cmds: Commands,
     mut q_player: Query<(Entity, &Position), With<Player>>,

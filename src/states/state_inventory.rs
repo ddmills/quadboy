@@ -1,19 +1,22 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::input::{KeyCode, is_key_pressed};
+use macroquad::{
+    input::{KeyCode, is_key_pressed},
+    prelude::trace,
+};
 
 use crate::{
     common::Palette,
     domain::{
-        DropItemAction, EquipItemAction, EquipmentSlot, EquipmentSlots, Equippable, Equipped,
-        Inventory, Item, Label, MeleeWeapon, Player, PlayerPosition, StackCount, UnequipItemAction,
-        game_loop, inventory::InventoryChangedEvent,
+        DropItemAction, EquipItemAction, EquipmentSlot, Equippable, Equipped, Inventory, Item,
+        Label, MeleeWeapon, Player, PlayerPosition, StackCount, UnequipItemAction, game_loop,
+        inventory::InventoryChangedEvent,
     },
-    engine::{App, KeyInput, Plugin, StableIdRegistry},
+    engine::{App, AudioKey, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, Text, text_content_length},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
-        Button, Dialog, DialogButton, DialogContent, DialogIcon, DialogProperty, DialogState,
-        DialogText, DialogTextStyle, List, ListContext, ListFocus, ListItemData, ListState,
+        ActivatableBuilder, Dialog, DialogContent, DialogIcon, DialogProperty, DialogState,
+        DialogText, DialogTextStyle, List, ListContext, ListItemData, ListState,
         handle_dialog_input, render_dialog_content, setup_buttons, setup_dialogs,
     },
 };
@@ -21,7 +24,6 @@ use crate::{
 #[derive(Resource)]
 struct InventoryCallbacks {
     back_to_explore: SystemId,
-    select_item: SystemId,
     drop_item: SystemId,
     toggle_equip_item: SystemId,
     examine_item: SystemId,
@@ -37,22 +39,6 @@ pub struct CleanupStateEquipSlotSelect;
 #[derive(Component)]
 pub struct InventoryWeightText;
 
-#[derive(Component)]
-pub struct InventoryItemDisplay;
-
-#[derive(Component)]
-pub struct InventoryCursor {
-    pub index: usize,
-    pub max_index: usize,
-    pub is_player_side: bool,
-}
-
-#[derive(Component)]
-pub struct EquipSlotCursor {
-    pub index: usize,
-    pub max_index: usize,
-}
-
 #[derive(Resource)]
 pub struct InventoryContext {
     pub player_entity: Entity,
@@ -62,10 +48,6 @@ pub struct InventoryContext {
 
 fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
     game_state.next = GameState::Explore;
-}
-
-fn select_item() {
-    // No-op for empty slots
 }
 
 fn build_inventory_list_items(
@@ -107,12 +89,8 @@ fn build_inventory_list_items(
                 display_text
             };
 
-            items.push(ListItemData {
-                label: final_text,
-                callback: callbacks.drop_item,
-                hotkey: None,
-                context_data: Some(item_id),
-            });
+            items
+                .push(ListItemData::new(&final_text, callbacks.examine_item).with_context(item_id));
         }
     }
 
@@ -123,13 +101,8 @@ fn setup_equip_slot_screen(
     mut cmds: Commands,
     ctx: Res<InventoryContext>,
     registry: Res<StableIdRegistry>,
-    q_player: Query<(&Inventory, &EquipmentSlots), With<Player>>,
-    q_item: Query<(&Label, &Equippable)>,
+    q_item: Query<&Label>,
 ) {
-    let Ok((inventory, equipment_slots)) = q_player.get(ctx.player_entity) else {
-        return;
-    };
-
     let Some(item_id) = ctx.selected_item_id else {
         return;
     };
@@ -138,7 +111,7 @@ fn setup_equip_slot_screen(
         return;
     };
 
-    let Ok((label, equippable)) = q_item.get(item_entity) else {
+    let Ok(label) = q_item.get(item_entity) else {
         return;
     };
 
@@ -185,7 +158,6 @@ fn setup_equip_slot_screen(
 fn setup_inventory_callbacks(world: &mut World) {
     let callbacks = InventoryCallbacks {
         back_to_explore: world.register_system(back_to_explore),
-        select_item: world.register_system(select_item),
         drop_item: world.register_system(drop_selected_item),
         toggle_equip_item: world.register_system(toggle_equip_selected_item),
         examine_item: world.register_system(examine_selected_item),
@@ -257,7 +229,6 @@ fn toggle_equip_selected_item(
 fn examine_selected_item(
     mut cmds: Commands,
     list_context: Res<ListContext>,
-    _context: Res<InventoryContext>,
     callbacks: Res<InventoryCallbacks>,
     id_registry: Res<StableIdRegistry>,
     q_labels: Query<&Label>,
@@ -394,6 +365,7 @@ fn examine_selected_item(
             .map(|slot| slot.display_name())
             .collect::<Vec<_>>()
             .join(", ");
+
         cmds.spawn((
             DialogProperty {
                 label: "Slots".to_string(),
@@ -424,19 +396,16 @@ fn examine_selected_item(
             CleanupStateInventory,
             ChildOf(dialog_entity),
         ));
-        content_y += 0.5;
     }
 
-    // 3. Add action buttons horizontally at the bottom
     let button_y = dialog_pos.y + dialog_height - 1.5;
 
     // Drop button
     cmds.spawn((
-        DialogButton {
-            label: "[{Y|U}] Drop".to_string(),
-            callback: callbacks.drop_item,
-            hotkey: Some(KeyCode::U),
-        },
+        ActivatableBuilder::new("[{Y|U}] Drop", callbacks.drop_item)
+            .with_hotkey(KeyCode::U)
+            .with_focus_order(1000)
+            .as_button(Layer::DialogContent),
         DialogContent {
             parent_dialog: dialog_entity,
             order: 20,
@@ -449,11 +418,10 @@ fn examine_selected_item(
     // Equip button (conditionally)
     if q_equippable.get(item_entity).is_ok() {
         cmds.spawn((
-            DialogButton {
-                label: "[{Y|E}] Equip".to_string(),
-                callback: callbacks.toggle_equip_item,
-                hotkey: Some(KeyCode::E),
-            },
+            ActivatableBuilder::new("[{Y|E}] Equip", callbacks.toggle_equip_item)
+                .with_hotkey(KeyCode::E)
+                .with_focus_order(2000)
+                .as_button(Layer::DialogContent),
             DialogContent {
                 parent_dialog: dialog_entity,
                 order: 21,
@@ -466,11 +434,11 @@ fn examine_selected_item(
 
     // Close button
     cmds.spawn((
-        DialogButton {
-            label: "[{Y|ESC}] Close".to_string(),
-            callback: callbacks.close_dialog,
-            hotkey: Some(KeyCode::Escape),
-        },
+        ActivatableBuilder::new("[{Y|ESC}] Close", callbacks.close_dialog)
+            .with_audio(AudioKey::ButtonBack1)
+            .with_hotkey(KeyCode::Escape)
+            .with_focus_order(3000)
+            .as_button(Layer::DialogContent),
         DialogContent {
             parent_dialog: dialog_entity,
             order: 22,
@@ -509,7 +477,6 @@ impl Plugin for InventoryStatePlugin {
                 app,
                 (
                     game_loop,
-                    handle_inventory_input,
                     refresh_inventory_display,
                     setup_dialogs,
                     render_dialog_content,
@@ -540,11 +507,9 @@ fn setup_inventory_screen(
     q_player: Query<Entity, With<Player>>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_glyphs: Query<&Glyph>,
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
     id_registry: Res<StableIdRegistry>,
-    mut list_focus: ResMut<ListFocus>,
 ) {
     let Ok(player_entity) = q_player.single() else {
         return;
@@ -615,51 +580,57 @@ fn setup_inventory_screen(
                 display_text
             };
 
-            list_items.push(ListItemData {
-                label: final_text,
-                callback: callbacks.select_item,
-                hotkey: None, // Could add number keys 1-9 for quick selection
-                context_data: Some(item_id),
-            });
+            list_items
+                .push(ListItemData::new(&final_text, callbacks.examine_item).with_context(item_id));
         }
     }
 
-    let list_entity = cmds
-        .spawn((
-            List::new(list_items),
-            ListState::new().with_focus(true),
-            Position::new_f32(left_x + 1., 3., 0.),
-            CleanupStateInventory,
-        ))
-        .id();
-
-    list_focus.active_list = Some(list_entity);
+    cmds.spawn((
+        List::new(list_items).with_focus_order(1000),
+        ListState::new(),
+        Position::new_f32(left_x + 1., 3., 0.),
+        CleanupStateInventory,
+    ));
 
     let help_y = 3.5 + (inventory.count() as f32 * 0.5) + 1.0;
 
     cmds.spawn((
         Position::new_f32(left_x, help_y.min(18.), 0.),
-        Button::new("({Y|I}) BACK", callbacks.back_to_explore).hotkey(KeyCode::I),
+        ActivatableBuilder::new("({Y|I}) BACK", callbacks.back_to_explore)
+            .with_hotkey(KeyCode::I)
+            .with_hotkey(KeyCode::Escape)
+            .with_audio(AudioKey::ButtonBack1)
+            .with_focus_order(2000)
+            .as_button(Layer::Ui),
         CleanupStateInventory,
     ));
 
     cmds.spawn((
         Position::new_f32(left_x + 4.5, help_y.min(18.), 0.),
-        Button::new("({Y|U}) DROP", callbacks.drop_item).hotkey(KeyCode::U),
+        ActivatableBuilder::new("({Y|U}) DROP", callbacks.drop_item)
+            .with_hotkey(KeyCode::U)
+            .with_focus_order(2100)
+            .as_button(Layer::Ui),
         CleanupStateInventory,
     ));
 
     cmds.spawn((
         Position::new_f32(left_x + 9., help_y.min(18.), 0.),
-        Button::new("({Y|E}) TOGGLE EQUIP", callbacks.toggle_equip_item).hotkey(KeyCode::E),
+        ActivatableBuilder::new("({Y|E}) TOGGLE EQUIP", callbacks.toggle_equip_item)
+            .with_hotkey(KeyCode::E)
+            .with_focus_order(2200)
+            .as_button(Layer::Ui),
         CleanupStateInventory,
     ));
 
-    cmds.spawn((
-        Position::new_f32(left_x + 17.5, help_y.min(18.), 0.),
-        Button::new("({Y|X}) EXAMINE", callbacks.examine_item).hotkey(KeyCode::X),
-        CleanupStateInventory,
-    ));
+    // cmds.spawn((
+    //     Position::new_f32(left_x + 17.5, help_y.min(18.), 0.),
+    //     ActivatableBuilder::new("({Y|X}) EXAMINE", callbacks.examine_item)
+    //         .with_hotkey(KeyCode::X)
+    //         .with_focus_order(2300)
+    //         .as_button(Layer::Ui),
+    //     CleanupStateInventory,
+    // ));
 }
 
 fn handle_equip_slot_input(mut game_state: ResMut<CurrentGameState>) {
@@ -669,8 +640,7 @@ fn handle_equip_slot_input(mut game_state: ResMut<CurrentGameState>) {
 }
 
 fn refresh_inventory_display(
-    mut list_focus: ResMut<ListFocus>,
-    mut q_list: Query<(&mut List, Entity), With<CleanupStateInventory>>,
+    mut q_list: Query<&mut List, With<CleanupStateInventory>>,
     mut q_weight_text: Query<&mut Text, With<InventoryWeightText>>,
     context: Res<InventoryContext>,
     q_inventory: Query<&Inventory>,
@@ -685,11 +655,9 @@ fn refresh_inventory_display(
         return;
     };
 
-    let Ok((mut list, list_entity)) = q_list.single_mut() else {
+    let Ok(mut list) = q_list.single_mut() else {
         return;
     };
-
-    list_focus.active_list = Some(list_entity);
 
     if !e_inventory_changed.is_empty() {
         e_inventory_changed.clear();
@@ -712,19 +680,5 @@ fn refresh_inventory_display(
                 player_inventory.capacity
             );
         }
-    }
-}
-
-fn handle_inventory_input(
-    keys: Res<KeyInput>,
-    mut game_state: ResMut<CurrentGameState>,
-    dialog_state: Res<DialogState>,
-) {
-    if dialog_state.is_open {
-        return;
-    }
-
-    if keys.is_pressed(KeyCode::I) {
-        game_state.next = GameState::Explore;
     }
 }

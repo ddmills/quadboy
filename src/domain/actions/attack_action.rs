@@ -24,10 +24,6 @@ impl Command for AttackAction {
                 return;
             };
 
-            let Some(attacker_id) = registry.get_id(self.attacker_entity) else {
-                return;
-            };
-
             let Some(equipment) = world.get::<EquipmentSlots>(self.attacker_entity) else {
                 return; // No equipment slots, can't have weapon
             };
@@ -76,25 +72,21 @@ impl Command for AttackAction {
 
         // Process attack on each target at position
         for &target_entity in targets.iter() {
-            // Check if target has Health (living creature)
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
-                if let Some((damage, can_damage)) = &weapon_damage {
-                    // Check if weapon can damage flesh
-                    if can_damage.contains(&crate::domain::MaterialType::Flesh) {
-                        health.take_damage(*damage);
+                if let Some((damage, can_damage)) = &weapon_damage
+                    && can_damage.contains(&crate::domain::MaterialType::Flesh)
+                {
+                    health.take_damage(*damage);
 
-                        // Check if target died
-                        if health.is_dead() {
-                            // Fire destruction event instead of handling directly
-                            if let Some(position) = world.get::<Position>(target_entity) {
-                                let event = EntityDestroyedEvent::new(
-                                    target_entity,
-                                    position.world(),
-                                    DestructionCause::Attack,
-                                );
-                                world.send_event(event);
-                            }
-                        }
+                    if health.is_dead()
+                        && let Some(position) = world.get::<Position>(target_entity)
+                    {
+                        let event = EntityDestroyedEvent::new(
+                            target_entity,
+                            position.world(),
+                            DestructionCause::Attack,
+                        );
+                        world.send_event(event);
                     }
                 }
             }
@@ -107,9 +99,6 @@ impl Command for AttackAction {
                     let material_type = destructible.material_type;
                     destructible.take_damage(*damage);
                     let is_destroyed = destructible.is_destroyed();
-
-                    // Drop the borrow before accessing resources
-                    drop(destructible);
 
                     // Play hit audio
                     if let Some(audio_collection) = material_type.hit_audio_collection() {

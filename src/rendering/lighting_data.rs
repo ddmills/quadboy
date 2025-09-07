@@ -1,12 +1,13 @@
 use bevy_ecs::prelude::*;
-use macroquad::math::{Vec2, Vec4};
+use macroquad::math::{Vec3, Vec4};
 
 use crate::{cfg::ZONE_SIZE, common::Grid};
 
 #[derive(Clone, Default)]
 pub struct LightValue {
-    pub rgba: Vec4,           // RGB color (xyz) + intensity (w) packed together
-    pub flicker_params: Vec2, // x = speed (Hz), y = amount (0-1)
+    pub rgb: Vec3, // RGB color (xyz) + intensity (w) packed together
+    pub intensity: f32,
+    pub flicker: f32,
 }
 
 impl LightValue {
@@ -14,15 +15,12 @@ impl LightValue {
         let r = ((color >> 16) & 0xFF) as f32 / 255.0;
         let g = ((color >> 8) & 0xFF) as f32 / 255.0;
         let b = (color & 0xFF) as f32 / 255.0;
-        Self {
-            rgba: Vec4::new(r, g, b, intensity),
-            flicker_params: Vec2::ZERO,
-        }
-    }
 
-    pub fn with_flicker(mut self, speed: f32, amount: f32) -> Self {
-        self.flicker_params = Vec2::new(speed, amount);
-        self
+        Self {
+            rgb: Vec3::new(r, g, b),
+            intensity,
+            flicker: 0.,
+        }
     }
 }
 
@@ -68,7 +66,7 @@ impl LightingData {
         }
 
         if let Some(current) = self.light_map.get_mut(x as usize, y as usize) {
-            let curr_intensity = current.rgba.w;
+            let curr_intensity = current.intensity;
             let new_total = curr_intensity + intensity;
 
             if new_total > 0.0 {
@@ -76,17 +74,14 @@ impl LightingData {
                 let curr_weight = curr_intensity / new_total;
                 let new_weight = intensity / new_total;
 
-                current.rgba.x = current.rgba.x * curr_weight + r * new_weight;
-                current.rgba.y = current.rgba.y * curr_weight + g * new_weight;
-                current.rgba.z = current.rgba.z * curr_weight + b * new_weight;
-                current.rgba.w = new_total.min(1.0); // Cap at 1.0
+                current.rgb.x = current.rgb.x * curr_weight + r * new_weight;
+                current.rgb.y = current.rgb.y * curr_weight + g * new_weight;
+                current.rgb.z = current.rgb.z * curr_weight + b * new_weight;
+                current.intensity = new_total.min(1.0); // Cap at 1.0
 
                 // Blend flicker parameters weighted by light intensity
                 if flicker > 0.0 {
-                    current.flicker_params.x =
-                        current.flicker_params.x * curr_weight + flicker * new_weight;
-                    current.flicker_params.y =
-                        current.flicker_params.y * curr_weight + flicker * new_weight;
+                    current.flicker = (current.flicker * curr_weight) + (flicker * new_weight);
                 }
             }
         }

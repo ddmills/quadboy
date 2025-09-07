@@ -2,12 +2,12 @@ use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
-    engine::{App, ExitAppEvent, Plugin},
+    engine::{App, AudioKey, ExitAppEvent, Plugin},
     rendering::{Position, Text},
     states::{
         AppState, AppStatePlugin, CurrentAppState, CurrentGameState, GameState, cleanup_system,
     },
-    ui::Button,
+    ui::{List, ListItemData, ListState},
 };
 
 #[derive(Resource)]
@@ -79,26 +79,19 @@ fn render_menu(mut cmds: Commands, callbacks: Res<MainMenuCallbacks>) {
     ));
 
     cmds.spawn((
-        Position::new_f32(4., 4., 0.),
-        Button::new("({Y|N}) NEW GAME", callbacks.on_btn_new_game).hotkey(KeyCode::N),
-        CleanupMainMenu,
-    ));
-
-    cmds.spawn((
-        Position::new_f32(4., 4.5, 0.),
-        Button::new("({Y|L}) LOAD", callbacks.on_btn_load).hotkey(KeyCode::L),
-        CleanupMainMenu,
-    ));
-
-    cmds.spawn((
-        Position::new_f32(4., 5., 0.),
-        Button::new("({Y|S}) SETTINGS", callbacks.on_btn_settings).hotkey(KeyCode::S),
-        CleanupMainMenu,
-    ));
-
-    cmds.spawn((
-        Position::new_f32(4., 6., 0.),
-        Button::new("({Y|Q}) {R|QUIT}", callbacks.on_btn_quit).hotkey(KeyCode::Q),
+        List::new(vec![
+            ListItemData::new("({Y|N}) NEW GAME", callbacks.on_btn_new_game)
+                .with_hotkey(KeyCode::N),
+            ListItemData::new("({Y|L}) LOAD", callbacks.on_btn_load).with_hotkey(KeyCode::L),
+            ListItemData::new("({Y|S}) SETTINGS", callbacks.on_btn_settings)
+                .with_hotkey(KeyCode::S),
+            ListItemData::new("({Y|ESC}) {R|QUIT}", callbacks.on_btn_quit)
+                .with_hotkey(KeyCode::Escape)
+                .with_audio(AudioKey::ButtonBack1),
+        ])
+        .with_focus_order(1000),
+        ListState::new(),
+        Position::new_f32(4.0, 4.0, 0.),
         CleanupMainMenu,
     ));
 }

@@ -64,36 +64,6 @@ impl EquipmentSlots {
         Self { slots }
     }
 
-    pub fn can_equip(&self, item: &Equippable) -> bool {
-        // Check if all required slots are free
-        for slot in &item.slot_requirements {
-            match slot {
-                EquipmentSlot::BothHands => {
-                    // Check both main and off hand are free
-                    if self
-                        .slots
-                        .get(&EquipmentSlot::MainHand)
-                        .unwrap_or(&None)
-                        .is_some()
-                        || self
-                            .slots
-                            .get(&EquipmentSlot::OffHand)
-                            .unwrap_or(&None)
-                            .is_some()
-                    {
-                        return false;
-                    }
-                }
-                _ => {
-                    if self.slots.get(slot).unwrap_or(&None).is_some() {
-                        return false;
-                    }
-                }
-            }
-        }
-        true
-    }
-
     pub fn equip(&mut self, item_id: u64, slots: &[EquipmentSlot]) {
         for slot in slots {
             match slot {
@@ -136,21 +106,6 @@ impl EquipmentSlots {
     pub fn get_equipped_item(&self, slot: EquipmentSlot) -> Option<u64> {
         self.slots.get(&slot).and_then(|&id| id)
     }
-
-    pub fn get_all_equipped(&self) -> Vec<u64> {
-        let mut items = Vec::new();
-        let mut seen = std::collections::HashSet::new();
-
-        for &item_id in self.slots.values() {
-            if let Some(id) = item_id
-                && seen.insert(id)
-            {
-                items.push(id);
-            }
-        }
-
-        items
-    }
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
@@ -171,28 +126,8 @@ impl Equippable {
         Self::new(vec![EquipmentSlot::MainHand], EquipmentType::Weapon)
     }
 
-    pub fn weapon_two_handed() -> Self {
-        Self::new(vec![EquipmentSlot::BothHands], EquipmentType::Weapon)
-    }
-
     pub fn tool() -> Self {
         Self::new(vec![EquipmentSlot::MainHand], EquipmentType::Tool)
-    }
-
-    pub fn armor_head() -> Self {
-        Self::new(vec![EquipmentSlot::Head], EquipmentType::Armor)
-    }
-
-    pub fn armor_body() -> Self {
-        Self::new(vec![EquipmentSlot::Body], EquipmentType::Armor)
-    }
-
-    pub fn armor_legs() -> Self {
-        Self::new(vec![EquipmentSlot::Legs], EquipmentType::Armor)
-    }
-
-    pub fn armor_feet() -> Self {
-        Self::new(vec![EquipmentSlot::Feet], EquipmentType::Armor)
     }
 }
 

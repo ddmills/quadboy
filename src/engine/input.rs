@@ -23,6 +23,18 @@ impl KeyInput {
     pub fn is_released(&self, key: KeyCode) -> bool {
         self.released.contains(&key)
     }
+
+    pub fn any_down(&self, keys: &[KeyCode]) -> bool {
+        keys.iter().any(|key| self.down.contains(key))
+    }
+
+    pub fn any_pressed(&self, keys: &[KeyCode]) -> bool {
+        keys.iter().any(|key| self.pressed.contains(key))
+    }
+
+    pub fn any_released(&self, keys: &[KeyCode]) -> bool {
+        keys.iter().any(|key| self.released.contains(key))
+    }
 }
 
 #[derive(Default)]

@@ -30,31 +30,6 @@ impl AnimatedGlyph {
         self.loop_animation = loop_animation;
         self
     }
-
-    pub fn play(&mut self) {
-        self.is_playing = true;
-    }
-
-    pub fn pause(&mut self) {
-        self.is_playing = false;
-    }
-
-    pub fn stop(&mut self) {
-        self.is_playing = false;
-        self.current_frame = 0;
-        self.timer = 0.0;
-    }
-
-    pub fn reset(&mut self) {
-        self.current_frame = 0;
-        self.timer = 0.0;
-    }
-
-    pub fn is_finished(&self) -> bool {
-        !self.loop_animation
-            && self.current_frame >= self.frames.len().saturating_sub(1)
-            && !self.is_playing
-    }
 }
 
 pub fn update_animated_glyphs(

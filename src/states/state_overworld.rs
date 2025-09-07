@@ -5,7 +5,7 @@ use crate::{
     cfg::MAP_SIZE,
     common::Palette,
     domain::{BiomeType, Overworld, PlayerPosition},
-    engine::{Mouse, Plugin},
+    engine::{AudioKey, Mouse, Plugin},
     rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::Button,
@@ -85,7 +85,9 @@ fn on_enter_overworld(mut cmds: Commands, callbacks: Res<OverworldCallbacks>) {
 
     cmds.spawn((
         Position::new_f32(2., MAP_SIZE.1 as f32 + 3., 0.),
-        Button::new("({Y|M}) BACK TO EXPLORE", callbacks.back_to_explore).hotkey(KeyCode::M),
+        Button::new("({Y|M}) BACK TO EXPLORE", callbacks.back_to_explore)
+            .hotkey(KeyCode::M)
+            .with_audio(AudioKey::ButtonBack1),
         CleanupStateOverworld,
     ));
 }

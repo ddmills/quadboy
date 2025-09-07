@@ -6,7 +6,6 @@ use crate::{
 };
 
 pub struct ZoneData {
-    pub zone_idx: usize,
     pub terrain: Grid<Terrain>,
     pub entities: Grid<Vec<Prefab>>,
 }

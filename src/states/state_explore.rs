@@ -5,9 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        IgnoreLighting, IsExplored, Label, PickupEvent, Player, PlayerDebug, PlayerMovedEvent,
-        PlayerPosition, StackCount, Zone, game_loop, handle_item_pickup, player_input,
-        render_player_debug,
+        IgnoreLighting, IsExplored, Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
+        StackCount, Zone, game_loop, handle_item_pickup, player_input, render_player_debug,
     },
     engine::{App, Clock, Mouse, Plugin, SerializableComponent},
     rendering::{
@@ -30,8 +29,6 @@ pub struct ExploreStatePlugin;
 
 impl Plugin for ExploreStatePlugin {
     fn build(&self, app: &mut App) {
-        app.register_event::<PickupEvent>();
-
         GameStatePlugin::new(GameState::Explore)
             .on_enter(
                 app,
@@ -306,11 +303,11 @@ fn render_lighting_debug(
 
     // Get lighting at cursor position
     let light_info = if let Some(light_value) = lighting_data.get_light(local_x, local_y) {
-        let r = light_value.rgba.x;
-        let g = light_value.rgba.y;
-        let b = light_value.rgba.z;
-        let intensity = light_value.rgba.w;
-        let flicker = light_value.flicker_params.x;
+        let r = light_value.rgb.x;
+        let g = light_value.rgb.y;
+        let b = light_value.rgb.z;
+        let intensity = light_value.intensity;
+        let flicker = light_value.flicker;
 
         // Convert to hex for comparison
         let hex_r = (r * 255.0) as u32;

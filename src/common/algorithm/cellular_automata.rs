@@ -1,4 +1,5 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
+
 use crate::common::{Grid, Rand};
 
 pub trait Rule<T> {
