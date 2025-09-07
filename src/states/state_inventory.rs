@@ -1,7 +1,6 @@
 use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::{
     input::{KeyCode, is_key_pressed},
-    prelude::trace,
 };
 
 use crate::{
@@ -17,7 +16,7 @@ use crate::{
     ui::{
         ActivatableBuilder, Dialog, DialogContent, DialogIcon, DialogProperty, DialogState,
         DialogText, DialogTextStyle, List, ListContext, ListItemData, ListState,
-        handle_dialog_input, render_dialog_content, setup_buttons, setup_dialogs,
+        render_dialog_content, setup_buttons, setup_dialogs,
     },
 };
 
@@ -481,7 +480,6 @@ impl Plugin for InventoryStatePlugin {
                     setup_dialogs,
                     render_dialog_content,
                     setup_buttons,
-                    handle_dialog_input,
                 )
                     .chain(),
             )
@@ -622,15 +620,6 @@ fn setup_inventory_screen(
             .as_button(Layer::Ui),
         CleanupStateInventory,
     ));
-
-    // cmds.spawn((
-    //     Position::new_f32(left_x + 17.5, help_y.min(18.), 0.),
-    //     ActivatableBuilder::new("({Y|X}) EXAMINE", callbacks.examine_item)
-    //         .with_hotkey(KeyCode::X)
-    //         .with_focus_order(2300)
-    //         .as_button(Layer::Ui),
-    //     CleanupStateInventory,
-    // ));
 }
 
 fn handle_equip_slot_input(mut game_state: ResMut<CurrentGameState>) {

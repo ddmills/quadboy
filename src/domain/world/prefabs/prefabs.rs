@@ -4,10 +4,11 @@ use super::{
     spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_long_johns, spawn_overcoat,
     spawn_pickaxe, spawn_pine_tree, spawn_poncho, spawn_stair_down, spawn_stair_up,
     spawn_steel_toe_boots, spawn_terrain_tile, spawn_wool_shirt,
+    spawn_lever_action_rifle, spawn_double_barrel_shotgun, spawn_navy_revolver,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum PrefabId {
@@ -35,6 +36,9 @@ pub enum PrefabId {
     Overcoat,
     WoolShirt,
     SteelToeBoots,
+    LeverActionRifle,
+    DoubleBarrelShotgun,
+    NavyRevolver,
 }
 
 #[allow(dead_code)]
@@ -118,6 +122,9 @@ impl Prefabs {
         self.register(PrefabId::Overcoat, spawn_overcoat);
         self.register(PrefabId::WoolShirt, spawn_wool_shirt);
         self.register(PrefabId::SteelToeBoots, spawn_steel_toe_boots);
+        self.register(PrefabId::LeverActionRifle, spawn_lever_action_rifle);
+        self.register(PrefabId::DoubleBarrelShotgun, spawn_double_barrel_shotgun);
+        self.register(PrefabId::NavyRevolver, spawn_navy_revolver);
 
         self.register(PrefabId::TerrainTile(Terrain::Grass), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);
@@ -170,5 +177,46 @@ impl Prefabs {
 impl Default for Prefabs {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Display for PrefabId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PrefabId::PineTree => write!(f, "Pine Tree"),
+            PrefabId::Boulder => write!(f, "Boulder"),
+            PrefabId::Campfire => write!(f, "Campfire"),
+            PrefabId::GoldNugget => write!(f, "Gold Nugget"),
+            PrefabId::Cactus => write!(f, "Cactus"),
+            PrefabId::CavalrySword => write!(f, "Cavalry Sword"),
+            PrefabId::Chest => write!(f, "Chest"),
+            PrefabId::GiantMushroom => write!(f, "Giant Mushroom"),
+            PrefabId::Bandit => write!(f, "Bandit"),
+            PrefabId::Hatchet => write!(f, "Hatchet"),
+            PrefabId::Lantern => write!(f, "Lantern"),
+            PrefabId::Pickaxe => write!(f, "Pickaxe"),
+            PrefabId::StairDown => write!(f, "Stair Down"),
+            PrefabId::StairUp => write!(f, "Stair Up"),
+            PrefabId::Dynamite => write!(f, "Dynamite"),
+            PrefabId::Apple => write!(f, "Apple"),
+            PrefabId::Bedroll => write!(f, "Bedroll"),
+            PrefabId::LongJohns => write!(f, "Long Johns"),
+            PrefabId::Duster => write!(f, "Duster"),
+            PrefabId::Poncho => write!(f, "Poncho"),
+            PrefabId::Overcoat => write!(f, "Overcoat"),
+            PrefabId::WoolShirt => write!(f, "Wool Shirt"),
+            PrefabId::SteelToeBoots => write!(f, "Steel Toe Boots"),
+            PrefabId::LeverActionRifle => write!(f, "Lever Action Rifle"),
+            PrefabId::DoubleBarrelShotgun => write!(f, "Double Barrel Shotgun"),
+            PrefabId::NavyRevolver => write!(f, "Navy Revolver"),
+            PrefabId::TerrainTile(terrain) => match terrain {
+                Terrain::Grass => write!(f, "Grass Tile"),
+                Terrain::Dirt => write!(f, "Dirt Tile"),
+                Terrain::River => write!(f, "River Tile"),
+                Terrain::Sand => write!(f, "Sand Tile"),
+                Terrain::Shallows => write!(f, "Shallows Tile"),
+                Terrain::OpenAir => write!(f, "Open Air Tile"),
+            },
+        }
     }
 }

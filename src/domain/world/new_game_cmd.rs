@@ -71,7 +71,7 @@ impl NewGameCommand {
         world.insert_resource(PlayerPosition::from_position(&starting_position));
         world.insert_resource(Overworld::new(self.seed));
         world.insert_resource(TerrainNoise::new(self.seed));
-        world.insert_resource(Clock::new());
+        world.insert_resource(Clock::new(1000));
         world.insert_resource(id_registry);
         world.insert_resource(Zones {
             player: start_zone,

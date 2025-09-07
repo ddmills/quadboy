@@ -5,7 +5,7 @@ use crate::{
         ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
         Equippable, Health, HideWhenNotVisible, IgnoreLighting, Inventory, InventoryAccessible,
         Item, Label, LightBlocker, LightSource, LootDrop, MaterialType, MeleeWeapon, NeedsStableId,
-        SaveFlag, StackCount, Stackable, StackableType, StairDown, StairUp, VisionBlocker,
+        RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown, StairUp, VisionBlocker,
     },
     rendering::{AnimatedGlyph, Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -129,6 +129,11 @@ impl<'a> PrefabBuilder<'a> {
     }
 
     pub fn with_melee_weapon(self, weapon: MeleeWeapon) -> Self {
+        self.world.entity_mut(self.entity).insert(weapon);
+        self
+    }
+
+    pub fn with_ranged_weapon(self, weapon: RangedWeapon) -> Self {
         self.world.entity_mut(self.entity).insert(weapon);
         self
     }

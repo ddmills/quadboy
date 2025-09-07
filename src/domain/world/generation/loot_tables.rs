@@ -73,6 +73,7 @@ impl LootTableRegistry {
                 .add(PrefabId::WoolShirt, 2.0)
                 .add(PrefabId::Overcoat, 1.0)
                 .add(PrefabId::SteelToeBoots, 1.0)
+                .add(PrefabId::NavyRevolver, 0.5)
                 .build(),
         );
 
@@ -99,6 +100,8 @@ impl LootTableRegistry {
                 .add(PrefabId::Duster, 2.0)
                 .add(PrefabId::Dynamite, 1.0)
                 .add(PrefabId::SteelToeBoots, 1.0)
+                .add(PrefabId::DoubleBarrelShotgun, 0.3)
+                .add(PrefabId::NavyRevolver, 0.4)
                 .build(),
         );
 
@@ -123,6 +126,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Dynamite, 2.0)
                 .add(PrefabId::Overcoat, 1.0)
                 .add(PrefabId::SteelToeBoots, 2.0)
+                .add(PrefabId::NavyRevolver, 0.3)
                 .build(),
         );
 
@@ -155,6 +159,8 @@ impl LootTableRegistry {
                 .add(PrefabId::LongJohns, 3.0)
                 .add(PrefabId::Dynamite, 2.0)
                 .add(PrefabId::SteelToeBoots, 3.0)
+                .add(PrefabId::LeverActionRifle, 0.2)
+                .add(PrefabId::NavyRevolver, 0.3)
                 .build(),
         );
 

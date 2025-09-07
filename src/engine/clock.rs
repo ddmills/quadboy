@@ -13,9 +13,9 @@ pub struct Clock {
 }
 
 impl Clock {
-    pub fn new() -> Self {
+    pub fn new(tick: u32) -> Self {
         Self {
-            tick: 0,
+            tick,
             tick_delta: 0,
             force_update: true,
         }
@@ -37,6 +37,10 @@ impl Clock {
     pub fn clear_tick_delta(&mut self) {
         self.tick_delta = 0;
         self.force_update = false;
+    }
+
+    pub fn force_update(&mut self) {
+        self.force_update = true;
     }
 
     pub fn set_tick(&mut self, value: u32) {
@@ -84,7 +88,7 @@ impl Clock {
             DaylightPhase {
                 progress: 0.0,
                 color: 0x1970C2,
-                intensity: 0.35,
+                intensity: 0.3,
             },
             DaylightPhase {
                 progress: 0.21,
@@ -104,7 +108,7 @@ impl Clock {
             DaylightPhase {
                 progress: 1.0,
                 color: 0x1970C2,
-                intensity: 0.35,
+                intensity: 0.3,
             },
         ];
 

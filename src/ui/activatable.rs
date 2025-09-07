@@ -1,5 +1,5 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::input::KeyCode;
+use macroquad::{input::KeyCode, prelude::trace};
 
 use crate::{
     common::Palette,
@@ -319,6 +319,7 @@ pub fn unified_keyboard_activation_system(
         if activatable.is_hotkey_pressed(&keys) {
             activatable.activate(&mut cmds, &audio);
             cmds.entity(entity).try_insert(HotkeyPressed::new());
+            return;
         }
     }
 
@@ -335,20 +336,10 @@ pub fn unified_keyboard_activation_system(
         }
 
         if let Ok((entity, activatable)) = q_activatable.get(focused_entity) {
-            // Check dialog state based on element type
-            if let Ok(_) = q_dialog_content.get(entity) {
-                // This is a dialog button - only activate if dialog is open
-                if !dialog_state.is_open {
-                    return;
-                }
-            } else {
-                // This is a regular button or list item - only activate if no dialog is open
-                if dialog_state.is_open {
-                    return;
-                }
+            if dialog_state.is_open && q_dialog_content.get(entity).is_err() {
+                return;
             }
 
-            // Activate the focused element
             activatable.activate(&mut cmds, &audio);
 
             // Add visual feedback for Enter key activation (same as hotkey)

@@ -33,7 +33,7 @@ use crate::{
     rendering::{CrtShader, Glyph, RecordZonePosition, TilesetRegistry},
     states::{
         CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin, CurrentAppState,
-        CurrentGameState, ExploreStatePlugin, InventoryStatePlugin, LoadGameStatePlugin,
+        CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin, InventoryStatePlugin, LoadGameStatePlugin,
         MainMenuStatePlugin, NewGameStatePlugin, OverworldStatePlugin, PauseStatePlugin,
         PlayStatePlugin, SettingsStatePlugin, update_app_states, update_game_states,
     },
@@ -123,6 +123,7 @@ async fn main() {
         .add_plugin(NewGameStatePlugin)
         .add_plugin(LoadGameStatePlugin)
         .add_plugin(ExploreStatePlugin)
+        .add_plugin(DebugSpawnStatePlugin)
         .add_plugin(InventoryStatePlugin)
         .add_plugin(ContainerStatePlugin::new())
         .add_plugin(OverworldStatePlugin)

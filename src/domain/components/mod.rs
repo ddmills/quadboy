@@ -10,6 +10,7 @@ pub mod label;
 pub mod lighting;
 pub mod loot_drop;
 pub mod melee_weapon;
+pub mod ranged_weapon;
 pub mod stairs;
 pub mod vision;
 
@@ -28,6 +29,7 @@ pub use label::Label;
 pub use lighting::{IgnoreLighting, LightBlocker, LightSource};
 pub use loot_drop::LootDrop;
 pub use melee_weapon::MeleeWeapon;
+pub use ranged_weapon::RangedWeapon;
 pub use stairs::{StairDown, StairUp};
 pub use vision::{
     ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Vision, VisionBlocker,

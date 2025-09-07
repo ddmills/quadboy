@@ -23,6 +23,7 @@ use super::GameState;
 struct ExploreCallbacks {
     open_map: SystemId,
     open_inventory: SystemId,
+    open_debug_spawn: SystemId,
 }
 
 pub struct ExploreStatePlugin;
@@ -67,6 +68,7 @@ fn setup_callbacks(world: &mut World) {
     let callbacks = ExploreCallbacks {
         open_map: world.register_system(open_map),
         open_inventory: world.register_system(open_inventory),
+        open_debug_spawn: world.register_system(open_debug_spawn),
     };
 
     world.insert_resource(callbacks);
@@ -78,6 +80,10 @@ fn open_map(mut game_state: ResMut<CurrentGameState>) {
 
 fn open_inventory(mut game_state: ResMut<CurrentGameState>) {
     game_state.next = GameState::Inventory;
+}
+
+fn open_debug_spawn(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::DebugSpawn;
 }
 
 fn remove_explore_callbacks(mut cmds: Commands) {
@@ -144,6 +150,12 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     cmds.spawn((
         Position::new_f32(7., 1.5, 0.),
         Button::new("({Y|I}) INVENTORY", callbacks.open_inventory).hotkey(KeyCode::I),
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(16., 1.5, 0.),
+        Button::new("({Y|B}) DEBUG", callbacks.open_debug_spawn).hotkey(KeyCode::B),
         CleanupStateExplore,
     ));
 }

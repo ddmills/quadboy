@@ -320,20 +320,3 @@ pub fn render_dialog_content(
         }
     }
 }
-
-/// System to handle dialog input (ESC to close)
-pub fn handle_dialog_input(
-    mut cmds: Commands,
-    keys: Res<KeyInput>,
-    q_dialogs: Query<Entity, With<Dialog>>,
-    mut dialog_state: ResMut<DialogState>,
-) {
-    if keys.is_pressed(KeyCode::Escape) {
-        // Close all open dialogs
-        for dialog_entity in q_dialogs.iter() {
-            cmds.entity(dialog_entity).despawn();
-        }
-        // Mark that no dialogs are open
-        dialog_state.is_open = false;
-    }
-}

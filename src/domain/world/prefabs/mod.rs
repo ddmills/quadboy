@@ -25,6 +25,9 @@ mod stair_up;
 mod steel_toe_boots;
 mod terrain_tile;
 mod wool_shirt;
+mod lever_action_rifle;
+mod double_barrel_shotgun;
+mod navy_revolver;
 
 pub use apple::*;
 pub use bandit::*;
@@ -53,3 +56,6 @@ pub use stair_up::*;
 pub use steel_toe_boots::*;
 pub use terrain_tile::*;
 pub use wool_shirt::*;
+pub use lever_action_rifle::*;
+pub use double_barrel_shotgun::*;
+pub use navy_revolver::*;

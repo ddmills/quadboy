@@ -1,4 +1,5 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, system::SystemId};
+use macroquad::input::KeyCode;
 
 use crate::{
     engine::Mouse,
@@ -14,6 +15,13 @@ pub enum Interaction {
     #[default]
     None,
 }
+
+#[derive(Component, Clone, Debug)]
+pub struct Callback(pub SystemId);
+
+#[derive(Component, Clone, Debug)]
+pub struct Hotkey(pub KeyCode);
+
 
 #[derive(Component)]
 #[require(Interaction)]
