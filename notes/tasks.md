@@ -6,4 +6,7 @@ Tasks:
 - [x] dialog
 - [] item interactions
 - [] cleanup glyph.rs
+- [] remove ListState, just use List
+- [] light/extinquish action
+
 

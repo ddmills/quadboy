@@ -17,6 +17,7 @@ pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
             EquipmentType::Tool,
         ))
         .with_light_source(LightSource::lantern())
+        .with_lightable()
         .with_needs_stable_id()
         .build();
 }

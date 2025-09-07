@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        AttackAction, Collider, Energy, GameSettings, Inventory, InventoryAccessible, IsExplored,
-        MoveAction, OpenContainerAction, StairDown, StairUp, TurnState, WaitAction, Zone,
+        AttackAction, Collider, Energy, EquipmentSlots, GameSettings, Inventory,
+        InventoryAccessible, IsExplored, MoveAction, OpenContainerAction, StairDown, StairUp,
+        ToggleLightAction, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
@@ -60,7 +61,7 @@ pub struct PlayerMovedEvent {
 
 pub fn player_input(
     mut cmds: Commands,
-    q_player: Query<(Entity, &Position), With<Player>>,
+    q_player: Query<(Entity, &Position, Option<&EquipmentSlots>), With<Player>>,
     q_colliders: Query<&Position, (With<Collider>, Without<Player>)>,
     q_containers: Query<Entity, (With<Inventory>, With<InventoryAccessible>)>,
     q_stairs_down: Query<&Position, (With<StairDown>, Without<Player>)>,
@@ -78,7 +79,7 @@ pub fn player_input(
     let now = time.fixed_t;
     let mut rate = settings.input_delay;
     let delay = settings.input_initial_delay;
-    let (player_entity, position) = q_player.single().unwrap();
+    let (player_entity, position, equipment_slots) = q_player.single().unwrap();
     let (x, y, z) = position.world();
 
     if keys.is_pressed(KeyCode::Escape) {
@@ -139,6 +140,18 @@ pub fn player_input(
             entity: player_entity,
         });
         return;
+    }
+
+    if keys.is_pressed(KeyCode::L) {
+        // Check if player has equipped item in off-hand (lantern)
+        if let Some(equipment_slots) = equipment_slots
+            && let Some(item_id) =
+                equipment_slots.get_equipped_item(crate::domain::EquipmentSlot::OffHand)
+        {
+            // Queue toggle action - the action will validate if item is lightable
+            cmds.queue(ToggleLightAction::new(item_id, player_entity));
+            return;
+        }
     }
 
     let movement_keys_down = keys.is_down(KeyCode::A)

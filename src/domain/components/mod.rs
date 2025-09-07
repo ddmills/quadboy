@@ -26,7 +26,7 @@ pub use inventory::{
     UnopenedContainer,
 };
 pub use label::Label;
-pub use lighting::{IgnoreLighting, LightBlocker, LightSource};
+pub use lighting::{IgnoreLighting, LightBlocker, LightSource, Lightable};
 pub use loot_drop::LootDrop;
 pub use melee_weapon::MeleeWeapon;
 pub use ranged_weapon::RangedWeapon;

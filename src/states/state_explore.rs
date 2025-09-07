@@ -44,11 +44,10 @@ impl Plugin for ExploreStatePlugin {
                     render_lighting_ambient_debug,
                     render_cursor,
                     display_entity_names_at_mouse,
-                    player_input,
-                    handle_item_pickup,
-                    game_loop,
                 ),
             )
+            .on_update(app, player_input)
+            .on_update(app, (handle_item_pickup, game_loop))
             .on_leave(
                 app,
                 (

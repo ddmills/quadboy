@@ -4,9 +4,9 @@ use crate::{
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
         Equippable, Health, HideWhenNotVisible, IgnoreLighting, Inventory, InventoryAccessible,
-        Item, Label, LightBlocker, LightSource, LootDrop, MaterialType, MeleeWeapon, NeedsStableId,
-        RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown, StairUp,
-        VisionBlocker,
+        Item, Label, LightBlocker, LightSource, Lightable, LootDrop, MaterialType, MeleeWeapon,
+        NeedsStableId, RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown,
+        StairUp, VisionBlocker,
     },
     rendering::{AnimatedGlyph, Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -187,6 +187,11 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_ignore_lighting(self) -> Self {
         self.world.entity_mut(self.entity).insert(IgnoreLighting);
+        self
+    }
+
+    pub fn with_lightable(self) -> Self {
+        self.world.entity_mut(self.entity).insert(Lightable::new());
         self
     }
 
