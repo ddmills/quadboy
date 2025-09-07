@@ -10,8 +10,8 @@ use crate::{
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
-        ActivatableBuilder, List, ListContext, ListItemData, ListState, SelectableList,
-        SelectableListState, SelectionMode,
+        ActivatableBuilder, List, ListContext, ListItemData, SelectableList, SelectableListState,
+        SelectionMode,
     },
 };
 
@@ -146,8 +146,8 @@ fn on_enter_debug_spawn(mut cmds: Commands, callbacks: Res<DebugSpawnCallbacks>)
                 items: list_items,
                 width: 12.0,
                 focus_order: Some(1),
+                selected_index: 0,
             },
-            ListState::new(),
             SelectableList {
                 selection_mode: SelectionMode::Single,
                 on_selection_change: None,

@@ -6,7 +6,12 @@ Tasks:
 - [x] dialog
 - [] item interactions
 - [] cleanup glyph.rs
-- [] remove ListState, just use List
-- [] light/extinquish action
+- [x] remove ListState, just use List
+- [x] light/extinquish action
+- [] faction system
+- [] POI system
+- [] ai
+- [] scrollable lists
+- [] 
 
 

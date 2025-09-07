@@ -7,7 +7,7 @@ use crate::{
     states::{
         AppState, AppStatePlugin, CurrentAppState, CurrentGameState, GameState, cleanup_system,
     },
-    ui::{List, ListItemData, ListState},
+    ui::{List, ListItemData},
 };
 
 #[derive(Resource)]
@@ -90,7 +90,6 @@ fn render_menu(mut cmds: Commands, callbacks: Res<MainMenuCallbacks>) {
                 .with_audio(AudioKey::ButtonBack1),
         ])
         .with_focus_order(1000),
-        ListState::new(),
         Position::new_f32(4.0, 4.0, 0.),
         CleanupMainMenu,
     ));

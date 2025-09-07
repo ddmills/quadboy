@@ -95,10 +95,6 @@ pub struct List {
     pub items: Vec<ListItemData>,
     pub width: f32,
     pub focus_order: Option<i32>,
-}
-
-#[derive(Component)]
-pub struct ListState {
     pub selected_index: usize,
 }
 
@@ -108,6 +104,7 @@ impl List {
             items,
             width: 16.,
             focus_order: None,
+            selected_index: 0,
         }
     }
 
@@ -119,12 +116,6 @@ impl List {
     pub fn with_focus_order(mut self, focus_order: i32) -> Self {
         self.focus_order = Some(focus_order);
         self
-    }
-}
-
-impl ListState {
-    pub fn new() -> Self {
-        Self { selected_index: 0 }
     }
 }
 
@@ -170,8 +161,7 @@ pub fn setup_lists(
     mut q_lists: Query<
         (
             Entity,
-            &List,
-            &mut ListState,
+            &mut List,
             Option<&SelectableList>,
             Option<&SelectableListState>,
             Option<&Children>,
@@ -193,14 +183,8 @@ pub fn setup_lists(
         Query<&Position>,
     )>,
 ) {
-    for (
-        list_entity,
-        list,
-        mut list_state,
-        selectable_opt,
-        selectable_state_opt,
-        existing_children,
-    ) in q_lists.iter_mut()
+    for (list_entity, mut list, selectable_opt, selectable_state_opt, existing_children) in
+        q_lists.iter_mut()
     {
         // Get and copy the position data first
         let list_pos = {
@@ -212,10 +196,10 @@ pub fn setup_lists(
         };
 
         // Fix cursor bounds
-        if list_state.selected_index >= list.items.len() && !list.items.is_empty() {
-            list_state.selected_index = list.items.len() - 1;
+        if list.selected_index >= list.items.len() && !list.items.is_empty() {
+            list.selected_index = list.items.len() - 1;
         } else if list.items.is_empty() {
-            list_state.selected_index = 0;
+            list.selected_index = 0;
         }
 
         let mut existing_cursors = Vec::new();
@@ -374,7 +358,7 @@ pub fn setup_lists(
 pub fn update_list_context(
     mut list_context: ResMut<ListContext>,
     ui_focus: Res<UiFocus>,
-    q_lists: Query<(&List, &ListState)>,
+    q_lists: Query<&List>,
     q_list_items: Query<&ListItem>,
 ) {
     let Some(focused_element) = ui_focus.focused_element else {
@@ -383,7 +367,7 @@ pub fn update_list_context(
 
     // Check if the focused element is a list item
     if let Ok(list_item) = q_list_items.get(focused_element)
-        && let Ok((list, list_state)) = q_lists.get(list_item.parent_list)
+        && let Ok(list) = q_lists.get(list_item.parent_list)
         && list_item.index < list.items.len()
     {
         let selected_item = &list.items[list_item.index];
@@ -394,12 +378,12 @@ pub fn update_list_context(
 }
 
 pub fn list_cursor_visibility(
-    q_lists: Query<(Entity, &List, &ListState, &Position, &Children)>,
+    q_lists: Query<(Entity, &List, &Position, &Children)>,
     mut q_cursors: Query<(&ListCursor, &mut Position, &mut Visibility), Without<List>>,
     q_list_items: Query<&ListItem>,
     ui_focus: Res<UiFocus>,
 ) {
-    for (list_entity, _list, list_state, list_pos, children) in q_lists.iter() {
+    for (list_entity, _list, list_pos, children) in q_lists.iter() {
         for child in children.iter() {
             if let Ok((cursor, mut cursor_pos, mut cursor_vis)) = q_cursors.get_mut(child)
                 && cursor.parent_list == list_entity

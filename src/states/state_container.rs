@@ -10,7 +10,7 @@ use crate::{
     engine::{App, KeyInput, Plugin, StableIdRegistry},
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
-    ui::{List, ListContext, ListItemData, ListState},
+    ui::{List, ListContext, ListItemData},
 };
 
 #[derive(Resource)]
@@ -279,7 +279,6 @@ fn setup_container_screen(
     let player_list_entity = cmds
         .spawn((
             List::new(player_list_items).with_focus_order(1000),
-            ListState::new(),
             Position::new_f32(left_x, 3.5, 0.),
             CleanupStateContainer,
             PlayerInventoryList,
@@ -326,14 +325,11 @@ fn setup_container_screen(
     let _container_list_entity = cmds
         .spawn((
             List::new(container_list_items).with_focus_order(2000),
-            ListState::new(),
             Position::new_f32(right_x, start_y, 0.),
             CleanupStateContainer,
             ContainerInventoryList,
         ))
         .id();
-
-    cmds.entity(player_list_entity).insert(ListState::new());
 
     let help_y = 12.0; // Fixed position near bottom
     cmds.spawn((

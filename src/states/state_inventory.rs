@@ -13,8 +13,8 @@ use crate::{
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
         ActivatableBuilder, Dialog, DialogContent, DialogIcon, DialogProperty, DialogState,
-        DialogText, DialogTextStyle, List, ListContext, ListItemData, ListState,
-        render_dialog_content, setup_buttons, setup_dialogs,
+        DialogText, DialogTextStyle, List, ListContext, ListItemData, render_dialog_content,
+        setup_buttons, setup_dialogs,
     },
 };
 
@@ -583,7 +583,6 @@ fn setup_inventory_screen(
 
     cmds.spawn((
         List::new(list_items).with_focus_order(1000),
-        ListState::new(),
         Position::new_f32(left_x + 1., 3., 0.),
         CleanupStateInventory,
     ));
