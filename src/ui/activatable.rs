@@ -1,5 +1,5 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::{input::KeyCode, prelude::trace};
+use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
@@ -346,12 +346,11 @@ pub fn unified_keyboard_activation_system(
             }
 
             // Check if this is a list item in a selectable list
-            if let Ok(list_item) = q_list_items.get(entity) {
-                if q_selectable_lists.get(list_item.parent_list).is_ok() {
+            if let Ok(list_item) = q_list_items.get(entity)
+                && q_selectable_lists.get(list_item.parent_list).is_ok() {
                     // This is a selectable list item, don't activate - let selectable system handle it
                     return;
                 }
-            }
 
             activatable.activate(&mut cmds, &audio);
 
@@ -372,12 +371,11 @@ pub fn unified_click_system(
     for (entity, activatable, interaction) in q_activatable.iter() {
         if matches!(interaction, Interaction::Released) {
             // Check if this is a list item in a selectable list
-            if let Ok(list_item) = q_list_items.get(entity) {
-                if q_selectable_lists.get(list_item.parent_list).is_ok() {
+            if let Ok(list_item) = q_list_items.get(entity)
+                && q_selectable_lists.get(list_item.parent_list).is_ok() {
                     // This is a selectable list item, don't activate - let selectable system handle it
                     continue;
                 }
-            }
 
             mouse.is_captured = true;
             activatable.activate(&mut cmds, &audio);

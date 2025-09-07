@@ -1,11 +1,11 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::{input::KeyCode, prelude::trace};
+use macroquad::input::KeyCode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use crate::{
     common::Palette,
-    domain::{PlayerPosition, Prefab, PrefabId, Prefabs, Terrain, game_loop},
+    domain::{PlayerPosition, Prefab, PrefabId, Prefabs, game_loop},
     engine::{AudioKey, Clock, KeyInput, Mouse, Plugin, SerializableComponent},
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},

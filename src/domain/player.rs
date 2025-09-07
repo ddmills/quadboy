@@ -6,14 +6,13 @@ use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
         AttackAction, Collider, Energy, GameSettings, Inventory, InventoryAccessible, IsExplored,
-        MoveAction, OpenContainerAction, Prefabs, StairDown, StairUp, TurnState, WaitAction, Zone,
+        MoveAction, OpenContainerAction, StairDown, StairUp, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
     states::{CurrentGameState, GameState},
 };
 
-use super::{Prefab, PrefabId};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Player;

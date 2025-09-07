@@ -1,9 +1,7 @@
 use bevy_ecs::prelude::*;
-use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    engine::KeyInput,
     rendering::{Glyph, Layer, Position, Text},
 };
 
