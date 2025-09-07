@@ -84,7 +84,7 @@ void main() {
             }
 
             // Bring everything toward ambient color (NOTE: darkens all non-dynamics!)
-            float darkness = (1.0 - max(ambient.w, dynamic_intensity)) * 0.6;
+            float darkness = (1.0 - max(ambient.w, dynamic_intensity)) * 0.5;
             gl_FragColor = mix(gl_FragColor, vec4(ambient_color, 1.0), darkness);
         }
     }
