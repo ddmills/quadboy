@@ -1,0 +1,21 @@
+use super::{Prefab, PrefabBuilder};
+use crate::{
+    common::Palette,
+    domain::{EquipmentSlot, EquipmentType, Equippable},
+    rendering::Layer,
+};
+use bevy_ecs::{entity::Entity, world::World};
+
+pub fn spawn_bedroll(entity: Entity, world: &mut World, config: Prefab) {
+    PrefabBuilder::new(entity, world, &config)
+        .with_base_components()
+        .with_glyph(54, Palette::Purple, Palette::Gray, Layer::Objects)
+        .with_label("Bedroll")
+        .with_item(2.0)
+        .with_equippable(Equippable::new(
+            vec![EquipmentSlot::OffHand],
+            EquipmentType::Tool,
+        ))
+        .with_needs_stable_id()
+        .build();
+}

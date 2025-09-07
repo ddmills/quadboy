@@ -1,7 +1,9 @@
 use super::{
-    SpawnPrefabCommand, spawn_bandit, spawn_boulder, spawn_cactus, spawn_campfire,
-    spawn_cavalry_sword, spawn_chest, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
-    spawn_pickaxe, spawn_pine_tree, spawn_stair_down, spawn_stair_up, spawn_terrain_tile,
+    SpawnPrefabCommand, spawn_apple, spawn_bandit, spawn_bedroll, spawn_boulder, spawn_cactus,
+    spawn_campfire, spawn_cavalry_sword, spawn_chest, spawn_duster, spawn_dynamite,
+    spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_long_johns, spawn_overcoat,
+    spawn_pickaxe, spawn_pine_tree, spawn_poncho, spawn_stair_down, spawn_stair_up,
+    spawn_steel_toe_boots, spawn_terrain_tile, spawn_wool_shirt,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
@@ -24,6 +26,15 @@ pub enum PrefabId {
     StairDown,
     StairUp,
     TerrainTile(Terrain),
+    Dynamite,
+    Apple,
+    Bedroll,
+    LongJohns,
+    Duster,
+    Poncho,
+    Overcoat,
+    WoolShirt,
+    SteelToeBoots,
 }
 
 #[allow(dead_code)]
@@ -98,6 +109,15 @@ impl Prefabs {
         self.register(PrefabId::StairDown, spawn_stair_down);
         self.register(PrefabId::StairUp, spawn_stair_up);
         self.register(PrefabId::GoldNugget, spawn_gold_nugget);
+        self.register(PrefabId::Dynamite, spawn_dynamite);
+        self.register(PrefabId::Apple, spawn_apple);
+        self.register(PrefabId::Bedroll, spawn_bedroll);
+        self.register(PrefabId::LongJohns, spawn_long_johns);
+        self.register(PrefabId::Duster, spawn_duster);
+        self.register(PrefabId::Poncho, spawn_poncho);
+        self.register(PrefabId::Overcoat, spawn_overcoat);
+        self.register(PrefabId::WoolShirt, spawn_wool_shirt);
+        self.register(PrefabId::SteelToeBoots, spawn_steel_toe_boots);
 
         self.register(PrefabId::TerrainTile(Terrain::Grass), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);

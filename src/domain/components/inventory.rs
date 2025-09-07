@@ -94,6 +94,8 @@ pub struct UnopenedContainer(pub crate::domain::LootTableId);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StackableType {
     GoldNugget,
+    Dynamite,
+    Apple,
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]

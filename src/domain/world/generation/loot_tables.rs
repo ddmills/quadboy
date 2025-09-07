@@ -57,6 +57,8 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 3.0)
                 .add(PrefabId::Campfire, 3.0)
                 .add(PrefabId::Hatchet, 1.0)
+                .add(PrefabId::Apple, 4.0)
+                .add(PrefabId::Bedroll, 2.0)
                 .build(),
         );
 
@@ -67,6 +69,10 @@ impl LootTableRegistry {
                 .add(PrefabId::Lantern, 3.0)
                 .add(PrefabId::CavalrySword, 1.0)
                 .add(PrefabId::Pickaxe, 2.0)
+                .add(PrefabId::Apple, 3.0)
+                .add(PrefabId::WoolShirt, 2.0)
+                .add(PrefabId::Overcoat, 1.0)
+                .add(PrefabId::SteelToeBoots, 1.0)
                 .build(),
         );
 
@@ -78,6 +84,8 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Campfire, 3.0)
+                .add(PrefabId::Dynamite, 2.0)
+                .add(PrefabId::Bedroll, 2.0)
                 .build(),
         );
 
@@ -87,6 +95,10 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 5.0)
                 .add(PrefabId::Lantern, 4.0)
                 .add(PrefabId::CavalrySword, 2.0)
+                .add(PrefabId::Poncho, 3.0)
+                .add(PrefabId::Duster, 2.0)
+                .add(PrefabId::Dynamite, 1.0)
+                .add(PrefabId::SteelToeBoots, 1.0)
                 .build(),
         );
 
@@ -98,6 +110,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Campfire, 3.0)
+                .add(PrefabId::Dynamite, 3.0)
                 .build(),
         );
 
@@ -107,6 +120,9 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 6.0)
                 .add(PrefabId::Lantern, 5.0)
                 .add(PrefabId::CavalrySword, 1.0)
+                .add(PrefabId::Dynamite, 2.0)
+                .add(PrefabId::Overcoat, 1.0)
+                .add(PrefabId::SteelToeBoots, 2.0)
                 .build(),
         );
 
@@ -122,6 +138,8 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 5.0) // More mining tools in mountains
                 .add(PrefabId::Campfire, 2.0)
                 .add(PrefabId::Hatchet, 2.0)
+                .add(PrefabId::Bedroll, 3.0)
+                .add(PrefabId::Dynamite, 4.0)
                 .build(),
         );
 
@@ -132,6 +150,11 @@ impl LootTableRegistry {
                 .add(PrefabId::Hatchet, 4.0)
                 .add(PrefabId::Lantern, 3.0)
                 .add(PrefabId::CavalrySword, 1.0)
+                .add(PrefabId::WoolShirt, 4.0)
+                .add(PrefabId::Overcoat, 3.0)
+                .add(PrefabId::LongJohns, 3.0)
+                .add(PrefabId::Dynamite, 2.0)
+                .add(PrefabId::SteelToeBoots, 3.0)
                 .build(),
         );
 
@@ -166,6 +189,8 @@ impl LootTableRegistry {
                 .add(PrefabId::Lantern, 1.0)
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
+                .add(PrefabId::Apple, 2.0)
+                .add(PrefabId::Bedroll, 1.0)
                 .build(),
         );
 

@@ -9,7 +9,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_pickaxe(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
-        .with_glyph(23, Palette::Brown, Palette::White, Layer::Objects)
+        .with_glyph(23, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("Pickaxe")
         .with_item(2.0)
         .with_equippable(Equippable::tool())
