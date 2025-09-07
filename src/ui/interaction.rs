@@ -22,7 +22,6 @@ pub struct Callback(pub SystemId);
 #[derive(Component, Clone, Debug)]
 pub struct Hotkey(pub KeyCode);
 
-
 #[derive(Component)]
 #[require(Interaction)]
 pub struct Interactable {
@@ -77,5 +76,25 @@ pub fn ui_interaction_system(
         {
             entity_cmds.try_insert(new_interaction);
         }
+    }
+}
+
+pub fn clear_mouse_capture_when_not_hovering(
+    q_interactions: Query<&Interaction, With<Interactable>>,
+    mut mouse: ResMut<Mouse>,
+) {
+    // Only clear capture if mouse has moved (to avoid clearing on the same frame as the click)
+    if !mouse.has_moved {
+        return;
+    }
+
+    // Check if any Interactable is currently hovered or pressed
+    let any_ui_active = q_interactions
+        .iter()
+        .any(|interaction| matches!(interaction, Interaction::Hovered | Interaction::Pressed));
+
+    // If no UI elements are active and mouse has moved, clear capture
+    if !any_ui_active {
+        mouse.is_captured = false;
     }
 }

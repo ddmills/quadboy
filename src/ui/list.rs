@@ -1,11 +1,12 @@
 use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
+use std::collections::HashSet;
 
 use crate::{
     common::Palette,
-    engine::AudioKey,
+    engine::{AudioKey, AudioRegistry, KeyInput, Mouse},
     rendering::{Glyph, Layer, Position, Text, Visibility},
-    ui::{Activatable, ActivatableBuilder, Interactable, Interaction, UiFocus},
+    ui::{Activatable, ActivatableBuilder, FocusType, Interactable, Interaction, UiFocus},
 };
 
 #[derive(Resource)]
@@ -144,9 +145,39 @@ pub struct ListCursor {
     pub parent_list: Entity,
 }
 
+#[derive(Component, Clone, Copy, PartialEq)]
+pub enum SelectionMode {
+    Single,   // Only one item can be selected at a time
+    Multiple, // Multiple items can be selected
+}
+
+#[derive(Component)]
+pub struct SelectableList {
+    pub selection_mode: SelectionMode,
+    pub on_selection_change: Option<SystemId>,
+}
+
+#[derive(Component)]
+pub struct SelectableListState {
+    pub selected_indices: HashSet<usize>,
+}
+
+#[derive(Component)]
+pub struct ListItemSelected;
+
 pub fn setup_lists(
     mut cmds: Commands,
-    mut q_lists: Query<(Entity, &List, &mut ListState, Option<&Children>), Changed<List>>,
+    mut q_lists: Query<
+        (
+            Entity,
+            &List,
+            &mut ListState,
+            Option<&SelectableList>,
+            Option<&SelectableListState>,
+            Option<&Children>,
+        ),
+        Changed<List>,
+    >,
     mut q_cursors: Query<&mut ListCursor>,
     mut q_items: ParamSet<(
         Query<
@@ -162,7 +193,15 @@ pub fn setup_lists(
         Query<&Position>,
     )>,
 ) {
-    for (list_entity, list, mut list_state, existing_children) in q_lists.iter_mut() {
+    for (
+        list_entity,
+        list,
+        mut list_state,
+        selectable_opt,
+        selectable_state_opt,
+        existing_children,
+    ) in q_lists.iter_mut()
+    {
         // Get and copy the position data first
         let list_pos = {
             let q_pos = q_items.p2();
@@ -195,9 +234,6 @@ pub fn setup_lists(
                 }
             }
         }
-
-        // Lists are no longer focusable - only their items are focusable
-        // This prevents duplicate tab stops and simplifies navigation
 
         // Ensure we have exactly one cursor
         if existing_cursors.is_empty() {
@@ -296,6 +332,44 @@ pub fn setup_lists(
         for text_entity in existing_text_items.iter().skip(list.items.len()) {
             cmds.entity(*text_entity).despawn();
         }
+
+        // Handle selection state for selectable lists
+        if let (Some(_selectable), Some(selectable_state)) = (selectable_opt, selectable_state_opt)
+        {
+            // Clean up invalid selections (indices that are out of bounds)
+            let valid_indices: HashSet<usize> = selectable_state
+                .selected_indices
+                .iter()
+                .filter(|&&index| index < list.items.len())
+                .copied()
+                .collect();
+
+            // Update selection state if it changed
+            if valid_indices != selectable_state.selected_indices {
+                if let Ok(mut entity_cmds) = cmds.get_entity(list_entity) {
+                    entity_cmds.try_insert(SelectableListState {
+                        selected_indices: valid_indices.clone(),
+                    });
+                }
+            }
+
+            // Apply ListItemSelected markers to text items based on selection state
+            for (i, &text_entity) in existing_text_items
+                .iter()
+                .take(list.items.len())
+                .enumerate()
+            {
+                if valid_indices.contains(&i) {
+                    if let Ok(mut entity_cmds) = cmds.get_entity(text_entity) {
+                        entity_cmds.try_insert(ListItemSelected);
+                    }
+                } else {
+                    if let Ok(mut entity_cmds) = cmds.get_entity(text_entity) {
+                        entity_cmds.remove::<ListItemSelected>();
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -355,5 +429,134 @@ pub fn list_cursor_visibility(
                 }
             }
         }
+    }
+}
+
+pub fn selectable_list_interaction(
+    mut cmds: Commands,
+    mut q_selectable_lists: Query<(Entity, &SelectableList, &mut SelectableListState)>,
+    q_list_items: Query<
+        (Entity, &ListItem, &Interaction, Option<&ListItemSelected>),
+        Changed<Interaction>,
+    >,
+    q_all_list_items: Query<(Entity, &ListItem)>,
+    q_focused_items: Query<&ListItem>,
+    keys: Res<KeyInput>,
+    ui_focus: Res<UiFocus>,
+    mut mouse: ResMut<Mouse>,
+    audio: Res<AudioRegistry>,
+) {
+    // Handle Enter key for focused item
+    if keys.is_pressed(KeyCode::Enter) {
+        if let Some(focused_entity) = ui_focus.focused_element {
+            if ui_focus.focus_type == FocusType::Keyboard
+                && let Ok(list_item) = q_focused_items.get(focused_entity)
+            {
+                // Find parent selectable list
+                for (list_entity, selectable_list, mut state) in q_selectable_lists.iter_mut() {
+                    if list_item.parent_list == list_entity {
+                        toggle_selection(
+                            &mut cmds,
+                            focused_entity,
+                            list_item.index,
+                            list_entity,
+                            &selectable_list,
+                            &mut state,
+                            &q_all_list_items,
+                            &audio,
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Handle mouse clicks (Interaction::Released)
+    for (item_entity, list_item, interaction, _selected) in q_list_items.iter() {
+        if *interaction == Interaction::Released {
+            // Find parent selectable list
+            for (list_entity, selectable_list, mut state) in q_selectable_lists.iter_mut() {
+                if list_item.parent_list == list_entity {
+                    toggle_selection(
+                        &mut cmds,
+                        item_entity,
+                        list_item.index,
+                        list_entity,
+                        &selectable_list,
+                        &mut state,
+                        &q_all_list_items,
+                        &audio,
+                    );
+                    // Mark the mouse click as captured to prevent other systems from handling it
+                    mouse.is_captured = true;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+fn toggle_selection(
+    cmds: &mut Commands,
+    item_entity: Entity,
+    item_index: usize,
+    list_entity: Entity,
+    selectable_list: &SelectableList,
+    state: &mut SelectableListState,
+    q_all_list_items: &Query<(Entity, &ListItem)>,
+    audio: &AudioRegistry,
+) {
+    let was_selected = state.selected_indices.contains(&item_index);
+
+    // Play selection sound
+    audio.play(AudioKey::Button1, 0.7);
+
+    match selectable_list.selection_mode {
+        SelectionMode::Single => {
+            if was_selected {
+                // Deselect the item
+                state.selected_indices.clear();
+                if let Ok(mut entity_cmds) = cmds.get_entity(item_entity) {
+                    entity_cmds.remove::<ListItemSelected>();
+                }
+            } else {
+                // Clear all previous selections for this list visually
+                for (entity, list_item) in q_all_list_items.iter() {
+                    if list_item.parent_list == list_entity {
+                        if let Ok(mut entity_cmds) = cmds.get_entity(entity) {
+                            entity_cmds.remove::<ListItemSelected>();
+                        }
+                    }
+                }
+
+                // Set new selection
+                state.selected_indices.clear();
+                state.selected_indices.insert(item_index);
+                if let Ok(mut entity_cmds) = cmds.get_entity(item_entity) {
+                    entity_cmds.try_insert(ListItemSelected);
+                }
+            }
+        }
+        SelectionMode::Multiple => {
+            if was_selected {
+                // Remove from selection
+                state.selected_indices.remove(&item_index);
+                if let Ok(mut entity_cmds) = cmds.get_entity(item_entity) {
+                    entity_cmds.remove::<ListItemSelected>();
+                }
+            } else {
+                // Add to selection
+                state.selected_indices.insert(item_index);
+                if let Ok(mut entity_cmds) = cmds.get_entity(item_entity) {
+                    entity_cmds.try_insert(ListItemSelected);
+                }
+            }
+        }
+    }
+
+    // Trigger callback if configured
+    if let Some(callback) = selectable_list.on_selection_change {
+        cmds.run_system(callback);
     }
 }

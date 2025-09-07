@@ -1,10 +1,10 @@
 use super::{
     SpawnPrefabCommand, spawn_apple, spawn_bandit, spawn_bedroll, spawn_boulder, spawn_cactus,
-    spawn_campfire, spawn_cavalry_sword, spawn_chest, spawn_duster, spawn_dynamite,
-    spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_long_johns, spawn_overcoat,
-    spawn_pickaxe, spawn_pine_tree, spawn_poncho, spawn_stair_down, spawn_stair_up,
-    spawn_steel_toe_boots, spawn_terrain_tile, spawn_wool_shirt,
-    spawn_lever_action_rifle, spawn_double_barrel_shotgun, spawn_navy_revolver,
+    spawn_campfire, spawn_cavalry_sword, spawn_chest, spawn_double_barrel_shotgun, spawn_duster,
+    spawn_dynamite, spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_lever_action_rifle,
+    spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe, spawn_pine_tree,
+    spawn_poncho, spawn_stair_down, spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile,
+    spawn_wool_shirt,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};

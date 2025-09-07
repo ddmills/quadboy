@@ -1,7 +1,5 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::{
-    input::{KeyCode, is_key_pressed},
-};
+use macroquad::input::{KeyCode, is_key_pressed};
 
 use crate::{
     common::Palette,

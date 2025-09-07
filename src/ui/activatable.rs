@@ -5,7 +5,10 @@ use crate::{
     common::Palette,
     engine::{AudioKey, AudioRegistry, KeyInput, Mouse, Time},
     rendering::{Glyph, Layer, Text},
-    ui::{DialogContent, DialogState, FocusType, Interaction, UiFocus},
+    ui::{
+        DialogContent, DialogState, FocusType, Interaction, ListItem, ListItemSelected,
+        SelectableList, UiFocus,
+    },
 };
 
 #[derive(Component)]
@@ -305,6 +308,8 @@ pub fn unified_keyboard_activation_system(
     mut cmds: Commands,
     q_activatable: Query<(Entity, &Activatable)>,
     q_dialog_content: Query<&DialogContent>,
+    q_list_items: Query<&ListItem>,
+    q_selectable_lists: Query<&SelectableList>,
     dialog_state: Res<DialogState>,
     ui_focus: Res<UiFocus>,
     keys: Res<KeyInput>,
@@ -340,6 +345,14 @@ pub fn unified_keyboard_activation_system(
                 return;
             }
 
+            // Check if this is a list item in a selectable list
+            if let Ok(list_item) = q_list_items.get(entity) {
+                if q_selectable_lists.get(list_item.parent_list).is_ok() {
+                    // This is a selectable list item, don't activate - let selectable system handle it
+                    return;
+                }
+            }
+
             activatable.activate(&mut cmds, &audio);
 
             // Add visual feedback for Enter key activation (same as hotkey)
@@ -350,12 +363,22 @@ pub fn unified_keyboard_activation_system(
 
 pub fn unified_click_system(
     mut cmds: Commands,
-    q_activatable: Query<(&Activatable, &Interaction), Changed<Interaction>>,
+    q_activatable: Query<(Entity, &Activatable, &Interaction), Changed<Interaction>>,
+    q_list_items: Query<&ListItem>,
+    q_selectable_lists: Query<&SelectableList>,
     audio: Res<AudioRegistry>,
     mut mouse: ResMut<Mouse>,
 ) {
-    for (activatable, interaction) in q_activatable.iter() {
+    for (entity, activatable, interaction) in q_activatable.iter() {
         if matches!(interaction, Interaction::Released) {
+            // Check if this is a list item in a selectable list
+            if let Ok(list_item) = q_list_items.get(entity) {
+                if q_selectable_lists.get(list_item.parent_list).is_ok() {
+                    // This is a selectable list item, don't activate - let selectable system handle it
+                    continue;
+                }
+            }
+
             mouse.is_captured = true;
             activatable.activate(&mut cmds, &audio);
         }
@@ -383,6 +406,7 @@ pub fn unified_style_system(
         &Activatable,
         Option<&Interaction>,
         Option<&HotkeyPressed>,
+        Option<&ListItemSelected>,
     )>,
     mut q_glyph: Query<
         (
@@ -390,19 +414,34 @@ pub fn unified_style_system(
             &Activatable,
             Option<&Interaction>,
             Option<&HotkeyPressed>,
+            Option<&ListItemSelected>,
         ),
         Without<Text>,
     >,
 ) {
     // Apply styling to Text components (buttons, dialog buttons)
-    for (mut text, activatable, interaction_opt, hotkey_pressed_opt) in q_text.iter_mut() {
-        let bg_color = determine_background_color(activatable, interaction_opt, hotkey_pressed_opt);
+    for (mut text, activatable, interaction_opt, hotkey_pressed_opt, selected_opt) in
+        q_text.iter_mut()
+    {
+        let bg_color = determine_background_color(
+            activatable,
+            interaction_opt,
+            hotkey_pressed_opt,
+            selected_opt,
+        );
         text.bg = Some(bg_color);
     }
 
     // Apply styling to Glyph components (list item backgrounds)
-    for (mut glyph, activatable, interaction_opt, hotkey_pressed_opt) in q_glyph.iter_mut() {
-        let bg_color = determine_background_color(activatable, interaction_opt, hotkey_pressed_opt);
+    for (mut glyph, activatable, interaction_opt, hotkey_pressed_opt, selected_opt) in
+        q_glyph.iter_mut()
+    {
+        let bg_color = determine_background_color(
+            activatable,
+            interaction_opt,
+            hotkey_pressed_opt,
+            selected_opt,
+        );
         glyph.bg = Some(bg_color);
     }
 }
@@ -412,8 +451,16 @@ fn determine_background_color(
     activatable: &Activatable,
     interaction_opt: Option<&Interaction>,
     hotkey_pressed_opt: Option<&HotkeyPressed>,
+    selected_opt: Option<&ListItemSelected>,
 ) -> u32 {
-    // If hotkey was pressed, always show pressed state
+    // If selected, always show pressed state (highest priority)
+    if selected_opt.is_some() {
+        return activatable
+            .pressed_color()
+            .unwrap_or(Palette::DarkBlue.into());
+    }
+
+    // If hotkey was pressed, show pressed state
     if hotkey_pressed_opt.is_some() {
         return activatable
             .pressed_color()

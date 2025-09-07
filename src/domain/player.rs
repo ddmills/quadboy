@@ -113,30 +113,6 @@ pub fn player_input(
         }
     }
 
-    if keys.is_pressed(KeyCode::G) {
-        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Boulder, (x, y, z)));
-    }
-
-    if keys.is_pressed(KeyCode::L) {
-        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Lantern, (x, y, z)));
-    }
-
-    if keys.is_pressed(KeyCode::P) {
-        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Pickaxe, (x, y, z)));
-    }
-
-    if keys.is_pressed(KeyCode::H) {
-        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Hatchet, (x, y, z)));
-    }
-
-    if keys.is_pressed(KeyCode::C) {
-        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::Chest, (x, y, z)));
-    }
-
-    if keys.is_pressed(KeyCode::Y) {
-        Prefabs::spawn(&mut cmds, Prefab::new(PrefabId::CavalrySword, (x, y, z)));
-    }
-
     if keys.is_down(KeyCode::LeftShift) {
         rate /= 2.0;
     }

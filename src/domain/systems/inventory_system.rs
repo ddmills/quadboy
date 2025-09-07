@@ -13,7 +13,7 @@ pub fn handle_item_pickup(
     q_items: Query<(&Position, &StableId), (With<Item>, Without<InInventory>)>,
     keys: Res<KeyInput>,
 ) {
-    if !keys.is_pressed(KeyCode::F) {
+    if !keys.is_pressed(KeyCode::G) {
         return;
     }
 
