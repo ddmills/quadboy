@@ -78,13 +78,55 @@ void main() {
 
             // Apply dynamic lighting if present
             if (dynamic_intensity > 0.0) {
+                // Apply flicker modulation if flicker value > 0
+                float flickered_intensity = dynamic_intensity;
+                if (light_flicker > 0.0) {
+                    // Create chaotic flicker using multiple overlapping waves
+                    float flicker1 = sin(time * 11.3) * 0.5 + 0.5;
+                    float flicker2 = sin(time * 7.7 + 1.0) * 0.5 + 0.5;
+                    float flicker3 = sin(time * 4.3 + 2.0) * 0.5 + 0.5;
+                    
+                    // Add position-based variation for more chaos
+                    float pos_noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+                    
+                    // Combine waves with different weights
+                    float combined = flicker1 * 0.4 + flicker2 * 0.3 + flicker3 * 0.3;
+                    combined = combined * 0.8 + 0.2; // Wider range (0.2 - 1.0) for more intensity
+                    
+                    // Add occasional dips - more frequent and deeper
+                    float dip = step(0.9, fract(time * 2.3 + pos_noise));
+                    combined *= (1.0 - dip * 0.6);
+                    
+                    // Apply flicker amount
+                    float flicker_mod = mix(1.0, combined, light_flicker);
+                    flickered_intensity *= flicker_mod;
+                }
+                
                 float dynamic_strength = (1.0 - ambient_intensity) * 0.4 + 0.4; // Range: 0.4 to 1.0
-                float effective_dynamic = dynamic_intensity * dynamic_strength;
+                float effective_dynamic = flickered_intensity * dynamic_strength;
                 gl_FragColor.rgb = mix(gl_FragColor.rgb, dynamic_color, effective_dynamic);
             }
 
             // Bring everything toward ambient color (NOTE: darkens all non-dynamics!)
-            float darkness = (1.0 - max(ambient.w, dynamic_intensity)) * 0.5;
+            float final_dynamic_intensity = dynamic_intensity;
+            if (light_flicker > 0.0 && dynamic_intensity > 0.0) {
+                // Use same chaotic flicker calculation
+                float flicker1 = sin(time * 11.3) * 0.5 + 0.5;
+                float flicker2 = sin(time * 7.7 + 1.0) * 0.5 + 0.5;
+                float flicker3 = sin(time * 4.3 + 2.0) * 0.5 + 0.5;
+                
+                float pos_noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+                
+                float combined = flicker1 * 0.4 + flicker2 * 0.3 + flicker3 * 0.3;
+                combined = combined * 0.8 + 0.2; // Wider range (0.2 - 1.0) for more intensity
+                
+                float dip = step(0.9, fract(time * 2.3 + pos_noise));
+                combined *= (1.0 - dip * 0.6);
+                
+                float flicker_mod = mix(1.0, combined, light_flicker);
+                final_dynamic_intensity *= flicker_mod;
+            }
+            float darkness = (1.0 - max(ambient.w, final_dynamic_intensity)) * 0.5;
             gl_FragColor = mix(gl_FragColor, vec4(ambient_color, 1.0), darkness);
         }
     }
