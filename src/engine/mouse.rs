@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::input::{
     MouseButton, is_mouse_button_down, is_mouse_button_pressed, is_mouse_button_released,
-    mouse_position,
+    mouse_position, mouse_wheel,
 };
 use macroquad::prelude::*;
 
@@ -27,6 +27,7 @@ pub struct Mouse {
     pub right_just_pressed: bool,
     pub right_just_released: bool,
     pub is_captured: bool,
+    pub wheel_delta: (f32, f32),
 }
 
 fn crt_curve_uv(uv: (f32, f32), crt_curvature: &crate::rendering::CrtCurvature) -> (f32, f32) {
@@ -108,6 +109,8 @@ pub fn update_mouse_input(mut mouse: ResMut<Mouse>) {
     mouse.right_pressed = is_mouse_button_down(MouseButton::Right);
     mouse.right_just_pressed = is_mouse_button_pressed(MouseButton::Right);
     mouse.right_just_released = is_mouse_button_released(MouseButton::Right);
+
+    mouse.wheel_delta = mouse_wheel();
 
     // Reset capture when left mouse button is released
     if mouse.left_just_released {

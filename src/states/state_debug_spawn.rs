@@ -147,6 +147,8 @@ fn on_enter_debug_spawn(mut cmds: Commands, callbacks: Res<DebugSpawnCallbacks>)
                 width: 12.0,
                 focus_order: Some(1),
                 selected_index: 0,
+                height: Some(16),
+                scroll_offset: 0,
             },
             SelectableList {
                 selection_mode: SelectionMode::Single,

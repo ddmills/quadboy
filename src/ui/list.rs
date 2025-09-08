@@ -8,6 +8,7 @@ use crate::{
     rendering::{Glyph, Layer, Position, Text, Visibility},
     ui::{Activatable, ActivatableBuilder, FocusType, Interactable, Interaction, UiFocus},
 };
+use bevy_ecs::prelude::ChildOf;
 
 #[derive(Resource)]
 pub struct ListContext {
@@ -96,6 +97,8 @@ pub struct List {
     pub width: f32,
     pub focus_order: Option<i32>,
     pub selected_index: usize,
+    pub height: Option<usize>,
+    pub scroll_offset: usize,
 }
 
 impl List {
@@ -105,6 +108,8 @@ impl List {
             width: 16.,
             focus_order: None,
             selected_index: 0,
+            height: None,
+            scroll_offset: 0,
         }
     }
 
@@ -116,6 +121,21 @@ impl List {
     pub fn with_focus_order(mut self, focus_order: i32) -> Self {
         self.focus_order = Some(focus_order);
         self
+    }
+
+    pub fn height(mut self, height: usize) -> Self {
+        self.height = Some(height);
+        self
+    }
+
+    pub fn ensure_item_visible(&mut self, item_index: usize) {
+        if let Some(height) = self.height {
+            if item_index < self.scroll_offset {
+                self.scroll_offset = item_index;
+            } else if item_index >= self.scroll_offset + height {
+                self.scroll_offset = item_index.saturating_sub(height - 1);
+            }
+        }
     }
 }
 
@@ -156,6 +176,16 @@ pub struct SelectableListState {
 #[derive(Component)]
 pub struct ListItemSelected;
 
+#[derive(Component)]
+pub struct ListScrollUpIndicator {
+    pub parent_list: Entity,
+}
+
+#[derive(Component)]
+pub struct ListScrollDownIndicator {
+    pub parent_list: Entity,
+}
+
 pub fn setup_lists(
     mut cmds: Commands,
     mut q_lists: Query<
@@ -169,6 +199,8 @@ pub fn setup_lists(
         Changed<List>,
     >,
     mut q_cursors: Query<&mut ListCursor>,
+    mut q_scroll_up: Query<&mut ListScrollUpIndicator>,
+    mut q_scroll_down: Query<&mut ListScrollDownIndicator>,
     mut q_items: ParamSet<(
         Query<
             (
@@ -202,15 +234,37 @@ pub fn setup_lists(
             list.selected_index = 0;
         }
 
+        // Clamp scroll offset to valid range
+        if let Some(height) = list.height {
+            let max_offset = list.items.len().saturating_sub(height);
+            list.scroll_offset = list.scroll_offset.min(max_offset);
+        } else {
+            list.scroll_offset = 0;
+        }
+
+        // Calculate visible range
+        let visible_start = list.scroll_offset;
+        let visible_end = if let Some(height) = list.height {
+            (list.scroll_offset + height).min(list.items.len())
+        } else {
+            list.items.len()
+        };
+
         let mut existing_cursors = Vec::new();
         let mut existing_bg_items = Vec::new();
         let mut existing_text_items = Vec::new();
+        let mut existing_scroll_up_indicators = Vec::new();
+        let mut existing_scroll_down_indicators = Vec::new();
 
         // Collect existing children by type
         if let Some(children) = existing_children {
             for child in children.iter() {
                 if q_cursors.get_mut(child).is_ok() {
                     existing_cursors.push(child);
+                } else if q_scroll_up.get_mut(child).is_ok() {
+                    existing_scroll_up_indicators.push(child);
+                } else if q_scroll_down.get_mut(child).is_ok() {
+                    existing_scroll_down_indicators.push(child);
                 } else if q_items.p0().get_mut(child).is_ok() {
                     existing_bg_items.push(child);
                 } else if q_items.p1().get_mut(child).is_ok() {
@@ -232,15 +286,29 @@ pub fn setup_lists(
             ));
         }
 
-        for (i, item_data) in list.items.iter().enumerate() {
+        for (actual_index, item_data) in list.items.iter().enumerate() {
             let item_spacing = 0.5;
-            let item_y = i as f32 * item_spacing;
+            let is_visible = if list.height.is_some() {
+                actual_index >= visible_start && actual_index < visible_end
+            } else {
+                true // All items visible if no height constraint
+            };
+            let visual_index = if is_visible {
+                actual_index - list.scroll_offset
+            } else {
+                0
+            };
+            let item_y = if is_visible {
+                visual_index as f32 * item_spacing
+            } else {
+                -1000.0
+            };
 
-            if let Some(&bg_entity) = existing_bg_items.get(i) {
+            if let Some(&bg_entity) = existing_bg_items.get(actual_index) {
                 if let Ok((mut bg_item, mut pos, mut glyph, mut interactable)) =
                     q_items.p0().get_mut(bg_entity)
                 {
-                    bg_item.index = i;
+                    bg_item.index = actual_index;
                     pos.x = list_pos.x + 1.0;
                     pos.y = list_pos.y + item_y;
                     pos.z = list_pos.z;
@@ -258,6 +326,13 @@ pub fn setup_lists(
 
                     *interactable = Interactable::new(14., item_spacing);
                 }
+
+                // Set visibility for background item
+                if !is_visible {
+                    cmds.entity(bg_entity).insert(Visibility::Hidden);
+                } else {
+                    cmds.entity(bg_entity).insert(Visibility::Visible);
+                }
             } else {
                 cmds.spawn((
                     Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
@@ -265,56 +340,137 @@ pub fn setup_lists(
                         .scale((list.width, item_spacing))
                         .layer(Layer::UiPanels),
                     ListItemBg {
-                        index: i,
+                        index: actual_index,
                         parent_list: list_entity,
                     },
                     Interaction::None,
                     Interactable::new(14., item_spacing),
+                    if is_visible {
+                        Visibility::Visible
+                    } else {
+                        Visibility::Hidden
+                    },
                     ChildOf(list_entity),
                 ));
             }
 
             // Update or create text item
-            if let Some(&text_entity) = existing_text_items.get(i) {
+            if let Some(&text_entity) = existing_text_items.get(actual_index) {
                 if let Ok((mut text_item, mut text, mut pos)) = q_items.p1().get_mut(text_entity) {
                     // Update existing text item
-                    text_item.index = i;
+                    text_item.index = actual_index;
                     text.value = item_data.label.clone();
                     pos.x = list_pos.x + 1.0;
                     pos.y = list_pos.y + item_y;
                     pos.z = list_pos.z;
                 }
                 // Add/update Activatable and Interaction components for existing items
-                let activatable = item_data.to_activatable(i, list_entity, list.focus_order);
+                let activatable =
+                    item_data.to_activatable(actual_index, list_entity, list.focus_order);
                 cmds.entity(text_entity).insert((
                     activatable,
                     Interaction::None,
                     Interactable::new(list.width, 0.5),
+                    if is_visible {
+                        Visibility::Visible
+                    } else {
+                        Visibility::Hidden
+                    },
                 ));
             } else {
                 // Create new text item with Activatable component
-                let activatable = item_data.to_activatable(i, list_entity, list.focus_order);
+                let activatable =
+                    item_data.to_activatable(actual_index, list_entity, list.focus_order);
                 cmds.spawn((
                     Text::new(&item_data.label).layer(Layer::Ui),
                     Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
                     ListItem {
-                        index: i,
+                        index: actual_index,
                         parent_list: list_entity,
                     },
                     activatable,
                     Interaction::None,
                     Interactable::new(list.width, 0.5),
+                    if is_visible {
+                        Visibility::Visible
+                    } else {
+                        Visibility::Hidden
+                    },
                     ChildOf(list_entity),
                 ));
             }
         }
 
-        // Despawn excess items if list got shorter
-        for bg_entity in existing_bg_items.iter().skip(list.items.len()) {
-            cmds.entity(*bg_entity).despawn();
-        }
-        for text_entity in existing_text_items.iter().skip(list.items.len()) {
-            cmds.entity(*text_entity).despawn();
+        // No longer despawning items - we keep them all but hide invisible ones
+
+        // Handle scroll indicators
+        if let Some(height) = list.height {
+            let can_scroll_up = list.scroll_offset > 0;
+            let can_scroll_down = list.scroll_offset + height < list.items.len();
+
+            // Up indicator
+            if can_scroll_up {
+                if existing_scroll_up_indicators.is_empty() {
+                    cmds.spawn((
+                        Text::new("▲").fg1(Palette::Yellow).layer(Layer::Ui),
+                        Position::new_f32(list_pos.x, list_pos.y - 0.5, list_pos.z),
+                        ListScrollUpIndicator {
+                            parent_list: list_entity,
+                        },
+                        ChildOf(list_entity),
+                    ));
+                } else {
+                    // Update existing indicator position (if needed)
+                    for &up_indicator in existing_scroll_up_indicators.iter() {
+                        cmds.entity(up_indicator).insert(Position::new_f32(
+                            list_pos.x,
+                            list_pos.y - 0.5,
+                            list_pos.z,
+                        ));
+                    }
+                }
+            } else {
+                // Remove up indicator if exists
+                for up_indicator in existing_scroll_up_indicators.iter() {
+                    cmds.entity(*up_indicator).despawn();
+                }
+            }
+
+            // Down indicator
+            if can_scroll_down {
+                let visible_count = (visible_end - visible_start).min(height);
+                let down_y = list_pos.y + (visible_count as f32 * 0.5);
+
+                if existing_scroll_down_indicators.is_empty() {
+                    cmds.spawn((
+                        Text::new("▼").fg1(Palette::Yellow).layer(Layer::Ui),
+                        Position::new_f32(list_pos.x, down_y, list_pos.z),
+                        ListScrollDownIndicator {
+                            parent_list: list_entity,
+                        },
+                        ChildOf(list_entity),
+                    ));
+                } else {
+                    // Update existing indicator position (if needed)
+                    for &down_indicator in existing_scroll_down_indicators.iter() {
+                        cmds.entity(down_indicator)
+                            .insert(Position::new_f32(list_pos.x, down_y, list_pos.z));
+                    }
+                }
+            } else {
+                // Remove down indicator if exists
+                for down_indicator in existing_scroll_down_indicators.iter() {
+                    cmds.entity(*down_indicator).despawn();
+                }
+            }
+        } else {
+            // Remove all scroll indicators for non-scrollable lists
+            for up_indicator in existing_scroll_up_indicators.iter() {
+                cmds.entity(*up_indicator).despawn();
+            }
+            for down_indicator in existing_scroll_down_indicators.iter() {
+                cmds.entity(*down_indicator).despawn();
+            }
         }
 
         // Handle selection state for selectable lists
@@ -383,7 +539,7 @@ pub fn list_cursor_visibility(
     q_list_items: Query<&ListItem>,
     ui_focus: Res<UiFocus>,
 ) {
-    for (list_entity, _list, list_pos, children) in q_lists.iter() {
+    for (list_entity, list, list_pos, children) in q_lists.iter() {
         for child in children.iter() {
             if let Ok((cursor, mut cursor_pos, mut cursor_vis)) = q_cursors.get_mut(child)
                 && cursor.parent_list == list_entity
@@ -392,10 +548,23 @@ pub fn list_cursor_visibility(
                 if let Some(focused_entity) = ui_focus.focused_element {
                     if let Ok(focused_list_item) = q_list_items.get(focused_entity) {
                         if focused_list_item.parent_list == list_entity {
-                            // Show cursor and position it at the focused item
+                            // Check if focused item is visible when list has height constraint
+                            if let Some(height) = list.height {
+                                let item_visible = focused_list_item.index >= list.scroll_offset
+                                    && focused_list_item.index < list.scroll_offset + height;
+
+                                if !item_visible {
+                                    *cursor_vis = Visibility::Hidden;
+                                    continue;
+                                }
+                            }
+
+                            // Calculate visual position based on scroll offset
+                            let visual_index =
+                                focused_list_item.index.saturating_sub(list.scroll_offset);
                             *cursor_vis = Visibility::Visible;
                             cursor_pos.x = list_pos.x;
-                            cursor_pos.y = list_pos.y + (focused_list_item.index as f32 * 0.5);
+                            cursor_pos.y = list_pos.y + (visual_index as f32 * 0.5);
                             cursor_pos.z = list_pos.z;
                         } else {
                             // Hide cursor if no item in this list is focused
@@ -538,5 +707,41 @@ fn toggle_selection(
     // Trigger callback if configured
     if let Some(callback) = selectable_list.on_selection_change {
         cmds.run_system(callback);
+    }
+}
+
+pub fn list_mouse_wheel_scroll(mut q_lists: Query<(&mut List, &Position)>, mouse: Res<Mouse>) {
+    if mouse.wheel_delta.1.abs() < 0.01 {
+        return; // No wheel movement
+    }
+
+    for (mut list, pos) in q_lists.iter_mut() {
+        let Some(height) = list.height else {
+            continue; // List isn't scrollable
+        };
+
+        // Check if mouse is over this list
+        let visible_count = height.min(list.items.len());
+        let list_height = visible_count as f32 * 0.5;
+        let mouse_over = mouse.ui.0 >= pos.x
+            && mouse.ui.0 <= pos.x + list.width
+            && mouse.ui.1 >= pos.y
+            && mouse.ui.1 <= pos.y + list_height;
+
+        if !mouse_over {
+            continue;
+        }
+
+        // Scroll by 3 items per wheel tick
+        let scroll_speed = 3;
+        let max_offset = list.items.len().saturating_sub(height);
+
+        if mouse.wheel_delta.1 > 0.0 {
+            // Scroll up (decrease offset)
+            list.scroll_offset = list.scroll_offset.saturating_sub(scroll_speed);
+        } else {
+            // Scroll down (increase offset)
+            list.scroll_offset = (list.scroll_offset + scroll_speed).min(max_offset);
+        }
     }
 }

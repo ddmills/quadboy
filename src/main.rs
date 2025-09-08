@@ -40,10 +40,11 @@ use crate::{
     },
     ui::{
         DialogState, ListContext, UiFocus, clear_mouse_capture_when_not_hovering,
-        hotkey_pressed_timer_system, list_cursor_visibility, selectable_list_interaction,
-        setup_buttons, setup_lists, sync_focus_to_interaction, tab_navigation,
-        ui_interaction_system, unified_click_system, unified_keyboard_activation_system,
-        unified_style_system, update_focus_from_mouse, update_list_context,
+        hotkey_pressed_timer_system, list_cursor_visibility, list_mouse_wheel_scroll,
+        selectable_list_interaction, setup_buttons, setup_lists, sync_focus_to_interaction,
+        tab_navigation, ui_interaction_system, unified_click_system,
+        unified_keyboard_activation_system, unified_style_system, update_focus_from_mouse,
+        update_list_context,
     },
 };
 
@@ -179,6 +180,7 @@ async fn main() {
                 ui_interaction_system,
                 clear_mouse_capture_when_not_hovering,
                 setup_buttons,
+                list_mouse_wheel_scroll,
                 setup_lists,
                 tab_navigation,
                 list_cursor_visibility,

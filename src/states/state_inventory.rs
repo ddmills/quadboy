@@ -582,7 +582,7 @@ fn setup_inventory_screen(
     }
 
     cmds.spawn((
-        List::new(list_items).with_focus_order(1000),
+        List::new(list_items).with_focus_order(1000).height(10),
         Position::new_f32(left_x + 1., 3., 0.),
         CleanupStateInventory,
     ));
