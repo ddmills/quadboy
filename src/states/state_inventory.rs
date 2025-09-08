@@ -9,12 +9,12 @@ use crate::{
         inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, Text, text_content_length},
+    rendering::{Glyph, Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
-        ActivatableBuilder, Dialog, DialogContent, DialogIcon, DialogProperty, DialogState,
-        DialogText, DialogTextStyle, List, ListContext, ListItemData, render_dialog_content,
-        setup_buttons, setup_dialogs,
+        ActivatableBuilder, Dialog, DialogState, ItemDialogBuilder, ItemDialogButton, List,
+        ListContext, ListItemData, render_dialog_content, setup_buttons, setup_dialogs,
+        spawn_item_dialog,
     },
 };
 
@@ -27,7 +27,7 @@ struct InventoryCallbacks {
     close_dialog: SystemId,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct CleanupStateInventory;
 
 #[derive(Component)]
@@ -243,207 +243,40 @@ fn examine_selected_item(
         return;
     };
 
-    let dialog_pos = Position::new_f32(5.0, 3.0, 0.0);
-    let dialog_width = 20.0;
-    let dialog_height = 8.0;
+    let mut builder = ItemDialogBuilder::new(item_entity)
+        .with_position(5.0, 3.0)
+        .with_size(20.0, 8.0)
+        .with_close_callback(callbacks.close_dialog);
 
-    let item_name = if let Ok(label) = q_labels.get(item_entity) {
-        label.get().to_string()
-    } else {
-        "Unknown Item".to_string()
-    };
-
-    let dialog_entity = cmds
-        .spawn((
-            Dialog::new("", dialog_width, dialog_height),
-            dialog_pos.clone(),
-            CleanupStateInventory,
-        ))
-        .id();
-
-    // 1. Center the icon
-    if let Ok(glyph) = q_glyphs.get(item_entity) {
-        cmds.spawn((
-            DialogIcon {
-                glyph_idx: glyph.idx,
-                scale: 2.0,
-                fg1: glyph.fg1,
-                fg2: glyph.fg2,
-            },
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 10,
-            },
-            Position::new_f32(
-                dialog_pos.x + (dialog_width / 2.0) - 1.0, // Center the 2x2 icon
-                dialog_pos.y + 0.5,
-                dialog_pos.z,
-            ),
-            CleanupStateInventory,
-            ChildOf(dialog_entity),
-        ));
-    }
-
-    // 2. Add centered item name below icon
-    cmds.spawn((
-        DialogText {
-            value: item_name.clone(),
-            style: DialogTextStyle::Title,
-        },
-        DialogContent {
-            parent_dialog: dialog_entity,
-            order: 11,
-        },
-        Position::new_f32(
-            dialog_pos.x + (dialog_width / 2.0) - (text_content_length(&item_name) as f32 * 0.25), // Proper centering
-            dialog_pos.y + 2.5,
-            dialog_pos.z,
-        ),
-        CleanupStateInventory,
-        ChildOf(dialog_entity),
-    ));
-
-    let mut content_y = 3.5;
-
-    if let Ok(item) = q_items.get(item_entity) {
-        cmds.spawn((
-            DialogProperty {
-                label: "Weight".to_string(),
-                value: format!("{:.1} kg", item.weight),
-            },
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 11,
-            },
-            Position::new_f32(dialog_pos.x + 1.0, dialog_pos.y + content_y, dialog_pos.z),
-            CleanupStateInventory,
-            ChildOf(dialog_entity),
-        ));
-        content_y += 0.5;
-    }
-
-    if let Ok(stack_count) = q_stack_counts.get(item_entity) {
-        cmds.spawn((
-            DialogProperty {
-                label: "Quantity".to_string(),
-                value: format!("x{}", stack_count.count),
-            },
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 12,
-            },
-            Position::new_f32(dialog_pos.x + 1.0, dialog_pos.y + content_y, dialog_pos.z),
-            CleanupStateInventory,
-            ChildOf(dialog_entity),
-        ));
-        content_y += 0.5;
-    }
-
-    if let Ok(equippable) = q_equippable.get(item_entity) {
-        let equipment_type = format!("{:?}", equippable.equipment_type);
-        cmds.spawn((
-            DialogProperty {
-                label: "Type".to_string(),
-                value: equipment_type,
-            },
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 13,
-            },
-            Position::new_f32(dialog_pos.x + 1.0, dialog_pos.y + content_y, dialog_pos.z),
-            CleanupStateInventory,
-            ChildOf(dialog_entity),
-        ));
-        content_y += 0.5;
-
-        let slots = equippable
-            .slot_requirements
-            .iter()
-            .map(|slot| slot.display_name())
-            .collect::<Vec<_>>()
-            .join(", ");
-
-        cmds.spawn((
-            DialogProperty {
-                label: "Slots".to_string(),
-                value: slots,
-            },
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 14,
-            },
-            Position::new_f32(dialog_pos.x + 1.0, dialog_pos.y + content_y, dialog_pos.z),
-            CleanupStateInventory,
-            ChildOf(dialog_entity),
-        ));
-        content_y += 0.5;
-    }
-
-    if let Ok(melee_weapon) = q_melee_weapons.get(item_entity) {
-        cmds.spawn((
-            DialogProperty {
-                label: "Damage".to_string(),
-                value: format!("{}", melee_weapon.damage),
-            },
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 15,
-            },
-            Position::new_f32(dialog_pos.x + 1.0, dialog_pos.y + content_y, dialog_pos.z),
-            CleanupStateInventory,
-            ChildOf(dialog_entity),
-        ));
-    }
-
-    let button_y = dialog_pos.y + dialog_height - 1.5;
-
-    // Drop button
-    cmds.spawn((
-        ActivatableBuilder::new("[{Y|U}] Drop", callbacks.drop_item)
+    // Add Drop button
+    builder = builder.add_button(
+        ItemDialogButton::new("[{Y|U}] Drop", callbacks.drop_item)
             .with_hotkey(KeyCode::U)
-            .with_focus_order(1000)
-            .as_button(Layer::DialogContent),
-        DialogContent {
-            parent_dialog: dialog_entity,
-            order: 20,
-        },
-        Position::new_f32(dialog_pos.x + 1.0, button_y, dialog_pos.z),
-        CleanupStateInventory,
-        ChildOf(dialog_entity),
-    ));
+            .with_focus_order(1000),
+    );
 
-    // Equip button (conditionally)
+    // Add Equip button if item is equippable
     if q_equippable.get(item_entity).is_ok() {
-        cmds.spawn((
-            ActivatableBuilder::new("[{Y|E}] Equip", callbacks.toggle_equip_item)
+        builder = builder.add_button(
+            ItemDialogButton::new("[{Y|E}] Equip", callbacks.toggle_equip_item)
                 .with_hotkey(KeyCode::E)
-                .with_focus_order(2000)
-                .as_button(Layer::DialogContent),
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 21,
-            },
-            Position::new_f32(dialog_pos.x + 6.0, button_y, dialog_pos.z),
-            CleanupStateInventory,
-            ChildOf(dialog_entity),
-        ));
+                .with_focus_order(2000),
+        );
     }
 
-    // Close button
-    cmds.spawn((
-        ActivatableBuilder::new("[{Y|ESC}] Close", callbacks.close_dialog)
-            .with_audio(AudioKey::ButtonBack1)
-            .with_hotkey(KeyCode::Escape)
-            .with_focus_order(3000)
-            .as_button(Layer::DialogContent),
-        DialogContent {
-            parent_dialog: dialog_entity,
-            order: 22,
-        },
-        Position::new_f32(dialog_pos.x + dialog_width - 6.5, button_y, dialog_pos.z),
+    spawn_item_dialog(
+        &mut cmds,
+        item_id,
+        builder,
+        &id_registry,
+        &q_labels,
+        &q_glyphs,
+        &q_items,
+        &q_equippable,
+        &q_melee_weapons,
+        &q_stack_counts,
         CleanupStateInventory,
-        ChildOf(dialog_entity),
-    ));
+    );
 }
 
 fn close_dialog(
@@ -547,7 +380,7 @@ fn setup_inventory_screen(
 
     let mut list_items = Vec::new();
 
-    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
+    for (_i, &item_id) in inventory.item_ids.iter().enumerate() {
         if let Some(item_entity) = id_registry.get_entity(item_id) {
             let text = if let Ok(label) = q_labels.get(item_entity) {
                 label.get().to_string()

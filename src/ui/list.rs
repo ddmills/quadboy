@@ -364,13 +364,14 @@ pub fn setup_lists(
                     pos.y = list_pos.y + item_y;
                     pos.z = list_pos.z;
                 }
-                // Add/update Activatable and Interaction components for existing items
+                // Update Activatable for existing items (contains dynamic data that may change)
                 let activatable =
                     item_data.to_activatable(actual_index, list_entity, list.focus_order);
+
+                // For existing entities, only update the Activatable component and visibility
+                // Avoid reinserting Interaction and Interactable to prevent breaking interaction detection
                 cmds.entity(text_entity).insert((
                     activatable,
-                    Interaction::None,
-                    Interactable::new(list.width, 0.5),
                     if is_visible {
                         Visibility::Visible
                     } else {
@@ -401,7 +402,22 @@ pub fn setup_lists(
             }
         }
 
-        // No longer despawning items - we keep them all but hide invisible ones
+        // Clean up excess items when list shrinks
+        let current_item_count = list.items.len();
+
+        // Despawn excess text items
+        for i in current_item_count..existing_text_items.len() {
+            if let Some(&entity) = existing_text_items.get(i) {
+                cmds.entity(entity).despawn();
+            }
+        }
+
+        // Despawn excess background items
+        for i in current_item_count..existing_bg_items.len() {
+            if let Some(&entity) = existing_bg_items.get(i) {
+                cmds.entity(entity).despawn();
+            }
+        }
 
         // Handle scroll indicators
         if let Some(height) = list.height {

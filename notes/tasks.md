@@ -11,7 +11,6 @@ Tasks:
 - [] faction system
 - [] POI system
 - [] ai
-- [] scrollable lists
+- [x] scrollable lists
 - [] 
-
 

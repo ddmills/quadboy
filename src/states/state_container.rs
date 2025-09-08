@@ -4,13 +4,17 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        Equipped, Inventory, Label, Player, StackCount, TransferItemAction, game_loop,
-        inventory::InventoryChangedEvent,
+        Equippable, Equipped, Inventory, Item, Label, MeleeWeapon, Player, StackCount,
+        TransferItemAction, game_loop, inventory::InventoryChangedEvent,
     },
-    engine::{App, KeyInput, Plugin, StableIdRegistry},
-    rendering::{Layer, Position, Text},
+    engine::{App, AudioKey, KeyInput, Plugin, StableIdRegistry},
+    rendering::{Glyph, Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
-    ui::{List, ListContext, ListItemData},
+    ui::{
+        ActivatableBuilder, Dialog, DialogState, ItemDialogBuilder, List, ListContext, ListItem,
+        ListItemData, UiFocus, render_dialog_content, setup_buttons, setup_dialogs, setup_lists,
+        spawn_item_dialog,
+    },
 };
 
 #[derive(Resource)]
@@ -18,9 +22,14 @@ pub struct ContainerCallbacks {
     pub select_item: SystemId,
     pub transfer_from_player: SystemId,
     pub transfer_from_container: SystemId,
+    pub examine_item: SystemId,
+    pub close_dialog: SystemId,
+    pub back_to_explore: SystemId,
+    pub direct_transfer_from_player: SystemId,
+    pub direct_transfer_from_container: SystemId,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct CleanupStateContainer;
 
 #[derive(Component)]
@@ -58,7 +67,16 @@ impl Plugin for ContainerStatePlugin {
             )
             .on_update(
                 app,
-                (handle_container_input, refresh_container_display, game_loop),
+                (
+                    handle_container_input,
+                    refresh_container_display,
+                    setup_lists,
+                    game_loop,
+                    setup_dialogs,
+                    render_dialog_content,
+                    setup_buttons,
+                )
+                    .chain(),
             )
             .on_leave(
                 app,
@@ -76,6 +94,11 @@ fn setup_container_callbacks(world: &mut World) {
         select_item: world.register_system(select_item),
         transfer_from_player: world.register_system(transfer_item_from_player),
         transfer_from_container: world.register_system(transfer_item_from_container),
+        examine_item: world.register_system(examine_selected_item),
+        close_dialog: world.register_system(close_dialog),
+        back_to_explore: world.register_system(back_to_explore),
+        direct_transfer_from_player: world.register_system(direct_transfer_from_player),
+        direct_transfer_from_container: world.register_system(direct_transfer_from_container),
     };
     world.insert_resource(callbacks);
 }
@@ -88,10 +111,16 @@ fn select_item() {
     // No-op for empty slots
 }
 
+fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Explore;
+}
+
 fn transfer_item_from_player(
     mut cmds: Commands,
     list_context: Res<ListContext>,
     context: Res<ContainerContext>,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    mut dialog_state: ResMut<DialogState>,
 ) {
     if let Some(item_id) = list_context.context_data {
         cmds.queue(TransferItemAction {
@@ -99,6 +128,12 @@ fn transfer_item_from_player(
             to_entity: context.container_entity,
             item_stable_id: item_id,
         });
+
+        // Close dialog after transfer
+        for dialog_entity in q_dialogs.iter() {
+            cmds.entity(dialog_entity).despawn();
+        }
+        dialog_state.is_open = false;
     }
 }
 
@@ -106,6 +141,8 @@ fn transfer_item_from_container(
     mut cmds: Commands,
     list_context: Res<ListContext>,
     context: Res<ContainerContext>,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    mut dialog_state: ResMut<DialogState>,
 ) {
     if let Some(item_id) = list_context.context_data {
         cmds.queue(TransferItemAction {
@@ -113,6 +150,94 @@ fn transfer_item_from_container(
             to_entity: context.player_entity,
             item_stable_id: item_id,
         });
+
+        // Close dialog after transfer
+        for dialog_entity in q_dialogs.iter() {
+            cmds.entity(dialog_entity).despawn();
+        }
+        dialog_state.is_open = false;
+    }
+}
+
+fn direct_transfer_from_player(
+    mut cmds: Commands,
+    ui_focus: Res<UiFocus>,
+    context: Res<ContainerContext>,
+    q_player_lists: Query<Entity, With<PlayerInventoryList>>,
+    q_list_items: Query<&ListItem>,
+    q_inventory: Query<&Inventory>,
+    _id_registry: Res<StableIdRegistry>,
+) {
+    let Some(focused_entity) = ui_focus.focused_element else {
+        return;
+    };
+
+    let Ok(focused_list_item) = q_list_items.get(focused_entity) else {
+        return;
+    };
+
+    let Ok(player_list_entity) = q_player_lists.single() else {
+        return;
+    };
+
+    // Check if the focused list item belongs to the player inventory list
+    if focused_list_item.parent_list == player_list_entity {
+        let Ok(player_inventory) = q_inventory.get(context.player_entity) else {
+            return;
+        };
+
+        // Use the focused item's index to get the item ID
+        let item_index = focused_list_item.index;
+        if item_index < player_inventory.item_ids.len() {
+            let item_id = player_inventory.item_ids[item_index];
+
+            cmds.queue(TransferItemAction {
+                from_entity: context.player_entity,
+                to_entity: context.container_entity,
+                item_stable_id: item_id,
+            });
+        }
+    }
+}
+
+fn direct_transfer_from_container(
+    mut cmds: Commands,
+    ui_focus: Res<UiFocus>,
+    context: Res<ContainerContext>,
+    q_container_lists: Query<Entity, With<ContainerInventoryList>>,
+    q_list_items: Query<&ListItem>,
+    q_inventory: Query<&Inventory>,
+    _id_registry: Res<StableIdRegistry>,
+) {
+    let Some(focused_entity) = ui_focus.focused_element else {
+        return;
+    };
+
+    let Ok(focused_list_item) = q_list_items.get(focused_entity) else {
+        return;
+    };
+
+    let Ok(container_list_entity) = q_container_lists.single() else {
+        return;
+    };
+
+    // Check if the focused list item belongs to the container inventory list
+    if focused_list_item.parent_list == container_list_entity {
+        let Ok(container_inventory) = q_inventory.get(context.container_entity) else {
+            return;
+        };
+
+        // Use the focused item's index to get the item ID
+        let item_index = focused_list_item.index;
+        if item_index < container_inventory.item_ids.len() {
+            let item_id = container_inventory.item_ids[item_index];
+
+            cmds.queue(TransferItemAction {
+                from_entity: context.container_entity,
+                to_entity: context.player_entity,
+                item_stable_id: item_id,
+            });
+        }
     }
 }
 
@@ -124,10 +249,14 @@ fn build_player_list_items(
     id_registry: &StableIdRegistry,
     callbacks: &ContainerCallbacks,
 ) -> Vec<ListItemData> {
-    let mut items = Vec::new();
+    inventory
+        .item_ids
+        .iter()
+        .map(|item_id| {
+            let Some(item_entity) = id_registry.get_entity(*item_id) else {
+                return ListItemData::new("Unknown", callbacks.select_item);
+            };
 
-    for (i, &item_id) in inventory.item_ids.iter().enumerate() {
-        if let Some(item_entity) = id_registry.get_entity(item_id) {
             let text = if let Ok(label) = q_labels.get(item_entity) {
                 label.get().to_string()
             } else {
@@ -156,14 +285,11 @@ fn build_player_list_items(
                 display_text
             };
 
-            items.push(
-                ListItemData::new(&final_text, callbacks.transfer_from_player)
-                    .with_context(item_id),
-            );
-        }
-    }
-
-    items
+            ListItemData::new(&final_text, callbacks.examine_item)
+                .with_hotkey(KeyCode::X)
+                .with_context(*item_id)
+        })
+        .collect()
 }
 
 fn build_container_list_items(
@@ -207,13 +333,65 @@ fn build_container_list_items(
             };
 
             items.push(
-                ListItemData::new(&final_text, callbacks.transfer_from_container)
+                ListItemData::new(&final_text, callbacks.examine_item)
+                    .with_hotkey(KeyCode::X)
                     .with_context(item_id),
             );
         }
     }
 
     items
+}
+
+fn examine_selected_item(
+    mut cmds: Commands,
+    list_context: Res<ListContext>,
+    callbacks: Res<ContainerCallbacks>,
+    id_registry: Res<StableIdRegistry>,
+    q_labels: Query<&Label>,
+    q_glyphs: Query<&Glyph>,
+    q_items: Query<&Item>,
+    q_equippable: Query<&Equippable>,
+    q_melee_weapons: Query<&MeleeWeapon>,
+    q_stack_counts: Query<&StackCount>,
+) {
+    let Some(item_id) = list_context.context_data else {
+        return;
+    };
+
+    let Some(item_entity) = id_registry.get_entity(item_id) else {
+        return;
+    };
+
+    let builder = ItemDialogBuilder::new(item_entity)
+        .with_position(5.0, 3.0)
+        .with_size(20.0, 8.0)
+        .with_close_callback(callbacks.close_dialog);
+
+    spawn_item_dialog(
+        &mut cmds,
+        item_id,
+        builder,
+        &id_registry,
+        &q_labels,
+        &q_glyphs,
+        &q_items,
+        &q_equippable,
+        &q_melee_weapons,
+        &q_stack_counts,
+        CleanupStateContainer,
+    );
+}
+
+fn close_dialog(
+    mut cmds: Commands,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    mut dialog_state: ResMut<DialogState>,
+) {
+    for dialog_entity in q_dialogs.iter() {
+        cmds.entity(dialog_entity).despawn();
+    }
+    dialog_state.is_open = false;
 }
 
 fn setup_container_screen(
@@ -249,6 +427,7 @@ fn setup_container_screen(
     cmds.spawn((
         Text::new("PLAYER INVENTORY")
             .fg1(Palette::Yellow)
+            .bg(Palette::Black)
             .layer(Layer::Ui),
         Position::new_f32(left_x, 1., 0.),
         CleanupStateContainer,
@@ -276,7 +455,7 @@ fn setup_container_screen(
         &callbacks,
     );
 
-    let player_list_entity = cmds
+    let _player_list_entity = cmds
         .spawn((
             List::new(player_list_items).with_focus_order(1000),
             Position::new_f32(left_x, 3.5, 0.),
@@ -294,6 +473,7 @@ fn setup_container_screen(
     cmds.spawn((
         Text::new(&container_label)
             .fg1(Palette::Yellow)
+            .bg(Palette::Black)
             .layer(Layer::Ui),
         Position::new_f32(right_x, 1., 0.),
         CleanupStateContainer,
@@ -322,21 +502,33 @@ fn setup_container_screen(
     );
 
     let start_y = 3.5;
-    let _container_list_entity = cmds
-        .spawn((
-            List::new(container_list_items).with_focus_order(2000),
-            Position::new_f32(right_x, start_y, 0.),
-            CleanupStateContainer,
-            ContainerInventoryList,
-        ))
-        .id();
+    cmds.spawn((
+        List::new(container_list_items).with_focus_order(2000),
+        Position::new_f32(right_x, start_y, 0.),
+        CleanupStateContainer,
+        ContainerInventoryList,
+    ));
 
     let help_y = 12.0; // Fixed position near bottom
+
+    // Back button
     cmds.spawn((
-        Text::new("[{Y|I}] Back   [{Y|TAB}] Switch Side   [{Y|ENTER}] Transfer")
+        Position::new_f32(left_x, help_y, 0.),
+        ActivatableBuilder::new("({Y|I}) BACK", callbacks.back_to_explore)
+            .with_hotkey(KeyCode::I)
+            .with_hotkey(KeyCode::Escape)
+            .with_audio(AudioKey::ButtonBack1)
+            .with_focus_order(3000)
+            .as_button(Layer::Ui),
+        CleanupStateContainer,
+    ));
+
+    // Help text for navigation
+    cmds.spawn((
+        Text::new("  [{Y|TAB}] Switch Side   [{Y|X}] Examine   [{Y|T}] Quick Transfer")
             .fg1(Palette::White)
             .layer(Layer::Ui),
-        Position::new_f32(left_x, help_y, 0.),
+        Position::new_f32(left_x + 8.0, help_y, 0.),
         CleanupStateContainer,
     ));
 }
@@ -359,7 +551,6 @@ fn refresh_container_display(
     callbacks: Res<ContainerCallbacks>,
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
 ) {
-    // Only update when inventory changes
     if e_inventory_changed.is_empty() {
         return;
     }
@@ -413,9 +604,36 @@ fn refresh_container_display(
     }
 }
 
-fn handle_container_input(keys: Res<KeyInput>, mut game_state: ResMut<CurrentGameState>) {
+fn handle_container_input(
+    keys: Res<KeyInput>,
+    mut game_state: ResMut<CurrentGameState>,
+    ui_focus: Res<UiFocus>,
+    q_player_lists: Query<Entity, With<PlayerInventoryList>>,
+    q_container_lists: Query<Entity, With<ContainerInventoryList>>,
+    q_list_items: Query<&ListItem>,
+    callbacks: Res<ContainerCallbacks>,
+    mut commands: Commands,
+) {
     if keys.is_pressed(KeyCode::I) {
         game_state.next = GameState::Explore;
+        return;
     }
-    // Tab switching and item selection are now handled by List components
+
+    if keys.is_pressed(KeyCode::T)
+        && let Some(focused_entity) = ui_focus.focused_element
+        && let Ok(focused_list_item) = q_list_items.get(focused_entity)
+    {
+        let Ok(player_list_entity) = q_player_lists.single() else {
+            return;
+        };
+        let Ok(container_list_entity) = q_container_lists.single() else {
+            return;
+        };
+
+        if focused_list_item.parent_list == player_list_entity {
+            commands.run_system(callbacks.direct_transfer_from_player);
+        } else if focused_list_item.parent_list == container_list_entity {
+            commands.run_system(callbacks.direct_transfer_from_container);
+        }
+    }
 }

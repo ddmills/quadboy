@@ -59,7 +59,7 @@ impl LightSource {
     }
 
     pub fn lantern() -> Self {
-        Self::new(0.9, 0xD6DBCF, 8).with_flicker(0.3)
+        Self::new(0.9, 0xE4DCCC, 10).with_flicker(0.3)
     }
 
     pub fn mushroom() -> Self {
