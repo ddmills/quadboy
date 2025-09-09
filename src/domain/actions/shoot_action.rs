@@ -3,9 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, RangedWeapon, Zone,
-        get_energy_cost,
-        systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
+        get_energy_cost, systems::destruction_system::{DestructionCause, EntityDestroyedEvent}, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType, RangedWeapon, Zone
     },
     engine::{Audio, StableIdRegistry},
     rendering::{Glyph, Position},
@@ -121,19 +119,48 @@ impl Command for ShootAction {
             let mut should_apply_hit_blink = false;
             
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
-                if can_damage.contains(&crate::domain::MaterialType::Flesh) {
+                if can_damage.contains(&MaterialType::Flesh) {
                     health.take_damage(damage);
                     should_apply_hit_blink = true;
+                    let is_dead = health.is_dead();
 
-                    if health.is_dead()
-                        && let Some(position) = world.get::<Position>(target_entity)
-                    {
-                        let event = EntityDestroyedEvent::new(
-                            target_entity,
-                            position.world(),
-                            DestructionCause::Attack,
-                        );
-                        world.send_event(event);
+                    // Play hit audio for flesh target
+                    if let Some(audio_collection) = MaterialType::Flesh.hit_audio_collection() {
+                        world.resource_scope(|world, audio_registry: Mut<Audio>| {
+                            if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+                                audio_registry.play_random_from_collection(
+                                    audio_collection,
+                                    &mut rand,
+                                    0.5,
+                                );
+                            }
+                        });
+                    }
+
+                    if is_dead {
+                        let position_data = world.get::<Position>(target_entity).map(|p| p.world());
+                        
+                        if let Some(position_coords) = position_data {
+                            // Play destroy audio for flesh target
+                            if let Some(audio_collection) = MaterialType::Flesh.destroy_audio_collection() {
+                                world.resource_scope(|world, audio_registry: Mut<Audio>| {
+                                    if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+                                        audio_registry.play_random_from_collection(
+                                            audio_collection,
+                                            &mut rand,
+                                            0.5,
+                                        );
+                                    }
+                                });
+                            }
+
+                            let event = EntityDestroyedEvent::new(
+                                target_entity,
+                                position_coords,
+                                DestructionCause::Attack,
+                            );
+                            world.send_event(event);
+                        }
                     }
                 }
             }

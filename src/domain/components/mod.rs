@@ -1,4 +1,5 @@
 pub mod bitmask;
+pub mod bump_attack;
 pub mod collider;
 pub mod destructible;
 pub mod energy;
@@ -16,6 +17,7 @@ pub mod stairs;
 pub mod vision;
 
 pub use bitmask::*;
+pub use bump_attack::BumpAttack;
 pub use collider::Collider;
 pub use destructible::{Destructible, MaterialType};
 pub use energy::Energy;

@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MeleeWeapon, Zone,
+        BumpAttack, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MeleeWeapon, Player, Zone,
         get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
@@ -55,6 +55,22 @@ impl Command for AttackAction {
             }
         };
 
+        // Apply bump attack effect if attacker is a player
+        if world.get::<Player>(self.attacker_entity).is_some() {
+            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+                // Calculate direction from attacker to target
+                let dx = self.target_pos.0 as f32 - attacker_pos.x;
+                let dy = self.target_pos.1 as f32 - attacker_pos.y;
+                
+                // Normalize direction
+                let length = (dx * dx + dy * dy).sqrt();
+                if length > 0.0 {
+                    let direction = (dx / length, dy / length);
+                    world.entity_mut(self.attacker_entity).insert(BumpAttack::attacked(direction));
+                }
+            }
+        }
+
         // Find target at position
         let targets = {
             let zone_idx = crate::rendering::world_to_zone_idx(
@@ -91,16 +107,45 @@ impl Command for AttackAction {
                 {
                     health.take_damage(*damage);
                     should_apply_hit_blink = true;
+                    let is_dead = health.is_dead();
 
-                    if health.is_dead()
-                        && let Some(position) = world.get::<Position>(target_entity)
-                    {
-                        let event = EntityDestroyedEvent::new(
-                            target_entity,
-                            position.world(),
-                            DestructionCause::Attack,
-                        );
-                        world.send_event(event);
+                    // Play hit audio for flesh target
+                    if let Some(audio_collection) = crate::domain::MaterialType::Flesh.hit_audio_collection() {
+                        world.resource_scope(|world, audio_registry: Mut<Audio>| {
+                            if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+                                audio_registry.play_random_from_collection(
+                                    audio_collection,
+                                    &mut rand,
+                                    0.5,
+                                );
+                            }
+                        });
+                    }
+
+                    if is_dead {
+                        let position_data = world.get::<Position>(target_entity).map(|p| p.world());
+                        
+                        if let Some(position_coords) = position_data {
+                            // Play destroy audio for flesh target
+                            if let Some(audio_collection) = crate::domain::MaterialType::Flesh.destroy_audio_collection() {
+                                world.resource_scope(|world, audio_registry: Mut<Audio>| {
+                                    if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+                                        audio_registry.play_random_from_collection(
+                                            audio_collection,
+                                            &mut rand,
+                                            0.5,
+                                        );
+                                    }
+                                });
+                            }
+
+                            let event = EntityDestroyedEvent::new(
+                                target_entity,
+                                position_coords,
+                                DestructionCause::Attack,
+                            );
+                            world.send_event(event);
+                        }
                     }
                 }
             }

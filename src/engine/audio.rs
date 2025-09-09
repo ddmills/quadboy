@@ -19,6 +19,8 @@ pub enum AudioKey {
     RevolverShoot1,
     RifleShoot1,
     ShotgunShoot1,
+    Pain1,
+    Pain2,
 }
 
 impl AudioKey {
@@ -36,6 +38,8 @@ impl AudioKey {
             AudioKey::RevolverShoot1 => include_bytes!("../assets/audio/revolver_shoot_1.wav"),
             AudioKey::RifleShoot1 => include_bytes!("../assets/audio/rifle_shoot_1.wav"),
             AudioKey::ShotgunShoot1 => include_bytes!("../assets/audio/shotgun_shoot_1.wav"),
+            AudioKey::Pain1 => include_bytes!("../assets/audio/pain_1.wav"),
+            AudioKey::Pain2 => include_bytes!("../assets/audio/pain_2.wav"),
         }
     }
 }
@@ -46,6 +50,7 @@ pub enum AudioCollection {
     RockCrumble,
     Chopping,
     Vegetation,
+    Pain,
 }
 
 #[derive(Resource)]
@@ -109,6 +114,14 @@ impl Audio {
             AudioKey::ShotgunShoot1,
             Sound::load(&ctx_guard, AudioKey::ShotgunShoot1.bytes()),
         );
+        sounds.insert(
+            AudioKey::Pain1,
+            Sound::load(&ctx_guard, AudioKey::Pain1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Pain2,
+            Sound::load(&ctx_guard, AudioKey::Pain2.bytes()),
+        );
 
         let mut collections = HashMap::new();
         collections.insert(
@@ -121,6 +134,7 @@ impl Audio {
             vec![AudioKey::Woodcut1, AudioKey::Woodcut2],
         );
         collections.insert(AudioCollection::Vegetation, vec![AudioKey::Vegetation]);
+        collections.insert(AudioCollection::Pain, vec![AudioKey::Pain1, AudioKey::Pain2]);
 
         Self {
             ctx: Arc::clone(&ctx),

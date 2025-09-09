@@ -626,7 +626,7 @@ fn render_target_info(
                 text_pos.z = pos.2.floor();
 
                 // Show and position target indicator above the target
-                *indicator_visibility = Visibility::Visible;
+                *indicator_visibility = Visibility::Hidden;
                 indicator_pos.x = pos.0.floor();
                 indicator_pos.y = pos.1.floor() - 1.0;
                 indicator_pos.z = pos.2.floor();

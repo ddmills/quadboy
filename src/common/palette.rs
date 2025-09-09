@@ -233,6 +233,7 @@ impl PaletteSequence {
                     bg: text.bg,
                     outline: text.outline,
                     outline_override: None,
+                    position_offset: None,
                     layer_id: text.layer_id,
                     texture_id: text.texture_id,
                     is_dormant: false,

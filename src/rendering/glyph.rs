@@ -26,6 +26,7 @@ pub struct Glyph {
     pub bg: Option<u32>,
     pub outline: Option<u32>,
     pub outline_override: Option<u32>,
+    pub position_offset: Option<(f32, f32)>,
     pub scale: (f32, f32),
     pub layer_id: Layer,
     pub texture_id: GlyphTextureId,
@@ -79,6 +80,7 @@ impl Glyph {
             bg: None,
             outline: Some(Palette::Clear.into()),
             outline_override: None,
+            position_offset: None,
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
@@ -94,6 +96,7 @@ impl Glyph {
             bg: style.bg.map(|x| x.into()),
             outline: style.outline.map(|x| x.into()),
             outline_override: None,
+            position_offset: None,
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
@@ -109,6 +112,7 @@ impl Glyph {
             bg: None,
             outline: Some(Palette::Clear.into()),
             outline_override: None,
+            position_offset: None,
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
@@ -275,6 +279,12 @@ pub fn render_glyphs(
 
         let mut x = (pos.x * tile_w).floor();
         let mut y = (pos.y * tile_h).floor();
+
+        // Apply position offset if present
+        if let Some((offset_x, offset_y)) = glyph.position_offset {
+            x += offset_x * tile_w;
+            y += offset_y * tile_h;
+        }
 
         let mut is_shrouded = false;
         let mut ignore_lighting = true;

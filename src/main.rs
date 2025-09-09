@@ -16,7 +16,7 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, Bitmasker, Collider, Destructible, Energy, EquipmentSlots,
+        ApplyVisibilityEffects, Bitmasker, BumpAttack, Collider, Destructible, Energy, EquipmentSlots,
         Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory,
         Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, LightSource,
         LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, MeleeWeapon, NeedsStableId,
@@ -24,7 +24,7 @@ use crate::{
         SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, TurnState, UnloadZoneEvent,
         UnopenedContainer, Vision, VisionBlocker, Zones, inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask, systems::destruction_system::EntityDestroyedEvent,
-        systems::hit_blink_system::hit_blink_system,
+        systems::bump_attack_system::bump_attack_system, systems::hit_blink_system::hit_blink_system,
     },
     engine::{
         App, Audio, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType,
@@ -113,6 +113,7 @@ async fn main() {
     reg.register::<Equipped>();
     reg.register::<Health>();
     reg.register::<HitBlink>();
+    reg.register::<BumpAttack>();
     reg.register::<Destructible>();
     reg.register::<MeleeWeapon>();
     reg.register::<UnopenedContainer>();
@@ -207,7 +208,7 @@ async fn main() {
         )
         .add_systems(
             ScheduleType::PostUpdate,
-            (hit_blink_system, update_animated_glyphs, render_glyphs, render_text).chain(),
+            (bump_attack_system, hit_blink_system, update_animated_glyphs, render_glyphs, render_text).chain(),
         )
         .add_systems(
             ScheduleType::FrameFinal,

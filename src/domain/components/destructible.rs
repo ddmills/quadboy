@@ -29,7 +29,7 @@ impl MaterialType {
         match self {
             MaterialType::Stone => Some(AudioCollection::RockCrumble),
             MaterialType::Wood => Some(AudioCollection::Vegetation),
-            MaterialType::Flesh => None,
+            MaterialType::Flesh => Some(AudioCollection::Pain),
         }
     }
 }
