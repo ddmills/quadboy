@@ -1,11 +1,11 @@
 use super::destruction_system::EntityDestroyedEvent;
-use crate::{common::Rand, domain::Destructible, engine::AudioRegistry};
+use crate::{common::Rand, domain::Destructible, engine::Audio};
 use bevy_ecs::prelude::*;
 
 pub fn on_entity_destroyed_cleanup(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
     q_destructible: Query<&Destructible>,
-    audio_registry: Option<Res<AudioRegistry>>,
+    audio_registry: Option<Res<Audio>>,
     mut rand: Option<ResMut<Rand>>,
     mut cmds: Commands,
 ) {

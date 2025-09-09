@@ -94,6 +94,10 @@ pub fn player_input(
         game_state.next = GameState::Inventory;
     }
 
+    if keys.is_pressed(KeyCode::F) && turn_state.is_players_turn {
+        game_state.next = GameState::Shoot;
+    }
+
     if keys.is_pressed(KeyCode::O) {
         // Check for adjacent containers
         let neighbors = Zone::get_neighbors((x, y, z), &q_zone);

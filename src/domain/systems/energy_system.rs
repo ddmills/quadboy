@@ -16,6 +16,7 @@ pub enum EnergyActionType {
     UnequipItem,
     TransferItem,
     ToggleLight,
+    Shoot,
 }
 
 #[derive(Resource, Default)]
@@ -81,5 +82,6 @@ pub fn get_energy_cost(action: EnergyActionType) -> i32 {
         EnergyActionType::UnequipItem => 50,
         EnergyActionType::TransferItem => 10,
         EnergyActionType::ToggleLight => 25,
+        EnergyActionType::Shoot => 150,
     }
 }

@@ -3,7 +3,7 @@ use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    engine::{AudioKey, AudioRegistry, KeyInput, Mouse, Time},
+    engine::{Audio, AudioKey, KeyInput, Mouse, Time},
     rendering::{Glyph, Layer, Text},
     ui::{
         DialogContent, DialogState, FocusType, Interaction, ListItem, ListItemSelected,
@@ -113,7 +113,7 @@ impl Activatable {
     }
 
     /// Perform activation: play audio and run callback
-    pub fn activate(&self, cmds: &mut Commands, audio: &AudioRegistry) {
+    pub fn activate(&self, cmds: &mut Commands, audio: &Audio) {
         let audio_key = self.audio_key().unwrap_or(AudioKey::Button1);
         audio.play(audio_key, 0.7);
         cmds.run_system(self.callback());
@@ -313,7 +313,7 @@ pub fn unified_keyboard_activation_system(
     dialog_state: Res<DialogState>,
     ui_focus: Res<UiFocus>,
     keys: Res<KeyInput>,
-    audio: Res<AudioRegistry>,
+    audio: Res<Audio>,
 ) {
     // Handle hotkey activation for all elements
     for (entity, activatable) in q_activatable.iter() {
@@ -366,7 +366,7 @@ pub fn unified_click_system(
     q_activatable: Query<(Entity, &Activatable, &Interaction), Changed<Interaction>>,
     q_list_items: Query<&ListItem>,
     q_selectable_lists: Query<&SelectableList>,
-    audio: Res<AudioRegistry>,
+    audio: Res<Audio>,
     mut mouse: ResMut<Mouse>,
 ) {
     for (entity, activatable, interaction) in q_activatable.iter() {

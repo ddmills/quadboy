@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use crate::{
     common::Palette,
-    engine::{AudioKey, AudioRegistry, KeyInput, Mouse},
+    engine::{Audio, AudioKey, KeyInput, Mouse},
     rendering::{Glyph, Layer, Position, Text, Visibility},
     ui::{Activatable, ActivatableBuilder, FocusType, Interactable, Interaction, UiFocus},
 };
@@ -611,7 +611,7 @@ pub fn selectable_list_interaction(
     keys: Res<KeyInput>,
     ui_focus: Res<UiFocus>,
     mut mouse: ResMut<Mouse>,
-    audio: Res<AudioRegistry>,
+    audio: Res<Audio>,
 ) {
     // Handle Enter key for focused item
     if keys.is_pressed(KeyCode::Enter)
@@ -670,7 +670,7 @@ fn toggle_selection(
     selectable_list: &SelectableList,
     state: &mut SelectableListState,
     q_all_list_items: &Query<(Entity, &ListItem)>,
-    audio: &AudioRegistry,
+    audio: &Audio,
 ) {
     let was_selected = state.selected_indices.contains(&item_index);
 

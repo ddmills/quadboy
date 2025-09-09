@@ -56,6 +56,7 @@ pub enum GameState {
     Container,
     EquipSlotSelect,
     DebugSpawn,
+    Shoot,
 }
 
 impl fmt::Display for GameState {
@@ -71,6 +72,7 @@ impl fmt::Display for GameState {
             GameState::Container => write!(f, "Container"),
             GameState::EquipSlotSelect => write!(f, "Equip Slot Select"),
             GameState::DebugSpawn => write!(f, "Debug Spawn"),
+            GameState::Shoot => write!(f, "Shoot"),
         }
     }
 }

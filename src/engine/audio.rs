@@ -1,20 +1,24 @@
 use crate::common::Rand;
 use bevy_ecs::prelude::*;
 use quad_snd::{AudioContext, PlaySoundParams, Sound};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AudioKey {
     Mining1,
     Mining2,
-    Digging,
+    Mining3,
     RockBreak,
     Vegetation,
     Woodcut1,
     Woodcut2,
     Button1,
     ButtonBack1,
+    RevolverShoot1,
+    RifleShoot1,
+    ShotgunShoot1,
 }
 
 impl AudioKey {
@@ -22,13 +26,16 @@ impl AudioKey {
         match self {
             AudioKey::Mining1 => include_bytes!("../assets/audio/mining_1.wav"),
             AudioKey::Mining2 => include_bytes!("../assets/audio/mining_2.wav"),
-            AudioKey::Digging => include_bytes!("../assets/audio/digging_1.wav"),
+            AudioKey::Mining3 => include_bytes!("../assets/audio/mining_3.wav"),
             AudioKey::RockBreak => include_bytes!("../assets/audio/rock_break.wav"),
             AudioKey::Vegetation => include_bytes!("../assets/audio/vegetation.wav"),
             AudioKey::Woodcut1 => include_bytes!("../assets/audio/woodcut_1.wav"),
             AudioKey::Woodcut2 => include_bytes!("../assets/audio/woodcut_2.wav"),
             AudioKey::Button1 => include_bytes!("../assets/audio/button_1.wav"),
             AudioKey::ButtonBack1 => include_bytes!("../assets/audio/button_back_1.wav"),
+            AudioKey::RevolverShoot1 => include_bytes!("../assets/audio/revolver_shoot_1.wav"),
+            AudioKey::RifleShoot1 => include_bytes!("../assets/audio/rifle_shoot_1.wav"),
+            AudioKey::ShotgunShoot1 => include_bytes!("../assets/audio/shotgun_shoot_1.wav"),
         }
     }
 }
@@ -42,13 +49,13 @@ pub enum AudioCollection {
 }
 
 #[derive(Resource)]
-pub struct AudioRegistry {
+pub struct Audio {
     pub ctx: Arc<Mutex<AudioContext>>,
     pub sounds: HashMap<AudioKey, Sound>,
     pub collections: HashMap<AudioCollection, Vec<AudioKey>>,
 }
 
-impl AudioRegistry {
+impl Audio {
     pub fn load() -> Self {
         let ctx = Arc::new(Mutex::new(AudioContext::new()));
         let ctx_guard = ctx.lock().unwrap();
@@ -63,8 +70,8 @@ impl AudioRegistry {
             Sound::load(&ctx_guard, AudioKey::Mining2.bytes()),
         );
         sounds.insert(
-            AudioKey::Digging,
-            Sound::load(&ctx_guard, AudioKey::Digging.bytes()),
+            AudioKey::Mining3,
+            Sound::load(&ctx_guard, AudioKey::Mining3.bytes()),
         );
         sounds.insert(
             AudioKey::RockBreak,
@@ -90,11 +97,23 @@ impl AudioRegistry {
             AudioKey::ButtonBack1,
             Sound::load(&ctx_guard, AudioKey::ButtonBack1.bytes()),
         );
+        sounds.insert(
+            AudioKey::RevolverShoot1,
+            Sound::load(&ctx_guard, AudioKey::RevolverShoot1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::RifleShoot1,
+            Sound::load(&ctx_guard, AudioKey::RifleShoot1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::ShotgunShoot1,
+            Sound::load(&ctx_guard, AudioKey::ShotgunShoot1.bytes()),
+        );
 
         let mut collections = HashMap::new();
         collections.insert(
             AudioCollection::Mining,
-            vec![AudioKey::Mining1, AudioKey::Mining2, AudioKey::Digging],
+            vec![AudioKey::Mining1, AudioKey::Mining2, AudioKey::Mining3],
         );
         collections.insert(AudioCollection::RockCrumble, vec![AudioKey::RockBreak]);
         collections.insert(

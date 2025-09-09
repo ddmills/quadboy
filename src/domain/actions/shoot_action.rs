@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, MeleeWeapon, Zone,
+        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, RangedWeapon, Zone,
         get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
@@ -11,20 +11,20 @@ use crate::{
     rendering::Position,
 };
 
-pub struct AttackAction {
-    pub attacker_entity: Entity,
+pub struct ShootAction {
+    pub shooter_entity: Entity,
     pub target_pos: (usize, usize, usize),
 }
 
-impl Command for AttackAction {
+impl Command for ShootAction {
     fn apply(self, world: &mut World) {
-        // Get the equipped weapon (if any)
-        let weapon_damage = {
+        // Get the equipped ranged weapon (if any)
+        let weapon_data = {
             let Some(registry) = world.get_resource::<StableIdRegistry>() else {
                 return;
             };
 
-            let Some(equipment) = world.get::<EquipmentSlots>(self.attacker_entity) else {
+            let Some(equipment) = world.get::<EquipmentSlots>(self.shooter_entity) else {
                 return; // No equipment slots, can't have weapon
             };
 
@@ -33,9 +33,14 @@ impl Command for AttackAction {
 
             if let Some(weapon_id) = weapon_id {
                 if let Some(weapon_entity) = registry.get_entity(weapon_id) {
-                    world
-                        .get::<MeleeWeapon>(weapon_entity)
-                        .map(|weapon| (weapon.damage, weapon.can_damage.clone()))
+                    world.get::<RangedWeapon>(weapon_entity).map(|weapon| {
+                        (
+                            weapon.damage,
+                            weapon.can_damage.clone(),
+                            weapon.range,
+                            weapon.shoot_audio,
+                        )
+                    })
                 } else {
                     None
                 }
@@ -43,6 +48,25 @@ impl Command for AttackAction {
                 None
             }
         };
+
+        let Some((damage, can_damage, range, shoot_audio)) = weapon_data else {
+            // No ranged weapon equipped
+            return;
+        };
+
+        // Check if target is within range
+        let shooter_pos = world
+            .get::<Position>(self.shooter_entity)
+            .map(|p| p.world());
+        if let Some((sx, sy, _sz)) = shooter_pos {
+            let distance = ((self.target_pos.0 as i32 - sx as i32).abs()
+                + (self.target_pos.1 as i32 - sy as i32).abs()) as usize;
+
+            if distance > range {
+                // Target out of range
+                return;
+            }
+        }
 
         // Find target at position
         let targets = {
@@ -66,17 +90,26 @@ impl Command for AttackAction {
             found_targets
         };
 
+        let Some(audio) = world.get_resource::<Audio>() else {
+            return;
+        };
+
+        audio.play(shoot_audio, 0.4);
+
         if targets.is_empty() {
+            // Consume energy even if no target hit (shot fired)
+            if let Some(mut energy) = world.get_mut::<Energy>(self.shooter_entity) {
+                let cost = get_energy_cost(EnergyActionType::Shoot);
+                energy.consume_energy(cost);
+            }
             return;
         }
 
-        // Process attack on each target at position
+        // Process shot on each target at position
         for &target_entity in targets.iter() {
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
-                if let Some((damage, can_damage)) = &weapon_damage
-                    && can_damage.contains(&crate::domain::MaterialType::Flesh)
-                {
-                    health.take_damage(*damage);
+                if can_damage.contains(&crate::domain::MaterialType::Flesh) {
+                    health.take_damage(damage);
 
                     if health.is_dead()
                         && let Some(position) = world.get::<Position>(target_entity)
@@ -91,13 +124,11 @@ impl Command for AttackAction {
                 }
             }
             // Check if target has Destructible (object)
-            else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
-                && let Some((damage, can_damage)) = &weapon_damage
-            {
+            else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity) {
                 // Check if weapon can damage this material type
                 if can_damage.contains(&destructible.material_type) {
                     let material_type = destructible.material_type;
-                    destructible.take_damage(*damage);
+                    destructible.take_damage(damage);
                     let is_destroyed = destructible.is_destroyed();
 
                     // Play hit audio
@@ -115,7 +146,6 @@ impl Command for AttackAction {
 
                     // Check if target was destroyed
                     if is_destroyed {
-                        // Fire destruction event instead of handling directly
                         if let Some(position) = world.get::<Position>(target_entity) {
                             let event = EntityDestroyedEvent::new(
                                 target_entity,
@@ -130,8 +160,8 @@ impl Command for AttackAction {
         }
 
         // Consume energy
-        if let Some(mut energy) = world.get_mut::<Energy>(self.attacker_entity) {
-            let cost = get_energy_cost(EnergyActionType::Move); // Same cost as movement for now
+        if let Some(mut energy) = world.get_mut::<Energy>(self.shooter_entity) {
+            let cost = get_energy_cost(EnergyActionType::Shoot);
             energy.consume_energy(cost);
         }
     }
