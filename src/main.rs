@@ -6,9 +6,9 @@ use macroquad::{
     prelude::*,
 };
 use rendering::{
-    AnimatedGlyph, GameCamera, Layers, LightingData, Position, RenderTargets, ScreenSize, Text,
-    render_all, render_glyphs, render_text, update_animated_glyphs, update_crt_uniforms,
-    update_screen_size,
+    AmbientTransition, AnimatedGlyph, GameCamera, Layers, LightingData, Position, RenderTargets,
+    ScreenSize, Text, render_all, render_glyphs, render_text, update_animated_glyphs,
+    update_crt_uniforms, update_screen_size,
 };
 use ui::UiLayout;
 
@@ -16,15 +16,17 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, Bitmasker, BumpAttack, Collider, Destructible, Energy, EquipmentSlots,
-        Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory,
-        Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, LightSource,
-        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, MeleeWeapon, NeedsStableId,
-        NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
-        SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, TurnState, UnloadZoneEvent,
-        UnopenedContainer, Vision, VisionBlocker, Zones, inventory::InventoryChangedEvent,
-        on_bitmask_spawn, on_refresh_bitmask, systems::destruction_system::EntityDestroyedEvent,
-        systems::bump_attack_system::bump_attack_system, systems::hit_blink_system::hit_blink_system,
+        ApplyVisibilityEffects, Bitmasker, BumpAttack, Collider, Destructible, Energy,
+        EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink,
+        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
+        Label, LightSource, LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry,
+        MeleeWeapon, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
+        StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
+        Zones, inventory::InventoryChangedEvent, on_bitmask_spawn, on_refresh_bitmask,
+        systems::bump_attack_system::bump_attack_system,
+        systems::destruction_system::EntityDestroyedEvent,
+        systems::hit_blink_system::hit_blink_system,
     },
     engine::{
         App, Audio, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType,
@@ -171,6 +173,7 @@ async fn main() {
         .init_resource::<Rand>()
         .init_resource::<StableIdRegistry>()
         .init_resource::<LightingData>()
+        .init_resource::<AmbientTransition>()
         .add_systems(
             ScheduleType::PreUpdate,
             (update_time, update_key_input, update_mouse_input),
@@ -208,7 +211,14 @@ async fn main() {
         )
         .add_systems(
             ScheduleType::PostUpdate,
-            (bump_attack_system, hit_blink_system, update_animated_glyphs, render_glyphs, render_text).chain(),
+            (
+                bump_attack_system,
+                hit_blink_system,
+                update_animated_glyphs,
+                render_glyphs,
+                render_text,
+            )
+                .chain(),
         )
         .add_systems(
             ScheduleType::FrameFinal,

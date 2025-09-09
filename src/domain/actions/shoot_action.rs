@@ -3,7 +3,9 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        get_energy_cost, systems::destruction_system::{DestructionCause, EntityDestroyedEvent}, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType, RangedWeapon, Zone
+        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType,
+        RangedWeapon, Zone, get_energy_cost,
+        systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
     rendering::{Glyph, Position},
@@ -117,7 +119,7 @@ impl Command for ShootAction {
         // Process shot on each target at position
         for &target_entity in targets.iter() {
             let mut should_apply_hit_blink = false;
-            
+
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if can_damage.contains(&MaterialType::Flesh) {
                     health.take_damage(damage);
@@ -139,10 +141,12 @@ impl Command for ShootAction {
 
                     if is_dead {
                         let position_data = world.get::<Position>(target_entity).map(|p| p.world());
-                        
+
                         if let Some(position_coords) = position_data {
                             // Play destroy audio for flesh target
-                            if let Some(audio_collection) = MaterialType::Flesh.destroy_audio_collection() {
+                            if let Some(audio_collection) =
+                                MaterialType::Flesh.destroy_audio_collection()
+                            {
                                 world.resource_scope(|world, audio_registry: Mut<Audio>| {
                                     if let Some(mut rand) = world.get_resource_mut::<Rand>() {
                                         audio_registry.play_random_from_collection(
@@ -199,7 +203,7 @@ impl Command for ShootAction {
                     }
                 }
             }
-            
+
             if should_apply_hit_blink {
                 apply_hit_blink(world, target_entity);
             }

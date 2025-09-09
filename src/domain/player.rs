@@ -75,7 +75,7 @@ pub fn player_input(
     settings: Res<GameSettings>,
     q_zone: Query<&Zone>,
     q_unexplored: Query<Entity, Without<IsExplored>>,
-    target_cycling: Option<Res<crate::states::TargetCycling>>,
+    target_cycling: Option<Res<crate::domain::TargetCycling>>,
 ) {
     let now = time.fixed_t;
     let mut rate = settings.input_delay;

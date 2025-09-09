@@ -53,10 +53,18 @@ pub fn update_lighting_system(
         let biome_color_rgba = biome_type.get_ambient_color().to_rgba(1.0);
         let biome_intensity = biome_type.get_ambient_intensity();
 
-        // Calculate final color by multiplying daylight with biome color
-        let final_r = (daylight.color.x * biome_color_rgba[0] * 255.0) as u32;
-        let final_g = (daylight.color.y * biome_color_rgba[1] * 255.0) as u32;
-        let final_b = (daylight.color.z * biome_color_rgba[2] * 255.0) as u32;
+        // Blend biome color with daylight, preserving more daylight color at night
+        let night_blend_factor = (1.0 - daylight.intensity).powf(1.2) * 0.3;
+        let blended_r = daylight.color.x * biome_color_rgba[0] * (1.0 - night_blend_factor)
+            + daylight.color.x * night_blend_factor;
+        let blended_g = daylight.color.y * biome_color_rgba[1] * (1.0 - night_blend_factor)
+            + daylight.color.y * night_blend_factor;
+        let blended_b = daylight.color.z * biome_color_rgba[2] * (1.0 - night_blend_factor)
+            + daylight.color.z * night_blend_factor;
+
+        let final_r = (blended_r * 255.0) as u32;
+        let final_g = (blended_g * 255.0) as u32;
+        let final_b = (blended_b * 255.0) as u32;
         let final_color = (final_r << 16) | (final_g << 8) | final_b;
         let final_intensity = daylight.intensity * biome_intensity;
 

@@ -9,6 +9,7 @@ pub mod inventory_system;
 pub mod lighting_system;
 pub mod loot_drop_system;
 pub mod stable_id_system;
+pub mod targeting;
 pub mod vision_system;
 
 pub use ai_system::*;
@@ -17,4 +18,5 @@ pub use game_systems::*;
 pub use inventory_system::*;
 pub use lighting_system::*;
 pub use stable_id_system::*;
+pub use targeting::*;
 pub use vision_system::*;

@@ -1,4 +1,4 @@
-use bevy_ecs::component::Component;
+use bevy_ecs::prelude::*;
 use macroquad::miniquad::*;
 use macroquad::prelude::*;
 

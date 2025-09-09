@@ -87,13 +87,13 @@ impl Clock {
         let phases = [
             DaylightPhase {
                 progress: 0.0,
-                color: 0x1970C2,
+                color: 0x14556E,
                 intensity: 0.3,
             },
             DaylightPhase {
                 progress: 0.21,
-                color: 0xFFEAC0,
-                intensity: 0.8,
+                color: 0x6AA5A7,
+                intensity: 0.5,
             },
             DaylightPhase {
                 progress: 0.5,
@@ -102,12 +102,12 @@ impl Clock {
             },
             DaylightPhase {
                 progress: 0.83,
-                color: 0xFFEAC0,
-                intensity: 0.8,
+                color: 0x6AA5A7,
+                intensity: 0.5,
             },
             DaylightPhase {
                 progress: 1.0,
-                color: 0x1970C2,
+                color: 0x14556E,
                 intensity: 0.3,
             },
         ];

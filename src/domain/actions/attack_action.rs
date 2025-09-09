@@ -3,8 +3,8 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        BumpAttack, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MeleeWeapon, Player, Zone,
-        get_energy_cost,
+        BumpAttack, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink,
+        MeleeWeapon, Player, Zone, get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
@@ -61,12 +61,14 @@ impl Command for AttackAction {
                 // Calculate direction from attacker to target
                 let dx = self.target_pos.0 as f32 - attacker_pos.x;
                 let dy = self.target_pos.1 as f32 - attacker_pos.y;
-                
+
                 // Normalize direction
                 let length = (dx * dx + dy * dy).sqrt();
                 if length > 0.0 {
                     let direction = (dx / length, dy / length);
-                    world.entity_mut(self.attacker_entity).insert(BumpAttack::attacked(direction));
+                    world
+                        .entity_mut(self.attacker_entity)
+                        .insert(BumpAttack::attacked(direction));
                 }
             }
         }
@@ -100,7 +102,7 @@ impl Command for AttackAction {
         // Process attack on each target at position
         for &target_entity in targets.iter() {
             let mut should_apply_hit_blink = false;
-            
+
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if let Some((damage, can_damage)) = &weapon_damage
                     && can_damage.contains(&crate::domain::MaterialType::Flesh)
@@ -110,7 +112,9 @@ impl Command for AttackAction {
                     let is_dead = health.is_dead();
 
                     // Play hit audio for flesh target
-                    if let Some(audio_collection) = crate::domain::MaterialType::Flesh.hit_audio_collection() {
+                    if let Some(audio_collection) =
+                        crate::domain::MaterialType::Flesh.hit_audio_collection()
+                    {
                         world.resource_scope(|world, audio_registry: Mut<Audio>| {
                             if let Some(mut rand) = world.get_resource_mut::<Rand>() {
                                 audio_registry.play_random_from_collection(
@@ -124,10 +128,12 @@ impl Command for AttackAction {
 
                     if is_dead {
                         let position_data = world.get::<Position>(target_entity).map(|p| p.world());
-                        
+
                         if let Some(position_coords) = position_data {
                             // Play destroy audio for flesh target
-                            if let Some(audio_collection) = crate::domain::MaterialType::Flesh.destroy_audio_collection() {
+                            if let Some(audio_collection) =
+                                crate::domain::MaterialType::Flesh.destroy_audio_collection()
+                            {
                                 world.resource_scope(|world, audio_registry: Mut<Audio>| {
                                     if let Some(mut rand) = world.get_resource_mut::<Rand>() {
                                         audio_registry.play_random_from_collection(
@@ -187,7 +193,7 @@ impl Command for AttackAction {
                     }
                 }
             }
-            
+
             if should_apply_hit_blink {
                 apply_hit_blink(world, target_entity);
             }

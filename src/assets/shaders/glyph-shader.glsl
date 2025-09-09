@@ -94,12 +94,13 @@ void main() {
                     float dip = step(0.9, fract(time * 2.3));
                     combined *= (1.0 - dip * 0.6);
                     
-                    // Apply flicker amount
-                    float flicker_mod = mix(1.0, combined, light_flicker);
+                    // Apply flicker amount, scaled by ambient intensity
+                    float ambient_scaled_flicker = light_flicker * (1.0 - ambient_intensity * 0.7);
+                    float flicker_mod = mix(1.0, combined, ambient_scaled_flicker);
                     flickered_intensity *= flicker_mod;
                 }
                 
-                float dynamic_strength = (1.0 - ambient_intensity) * 0.4 + 0.4; // Range: 0.4 to 1.0
+                float dynamic_strength = (1.0 - ambient_intensity) * 0.6 + 0.2; // Range: 0.2 to 0.8
                 float effective_dynamic = flickered_intensity * dynamic_strength;
                 gl_FragColor.rgb = mix(gl_FragColor.rgb, dynamic_color, effective_dynamic);
             }
@@ -118,10 +119,11 @@ void main() {
                 float dip = step(0.9, fract(time * 2.3));
                 combined *= (1.0 - dip * 0.6);
                 
-                float flicker_mod = mix(1.0, combined, light_flicker);
+                float ambient_scaled_flicker = light_flicker * (1.0 - ambient_intensity * 0.7);
+                float flicker_mod = mix(1.0, combined, ambient_scaled_flicker);
                 final_dynamic_intensity *= flicker_mod;
             }
-            float darkness = (1.0 - max(ambient.w, final_dynamic_intensity)) * 0.5;
+            float darkness = (1.0 - max(ambient.w, final_dynamic_intensity)) * 0.2 * (1.0 - ambient_intensity * 0.6);
             gl_FragColor = mix(gl_FragColor, vec4(ambient_color, 1.0), darkness);
         }
     }

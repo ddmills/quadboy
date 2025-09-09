@@ -3,7 +3,8 @@ use macroquad::{miniquad::PassAction, prelude::*, telemetry};
 
 use crate::{
     cfg::{TEXEL_SIZE_F32, TILE_SIZE},
-    rendering::CrtShader,
+    engine::Time,
+    rendering::{AmbientTransition, CrtShader},
 };
 
 use super::{Layers, ScreenSize, create_render_target};
@@ -51,6 +52,8 @@ pub fn render_all(
     mut ren: ResMut<RenderTargets>,
     screen: Res<ScreenSize>,
     crt: Res<CrtShader>,
+    time: Res<Time>,
+    mut ambient_transition: ResMut<AmbientTransition>,
     lighting_data: Res<super::LightingData>,
 ) {
     telemetry::begin_zone("render_all");
@@ -66,13 +69,21 @@ pub fn render_all(
 
     clear_background(Color::from_hex(0x0E0505));
 
-    let time = get_time() as f32;
-    let ambient = lighting_data.get_ambient_vec4();
+    // Update ambient transition
+    ambient_transition.update(time.dt);
+
+    // Check if we need to start a new transition
+    let current_ambient = lighting_data.get_ambient_vec4();
+    ambient_transition.start_transition(current_ambient);
+
+    // Use interpolated ambient instead of direct value
+    let shader_time = get_time() as f32;
+    let ambient = ambient_transition.get_interpolated_ambient();
 
     start_pass(&ren.world);
     layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::World {
-            l.render(time, ambient);
+            l.render(shader_time, ambient);
         }
     });
     end_pass();
@@ -80,7 +91,7 @@ pub fn render_all(
     start_pass(&ren.screen);
     layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::Screen {
-            l.render(time, ambient);
+            l.render(shader_time, ambient);
         }
     });
     end_pass();

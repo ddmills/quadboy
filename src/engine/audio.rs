@@ -134,7 +134,10 @@ impl Audio {
             vec![AudioKey::Woodcut1, AudioKey::Woodcut2],
         );
         collections.insert(AudioCollection::Vegetation, vec![AudioKey::Vegetation]);
-        collections.insert(AudioCollection::Pain, vec![AudioKey::Pain1, AudioKey::Pain2]);
+        collections.insert(
+            AudioCollection::Pain,
+            vec![AudioKey::Pain1, AudioKey::Pain2],
+        );
 
         Self {
             ctx: Arc::clone(&ctx),

@@ -55,14 +55,14 @@ impl LightSource {
     }
 
     pub fn campfire() -> Self {
-        Self::new(0.9, 0xFFBB55, 6).with_flicker(0.8)
+        Self::new(0.9, 0xFF7A2E, 4).with_flicker(0.8)
     }
 
     pub fn lantern() -> Self {
-        Self::new(0.9, 0xFFCB90, 10).with_flicker(0.4)
+        Self::new(0.9, 0xFFC690, 6).with_flicker(0.4)
     }
 
     pub fn mushroom() -> Self {
-        Self::new(0.4, 0x93C7E5, 4)
+        Self::new(0.5, 0x7FA7E2, 4)
     }
 }

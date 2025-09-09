@@ -1,10 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::{
-    domain::HitBlink,
-    engine::Time,
-    rendering::Glyph,
-};
+use crate::{domain::HitBlink, engine::Time, rendering::Glyph};
 
 pub fn hit_blink_system(
     mut cmds: Commands,

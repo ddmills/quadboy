@@ -1,3 +1,4 @@
+mod ambient_transition;
 mod animated_glyph;
 mod camera;
 mod crt_material;
@@ -12,6 +13,7 @@ mod renderer;
 mod text;
 mod visibility;
 
+pub use ambient_transition::*;
 pub use animated_glyph::*;
 pub use camera::*;
 pub use crt_material::*;

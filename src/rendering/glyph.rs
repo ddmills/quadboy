@@ -185,7 +185,11 @@ impl Glyph {
             bg: self.bg.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
             fg1: self.fg1.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
             fg2: self.fg2.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
-            outline: self.outline_override.or(self.outline).map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
+            outline: self
+                .outline_override
+                .or(self.outline)
+                .map(|x| x.to_vec4_a(1.))
+                .unwrap_or(TRANSPARENT),
         }
     }
 }

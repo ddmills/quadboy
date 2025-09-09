@@ -1,5 +1,6 @@
 mod activatable;
 mod button;
+mod debug;
 mod dialog;
 mod focus;
 mod interaction;
@@ -9,6 +10,7 @@ mod list;
 
 pub use activatable::*;
 pub use button::*;
+pub use debug::*;
 pub use dialog::*;
 pub use focus::*;
 pub use interaction::*;
