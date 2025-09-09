@@ -86,15 +86,12 @@ void main() {
                     float flicker2 = sin(time * 7.7 + 1.0) * 0.5 + 0.5;
                     float flicker3 = sin(time * 4.3 + 2.0) * 0.5 + 0.5;
                     
-                    // Add position-based variation for more chaos
-                    float pos_noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
-                    
                     // Combine waves with different weights
                     float combined = flicker1 * 0.4 + flicker2 * 0.3 + flicker3 * 0.3;
                     combined = combined * 0.8 + 0.2; // Wider range (0.2 - 1.0) for more intensity
                     
                     // Add occasional dips - more frequent and deeper
-                    float dip = step(0.9, fract(time * 2.3 + pos_noise));
+                    float dip = step(0.9, fract(time * 2.3));
                     combined *= (1.0 - dip * 0.6);
                     
                     // Apply flicker amount
@@ -115,12 +112,10 @@ void main() {
                 float flicker2 = sin(time * 7.7 + 1.0) * 0.5 + 0.5;
                 float flicker3 = sin(time * 4.3 + 2.0) * 0.5 + 0.5;
                 
-                float pos_noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
-                
                 float combined = flicker1 * 0.4 + flicker2 * 0.3 + flicker3 * 0.3;
                 combined = combined * 0.8 + 0.2; // Wider range (0.2 - 1.0) for more intensity
                 
-                float dip = step(0.9, fract(time * 2.3 + pos_noise));
+                float dip = step(0.9, fract(time * 2.3));
                 combined *= (1.0 - dip * 0.6);
                 
                 float flicker_mod = mix(1.0, combined, light_flicker);
