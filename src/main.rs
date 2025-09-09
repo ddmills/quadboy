@@ -35,8 +35,8 @@ use crate::{
         CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin, CurrentAppState,
         CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin, InventoryStatePlugin,
         LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin, OverworldStatePlugin,
-        PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin, ShootStatePlugin,
-        update_app_states, update_game_states,
+        PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin, update_app_states,
+        update_game_states,
     },
     ui::{
         DialogState, ListContext, UiFocus, clear_mouse_capture_when_not_hovering,
@@ -126,7 +126,6 @@ async fn main() {
         .add_plugin(NewGameStatePlugin)
         .add_plugin(LoadGameStatePlugin)
         .add_plugin(ExploreStatePlugin)
-        .add_plugin(ShootStatePlugin)
         .add_plugin(DebugSpawnStatePlugin)
         .add_plugin(InventoryStatePlugin)
         .add_plugin(ContainerStatePlugin::new())

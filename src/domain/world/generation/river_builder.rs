@@ -92,18 +92,16 @@ impl RiverBuilder {
         let river_north = grouped.get(&RiverCategory::North).unwrap_or(&empty_north);
         let river_south = grouped.get(&RiverCategory::South).unwrap_or(&empty_south);
 
-        for north_river in river_north {
-            for south_river in river_south {
-                let river_type = north_river.river_type.min(south_river.river_type);
-                self.connect_river_points(
-                    north_river.pos,
-                    south_river.pos,
-                    river_type,
-                    locked_grid,
-                    zone_idx,
-                );
-                break; // Only connect first pair
-            }
+        // Only connect first pair if both exist
+        if let (Some(north_river), Some(south_river)) = (river_north.first(), river_south.first()) {
+            let river_type = north_river.river_type.min(south_river.river_type);
+            self.connect_river_points(
+                north_river.pos,
+                south_river.pos,
+                river_type,
+                locked_grid,
+                zone_idx,
+            );
         }
     }
 
@@ -118,18 +116,16 @@ impl RiverBuilder {
         let river_east = grouped.get(&RiverCategory::East).unwrap_or(&empty_east);
         let river_west = grouped.get(&RiverCategory::West).unwrap_or(&empty_west);
 
-        for east_river in river_east {
-            for west_river in river_west {
-                let river_type = east_river.river_type.min(west_river.river_type);
-                self.connect_river_points(
-                    east_river.pos,
-                    west_river.pos,
-                    river_type,
-                    locked_grid,
-                    zone_idx,
-                );
-                break; // Only connect first pair
-            }
+        // Only connect first pair if both exist
+        if let (Some(east_river), Some(west_river)) = (river_east.first(), river_west.first()) {
+            let river_type = east_river.river_type.min(west_river.river_type);
+            self.connect_river_points(
+                east_river.pos,
+                west_river.pos,
+                river_type,
+                locked_grid,
+                zone_idx,
+            );
         }
     }
 

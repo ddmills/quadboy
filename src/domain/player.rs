@@ -6,8 +6,8 @@ use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
         AttackAction, Collider, Energy, EquipmentSlots, GameSettings, Inventory,
-        InventoryAccessible, IsExplored, MoveAction, OpenContainerAction, StairDown, StairUp,
-        ToggleLightAction, TurnState, WaitAction, Zone,
+        InventoryAccessible, IsExplored, MoveAction, OpenContainerAction, ShootAction, StairDown,
+        StairUp, ToggleLightAction, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
@@ -75,6 +75,7 @@ pub fn player_input(
     settings: Res<GameSettings>,
     q_zone: Query<&Zone>,
     q_unexplored: Query<Entity, Without<IsExplored>>,
+    target_cycling: Option<Res<crate::states::TargetCycling>>,
 ) {
     let now = time.fixed_t;
     let mut rate = settings.input_delay;
@@ -95,7 +96,39 @@ pub fn player_input(
     }
 
     if keys.is_pressed(KeyCode::F) && turn_state.is_players_turn {
-        game_state.next = GameState::Shoot;
+        // Fire at selected target if one exists
+        if let Some(target_cycling) = target_cycling {
+            if let Some(selected_entity) = target_cycling.current_selected_entity {
+                // Check if player has a ranged weapon equipped
+                let has_ranged_weapon = if let Some(equipment) = equipment_slots {
+                    equipment
+                        .get_equipped_item(crate::domain::EquipmentSlot::MainHand)
+                        .is_some()
+                } else {
+                    false
+                };
+
+                if has_ranged_weapon {
+                    // Find the selected target's position
+                    if let Some((_entity, pos, _dist)) = target_cycling
+                        .targets
+                        .iter()
+                        .find(|(entity, _, _)| *entity == selected_entity)
+                    {
+                        let target_x = pos.0.floor() as usize;
+                        let target_y = pos.1.floor() as usize;
+                        let target_z = pos.2 as usize;
+
+                        // Execute shoot action
+                        cmds.queue(ShootAction {
+                            shooter_entity: player_entity,
+                            target_pos: (target_x, target_y, target_z),
+                        });
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     if keys.is_pressed(KeyCode::O) {

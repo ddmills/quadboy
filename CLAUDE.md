@@ -25,6 +25,7 @@ cargo run --release            # Build and run release
 cargo fmt                      # Format code
 cargo clippy                   # Run linter (configured via clippy.toml)
 cargo check                    # Quick compile check
+RUSTFLAGS=-Awarnings cargo check # Compile without all the extra warning output
 ```
 
 ## Architecture Overview
@@ -149,16 +150,8 @@ The game uses a command-based prefab system for entity spawning:
 
 ## Testing and Debugging
 
-### Debug Features
-- Press 'G' to spawn a wall at player position (for testing)
-- PlayerDebug component shows position info
-- FPS display can be toggled
-- CRT shader effects can be configured
-
 ### Common Issues
-- "NoEntities" panic usually means Player component isn't registered or saved
 - Borrow checker issues with World often need ParamSet or resource scoping
-- Zone loading issues can cause entities to disappear - always check zone status
 
 ## Performance Considerations
 - AI processes all turns immediately (not frame-by-frame)

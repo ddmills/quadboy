@@ -5,12 +5,13 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        IgnoreLighting, IsExplored, Label, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
-        StackCount, Zone, game_loop, handle_item_pickup, player_input, render_player_debug,
+        EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, IsExplored, Label, Player,
+        PlayerDebug, PlayerMovedEvent, PlayerPosition, StackCount, Zone, game_loop,
+        handle_item_pickup, player_input, render_player_debug,
     },
-    engine::{App, Clock, Mouse, Plugin, SerializableComponent},
+    engine::{App, Clock, KeyInput, Mouse, Plugin, SerializableComponent, StableIdRegistry},
     rendering::{
-        Glyph, Layer, LightingData, Position, Text, Visibility, world_to_zone_idx,
+        AnimatedGlyph, Glyph, Layer, LightingData, Position, Text, Visibility, world_to_zone_idx,
         world_to_zone_local,
     },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
@@ -26,6 +27,22 @@ struct ExploreCallbacks {
     open_debug_spawn: SystemId,
 }
 
+#[derive(Resource)]
+pub struct TargetCycling {
+    pub targets: Vec<(Entity, (f32, f32, f32), f32)>, // Entity, position, distance
+    pub current_index: Option<usize>,
+    pub current_selected_entity: Option<Entity>,
+}
+
+#[derive(Component)]
+struct TargetCrosshair;
+
+#[derive(Component)]
+struct TargetInfo;
+
+#[derive(Component)]
+struct TargetIndicator;
+
 pub struct ExploreStatePlugin;
 
 impl Plugin for ExploreStatePlugin {
@@ -38,6 +55,10 @@ impl Plugin for ExploreStatePlugin {
             .on_update(
                 app,
                 (
+                    collect_valid_targets,
+                    update_target_cycling,
+                    render_target_crosshair,
+                    render_target_info,
                     render_player_debug,
                     render_tick_display,
                     render_lighting_debug,
@@ -91,6 +112,47 @@ fn remove_explore_callbacks(mut cmds: Commands) {
 
 fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     trace!("EnterGameState::<Explore>");
+
+    // Initialize target cycling resource
+    cmds.insert_resource(TargetCycling {
+        targets: Vec::new(),
+        current_index: None,
+        current_selected_entity: None,
+    });
+
+    // Spawn target crosshair (hidden until target selected)
+    cmds.spawn((
+        AnimatedGlyph::new(vec![116, 117, 118, 119, 120], 12.0),
+        Glyph::new(88, Palette::Yellow, Palette::Yellow).layer(Layer::Overlay),
+        Position::new_f32(0., 0., 0.),
+        Visibility::Hidden,
+        IgnoreLighting,
+        TargetCrosshair,
+        CleanupStateExplore,
+    ));
+
+    // Spawn target info display
+    cmds.spawn((
+        Text::new("")
+            .fg1(Palette::White)
+            .bg(Palette::Black)
+            .layer(Layer::Overlay),
+        Position::new_f32(1., 1., 0.),
+        Visibility::Hidden,
+        TargetInfo,
+        IgnoreLighting,
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
+        AnimatedGlyph::new(vec![132, 133, 134, 135, 136], 12.0),
+        Glyph::new(94, Palette::Yellow, Palette::Black).layer(Layer::Overlay),
+        Position::new_f32(0., 0., 0.),
+        Visibility::Hidden,
+        IgnoreLighting,
+        TargetIndicator,
+        CleanupStateExplore,
+    ));
 
     cmds.spawn((
         Text::new("123").bg(Palette::Black),
@@ -345,4 +407,240 @@ fn render_lighting_debug(
         "{}\nAmbient: R:{:.2} G:{:.2} B:{:.2} I:{:.2} (#{:06X})",
         light_info, ambient_r, ambient_g, ambient_b, ambient_intensity, ambient_color
     );
+}
+
+fn collect_valid_targets(
+    mut target_cycling: ResMut<TargetCycling>,
+    q_player: Query<(&Position, Option<&EquipmentSlots>), With<Player>>,
+    q_health: Query<(Entity, &Position), With<Health>>,
+    q_zones: Query<&Zone>,
+    registry: Option<Res<StableIdRegistry>>,
+) {
+    let Ok((player_position, equipment_slots)) = q_player.single() else {
+        return;
+    };
+
+    // Get weapon range
+    let weapon_range =
+        if let (Some(equipment), Some(registry)) = (equipment_slots, registry.as_deref()) {
+            if let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand) {
+                if let Some(_weapon_entity) = registry.get_entity(weapon_id) {
+                    12 // Default range for now
+                } else {
+                    12
+                }
+            } else {
+                12
+            }
+        } else {
+            12
+        };
+
+    let player_world = player_position.world();
+    let player_zone_idx = world_to_zone_idx(player_world.0, player_world.1, player_world.2);
+    let mut targets = Vec::new();
+
+    // Find the player's zone
+    let player_zone = q_zones.iter().find(|z| z.idx == player_zone_idx);
+    if let Some(zone) = player_zone {
+        // Only check entities in the same zone as the player
+        for (entity, pos) in q_health.iter() {
+            let target_world = pos.world();
+            let target_zone_idx = world_to_zone_idx(target_world.0, target_world.1, target_world.2);
+
+            // Skip if not in the same zone
+            if target_zone_idx != player_zone_idx {
+                continue;
+            }
+
+            // Check if target is visible using Zone.visible grid
+            let (local_x, local_y) = world_to_zone_local(target_world.0, target_world.1);
+            if !*zone.visible.get(local_x, local_y).unwrap_or(&false) {
+                continue;
+            }
+
+            // Calculate distance (Manhattan distance)
+            let distance = ((target_world.0 as i32 - player_world.0 as i32).abs()
+                + (target_world.1 as i32 - player_world.1 as i32).abs())
+                as f32;
+
+            // Check if within weapon range
+            if distance <= weapon_range as f32 {
+                targets.push((
+                    entity,
+                    (
+                        target_world.0 as f32,
+                        target_world.1 as f32,
+                        target_world.2 as f32,
+                    ),
+                    distance,
+                ));
+            }
+        }
+    }
+
+    // Sort by distance
+    targets.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+
+    // Store previous selected entity for comparison
+    let prev_selected_entity = target_cycling.current_selected_entity;
+
+    // Update the resource
+    target_cycling.targets = targets;
+
+    // Try to maintain selection of the same entity, or auto-advance if it's gone
+    if let Some(prev_entity) = prev_selected_entity {
+        // Look for the previously selected entity in the new targets list
+        if let Some(new_idx) = target_cycling
+            .targets
+            .iter()
+            .position(|(entity, _, _)| *entity == prev_entity)
+        {
+            // Same entity found, update index
+            target_cycling.current_index = Some(new_idx);
+            target_cycling.current_selected_entity = Some(prev_entity);
+        } else {
+            // Previously selected entity is gone - auto-advance to next target
+            target_cycling.current_index = if target_cycling.targets.is_empty() {
+                None
+            } else {
+                Some(0) // Go to first (nearest) target
+            };
+            target_cycling.current_selected_entity =
+                target_cycling.targets.get(0).map(|(entity, _, _)| *entity);
+        }
+    } else {
+        // No previous selection - auto-select nearest target if available
+        if !target_cycling.targets.is_empty() {
+            target_cycling.current_index = Some(0);
+            target_cycling.current_selected_entity =
+                target_cycling.targets.get(0).map(|(entity, _, _)| *entity);
+        } else {
+            target_cycling.current_index = None;
+            target_cycling.current_selected_entity = None;
+        }
+    }
+}
+
+fn update_target_cycling(mut target_cycling: ResMut<TargetCycling>, keys: Res<KeyInput>) {
+    // Check for C key press to cycle targets
+    if keys.is_pressed(KeyCode::C) {
+        if !target_cycling.targets.is_empty() {
+            // Cycle to next target
+            target_cycling.current_index = match target_cycling.current_index {
+                None => Some(0), // Start at first (nearest) target
+                Some(idx) => Some((idx + 1) % target_cycling.targets.len()),
+            };
+
+            // Update selected entity
+            if let Some(idx) = target_cycling.current_index {
+                if let Some((entity, _, _)) = target_cycling.targets.get(idx) {
+                    target_cycling.current_selected_entity = Some(*entity);
+                }
+            }
+        }
+    }
+}
+
+fn render_target_crosshair(
+    target_cycling: Res<TargetCycling>,
+    mut q_crosshair: Query<(&mut Position, &mut Visibility), With<TargetCrosshair>>,
+) {
+    if let Ok((mut crosshair_pos, mut crosshair_visibility)) = q_crosshair.single_mut() {
+        if let Some(idx) = target_cycling.current_index {
+            if let Some((_entity, pos, _dist)) = target_cycling.targets.get(idx) {
+                crosshair_pos.x = pos.0.floor();
+                crosshair_pos.y = pos.1.floor();
+                crosshair_pos.z = pos.2.floor();
+                *crosshair_visibility = Visibility::Visible;
+            } else {
+                *crosshair_visibility = Visibility::Hidden;
+            }
+        } else {
+            *crosshair_visibility = Visibility::Hidden;
+        }
+    }
+}
+
+fn render_target_info(
+    target_cycling: Res<TargetCycling>,
+    q_zones: Query<&Zone>,
+    q_health: Query<&Health>,
+    q_names: Query<&Label>,
+    mut q_target_info: Query<(&mut Text, &mut Position, &mut Visibility), With<TargetInfo>>,
+    mut q_target_indicator: Query<
+        (&mut Position, &mut Visibility),
+        (With<TargetIndicator>, Without<TargetInfo>),
+    >,
+) {
+    let Ok((mut text, mut text_pos, mut text_visibility)) = q_target_info.single_mut() else {
+        return;
+    };
+
+    let Ok((mut indicator_pos, mut indicator_visibility)) = q_target_indicator.single_mut() else {
+        return;
+    };
+
+    if let Some(idx) = target_cycling.current_index {
+        if let Some((entity, pos, _dist)) = target_cycling.targets.get(idx) {
+            let target_x = pos.0.floor() as usize;
+            let target_y = pos.1.floor() as usize;
+            let target_z = pos.2 as usize;
+
+            let zone_idx = world_to_zone_idx(target_x, target_y, target_z);
+            let (local_x, local_y) = world_to_zone_local(target_x, target_y);
+
+            let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) else {
+                *text_visibility = Visibility::Hidden;
+                *indicator_visibility = Visibility::Hidden;
+                return;
+            };
+
+            let Some(entities) = zone.entities.get(local_x, local_y) else {
+                *text_visibility = Visibility::Hidden;
+                *indicator_visibility = Visibility::Hidden;
+                return;
+            };
+
+            // Find first valid target (entity with Health)
+            let mut target_name = None;
+            let mut target_health = None;
+
+            for entity_at_pos in entities {
+                if *entity_at_pos == *entity {
+                    if let Ok(health) = q_health.get(*entity) {
+                        target_health = Some(health);
+                        if let Ok(label) = q_names.get(*entity) {
+                            target_name = Some(label.get());
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if let (Some(name), Some(health)) = (target_name, target_health) {
+                // Show and update target info text
+                *text_visibility = Visibility::Visible;
+                text.value = format!("{} ({}/{})", name, health.current, health.max);
+                text_pos.x = pos.0.floor() + 1.;
+                text_pos.y = pos.1.floor();
+                text_pos.z = pos.2.floor();
+
+                // Show and position target indicator above the target
+                *indicator_visibility = Visibility::Visible;
+                indicator_pos.x = pos.0.floor();
+                indicator_pos.y = pos.1.floor() - 1.0;
+                indicator_pos.z = pos.2.floor();
+            } else {
+                *text_visibility = Visibility::Hidden;
+                *indicator_visibility = Visibility::Hidden;
+            }
+        } else {
+            *text_visibility = Visibility::Hidden;
+            *indicator_visibility = Visibility::Hidden;
+        }
+    } else {
+        *text_visibility = Visibility::Hidden;
+        *indicator_visibility = Visibility::Hidden;
+    }
 }
