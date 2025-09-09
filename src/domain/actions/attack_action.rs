@@ -3,17 +3,28 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, MeleeWeapon, Zone,
+        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MeleeWeapon, Zone,
         get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
-    rendering::Position,
+    rendering::{Glyph, Position},
 };
 
 pub struct AttackAction {
     pub attacker_entity: Entity,
     pub target_pos: (usize, usize, usize),
+}
+
+fn apply_hit_blink(world: &mut World, target_entity: Entity) {
+    if let Some(mut existing_hit_blink) = world.get_mut::<HitBlink>(target_entity) {
+        // Reset duration on existing hit blink
+        existing_hit_blink.duration_remaining = 0.05;
+    } else if world.get::<Glyph>(target_entity).is_some() {
+        // Create new hit blink
+        let hit_blink = HitBlink::attacked();
+        world.entity_mut(target_entity).insert(hit_blink);
+    }
 }
 
 impl Command for AttackAction {
@@ -72,11 +83,14 @@ impl Command for AttackAction {
 
         // Process attack on each target at position
         for &target_entity in targets.iter() {
+            let mut should_apply_hit_blink = false;
+            
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if let Some((damage, can_damage)) = &weapon_damage
                     && can_damage.contains(&crate::domain::MaterialType::Flesh)
                 {
                     health.take_damage(*damage);
+                    should_apply_hit_blink = true;
 
                     if health.is_dead()
                         && let Some(position) = world.get::<Position>(target_entity)
@@ -98,6 +112,7 @@ impl Command for AttackAction {
                 if can_damage.contains(&destructible.material_type) {
                     let material_type = destructible.material_type;
                     destructible.take_damage(*damage);
+                    should_apply_hit_blink = true;
                     let is_destroyed = destructible.is_destroyed();
 
                     // Play hit audio
@@ -126,6 +141,10 @@ impl Command for AttackAction {
                         }
                     }
                 }
+            }
+            
+            if should_apply_hit_blink {
+                apply_hit_blink(world, target_entity);
             }
         }
 

@@ -107,6 +107,7 @@ impl Text {
                     fg2: self.fg2,
                     bg: self.bg,
                     outline: self.outline,
+                    outline_override: None,
                     layer_id: self.layer_id,
                     texture_id: self.texture_id,
                     is_dormant: false,

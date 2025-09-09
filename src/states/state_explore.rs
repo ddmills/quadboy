@@ -607,15 +607,14 @@ fn render_target_info(
             let mut target_health = None;
 
             for entity_at_pos in entities {
-                if *entity_at_pos == *entity {
-                    if let Ok(health) = q_health.get(*entity) {
+                if *entity_at_pos == *entity
+                    && let Ok(health) = q_health.get(*entity) {
                         target_health = Some(health);
                         if let Ok(label) = q_names.get(*entity) {
                             target_name = Some(label.get());
                         }
                         break;
                     }
-                }
             }
 
             if let (Some(name), Some(health)) = (target_name, target_health) {

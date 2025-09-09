@@ -25,6 +25,7 @@ pub struct Glyph {
     pub fg2: Option<u32>,
     pub bg: Option<u32>,
     pub outline: Option<u32>,
+    pub outline_override: Option<u32>,
     pub scale: (f32, f32),
     pub layer_id: Layer,
     pub texture_id: GlyphTextureId,
@@ -77,6 +78,7 @@ impl Glyph {
             fg2: None,
             bg: None,
             outline: Some(Palette::Clear.into()),
+            outline_override: None,
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
@@ -91,6 +93,7 @@ impl Glyph {
             fg2: style.fg2.map(|x| x.into()),
             bg: style.bg.map(|x| x.into()),
             outline: style.outline.map(|x| x.into()),
+            outline_override: None,
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
@@ -105,6 +108,7 @@ impl Glyph {
             fg2: Some(fg2.into()),
             bg: None,
             outline: Some(Palette::Clear.into()),
+            outline_override: None,
             layer_id: Layer::default(),
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
@@ -177,7 +181,7 @@ impl Glyph {
             bg: self.bg.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
             fg1: self.fg1.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
             fg2: self.fg2.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
-            outline: self.outline.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
+            outline: self.outline_override.or(self.outline).map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
         }
     }
 }

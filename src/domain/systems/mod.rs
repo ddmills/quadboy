@@ -3,6 +3,7 @@ pub mod cleanup_system;
 pub mod destruction_system;
 pub mod energy_system;
 pub mod game_systems;
+pub mod hit_blink_system;
 pub mod inventory_system;
 pub mod lighting_system;
 pub mod loot_drop_system;

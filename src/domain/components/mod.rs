@@ -4,6 +4,7 @@ pub mod destructible;
 pub mod energy;
 pub mod equipment;
 pub mod health;
+pub mod hit_blink;
 pub mod in_active_zone;
 pub mod inventory;
 pub mod label;
@@ -20,6 +21,7 @@ pub use destructible::{Destructible, MaterialType};
 pub use energy::Energy;
 pub use equipment::{EquipmentSlot, EquipmentSlots, EquipmentType, Equippable, Equipped};
 pub use health::Health;
+pub use hit_blink::HitBlink;
 pub use in_active_zone::InActiveZone;
 pub use inventory::{
     InInventory, Inventory, InventoryAccessible, Item, StackCount, Stackable, StackableType,
