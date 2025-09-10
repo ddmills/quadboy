@@ -80,7 +80,7 @@ pub fn render_all(
     let shader_time = get_time() as f32;
     let ambient = ambient_transition.get_interpolated_ambient();
 
-    start_pass(&ren.world);
+    start_pass(&ren.world, ambient);
     layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::World {
             l.render(shader_time, ambient);
@@ -88,7 +88,7 @@ pub fn render_all(
     });
     end_pass();
 
-    start_pass(&ren.screen);
+    start_pass(&ren.screen, macroquad::prelude::Vec4::splat(0.0)); // Screen layers use transparent
     layers.iter_mut().for_each(|l| {
         if l.target_type == RenderTargetType::Screen {
             l.render(shader_time, ambient);
@@ -107,13 +107,7 @@ pub fn render_all(
 
     let x = (screen.width - target_size.x) as f32;
     let y = (screen.height - target_size.y) as f32;
-    draw_rectangle(
-        x,
-        y,
-        target_size.x as f32 * TEXEL_SIZE_F32,
-        target_size.y as f32 * TEXEL_SIZE_F32,
-        Color::from_vec(ambient),
-    );
+    // Background rectangle no longer needed - render target now clears to ambient color
 
     draw_texture_ex(
         &ren.world.texture,
@@ -144,13 +138,13 @@ pub fn render_all(
     telemetry::end_zone();
 }
 
-fn start_pass(target: &RenderTarget) {
+fn start_pass(target: &RenderTarget, clear_color: macroquad::prelude::Vec4) {
     let ctx = unsafe { get_internal_gl().quad_context };
 
-    // clear render target
+    // clear render target to ambient color
     ctx.begin_pass(
         Some(target.render_pass.raw_miniquad_id()),
-        PassAction::clear_color(0.0, 0.0, 0.0, 0.0),
+        PassAction::clear_color(clear_color.x, clear_color.y, clear_color.z, clear_color.w),
     );
     ctx.end_render_pass();
 

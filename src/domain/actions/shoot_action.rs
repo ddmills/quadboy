@@ -7,13 +7,22 @@ use crate::{
         RangedWeapon, Zone, get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
-    engine::{Audio, StableIdRegistry},
-    rendering::{Glyph, Position},
+    engine::{Audio, AudioKey, StableIdRegistry},
+    rendering::{Glyph, Position, VisualEffectId, spawn_visual_effect_world},
 };
 
 pub struct ShootAction {
     pub shooter_entity: Entity,
     pub target_pos: (usize, usize, usize),
+}
+
+fn determine_weapon_effect(audio_key: &AudioKey) -> VisualEffectId {
+    match audio_key {
+        AudioKey::RevolverShoot1 => VisualEffectId::PistolShot,
+        AudioKey::RifleShoot1 => VisualEffectId::RifleShot,
+        AudioKey::ShotgunShoot1 => VisualEffectId::ShotgunBlast,
+        _ => VisualEffectId::PistolShot, // Default fallback
+    }
 }
 
 fn apply_hit_blink(world: &mut World, target_entity: Entity) {
@@ -29,6 +38,10 @@ fn apply_hit_blink(world: &mut World, target_entity: Entity) {
 
 impl Command for ShootAction {
     fn apply(self, world: &mut World) {
+        let shooter_pos = world
+            .get::<Position>(self.shooter_entity)
+            .map(|p| p.world());
+
         // Get the equipped ranged weapon (if any)
         let weapon_data = {
             let Some(registry) = world.get_resource::<StableIdRegistry>() else {
@@ -66,9 +79,6 @@ impl Command for ShootAction {
         };
 
         // Check if target is within range
-        let shooter_pos = world
-            .get::<Position>(self.shooter_entity)
-            .map(|p| p.world());
         if let Some((sx, sy, _sz)) = shooter_pos {
             let distance = ((self.target_pos.0 as i32 - sx as i32).abs()
                 + (self.target_pos.1 as i32 - sy as i32).abs()) as usize;
@@ -106,6 +116,12 @@ impl Command for ShootAction {
         };
 
         audio.play(shoot_audio, 0.4);
+
+        // Spawn weapon-specific visual effect
+        if let Some(shooter_pos) = shooter_pos {
+            let effect_id = determine_weapon_effect(&shoot_audio);
+            spawn_visual_effect_world(world, effect_id, shooter_pos, Some(self.target_pos));
+        }
 
         if targets.is_empty() {
             // Consume energy even if no target hit (shot fired)

@@ -4,7 +4,8 @@
       "Bash(cargo clippy:*)",
       "Bash(cargo check:*)",
       "Bash(tree:*)",
-      "Read(/D:\\code\\quadboy\\src/**)"
+      "Read(/D:\\code\\quadboy\\src/**)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

@@ -176,9 +176,11 @@ pub fn spawn_debug_ui_entities(cmds: &mut Commands, cleanup_marker: impl Compone
     cmds.spawn((
         Glyph::new(0, Palette::Orange, Palette::Orange)
             .bg(Palette::Orange)
+            .alpha(0.1)
             .layer(Layer::GroundOverlay),
         Position::new_f32(0., 0., 0.),
         CursorGlyph,
+        IgnoreLighting,
         cleanup_marker.clone(),
     ));
 

@@ -113,6 +113,7 @@ impl Text {
                     texture_id: self.texture_id,
                     is_dormant: false,
                     scale: (1.0, 1.0),
+                    alpha: 1.0,
                 }])
             })
             .flatten()

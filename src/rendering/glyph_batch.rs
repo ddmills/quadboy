@@ -150,7 +150,14 @@ impl GlyphBatch {
                 VertexAttribute::with_buffer("in_ignore_lighting", VertexFormat::Float1, 1),
             ],
             shader,
-            Default::default(),
+            PipelineParams {
+                color_blend: Some(BlendState::new(
+                    Equation::Add,
+                    BlendFactor::Value(BlendValue::SourceAlpha), // Standard alpha blending
+                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                )),
+                ..Default::default()
+            },
         );
 
         let bindings = Bindings {

@@ -12,6 +12,7 @@ mod render_target;
 mod renderer;
 mod text;
 mod visibility;
+mod visual_effects;
 
 pub use ambient_transition::*;
 pub use animated_glyph::*;
@@ -27,3 +28,4 @@ pub use render_target::*;
 pub use renderer::*;
 pub use text::*;
 pub use visibility::*;
+pub use visual_effects::*;

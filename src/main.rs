@@ -7,8 +7,9 @@ use macroquad::{
 };
 use rendering::{
     AmbientTransition, AnimatedGlyph, GameCamera, Layers, LightingData, Position, RenderTargets,
-    ScreenSize, Text, render_all, render_glyphs, render_text, update_animated_glyphs,
-    update_crt_uniforms, update_screen_size,
+    ScreenSize, Text, render_all, render_glyphs, render_text,
+    update_animated_glyphs, update_crt_uniforms, update_screen_size,
+    update_particle_movement, update_particle_colors_and_lifetime, update_smoke_trails, update_smoke_spawn_timers, cleanup_smoke_trails,
 };
 use ui::UiLayout;
 
@@ -214,6 +215,11 @@ async fn main() {
             (
                 bump_attack_system,
                 hit_blink_system,
+                update_particle_movement,
+                update_particle_colors_and_lifetime,
+                update_smoke_trails,
+                update_smoke_spawn_timers,
+                cleanup_smoke_trails,
                 update_animated_glyphs,
                 render_glyphs,
                 render_text,

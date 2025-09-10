@@ -17,7 +17,11 @@ use serde::{Deserialize, Serialize};
 
 use super::{GameCamera, Layer, Layers, LightingData, Position, Renderable, ScreenSize};
 
-#[derive(Component, Default, Serialize, Deserialize, Clone, SerializableComponent)]
+fn default_alpha() -> f32 {
+    1.0
+}
+
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 #[require(Visibility)]
 pub struct Glyph {
     pub idx: usize,
@@ -31,6 +35,27 @@ pub struct Glyph {
     pub layer_id: Layer,
     pub texture_id: GlyphTextureId,
     pub is_dormant: bool,
+    #[serde(default = "default_alpha")]
+    pub alpha: f32,
+}
+
+impl Default for Glyph {
+    fn default() -> Self {
+        Self {
+            idx: 0,
+            fg1: None,
+            fg2: None,
+            bg: None,
+            outline: None,
+            outline_override: None,
+            position_offset: None,
+            scale: (1.0, 1.0),
+            layer_id: Layer::Overlay,
+            texture_id: GlyphTextureId::Cowboy,
+            is_dormant: false,
+            alpha: 1.0,
+        }
+    }
 }
 
 #[derive(Resource)]
@@ -85,6 +110,7 @@ impl Glyph {
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
             scale: (1., 1.),
+            alpha: 1.0,
         }
     }
 
@@ -101,6 +127,7 @@ impl Glyph {
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
             scale: (1., 1.),
+            alpha: 1.0,
         }
     }
 
@@ -117,6 +144,7 @@ impl Glyph {
             texture_id: GlyphTextureId::Cowboy,
             is_dormant: false,
             scale: (1., 1.),
+            alpha: 1.0,
         }
     }
 
@@ -165,30 +193,35 @@ impl Glyph {
         self
     }
 
+    pub fn alpha(mut self, value: f32) -> Self {
+        self.alpha = value;
+        self
+    }
+
     pub fn get_style(&self) -> GlyphStyle {
         if self.is_dormant {
             return GlyphStyle {
                 bg: self
                     .bg
-                    .map(|_| SHROUD_BG_COLOR.to_vec4_a(1.0))
+                    .map(|_| SHROUD_BG_COLOR.to_vec4_a(self.alpha))
                     .unwrap_or(TRANSPARENT),
-                fg1: SHROUD_FG_COLOR.to_vec4_a(1.),
-                fg2: SHROUD_FG_COLOR.to_vec4_a(1.),
+                fg1: SHROUD_FG_COLOR.to_vec4_a(self.alpha),
+                fg2: SHROUD_FG_COLOR.to_vec4_a(self.alpha),
                 outline: self
                     .outline
-                    .map(|_| SHROUD_OUTLINE_COLOR.to_vec4_a(1.))
+                    .map(|_| SHROUD_OUTLINE_COLOR.to_vec4_a(self.alpha))
                     .unwrap_or(TRANSPARENT),
             };
         }
 
         GlyphStyle {
-            bg: self.bg.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
-            fg1: self.fg1.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
-            fg2: self.fg2.map(|x| x.to_vec4_a(1.)).unwrap_or(TRANSPARENT),
+            bg: self.bg.map(|x| x.to_vec4_a(self.alpha)).unwrap_or(TRANSPARENT),
+            fg1: self.fg1.map(|x| x.to_vec4_a(self.alpha)).unwrap_or(TRANSPARENT),
+            fg2: self.fg2.map(|x| x.to_vec4_a(self.alpha)).unwrap_or(TRANSPARENT),
             outline: self
                 .outline_override
                 .or(self.outline)
-                .map(|x| x.to_vec4_a(1.))
+                .map(|x| x.to_vec4_a(self.alpha))
                 .unwrap_or(TRANSPARENT),
         }
     }
