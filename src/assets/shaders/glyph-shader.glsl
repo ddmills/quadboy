@@ -63,8 +63,11 @@ void main() {
         apply_lighting = false;
     }
 
-    if (gl_FragColor.a == 0.0) {
-        discard;
+    // Alpha blending now handled by render pipeline - no premultiplication needed
+
+    if (gl_FragColor.a == 0.0 || ignore_lighting > 0.5) {
+        apply_lighting = false;
+        // discard;
     }
 
     if (apply_lighting) {
@@ -127,4 +130,5 @@ void main() {
             gl_FragColor = mix(gl_FragColor, vec4(ambient_color, 1.0), darkness);
         }
     }
+
 }
