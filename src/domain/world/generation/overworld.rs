@@ -4,7 +4,7 @@ use bevy_ecs::resource::Resource;
 
 use crate::{
     cfg::SURFACE_LEVEL_Z,
-    common::{Direction, Perlin},
+    common::Perlin,
     domain::{
         BiomeType, OverworldRiverGenerator, OverworldRoadGenerator, OverworldTownGenerator,
         ZoneContinuity, get_zone_constraints,
@@ -72,7 +72,6 @@ impl RiverType {
 #[derive(Clone, Debug)]
 pub struct RoadSegment {
     pub road_type: RoadType,
-    pub length: f32,
 }
 
 #[derive(Default, Clone)]
@@ -90,7 +89,6 @@ impl RoadNetwork {
 #[derive(Clone, Debug)]
 pub struct RiverSegment {
     pub river_type: RiverType,
-    pub flow_direction: Direction,
     pub depth: f32,
 }
 

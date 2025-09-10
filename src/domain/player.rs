@@ -97,8 +97,8 @@ pub fn player_input(
 
     if keys.is_pressed(KeyCode::F) && turn_state.is_players_turn {
         // Fire at selected target if one exists
-        if let Some(target_cycling) = target_cycling {
-            if let Some(selected_entity) = target_cycling.current_selected_entity {
+        if let Some(target_cycling) = target_cycling
+            && let Some(selected_entity) = target_cycling.current_selected_entity {
                 // Check if player has a ranged weapon equipped
                 let has_ranged_weapon = if let Some(equipment) = equipment_slots {
                     equipment
@@ -128,7 +128,6 @@ pub fn player_input(
                     }
                 }
             }
-        }
     }
 
     if keys.is_pressed(KeyCode::O) {

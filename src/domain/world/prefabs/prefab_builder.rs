@@ -3,7 +3,7 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
-        Equippable, Health, HideWhenNotVisible, IgnoreLighting, Inventory, InventoryAccessible,
+        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible,
         Item, Label, LightBlocker, LightSource, Lightable, LootDrop, MaterialType, MeleeWeapon,
         NeedsStableId, RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown,
         StairUp, VisionBlocker,
@@ -185,10 +185,6 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
-    pub fn with_ignore_lighting(self) -> Self {
-        self.world.entity_mut(self.entity).insert(IgnoreLighting);
-        self
-    }
 
     pub fn with_lightable(self) -> Self {
         self.world.entity_mut(self.entity).insert(Lightable::new());

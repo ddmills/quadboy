@@ -35,10 +35,6 @@ impl ItemDialogButton {
         self
     }
 
-    pub fn with_audio(mut self, audio_key: AudioKey) -> Self {
-        self.audio_key = Some(audio_key);
-        self
-    }
 
     pub fn with_focus_order(mut self, focus_order: i32) -> Self {
         self.focus_order = focus_order;

@@ -25,9 +25,6 @@ impl ZoneGridData {
         }
     }
 
-    pub fn lock_tile(&mut self, x: usize, y: usize) {
-        self.locked.set(x, y, true);
-    }
 
     pub fn set_terrain(&mut self, x: usize, y: usize, terrain: Terrain) {
         self.terrain.set(x, y, terrain);

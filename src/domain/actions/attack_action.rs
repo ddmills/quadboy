@@ -56,8 +56,8 @@ impl Command for AttackAction {
         };
 
         // Apply bump attack effect if attacker is a player
-        if world.get::<Player>(self.attacker_entity).is_some() {
-            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+        if world.get::<Player>(self.attacker_entity).is_some()
+            && let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
                 // Calculate direction from attacker to target
                 let dx = self.target_pos.0 as f32 - attacker_pos.x;
                 let dy = self.target_pos.1 as f32 - attacker_pos.y;
@@ -71,7 +71,6 @@ impl Command for AttackAction {
                         .insert(BumpAttack::attacked(direction));
                 }
             }
-        }
 
         // Find target at position
         let targets = {

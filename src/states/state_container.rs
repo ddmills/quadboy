@@ -20,8 +20,6 @@ use crate::{
 #[derive(Resource)]
 pub struct ContainerCallbacks {
     pub select_item: SystemId,
-    pub transfer_from_player: SystemId,
-    pub transfer_from_container: SystemId,
     pub examine_item: SystemId,
     pub close_dialog: SystemId,
     pub back_to_explore: SystemId,
@@ -92,8 +90,6 @@ impl Plugin for ContainerStatePlugin {
 fn setup_container_callbacks(world: &mut World) {
     let callbacks = ContainerCallbacks {
         select_item: world.register_system(select_item),
-        transfer_from_player: world.register_system(transfer_item_from_player),
-        transfer_from_container: world.register_system(transfer_item_from_container),
         examine_item: world.register_system(examine_selected_item),
         close_dialog: world.register_system(close_dialog),
         back_to_explore: world.register_system(back_to_explore),

@@ -108,9 +108,9 @@ pub fn update_lighting_system(
         }
 
         for slot_id in equipment_slots.slots.values().filter_map(|&id| id) {
-            if let Some(item_entity) = registry.get_entity(slot_id) {
-                if let Ok(light) = q_equipped_lights.get(item_entity) {
-                    if light.is_enabled {
+            if let Some(item_entity) = registry.get_entity(slot_id)
+                && let Ok(light) = q_equipped_lights.get(item_entity)
+                    && light.is_enabled {
                         apply_light_source(
                             owner_pos,
                             light,
@@ -119,8 +119,6 @@ pub fn update_lighting_system(
                             &mut all_fragments,
                         );
                     }
-                }
-            }
         }
     }
 

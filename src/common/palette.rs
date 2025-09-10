@@ -1,7 +1,7 @@
 use macroquad::math::Vec4;
 
 use crate::{
-    common::cp437_idx,
+    common::{color::MacroquadColorable, cp437_idx},
     rendering::{Glyph, Text},
 };
 
@@ -31,57 +31,9 @@ pub enum Palette {
     Clear = 0xFFFF00,
 }
 
-#[allow(dead_code)]
-pub fn hex(r: u8, g: u8, b: u8) -> u32 {
-    ((r as u32) << 16) + ((g as u32) << 8) + (b as u32)
-}
-
-#[allow(dead_code)]
-pub trait MacroquadColorable {
-    fn to_macroquad_color(&self) -> macroquad::prelude::Color;
-    fn to_macroquad_color_a(&self, a: f32) -> macroquad::prelude::Color;
-    fn to_rgba(&self, a: f32) -> [f32; 4];
-    fn to_vec4_a(&self, a: f32) -> Vec4;
-}
-
 impl From<Palette> for macroquad::prelude::Color {
     fn from(value: Palette) -> Self {
         value.to_macroquad_color()
-    }
-}
-
-impl MacroquadColorable for u32 {
-    fn to_macroquad_color(&self) -> macroquad::prelude::Color {
-        let b = (self & 0xff) as u8;
-        let g = ((self >> 8) & 0xff) as u8;
-        let r = ((self >> 16) & 0xff) as u8;
-
-        macroquad::prelude::Color::from_rgba(r, g, b, 255)
-    }
-
-    #[inline]
-    fn to_macroquad_color_a(&self, a: f32) -> macroquad::prelude::Color {
-        self.to_macroquad_color().with_alpha(a)
-    }
-
-    #[inline]
-    fn to_rgba(&self, a: f32) -> [f32; 4] {
-        [
-            ((self >> 16) & 0xff) as f32 / 255.,
-            ((self >> 8) & 0xff) as f32 / 255.,
-            (self & 0xff) as f32 / 255.,
-            a,
-        ]
-    }
-
-    #[inline]
-    fn to_vec4_a(&self, a: f32) -> Vec4 {
-        Vec4::new(
-            ((self >> 16) & 0xff) as f32 / 255.,
-            ((self >> 8) & 0xff) as f32 / 255.,
-            (self & 0xff) as f32 / 255.,
-            a,
-        )
     }
 }
 

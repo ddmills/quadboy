@@ -9,15 +9,13 @@ pub enum DestructionCause {
 pub struct EntityDestroyedEvent {
     pub entity: Entity,
     pub position: (usize, usize, usize),
-    pub cause: DestructionCause,
 }
 
 impl EntityDestroyedEvent {
-    pub fn new(entity: Entity, position: (usize, usize, usize), cause: DestructionCause) -> Self {
+    pub fn new(entity: Entity, position: (usize, usize, usize), _cause: DestructionCause) -> Self {
         Self {
             entity,
             position,
-            cause,
         }
     }
 }

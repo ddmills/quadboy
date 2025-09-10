@@ -380,7 +380,7 @@ fn setup_inventory_screen(
 
     let mut list_items = Vec::new();
 
-    for (_i, &item_id) in inventory.item_ids.iter().enumerate() {
+    for &item_id in inventory.item_ids.iter() {
         if let Some(item_entity) = id_registry.get_entity(item_id) {
             let text = if let Ok(label) = q_labels.get(item_entity) {
                 label.get().to_string()

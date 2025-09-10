@@ -1,4 +1,3 @@
-use std::f32::consts::PI;
 
 use bevy_ecs::prelude::*;
 use macroquad::math::Vec3;
@@ -76,10 +75,6 @@ impl Clock {
         self.get_minute_of_day() as f32 / 1440.0
     }
 
-    pub fn get_light_amount(&self) -> f32 {
-        let progress = self.get_day_progress();
-        1.0 - ((f32::cos(2.0 * PI * progress) + 1.0) / 2.0).powf(2.0)
-    }
 
     pub fn get_daylight(&self) -> DaylightInfo {
         let progress = self.get_day_progress();

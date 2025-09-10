@@ -17,18 +17,6 @@ impl Activatable {
         ActivatableBuilder::new(&label.into(), callback).as_button(Layer::Ui)
     }
 
-    pub fn layer(self, layer: Layer) -> Activatable {
-        // If this is already a button, recreate with new layer
-        if let Some((label, _)) = self.as_button() {
-            ActivatableBuilder::new(label, self.callback())
-                .with_hotkeys(self.hotkeys())
-                .with_audio(self.audio_key().unwrap_or(AudioKey::Button1))
-                .as_button(layer)
-        } else {
-            // If not a button, just return self (shouldn't happen in normal use)
-            self
-        }
-    }
 
     pub fn hotkey(self, key: KeyCode) -> Activatable {
         match self {

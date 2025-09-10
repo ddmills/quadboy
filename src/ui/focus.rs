@@ -20,10 +20,6 @@ impl UiFocus {
         self.focus_type = focus_type;
     }
 
-    pub fn clear_focus(&mut self) {
-        self.focused_element = None;
-        self.focus_type = FocusType::None;
-    }
 
     pub fn has_focus(&self, element: Entity) -> bool {
         self.focused_element == Some(element)
@@ -63,15 +59,6 @@ impl Focusable {
         self
     }
 
-    pub fn with_tab_focus(mut self, can_tab: bool) -> Self {
-        self.can_tab_focus = can_tab;
-        self
-    }
-
-    pub fn no_tab(mut self) -> Self {
-        self.can_tab_focus = false;
-        self
-    }
 }
 
 /// System that updates Interaction components based on focus state
@@ -172,8 +159,8 @@ pub fn tab_navigation(
 
     // Check if we're at a scrollable list boundary and should stop navigation
     // Only apply boundary stopping if this is NOT a fresh press
-    if !is_fresh_press && let Some(current_focused) = ui_focus.focused_element {
-        if let Ok(current_item) = q_list_items.get(current_focused) {
+    if !is_fresh_press && let Some(current_focused) = ui_focus.focused_element
+        && let Ok(current_item) = q_list_items.get(current_focused) {
             // Check if we're leaving the current list
             let leaving_list = q_list_items
                 .get(next_entity)
@@ -182,8 +169,8 @@ pub fn tab_navigation(
 
             if leaving_list {
                 // Only stop at boundaries for scrollable lists (those with height constraint)
-                if let Ok(list) = q_lists.get(current_item.parent_list) {
-                    if list.height.is_some() {
+                if let Ok(list) = q_lists.get(current_item.parent_list)
+                    && list.height.is_some() {
                         let at_top = current_item.index == 0 && reverse;
                         let at_bottom = current_item.index == list.items.len() - 1 && !reverse;
 
@@ -192,10 +179,8 @@ pub fn tab_navigation(
                             return; // Don't navigate this frame
                         }
                     }
-                }
             }
         }
-    }
 
     // Only now check input rate timing after boundary checks
     if !input_rate.try_key(KeyCode::Tab, now, rate, delay) {
@@ -205,11 +190,10 @@ pub fn tab_navigation(
     ui_focus.set_focus(next_entity, FocusType::Keyboard);
 
     // Check if focused entity is a list item and ensure it's visible
-    if let Ok(list_item) = q_list_items.get(next_entity) {
-        if let Ok(mut list) = q_lists.get_mut(list_item.parent_list) {
+    if let Ok(list_item) = q_list_items.get(next_entity)
+        && let Ok(mut list) = q_lists.get_mut(list_item.parent_list) {
             list.ensure_item_visible(list_item.index);
         }
-    }
 }
 
 /// System that updates focus when elements are hovered with mouse

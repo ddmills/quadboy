@@ -112,7 +112,6 @@ impl OverworldRoadGenerator {
 
             let segment = RoadSegment {
                 road_type,
-                length: 1.0, // Distance between adjacent zones is always 1
             };
 
             network.edges.insert((from, to), segment.clone());

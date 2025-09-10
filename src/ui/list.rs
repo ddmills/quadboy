@@ -113,10 +113,6 @@ impl List {
         }
     }
 
-    pub fn width(mut self, width: f32) -> Self {
-        self.width = width;
-        self
-    }
 
     pub fn with_focus_order(mut self, focus_order: i32) -> Self {
         self.focus_order = Some(focus_order);

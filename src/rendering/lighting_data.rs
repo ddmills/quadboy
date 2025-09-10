@@ -11,17 +11,6 @@ pub struct LightValue {
 }
 
 impl LightValue {
-    pub fn new(color: u32, intensity: f32) -> Self {
-        let r = ((color >> 16) & 0xFF) as f32 / 255.0;
-        let g = ((color >> 8) & 0xFF) as f32 / 255.0;
-        let b = (color & 0xFF) as f32 / 255.0;
-
-        Self {
-            rgb: Vec3::new(r, g, b),
-            intensity,
-            flicker: 0.,
-        }
-    }
 }
 
 #[derive(Resource)]

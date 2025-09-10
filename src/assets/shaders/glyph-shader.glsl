@@ -55,7 +55,7 @@ void main() {
     } else if (v.r == 1.0 && v.g == 0.0 && v.b == 0.0 && outline.a > 0.0) { // Red (Outline)
         gl_FragColor = outline;
     } else { // debug
-        gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+        // gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
     }
 
     if (gl_FragColor.r == 1.0 && gl_FragColor.g == 1.0 && gl_FragColor.b == 0.0) { // Clear color

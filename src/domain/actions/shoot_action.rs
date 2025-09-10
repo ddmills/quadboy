@@ -207,8 +207,8 @@ impl Command for ShootAction {
                     }
 
                     // Check if target was destroyed
-                    if is_destroyed {
-                        if let Some(position) = world.get::<Position>(target_entity) {
+                    if is_destroyed
+                        && let Some(position) = world.get::<Position>(target_entity) {
                             let event = EntityDestroyedEvent::new(
                                 target_entity,
                                 position.world(),
@@ -216,7 +216,6 @@ impl Command for ShootAction {
                             );
                             world.send_event(event);
                         }
-                    }
                 }
             }
 

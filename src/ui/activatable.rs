@@ -54,12 +54,6 @@ pub enum Activatable {
 }
 
 impl Activatable {
-    /// Get the label text for this element
-    pub fn label(&self) -> &str {
-        match self {
-            Self::Button { label, .. } | Self::ListItem { label, .. } => label,
-        }
-    }
 
     /// Get the callback SystemId for this element
     pub fn callback(&self) -> SystemId {
@@ -126,13 +120,6 @@ impl Activatable {
         }
     }
 
-    /// Get the context data for list items
-    pub fn context_data(&self) -> Option<u64> {
-        match self {
-            Self::ListItem { context_data, .. } => *context_data,
-            _ => None,
-        }
-    }
 
     /// Get button-specific data if this is a button
     pub fn as_button(&self) -> Option<(&str, Layer)> {
@@ -142,31 +129,7 @@ impl Activatable {
         }
     }
 
-    /// Get list item-specific data if this is a list item
-    pub fn as_list_item(&self) -> Option<(&str, usize, Entity, Option<u64>)> {
-        match self {
-            Self::ListItem {
-                label,
-                index,
-                parent_list,
-                context_data,
-                ..
-            } => Some((label, *index, *parent_list, *context_data)),
-            _ => None,
-        }
-    }
 
-    /// Generate a display string for the hotkeys (for UI display)
-    pub fn hotkey_display(&self) -> String {
-        match self.hotkeys() {
-            [] => String::new(),
-            [single] => format!("{:?}", single),
-            multiple => {
-                let keys: Vec<String> = multiple.iter().map(|k| format!("{:?}", k)).collect();
-                keys.join(" or ")
-            }
-        }
-    }
 
     /// Set the label for this element (mutable operation)
     pub fn set_label(&mut self, new_label: String) {
@@ -211,11 +174,6 @@ impl ActivatableBuilder {
         self
     }
 
-    /// Add multiple hotkeys
-    pub fn with_hotkeys(mut self, keys: &[KeyCode]) -> Self {
-        self.hotkeys.extend_from_slice(keys);
-        self
-    }
 
     /// Set custom audio key
     pub fn with_audio(mut self, key: AudioKey) -> Self {
@@ -223,23 +181,8 @@ impl ActivatableBuilder {
         self
     }
 
-    /// Set custom hover color
-    pub fn with_hover_color(mut self, color: u32) -> Self {
-        self.hover_color = Some(color);
-        self
-    }
 
-    /// Set custom pressed color
-    pub fn with_pressed_color(mut self, color: u32) -> Self {
-        self.pressed_color = Some(color);
-        self
-    }
 
-    /// Set custom normal color
-    pub fn with_normal_color(mut self, color: u32) -> Self {
-        self.normal_color = Some(color);
-        self
-    }
 
     /// Set focus order for tab navigation
     /// Use spaced values like 1000, 2000, 3000 to allow for insertion

@@ -82,9 +82,6 @@ impl ZoneFactory {
         self.grid_data.push_entity(x, y, config);
     }
 
-    pub fn lock_tile(&mut self, x: usize, y: usize) {
-        self.grid_data.lock_tile(x, y);
-    }
 
     pub fn set_terrain(&mut self, x: usize, y: usize, terrain: Terrain) {
         self.grid_data.set_terrain(x, y, terrain);

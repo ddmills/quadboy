@@ -172,14 +172,14 @@ pub fn collect_valid_targets(
                 Some(0) // Go to first (nearest) target
             };
             target_cycling.current_selected_entity =
-                target_cycling.targets.get(0).map(|(entity, _, _)| *entity);
+                target_cycling.targets.first().map(|(entity, _, _)| *entity);
         }
     } else {
         // No previous selection - auto-select nearest target if available
         if !target_cycling.targets.is_empty() {
             target_cycling.current_index = Some(0);
             target_cycling.current_selected_entity =
-                target_cycling.targets.get(0).map(|(entity, _, _)| *entity);
+                target_cycling.targets.first().map(|(entity, _, _)| *entity);
         } else {
             target_cycling.current_index = None;
             target_cycling.current_selected_entity = None;
@@ -189,8 +189,8 @@ pub fn collect_valid_targets(
 
 pub fn update_target_cycling(mut target_cycling: ResMut<TargetCycling>, keys: Res<KeyInput>) {
     // Check for C key press to cycle targets
-    if keys.is_pressed(KeyCode::C) {
-        if !target_cycling.targets.is_empty() {
+    if keys.is_pressed(KeyCode::C)
+        && !target_cycling.targets.is_empty() {
             // Cycle to next target
             target_cycling.current_index = match target_cycling.current_index {
                 None => Some(0), // Start at first (nearest) target
@@ -198,15 +198,12 @@ pub fn update_target_cycling(mut target_cycling: ResMut<TargetCycling>, keys: Re
             };
 
             // Update selected entity
-            if let Some(idx) = target_cycling.current_index {
-                if let Some((entity, _, _)) = target_cycling.targets.get(idx) {
+            if let Some(idx) = target_cycling.current_index
+                && let Some((entity, _, _)) = target_cycling.targets.get(idx) {
                     target_cycling.current_selected_entity = Some(*entity);
                 }
-            }
         }
-    }
 }
-
 pub fn render_target_crosshair(
     target_cycling: Res<TargetCycling>,
     mut q_crosshair: Query<(&mut Position, &mut Visibility), With<TargetCrosshair>>,
@@ -272,15 +269,14 @@ pub fn render_target_info(
             let mut target_health = None;
 
             for entity_at_pos in entities {
-                if *entity_at_pos == *entity {
-                    if let Ok(health) = q_health.get(*entity) {
+                if *entity_at_pos == *entity
+                    && let Ok(health) = q_health.get(*entity) {
                         target_health = Some(health);
                         if let Ok(label) = q_names.get(*entity) {
                             target_name = Some(label.get());
                         }
                         break;
                     }
-                }
             }
 
             if let (Some(name), Some(health)) = (target_name, target_health) {

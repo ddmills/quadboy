@@ -322,13 +322,12 @@ impl OverworldRiverGenerator {
             {
                 let from = current_zone_idx;
                 let to = zone_idx(next_x as usize, next_y as usize, z);
-                let direction = Self::get_direction(x, y, next_x, next_y);
+                let _direction = Self::get_direction(x, y, next_x, next_y);
 
                 network.edges.insert(
                     (from, to),
                     RiverSegment {
                         river_type,
-                        flow_direction: direction,
                         depth: Self::calculate_depth(river_type),
                     },
                 );
@@ -421,7 +420,6 @@ impl OverworldRiverGenerator {
                         (from, to),
                         RiverSegment {
                             river_type,
-                            flow_direction: direction.clone(),
                             depth: Self::calculate_depth(river_type),
                         },
                     );

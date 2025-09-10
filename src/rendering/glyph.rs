@@ -3,7 +3,7 @@ use crate::engine::SerializableComponent;
 use crate::rendering::{LightValue, world_to_zone_local};
 use crate::{
     cfg::TILE_SIZE_F32,
-    common::{MacroquadColorable, Palette},
+    common::{MacroquadColorable, Palette, dim_and_desaturate_color},
     domain::{
         ApplyVisibilityEffects, HideWhenNotVisible, IgnoreLighting, IsExplored, IsVisible, Player,
         ZoneStatus,
@@ -215,9 +215,18 @@ impl Glyph {
         }
 
         GlyphStyle {
-            bg: self.bg.map(|x| x.to_vec4_a(self.alpha)).unwrap_or(TRANSPARENT),
-            fg1: self.fg1.map(|x| x.to_vec4_a(self.alpha)).unwrap_or(TRANSPARENT),
-            fg2: self.fg2.map(|x| x.to_vec4_a(self.alpha)).unwrap_or(TRANSPARENT),
+            bg: self
+                .bg
+                .map(|x| x.to_vec4_a(self.alpha))
+                .unwrap_or(TRANSPARENT),
+            fg1: self
+                .fg1
+                .map(|x| x.to_vec4_a(self.alpha))
+                .unwrap_or(TRANSPARENT),
+            fg2: self
+                .fg2
+                .map(|x| x.to_vec4_a(self.alpha))
+                .unwrap_or(TRANSPARENT),
             outline: self
                 .outline_override
                 .or(self.outline)
@@ -229,24 +238,6 @@ impl Glyph {
 
 /// Apply dimming and desaturation effect to glyph style when dialog is open
 fn dim_glyph_style(style: GlyphStyle) -> GlyphStyle {
-    fn dim_and_desaturate_color(color: Vec4, dim_factor: f32, desat_factor: f32) -> Vec4 {
-        // Calculate luminance (grayscale value)
-        let luminance = 0.299 * color.x + 0.587 * color.y + 0.114 * color.z;
-
-        // Mix original color with grayscale (desaturate)
-        let desaturated_r = color.x * (1.0 - desat_factor) + luminance * desat_factor;
-        let desaturated_g = color.y * (1.0 - desat_factor) + luminance * desat_factor;
-        let desaturated_b = color.z * (1.0 - desat_factor) + luminance * desat_factor;
-
-        // Apply dimming to the desaturated color
-        Vec4::new(
-            desaturated_r * dim_factor,
-            desaturated_g * dim_factor,
-            desaturated_b * dim_factor,
-            color.w,
-        )
-    }
-
     const DESATURATION_FACTOR: f32 = 0.9;
 
     GlyphStyle {
