@@ -139,7 +139,7 @@ fn spawn_delayed_blood_impact(
 ) {
     ParticleSpawner::new(impact_pos)
         .glyph_animation(GlyphAnimation::RandomPool {
-            glyphs: vec!['*', '•', '○'],
+            glyphs: vec!['*', '•', '·', '○'],
             change_rate: Some(5.0),
             last_change: 0.0,
         })
@@ -172,12 +172,12 @@ pub fn spawn_material_hit(
     world: &mut World,
     position: Vec2,
     material: MaterialType,
-    tool_force: f32,
+    direction: Vec2,
 ) {
-    let (spark_color, spark_count, spark_glyphs) = match material {
-        MaterialType::Stone => (0xA3A3A3, 5, vec!['♥', '♠', '○', '♦', '♦']),
-        MaterialType::Wood => (0xCC8D06, 4, vec!['├', '┐', '┤']),
-        MaterialType::Flesh => (0xFF4444, 2, vec!['*']),
+    let (spark_color, spark_count, spark_glyphs, base_speed, spread_angle) = match material {
+        MaterialType::Stone => (0xDEE4E4, 5, vec!['♥', '♠', '♦', '♦'], 4.0, 45.0),
+        MaterialType::Wood => (0xB14D13, 4, vec![',', '"', '.', '`'], 3.0, 35.0),
+        MaterialType::Flesh => (0xFF4444, 3, vec!['*', '•', '○'], 3.5, 40.0),
     };
 
     ParticleSpawner::new(position)
@@ -187,21 +187,24 @@ pub fn spawn_material_hit(
             last_change: 0.0,
         })
         .color_curve(ColorCurve::EaseOut {
-            values: vec![spark_color, spark_color & 0x444444],
+            values: vec![spark_color, spark_color & 0x585858],
         })
-        // .bg_curve(ColorCurve::EaseOut {
-        //     values: vec![spark_color, spark_color & 0x444444],
-        // })
         .velocity_curve(VelocityCurve::EaseOut {
             values: vec![
-                Vec2::new(1.0 * tool_force, -2.0 * tool_force),
-                Vec2::new(0.0, 1.0),
+                direction.normalize() * base_speed,
+                direction.normalize() * (base_speed * 0.3) + Vec2::new(0.0, 3.0),
             ],
+        })
+        .spawn_area(SpawnArea::Arc {
+            radius: 0.5,
+            angle_start: -spread_angle,
+            angle_end: spread_angle,
+            radial_distribution: Distribution::Uniform,
         })
         .gravity(Vec2::new(0.0, 3.0))
         .priority(180)
-        .lifetime_range(0.3..0.5)
-        .burst((spark_count as f32 * tool_force) as u32)
+        .lifetime_range(0.4..0.7)
+        .burst(spark_count)
         .spawn_world(world);
 }
 
@@ -228,13 +231,12 @@ pub fn spawn_material_hit_in_world(
     world: &mut World,
     world_pos: (usize, usize, usize),
     material: MaterialType,
-    tool_force: f32,
+    direction: Vec2,
 ) {
     let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
     let pos = Vec2::new(local_pos.0, local_pos.1);
 
-    // Original function call
-    spawn_material_hit(world, pos, material, tool_force);
+    spawn_material_hit(world, pos, material, direction);
 }
 
 pub fn spawn_directional_blood_mist(
@@ -247,80 +249,4 @@ pub fn spawn_directional_blood_mist(
     let pos = Vec2::new(local_pos.0, local_pos.1);
 
     spawn_blood_spray(world, pos, direction, intensity);
-}
-
-pub fn spawn_destruction_particles_in_world(
-    world: &mut World,
-    world_pos: (usize, usize, usize),
-    material_type: MaterialType,
-) {
-    let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
-    let pos = Vec2::new(local_pos.0, local_pos.1);
-
-    match material_type {
-        MaterialType::Stone => {
-            ParticleSpawner::new(pos)
-                .glyph_animation(GlyphAnimation::Static('.'))
-                .color_curve(ColorCurve::Linear {
-                    values: vec![0xB1B1B1, 0x404040],
-                })
-                .spawn_area(SpawnArea::Circle {
-                    radius: 1.0,
-                    distribution: Distribution::Uniform,
-                })
-                .velocity_curve(VelocityCurve::EaseOut {
-                    values: vec![Vec2::new(3.0, -2.0), Vec2::new(0.0, 5.0)],
-                })
-                .gravity(Vec2::new(0.0, 3.0))
-                .priority(140)
-                .lifetime_range(1.0..2.0)
-                .burst(6)
-                .spawn_world(world);
-        }
-        MaterialType::Wood => {
-            ParticleSpawner::new(pos)
-                .glyph_animation(GlyphAnimation::Static(','))
-                .color_curve(ColorCurve::Linear {
-                    values: vec![0xFF6600, 0x664400],
-                })
-                .spawn_area(SpawnArea::Circle {
-                    radius: 0.5,
-                    distribution: Distribution::Uniform,
-                })
-                .velocity_curve(VelocityCurve::EaseOut {
-                    values: vec![Vec2::new(2.0, -1.0), Vec2::new(0.0, 3.0)],
-                })
-                .gravity(Vec2::new(0.0, 2.0))
-                .priority(130)
-                .lifetime_range(0.5..1.5)
-                .burst(4)
-                .spawn_world(world);
-        }
-        MaterialType::Flesh => {
-            ParticleSpawner::new(pos)
-                .glyph_animation(GlyphAnimation::RandomPool {
-                    glyphs: vec!['*', '•', '·', '○'],
-                    change_rate: Some(8.0),
-                    last_change: 0.0,
-                })
-                .color_curve(ColorCurve::EaseOut {
-                    values: vec![0xCC0000, 0x440000],
-                })
-                .alpha_curve(AlphaCurve::EaseOut {
-                    values: vec![0.8, 0.0],
-                })
-                .velocity_curve(VelocityCurve::EaseOut {
-                    values: vec![Vec2::new(3.0, -1.0), Vec2::new(1.0, 2.0)],
-                })
-                .spawn_area(SpawnArea::Circle {
-                    radius: 0.8,
-                    distribution: Distribution::Uniform,
-                })
-                .gravity(Vec2::new(0.0, 1.0))
-                .priority(150)
-                .lifetime_range(0.5..1.0)
-                .burst(5)
-                .spawn_world(world);
-        }
-    }
 }

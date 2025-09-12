@@ -9,7 +9,7 @@ use crate::{
     },
     engine::{Audio, StableIdRegistry},
     rendering::{
-        Glyph, Position, spawn_destruction_particles_in_world, spawn_directional_blood_mist,
+        Glyph, Position, spawn_directional_blood_mist,
         spawn_material_hit_in_world,
     },
 };
@@ -163,11 +163,19 @@ impl Command for AttackAction {
                                 MaterialType::Flesh,
                             );
                             world.send_event(event);
-                            spawn_destruction_particles_in_world(
-                                world,
-                                position_coords,
-                                MaterialType::Flesh,
-                            );
+                            
+                            // Calculate direction from attacker to target for particles
+                            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+                                let dx = position_coords.0 as f32 - attacker_pos.x;
+                                let dy = position_coords.1 as f32 - attacker_pos.y;
+                                let direction = macroquad::math::Vec2::new(dx, dy);
+                                spawn_material_hit_in_world(
+                                    world,
+                                    position_coords,
+                                    MaterialType::Flesh,
+                                    direction,
+                                );
+                            }
                         }
                     }
                 }
@@ -183,7 +191,13 @@ impl Command for AttackAction {
                     should_apply_hit_blink = true;
                     let is_destroyed = destructible.is_destroyed();
 
-                    spawn_material_hit_in_world(world, self.target_pos, material_type, 1.0);
+                    // Calculate direction from attacker to target for particles
+                    if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+                        let dx = self.target_pos.0 as f32 - attacker_pos.x;
+                        let dy = self.target_pos.1 as f32 - attacker_pos.y;
+                        let direction = macroquad::math::Vec2::new(dx, dy);
+                        spawn_material_hit_in_world(world, self.target_pos, material_type, direction);
+                    }
 
                     // Play hit audio
                     if let Some(audio_collection) = material_type.hit_audio_collection() {
@@ -210,11 +224,19 @@ impl Command for AttackAction {
                                 material_type,
                             );
                             world.send_event(event);
-                            spawn_destruction_particles_in_world(
-                                world,
-                                position_coords,
-                                material_type,
-                            );
+                            
+                            // Calculate direction from attacker to target for particles
+                            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+                                let dx = position_coords.0 as f32 - attacker_pos.x;
+                                let dy = position_coords.1 as f32 - attacker_pos.y;
+                                let direction = macroquad::math::Vec2::new(dx, dy);
+                                spawn_material_hit_in_world(
+                                    world,
+                                    position_coords,
+                                    material_type,
+                                    direction,
+                                );
+                            }
                         }
                     }
                 }
