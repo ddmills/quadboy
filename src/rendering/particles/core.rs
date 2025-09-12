@@ -7,9 +7,9 @@ use crate::{
     rendering::{Glyph, GlyphTextureId, Position, Visibility},
 };
 
-use crate::rendering::Layer;
-use super::curves::{ColorCurve, VelocityCurve, AlphaCurve, CurveEvaluator};
+use super::curves::{AlphaCurve, ColorCurve, CurveEvaluator, VelocityCurve};
 use super::spawn_areas::SpawnArea;
+use crate::rendering::Layer;
 
 #[derive(Resource)]
 pub struct ParticleGrid {
@@ -28,7 +28,18 @@ impl ParticleGrid {
     pub fn get(&self, x: usize, y: usize) -> Option<&Fragment> {
         let fragments = self.data.get(x, y)?;
 
-        fragments.iter().max_by_key(|x| x.priority)
+        fragments.iter().max_by(|a, b| {
+            // First compare by priority (primary criteria)
+            match a.priority.cmp(&b.priority) {
+                std::cmp::Ordering::Equal => {
+                    // If priorities are equal, use alpha as tiebreaker
+                    a.alpha
+                        .partial_cmp(&b.alpha)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                }
+                other => other,
+            }
+        })
     }
 
     pub fn clear(&mut self) {
@@ -57,9 +68,18 @@ pub struct Fragment {
 #[derive(Clone, Debug)]
 pub enum GlyphAnimation {
     Static(char),
-    RandomPool { glyphs: Vec<char>, change_rate: Option<f32>, last_change: f32 },
-    Sequence { glyphs: Vec<char>, duration_per_glyph: f32 },
-    TimedCurve { keyframes: Vec<(f32, char)> },
+    RandomPool {
+        glyphs: Vec<char>,
+        change_rate: Option<f32>,
+        last_change: f32,
+    },
+    Sequence {
+        glyphs: Vec<char>,
+        duration_per_glyph: f32,
+    },
+    TimedCurve {
+        keyframes: Vec<(f32, char)>,
+    },
 }
 
 #[derive(Component)]
@@ -68,7 +88,7 @@ pub struct Particle {
     pub max_age: f32,
     pub pos: Vec2,
     pub initial_pos: Vec2,
-    
+
     // Animation curves
     pub glyph_animation: GlyphAnimation,
     pub color_curve: Option<ColorCurve>,
@@ -76,14 +96,14 @@ pub struct Particle {
     pub alpha_curve: Option<AlphaCurve>,
     pub velocity_curve: Option<VelocityCurve>,
     pub gravity: Vec2,
-    
+
     // Current state (evaluated from curves)
     pub current_velocity: Vec2,
     pub current_glyph: char,
     pub current_color: u32,
     pub current_bg_color: u32,
     pub current_alpha: f32,
-    
+
     pub priority: u8,
     pub target_pos: Option<Vec2>,
     pub max_distance: Option<f32>,
@@ -96,7 +116,7 @@ impl Particle {
 
     pub fn update_properties(&mut self, dt: f32) {
         let progress = self.progress();
-        
+
         // Update curves
         if let Some(curve) = &self.color_curve {
             self.current_color = curve.evaluate(progress);
@@ -110,22 +130,26 @@ impl Particle {
         if let Some(curve) = &self.velocity_curve {
             self.current_velocity = curve.evaluate(progress);
         }
-        
+
         // Update glyph animation
         self.update_glyph_animation(dt);
     }
-    
+
     fn update_glyph_animation(&mut self, dt: f32) {
         match &mut self.glyph_animation {
             GlyphAnimation::Static(glyph) => {
                 self.current_glyph = *glyph;
             }
-            GlyphAnimation::RandomPool { glyphs, change_rate, last_change } => {
+            GlyphAnimation::RandomPool {
+                glyphs,
+                change_rate,
+                last_change,
+            } => {
                 if glyphs.is_empty() {
                     self.current_glyph = '*';
                     return;
                 }
-                
+
                 if let Some(rate) = change_rate {
                     *last_change += dt;
                     if *last_change >= 1.0 / *rate {
@@ -141,12 +165,15 @@ impl Particle {
                     self.current_glyph = glyphs[index];
                 }
             }
-            GlyphAnimation::Sequence { glyphs, duration_per_glyph } => {
+            GlyphAnimation::Sequence {
+                glyphs,
+                duration_per_glyph,
+            } => {
                 if glyphs.is_empty() {
                     self.current_glyph = '*';
                     return;
                 }
-                
+
                 let total_duration = *duration_per_glyph * glyphs.len() as f32;
                 let cycle_time = self.age % total_duration;
                 let index = (cycle_time / *duration_per_glyph) as usize;
@@ -158,7 +185,7 @@ impl Particle {
                     self.current_glyph = '*';
                     return;
                 }
-                
+
                 // Find the appropriate keyframe for current time
                 for (time, glyph) in keyframes.iter() {
                     if self.age <= *time {
@@ -166,26 +193,26 @@ impl Particle {
                         return;
                     }
                 }
-                
+
                 // If past all keyframes, use the last one
                 self.current_glyph = keyframes.last().unwrap().1;
             }
         }
     }
-    
+
     // Keep these for compatibility with existing rendering system
     pub fn current_glyph(&self) -> char {
         self.current_glyph
     }
-    
+
     pub fn current_alpha(&self) -> f32 {
         self.current_alpha
     }
-    
+
     pub fn current_fg1(&self) -> Option<u32> {
         Some(self.current_color)
     }
-    
+
     pub fn current_bg(&self) -> Option<u32> {
         if self.bg_curve.is_some() {
             Some(self.current_bg_color)
@@ -234,21 +261,21 @@ pub struct ParticleSpawner {
     pub spawn_rate: f32,
     pub burst_count: Option<u32>,
     pub position: Vec2,
-    
+
     // Animation configuration
     pub glyph_animation: GlyphAnimation,
     pub color_curve: Option<ColorCurve>,
     pub bg_curve: Option<ColorCurve>,
     pub alpha_curve: Option<AlphaCurve>,
     pub velocity_curve: Option<VelocityCurve>,
-    
+
     // Spawn area
     pub spawn_area: SpawnArea,
-    
+
     // Physics
     pub gravity: Vec2,
     pub priority: u8,
-    
+
     // Lifecycle
     pub lifetime_min: f32,
     pub lifetime_max: f32,
@@ -265,7 +292,9 @@ impl ParticleSpawner {
             glyph_animation: GlyphAnimation::Static('*'),
             color_curve: Some(ColorCurve::Constant(0xFFFFFF)),
             bg_curve: None,
-            alpha_curve: Some(AlphaCurve::Linear { start: 1.0, end: 0.0 }),
+            alpha_curve: Some(AlphaCurve::Linear {
+                values: vec![1.0, 0.0],
+            }),
             velocity_curve: Some(VelocityCurve::Constant(Vec2::new(0.0, -1.0))),
             spawn_area: SpawnArea::Point,
             gravity: Vec2::new(0.0, 2.0),
@@ -336,7 +365,7 @@ impl ParticleSpawner {
         self.spawn_delay = delay;
         self
     }
-    
+
     pub fn spawn_world(self, world: &mut World) -> Entity {
         world.spawn(self).id()
     }

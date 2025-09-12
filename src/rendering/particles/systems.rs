@@ -166,39 +166,59 @@ pub fn update_particle_spawners(
 }
 
 pub fn spawn_particle(cmds: &mut Commands, spawner: &ParticleSpawner) {
-    use macroquad::rand::gen_range;
     use super::curves::CurveEvaluator;
+    use macroquad::rand::gen_range;
 
     let lifetime = gen_range(spawner.lifetime_min, spawner.lifetime_max);
     let spawn_position = spawner.spawn_area.generate_position(spawner.position);
 
     // Initialize current values from curves
-    let initial_velocity = spawner.velocity_curve.as_ref()
+    let initial_velocity = spawner
+        .velocity_curve
+        .as_ref()
         .map(|curve| curve.evaluate(0.0))
         .unwrap_or(Vec2::new(0.0, -1.0));
-        
-    let initial_color = spawner.color_curve.as_ref()
+
+    let initial_color = spawner
+        .color_curve
+        .as_ref()
         .map(|curve| curve.evaluate(0.0))
         .unwrap_or(0xFFFFFF);
-        
-    let initial_bg_color = spawner.bg_curve.as_ref()
+
+    let initial_bg_color = spawner
+        .bg_curve
+        .as_ref()
         .map(|curve| curve.evaluate(0.0))
         .unwrap_or(0x000000);
-        
-    let initial_alpha = spawner.alpha_curve.as_ref()
+
+    let initial_alpha = spawner
+        .alpha_curve
+        .as_ref()
         .map(|curve| curve.evaluate(0.0))
         .unwrap_or(1.0);
 
     let initial_glyph = match &spawner.glyph_animation {
         super::core::GlyphAnimation::Static(glyph) => *glyph,
         super::core::GlyphAnimation::RandomPool { glyphs, .. } => {
-            if glyphs.is_empty() { '*' } else { glyphs[gen_range(0, glyphs.len())] }
+            if glyphs.is_empty() {
+                '*'
+            } else {
+                glyphs[gen_range(0, glyphs.len())]
+            }
         }
         super::core::GlyphAnimation::Sequence { glyphs, .. } => {
-            if glyphs.is_empty() { '*' } else { glyphs[0] }
+            if glyphs.is_empty() {
+                '*'
+            } else {
+                glyphs[0]
+            }
         }
         super::core::GlyphAnimation::TimedCurve { keyframes } => {
-            if keyframes.is_empty() { '*' } else { keyframes[0].1 }
+            if keyframes.is_empty() {
+                '*'
+            } else {
+                keyframes[0].1
+            }
         }
     };
 
@@ -207,7 +227,7 @@ pub fn spawn_particle(cmds: &mut Commands, spawner: &ParticleSpawner) {
         max_age: lifetime,
         pos: spawn_position,
         initial_pos: spawn_position,
-        
+
         // Animation curves
         glyph_animation: spawner.glyph_animation.clone(),
         color_curve: spawner.color_curve.clone(),
@@ -215,14 +235,14 @@ pub fn spawn_particle(cmds: &mut Commands, spawner: &ParticleSpawner) {
         alpha_curve: spawner.alpha_curve.clone(),
         velocity_curve: spawner.velocity_curve.clone(),
         gravity: spawner.gravity,
-        
+
         // Current state (initialized)
         current_velocity: initial_velocity,
         current_glyph: initial_glyph,
         current_color: initial_color,
         current_bg_color: initial_bg_color,
         current_alpha: initial_alpha,
-        
+
         priority: spawner.priority,
         target_pos: None,
         max_distance: None,
@@ -235,10 +255,10 @@ pub fn update_particle_trails(
     time: Res<Time>,
 ) {
     let dt = time.dt;
-    
+
     for (mut trail, particle) in q_particles_with_trails.iter_mut() {
         trail.last_spawn_time += dt;
-        
+
         let spawn_interval = 1.0 / trail.spawn_rate;
         if trail.last_spawn_time >= spawn_interval {
             trail.trail_spawner.position = particle.pos;

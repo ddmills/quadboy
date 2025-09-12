@@ -106,10 +106,10 @@ impl Command for ShootAction {
             return;
         };
 
-        audio.play(shoot_audio, 0.0);
+        audio.play(shoot_audio, 0.1);
 
         if let Some(shooter_pos) = shooter_pos {
-            spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 50.0);
+            spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 60.0);
         }
 
         if targets.is_empty() {

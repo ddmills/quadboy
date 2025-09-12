@@ -8,7 +8,7 @@ use crate::{
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
-    rendering::{Glyph, Position, spawn_mining_sparks_in_world, spawn_directional_blood_mist},
+    rendering::{Glyph, Position, spawn_directional_blood_mist, spawn_mining_sparks_in_world},
 };
 
 pub struct AttackAction {
@@ -125,13 +125,13 @@ impl Command for AttackAction {
                             }
                         });
                     }
-                    
+
                     // Add directional blood spray for flesh targets
                     if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
                         let dx = self.target_pos.0 as f32 - attacker_pos.x;
                         let dy = self.target_pos.1 as f32 - attacker_pos.y;
                         let direction = macroquad::math::Vec2::new(dx, dy);
-                        
+
                         // Use moderate intensity for melee attacks
                         spawn_directional_blood_mist(world, self.target_pos, direction, 0.8);
                     }
@@ -179,7 +179,12 @@ impl Command for AttackAction {
 
                     // Spawn spark particles when hitting stone
                     if material_type == crate::domain::MaterialType::Stone {
-                        spawn_mining_sparks_in_world(world, self.target_pos, crate::domain::MaterialType::Stone, 1.0);
+                        spawn_mining_sparks_in_world(
+                            world,
+                            self.target_pos,
+                            crate::domain::MaterialType::Stone,
+                            1.0,
+                        );
                     }
 
                     // Play hit audio

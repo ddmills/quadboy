@@ -16,9 +16,7 @@ use crate::{
         turn_scheduler, update_entity_visibility_flags, update_lighting_system,
         update_player_position_resource, update_player_vision,
     },
-    rendering::{
-        update_entity_pos,
-    },
+    rendering::update_entity_pos,
 };
 
 #[derive(Resource)]

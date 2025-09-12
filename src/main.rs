@@ -9,8 +9,8 @@ use rendering::{
     AmbientTransition, AnimatedGlyph, GameCamera, Layers, LightingData, ParticleGlyphPool,
     ParticleGrid, Position, RenderTargets, ScreenSize, Text, cleanup_particle_glyphs, render_all,
     render_glyphs, render_particle_fragments, render_text, update_animated_glyphs,
-    update_crt_uniforms, update_screen_size, update_particle_physics, update_particle_spawners,
-    update_particle_trails, update_particles,
+    update_crt_uniforms, update_particle_physics, update_particle_spawners, update_particle_trails,
+    update_particles, update_screen_size,
 };
 use ui::UiLayout;
 

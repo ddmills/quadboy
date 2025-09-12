@@ -1,22 +1,17 @@
 use bevy_ecs::prelude::*;
 use macroquad::math::Vec2;
 
-use super::core::{Particle, ParticleSpawner, ParticleTrail, GlyphAnimation};
-use super::curves::{ColorCurve, VelocityCurve, AlphaCurve};
-use super::spawn_areas::{SpawnArea, Distribution};
-use crate::rendering::world_to_zone_local_f32;
+use super::core::{GlyphAnimation, Particle, ParticleSpawner, ParticleTrail};
+use super::curves::{AlphaCurve, ColorCurve, VelocityCurve};
+use super::spawn_areas::{Distribution, SpawnArea};
 use crate::domain::MaterialType;
+use crate::rendering::world_to_zone_local_f32;
 
 // Blood Effects - Direction/Angle Based
-pub fn spawn_blood_spray(
-    world: &mut World,
-    position: Vec2,
-    direction: Vec2,
-    intensity: f32,
-) {
+pub fn spawn_blood_spray(world: &mut World, position: Vec2, direction: Vec2, intensity: f32) {
     let spread_angle = 30.0 * intensity;
     let particle_count = (8.0 * intensity) as u32;
-    
+
     ParticleSpawner::new(position)
         .glyph_animation(GlyphAnimation::RandomPool {
             glyphs: vec!['*', '•', '·', '○'],
@@ -24,16 +19,16 @@ pub fn spawn_blood_spray(
             last_change: 0.0,
         })
         .color_curve(ColorCurve::EaseOut {
-            start: 0xCC0000,
-            end: 0x440000,
+            values: vec![0xCC0000, 0x440000],
         })
         .alpha_curve(AlphaCurve::EaseOut {
-            start: 0.8,
-            end: 0.0,
+            values: vec![0.8, 0.0],
         })
         .velocity_curve(VelocityCurve::EaseOut {
-            start: direction.normalize() * (5.0 * intensity),
-            end: direction.normalize() * (1.0 * intensity) + Vec2::new(0.0, 3.0),
+            values: vec![
+                direction.normalize() * (5.0 * intensity),
+                direction.normalize() * (1.0 * intensity) + Vec2::new(0.0, 3.0),
+            ],
         })
         .spawn_area(SpawnArea::Arc {
             radius: 0.5,
@@ -60,12 +55,13 @@ pub fn spawn_arterial_bleeding(
             duration_per_glyph: 0.1,
         })
         .color_curve(ColorCurve::Linear {
-            start: 0xCC0000,
-            end: 0x880000,
+            values: vec![0xCC0000, 0x880000],
         })
         .velocity_curve(VelocityCurve::Linear {
-            start: direction.normalize() * (12.0 * pulse_strength),
-            end: direction.normalize() * (3.0 * pulse_strength) + Vec2::new(0.0, 5.0),
+            values: vec![
+                direction.normalize() * (12.0 * pulse_strength),
+                direction.normalize() * (3.0 * pulse_strength) + Vec2::new(0.0, 5.0),
+            ],
         })
         .spawn_area(SpawnArea::Line {
             start: Vec2::ZERO,
@@ -80,12 +76,7 @@ pub fn spawn_arterial_bleeding(
 }
 
 // Projectile Effects - Distance/Position Based
-pub fn spawn_bullet_trail(
-    world: &mut World,
-    start_pos: Vec2,
-    target_pos: Vec2,
-    bullet_speed: f32,
-) {
+pub fn spawn_bullet_trail(world: &mut World, start_pos: Vec2, target_pos: Vec2, bullet_speed: f32) {
     let direction = (target_pos - start_pos).normalize();
     let distance = start_pos.distance(target_pos);
     let travel_time = distance / bullet_speed;
@@ -96,63 +87,47 @@ pub fn spawn_bullet_trail(
         max_age: travel_time + 0.1,
         pos: start_pos,
         initial_pos: start_pos,
-        
-        glyph_animation: GlyphAnimation::Sequence {
-            glyphs: vec!['*', '•', '→'],
-            duration_per_glyph: travel_time / 3.0,
-        },
-        color_curve: Some(ColorCurve::Linear {
-            start: 0xFFFF00,
-            end: 0xFF4400,
-        }),
+
+        glyph_animation: GlyphAnimation::Static('*'),
+        color_curve: Some(ColorCurve::Constant(0x3BD1FF)),
         bg_curve: None,
         alpha_curve: Some(AlphaCurve::Constant(1.0)),
         velocity_curve: Some(VelocityCurve::Constant(direction * bullet_speed)),
         gravity: Vec2::ZERO,
-        
+
         current_velocity: direction * bullet_speed,
         current_glyph: '*',
         current_color: 0xFFFF00,
         current_bg_color: 0x000000,
         current_alpha: 1.0,
-        
+
         priority: 200,
         target_pos: Some(target_pos),
         max_distance: Some(distance + 0.5),
     };
-    
+
     // Initialize current values
     bullet_particle.update_properties(0.0);
-    
+
     let bullet_entity = world.spawn(bullet_particle).id();
-    
+
     // Create smoke trail spawner
     let trail_spawner = ParticleSpawner::new(Vec2::ZERO) // Position gets overridden by trail system
-        .glyph_animation(GlyphAnimation::RandomPool {
-            glyphs: vec!['*', '•', '◦'],
-            change_rate: Some(10.0),
-            last_change: 0.0,
-        })
-        .bg_curve(ColorCurve::Constant(0xFFFFFF))
-        .color_curve(ColorCurve::EaseOut {
-            start: 0xFF9925,
-            end: 0x999999,
+        .glyph_animation(GlyphAnimation::Static(' '))
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0xF3D9BB, 0x261766],
         })
         .alpha_curve(AlphaCurve::Linear {
-            start: 0.8,
-            end: 0.0,
+            values: vec![0.4, 0.0],
         })
         .velocity_curve(VelocityCurve::Linear {
-            start: Vec2::new(0.0, -0.5),
-            end: Vec2::new(0.0, 1.0),
+            values: vec![Vec2::new(0.0, -0.5), Vec2::new(0.0, 1.0)],
         })
-        .gravity(Vec2::new(0.0, 1.5)) // Light gravity for smoke
-        .priority(90) // Lower priority than bullet
-        .lifetime_range(0.0..1.0) // Longer lifetime for more visible trail
-        .burst(1); // Spawn 2 particles per trail point for density
-    
-    // Attach trail to bullet - spawns 15 particles per second for smooth trail
-    let trail = ParticleTrail::new(500.0, trail_spawner);
+        .priority(90)
+        .lifetime_range(0.2..0.6)
+        .burst(1);
+
+    let trail = ParticleTrail::new(250.0, trail_spawner);
     world.entity_mut(bullet_entity).insert(trail);
 
     // Muzzle flash
@@ -163,16 +138,14 @@ pub fn spawn_bullet_trail(
             last_change: 0.0,
         })
         .color_curve(ColorCurve::EaseOut {
-            start: 0xFFFF00,
-            end: 0xFF4400,
+            values: vec![0xFFFF00, 0xFF4400],
         })
         .spawn_area(SpawnArea::Circle {
             radius: 0.8,
             distribution: Distribution::EdgeOnly,
         })
         .velocity_curve(VelocityCurve::EaseOut {
-            start: Vec2::new(3.0, -1.0),
-            end: Vec2::new(0.5, 1.0),
+            values: vec![Vec2::new(3.0, -1.0), Vec2::new(0.5, 1.0)],
         })
         .gravity(Vec2::new(0.0, 2.0))
         .priority(180)
@@ -196,9 +169,9 @@ fn spawn_delayed_blood_impact(
             change_rate: Some(5.0),
             last_change: 0.0,
         })
-        .color_curve(ColorCurve::EaseOut {
-            start: 0xCC0000,
-            end: 0x440000,
+        .color_curve(ColorCurve::Constant(0x440000))
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0xCC0000, 0x440000],
         })
         .spawn_area(SpawnArea::Arc {
             radius: 1.0,
@@ -207,8 +180,10 @@ fn spawn_delayed_blood_impact(
             radial_distribution: Distribution::Gaussian,
         })
         .velocity_curve(VelocityCurve::EaseOut {
-            start: bullet_direction * 6.0,
-            end: bullet_direction * 1.0 + Vec2::new(0.0, 4.0),
+            values: vec![
+                bullet_direction * 6.0,
+                bullet_direction * 1.0 + Vec2::new(0.0, 4.0),
+            ],
         })
         .gravity(Vec2::new(0.0, 3.0))
         .priority(150)
@@ -238,16 +213,17 @@ pub fn spawn_mining_sparks(
             last_change: 0.0,
         })
         .color_curve(ColorCurve::EaseOut {
-            start: spark_color,
-            end: spark_color & 0x444444,
+            values: vec![spark_color, spark_color & 0x444444],
         })
         .spawn_area(SpawnArea::Circle {
             radius: tool_force * 0.5,
             distribution: Distribution::Uniform,
         })
         .velocity_curve(VelocityCurve::EaseOut {
-            start: Vec2::new(6.0 * tool_force, -2.0 * tool_force),
-            end: Vec2::new(0.0, 8.0),
+            values: vec![
+                Vec2::new(6.0 * tool_force, -2.0 * tool_force),
+                Vec2::new(0.0, 8.0),
+            ],
         })
         .gravity(Vec2::new(0.0, 4.0))
         .priority(180)
@@ -267,20 +243,17 @@ pub fn spawn_campfire_smoke(
     ParticleSpawner::new(position)
         .glyph_animation(GlyphAnimation::Static(' ')) // Invisible glyph, uses bg color
         .bg_curve(ColorCurve::EaseOut {
-            start: 0x666666,
-            end: 0x222222,
+            values: vec![0x666666, 0x222222],
         })
         .alpha_curve(AlphaCurve::EaseOut {
-            start: 0.7 * fuel_level,
-            end: 0.0,
+            values: vec![0.7 * fuel_level, 0.0],
         })
         .spawn_area(SpawnArea::Circle {
             radius: 0.3,
             distribution: Distribution::Gaussian,
         })
         .velocity_curve(VelocityCurve::Linear {
-            start: base_velocity * 0.8,
-            end: base_velocity * 1.2 + wind_direction,
+            values: vec![base_velocity * 0.8, base_velocity * 1.2 + wind_direction],
         })
         .gravity(Vec2::new(0.0, -0.5)) // Slight upward drift for smoke
         .priority(100)
@@ -290,24 +263,21 @@ pub fn spawn_campfire_smoke(
 }
 
 // Stone debris effect
-pub fn spawn_stone_debris(
-    world: &mut World,
-    position: Vec2,
-    impact_force: f32,
-) {
+pub fn spawn_stone_debris(world: &mut World, position: Vec2, impact_force: f32) {
     ParticleSpawner::new(position)
         .glyph_animation(GlyphAnimation::Static('.'))
         .color_curve(ColorCurve::Linear {
-            start: 0xB1B1B1,
-            end: 0x404040,
+            values: vec![0xB1B1B1, 0x404040],
         })
         .spawn_area(SpawnArea::Circle {
             radius: 1.0,
             distribution: Distribution::Uniform,
         })
         .velocity_curve(VelocityCurve::EaseOut {
-            start: Vec2::new(3.0 * impact_force, -2.0 * impact_force),
-            end: Vec2::new(0.0, 5.0),
+            values: vec![
+                Vec2::new(3.0 * impact_force, -2.0 * impact_force),
+                Vec2::new(0.0, 5.0),
+            ],
         })
         .gravity(Vec2::new(0.0, 3.0))
         .priority(140)
@@ -323,17 +293,19 @@ pub fn spawn_bullet_trail_in_world(
     target_world: (usize, usize, usize),
     speed: f32,
 ) {
-    let start_local = world_to_zone_local_f32(start_world.0 as f32 + 0.5, start_world.1 as f32 + 0.5);
+    let start_local =
+        world_to_zone_local_f32(start_world.0 as f32 + 0.5, start_world.1 as f32 + 0.5);
     let start_pos = Vec2::new(start_local.0, start_local.1);
 
-    let target_local = world_to_zone_local_f32(target_world.0 as f32 + 0.5, target_world.1 as f32 + 0.5);
+    let target_local =
+        world_to_zone_local_f32(target_world.0 as f32 + 0.5, target_world.1 as f32 + 0.5);
     let target_pos = Vec2::new(target_local.0, target_local.1);
 
     spawn_bullet_trail(world, start_pos, target_pos, speed);
 }
 
 pub fn spawn_mining_sparks_in_world(
-    world: &mut World, 
+    world: &mut World,
     world_pos: (usize, usize, usize),
     material: MaterialType,
     tool_force: f32,
