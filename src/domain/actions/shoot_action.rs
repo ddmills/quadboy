@@ -7,22 +7,13 @@ use crate::{
         RangedWeapon, Zone, get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
-    engine::{Audio, AudioKey, StableIdRegistry},
-    rendering::{Glyph, Position, VisualEffectId, spawn_visual_effect_world},
+    engine::{Audio, StableIdRegistry},
+    rendering::{Glyph, Position, spawn_bullet_trail_in_world},
 };
 
 pub struct ShootAction {
     pub shooter_entity: Entity,
     pub target_pos: (usize, usize, usize),
-}
-
-fn determine_weapon_effect(audio_key: &AudioKey) -> VisualEffectId {
-    match audio_key {
-        AudioKey::RevolverShoot1 => VisualEffectId::PistolShot,
-        AudioKey::RifleShoot1 => VisualEffectId::RifleShot,
-        AudioKey::ShotgunShoot1 => VisualEffectId::ShotgunBlast,
-        _ => VisualEffectId::PistolShot, // Default fallback
-    }
 }
 
 fn apply_hit_blink(world: &mut World, target_entity: Entity) {
@@ -115,12 +106,10 @@ impl Command for ShootAction {
             return;
         };
 
-        audio.play(shoot_audio, 0.4);
+        audio.play(shoot_audio, 0.0);
 
-        // Spawn weapon-specific visual effect
         if let Some(shooter_pos) = shooter_pos {
-            let effect_id = determine_weapon_effect(&shoot_audio);
-            spawn_visual_effect_world(world, effect_id, shooter_pos, Some(self.target_pos));
+            spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 50.0);
         }
 
         if targets.is_empty() {
@@ -174,10 +163,11 @@ impl Command for ShootAction {
                                 });
                             }
 
-                            let event = EntityDestroyedEvent::new(
+                            let event = EntityDestroyedEvent::with_material_type(
                                 target_entity,
                                 position_coords,
                                 DestructionCause::Attack,
+                                crate::domain::MaterialType::Flesh,
                             );
                             world.send_event(event);
                         }
@@ -207,15 +197,15 @@ impl Command for ShootAction {
                     }
 
                     // Check if target was destroyed
-                    if is_destroyed
-                        && let Some(position) = world.get::<Position>(target_entity) {
-                            let event = EntityDestroyedEvent::new(
-                                target_entity,
-                                position.world(),
-                                DestructionCause::Attack,
-                            );
-                            world.send_event(event);
-                        }
+                    if is_destroyed && let Some(position) = world.get::<Position>(target_entity) {
+                        let event = EntityDestroyedEvent::with_material_type(
+                            target_entity,
+                            position.world(),
+                            DestructionCause::Attack,
+                            material_type,
+                        );
+                        world.send_event(event);
+                    }
                 }
             }
 

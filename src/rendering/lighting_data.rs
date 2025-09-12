@@ -10,8 +10,7 @@ pub struct LightValue {
     pub flicker: f32,
 }
 
-impl LightValue {
-}
+impl LightValue {}
 
 #[derive(Resource)]
 pub struct LightingData {

@@ -35,7 +35,6 @@ impl ItemDialogButton {
         self
     }
 
-
     pub fn with_focus_order(mut self, focus_order: i32) -> Self {
         self.focus_order = focus_order;
         self

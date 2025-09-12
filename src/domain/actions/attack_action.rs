@@ -8,7 +8,7 @@ use crate::{
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
-    rendering::{Glyph, Position},
+    rendering::{Glyph, Position, spawn_mining_sparks_in_world, spawn_directional_blood_mist},
 };
 
 pub struct AttackAction {
@@ -57,20 +57,21 @@ impl Command for AttackAction {
 
         // Apply bump attack effect if attacker is a player
         if world.get::<Player>(self.attacker_entity).is_some()
-            && let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
-                // Calculate direction from attacker to target
-                let dx = self.target_pos.0 as f32 - attacker_pos.x;
-                let dy = self.target_pos.1 as f32 - attacker_pos.y;
+            && let Some(attacker_pos) = world.get::<Position>(self.attacker_entity)
+        {
+            // Calculate direction from attacker to target
+            let dx = self.target_pos.0 as f32 - attacker_pos.x;
+            let dy = self.target_pos.1 as f32 - attacker_pos.y;
 
-                // Normalize direction
-                let length = (dx * dx + dy * dy).sqrt();
-                if length > 0.0 {
-                    let direction = (dx / length, dy / length);
-                    world
-                        .entity_mut(self.attacker_entity)
-                        .insert(BumpAttack::attacked(direction));
-                }
+            // Normalize direction
+            let length = (dx * dx + dy * dy).sqrt();
+            if length > 0.0 {
+                let direction = (dx / length, dy / length);
+                world
+                    .entity_mut(self.attacker_entity)
+                    .insert(BumpAttack::attacked(direction));
             }
+        }
 
         // Find target at position
         let targets = {
@@ -124,6 +125,16 @@ impl Command for AttackAction {
                             }
                         });
                     }
+                    
+                    // Add directional blood spray for flesh targets
+                    if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+                        let dx = self.target_pos.0 as f32 - attacker_pos.x;
+                        let dy = self.target_pos.1 as f32 - attacker_pos.y;
+                        let direction = macroquad::math::Vec2::new(dx, dy);
+                        
+                        // Use moderate intensity for melee attacks
+                        spawn_directional_blood_mist(world, self.target_pos, direction, 0.8);
+                    }
 
                     if is_dead {
                         let position_data = world.get::<Position>(target_entity).map(|p| p.world());
@@ -144,10 +155,11 @@ impl Command for AttackAction {
                                 });
                             }
 
-                            let event = EntityDestroyedEvent::new(
+                            let event = EntityDestroyedEvent::with_material_type(
                                 target_entity,
                                 position_coords,
                                 DestructionCause::Attack,
+                                crate::domain::MaterialType::Flesh,
                             );
                             world.send_event(event);
                         }
@@ -164,6 +176,11 @@ impl Command for AttackAction {
                     destructible.take_damage(*damage);
                     should_apply_hit_blink = true;
                     let is_destroyed = destructible.is_destroyed();
+
+                    // Spawn spark particles when hitting stone
+                    if material_type == crate::domain::MaterialType::Stone {
+                        spawn_mining_sparks_in_world(world, self.target_pos, crate::domain::MaterialType::Stone, 1.0);
+                    }
 
                     // Play hit audio
                     if let Some(audio_collection) = material_type.hit_audio_collection() {
@@ -182,10 +199,11 @@ impl Command for AttackAction {
                     if is_destroyed {
                         // Fire destruction event instead of handling directly
                         if let Some(position) = world.get::<Position>(target_entity) {
-                            let event = EntityDestroyedEvent::new(
+                            let event = EntityDestroyedEvent::with_material_type(
                                 target_entity,
                                 position.world(),
                                 DestructionCause::Attack,
+                                material_type,
                             );
                             world.send_event(event);
                         }

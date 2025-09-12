@@ -25,15 +25,33 @@ pub fn is_zone_oob(x: usize, y: usize, z: usize) -> bool {
 // convert local zone coordinates to world coordinates
 #[inline]
 pub fn zone_local_to_world(zone_idx: usize, x: usize, y: usize) -> (usize, usize, usize) {
-    let cpos: (usize, usize, usize) = zone_xyz(zone_idx);
+    let zpos = zone_xyz(zone_idx);
 
-    (cpos.0 * ZONE_SIZE.0 + x, cpos.1 * ZONE_SIZE.1 + y, cpos.2)
+    (zpos.0 * ZONE_SIZE.0 + x, zpos.1 * ZONE_SIZE.1 + y, zpos.2)
+}
+
+// convert local zone coordinates to world coordinates
+#[inline]
+pub fn zone_local_to_world_f32(zone_idx: usize, x: f32, y: f32) -> (f32, f32, f32) {
+    let zpos = zone_xyz(zone_idx);
+
+    (
+        (zpos.0 as f32) * ZONE_SIZE_F32.0 + x,
+        (zpos.1 as f32) * ZONE_SIZE_F32.1 + y,
+        zpos.2 as f32,
+    )
 }
 
 // convert world coordinates to local zone coordinates
 #[inline]
 pub fn world_to_zone_local(x: usize, y: usize) -> (usize, usize) {
     (x % ZONE_SIZE.0, y % ZONE_SIZE.1)
+}
+
+// convert world coordinates to local zone coordinates
+#[inline]
+pub fn world_to_zone_local_f32(x: f32, y: f32) -> (f32, f32) {
+    (x % ZONE_SIZE_F32.0, y % ZONE_SIZE_F32.1)
 }
 
 #[inline]

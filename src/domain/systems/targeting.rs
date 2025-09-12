@@ -3,7 +3,10 @@ use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    domain::{EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, Player, Zone},
+    domain::{
+        EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, MeleeWeapon, Player,
+        RangedWeapon, Zone,
+    },
     engine::{KeyInput, StableIdRegistry},
     rendering::{
         AnimatedGlyph, Glyph, Layer, Position, Text, Visibility, world_to_zone_idx,
@@ -79,6 +82,8 @@ pub fn collect_valid_targets(
     q_player: Query<(&Position, Option<&EquipmentSlots>), With<Player>>,
     q_health: Query<(Entity, &Position), With<Health>>,
     q_zones: Query<&Zone>,
+    q_ranged_weapons: Query<&RangedWeapon>,
+    q_melee_weapons: Query<&MeleeWeapon>,
     registry: Option<Res<StableIdRegistry>>,
 ) {
     let Ok((player_position, equipment_slots)) = q_player.single() else {
@@ -89,16 +94,27 @@ pub fn collect_valid_targets(
     let weapon_range =
         if let (Some(equipment), Some(registry)) = (equipment_slots, registry.as_deref()) {
             if let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand) {
-                if let Some(_weapon_entity) = registry.get_entity(weapon_id) {
-                    DEFAULT_WEAPON_RANGE
+                if let Some(weapon_entity) = registry.get_entity(weapon_id) {
+                    // First check if it's a ranged weapon
+                    if let Ok(ranged_weapon) = q_ranged_weapons.get(weapon_entity) {
+                        ranged_weapon.range
+                    }
+                    // Then check if it's a melee weapon
+                    else if q_melee_weapons.get(weapon_entity).is_ok() {
+                        1 // Melee weapons have range 1 (adjacent only)
+                    }
+                    // If weapon entity exists but has neither component
+                    else {
+                        DEFAULT_WEAPON_RANGE
+                    }
                 } else {
                     DEFAULT_WEAPON_RANGE
                 }
             } else {
-                DEFAULT_WEAPON_RANGE
+                DEFAULT_WEAPON_RANGE // No weapon equipped
             }
         } else {
-            DEFAULT_WEAPON_RANGE
+            DEFAULT_WEAPON_RANGE // No equipment or registry
         };
 
     let player_world = player_position.world();
@@ -189,20 +205,20 @@ pub fn collect_valid_targets(
 
 pub fn update_target_cycling(mut target_cycling: ResMut<TargetCycling>, keys: Res<KeyInput>) {
     // Check for C key press to cycle targets
-    if keys.is_pressed(KeyCode::C)
-        && !target_cycling.targets.is_empty() {
-            // Cycle to next target
-            target_cycling.current_index = match target_cycling.current_index {
-                None => Some(0), // Start at first (nearest) target
-                Some(idx) => Some((idx + 1) % target_cycling.targets.len()),
-            };
+    if keys.is_pressed(KeyCode::C) && !target_cycling.targets.is_empty() {
+        // Cycle to next target
+        target_cycling.current_index = match target_cycling.current_index {
+            None => Some(0), // Start at first (nearest) target
+            Some(idx) => Some((idx + 1) % target_cycling.targets.len()),
+        };
 
-            // Update selected entity
-            if let Some(idx) = target_cycling.current_index
-                && let Some((entity, _, _)) = target_cycling.targets.get(idx) {
-                    target_cycling.current_selected_entity = Some(*entity);
-                }
+        // Update selected entity
+        if let Some(idx) = target_cycling.current_index
+            && let Some((entity, _, _)) = target_cycling.targets.get(idx)
+        {
+            target_cycling.current_selected_entity = Some(*entity);
         }
+    }
 }
 pub fn render_target_crosshair(
     target_cycling: Res<TargetCycling>,
@@ -270,13 +286,14 @@ pub fn render_target_info(
 
             for entity_at_pos in entities {
                 if *entity_at_pos == *entity
-                    && let Ok(health) = q_health.get(*entity) {
-                        target_health = Some(health);
-                        if let Ok(label) = q_names.get(*entity) {
-                            target_name = Some(label.get());
-                        }
-                        break;
+                    && let Ok(health) = q_health.get(*entity)
+                {
+                    target_health = Some(health);
+                    if let Ok(label) = q_names.get(*entity) {
+                        target_name = Some(label.get());
                     }
+                    break;
+                }
             }
 
             if let (Some(name), Some(health)) = (target_name, target_health) {

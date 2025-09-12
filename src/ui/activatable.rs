@@ -54,7 +54,6 @@ pub enum Activatable {
 }
 
 impl Activatable {
-
     /// Get the callback SystemId for this element
     pub fn callback(&self) -> SystemId {
         match self {
@@ -120,7 +119,6 @@ impl Activatable {
         }
     }
 
-
     /// Get button-specific data if this is a button
     pub fn as_button(&self) -> Option<(&str, Layer)> {
         match self {
@@ -128,8 +126,6 @@ impl Activatable {
             _ => None,
         }
     }
-
-
 
     /// Set the label for this element (mutable operation)
     pub fn set_label(&mut self, new_label: String) {
@@ -174,15 +170,11 @@ impl ActivatableBuilder {
         self
     }
 
-
     /// Set custom audio key
     pub fn with_audio(mut self, key: AudioKey) -> Self {
         self.audio_key = Some(key);
         self
     }
-
-
-
 
     /// Set focus order for tab navigation
     /// Use spaced values like 1000, 2000, 3000 to allow for insertion

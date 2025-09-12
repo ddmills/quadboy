@@ -1,4 +1,3 @@
-
 use bevy_ecs::prelude::*;
 use macroquad::math::Vec3;
 
@@ -74,7 +73,6 @@ impl Clock {
     pub fn get_day_progress(&self) -> f32 {
         self.get_minute_of_day() as f32 / 1440.0
     }
-
 
     pub fn get_daylight(&self) -> DaylightInfo {
         let progress = self.get_day_progress();

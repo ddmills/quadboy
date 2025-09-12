@@ -1,6 +1,7 @@
 pub mod ai_system;
 pub mod bump_attack_system;
 pub mod cleanup_system;
+pub mod destruction_particle_system;
 pub mod destruction_system;
 pub mod energy_system;
 pub mod game_systems;

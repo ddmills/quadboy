@@ -1,4 +1,4 @@
-use std::slice::Iter;
+use std::slice::{Iter, IterMut};
 
 use serde::{Deserialize, Serialize};
 
@@ -117,6 +117,11 @@ impl<T> Grid<T> {
     #[inline]
     pub fn iter(&'_ self) -> Iter<'_, T> {
         self.data.iter()
+    }
+
+    #[inline]
+    pub fn iter_mut(&'_ mut self) -> IterMut<'_, T> {
+        self.data.iter_mut()
     }
 
     pub fn iter_xy(&self) -> impl Iterator<Item = (usize, usize, &T)> {

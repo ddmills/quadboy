@@ -49,6 +49,7 @@ pub enum Layer {
     Objects,
     Actors,
     Overlay,
+    Particles,
     UiPanels,
     Ui,
     DialogPanels,
@@ -63,6 +64,7 @@ impl Layer {
             Self::Objects,
             Self::Actors,
             Self::Overlay,
+            Self::Particles,
             Self::UiPanels,
             Self::Ui,
             Self::DialogPanels,
@@ -78,14 +80,15 @@ impl Layer {
             Self::Objects => 2,
             Self::Actors => 3,
             Self::Overlay => 4,
-            Self::UiPanels => 5,
-            Self::Ui => 6,
-            Self::DialogPanels => 7,
-            Self::DialogContent => 8,
+            Self::Particles => 5,
+            Self::UiPanels => 6,
+            Self::Ui => 7,
+            Self::DialogPanels => 8,
+            Self::DialogContent => 9,
         }
     }
 
-    pub const COUNT: usize = 9;
+    pub const COUNT: usize = 10;
 
     pub fn get_target_type(&self) -> RenderTargetType {
         match self {
@@ -94,6 +97,7 @@ impl Layer {
             Self::Objects => RenderTargetType::World,
             Self::Actors => RenderTargetType::World,
             Self::Overlay => RenderTargetType::World,
+            Self::Particles => RenderTargetType::World,
             Self::UiPanels => RenderTargetType::Screen,
             Self::Ui => RenderTargetType::Screen,
             Self::DialogPanels => RenderTargetType::Screen,

@@ -98,36 +98,37 @@ pub fn player_input(
     if keys.is_pressed(KeyCode::F) && turn_state.is_players_turn {
         // Fire at selected target if one exists
         if let Some(target_cycling) = target_cycling
-            && let Some(selected_entity) = target_cycling.current_selected_entity {
-                // Check if player has a ranged weapon equipped
-                let has_ranged_weapon = if let Some(equipment) = equipment_slots {
-                    equipment
-                        .get_equipped_item(crate::domain::EquipmentSlot::MainHand)
-                        .is_some()
-                } else {
-                    false
-                };
+            && let Some(selected_entity) = target_cycling.current_selected_entity
+        {
+            // Check if player has a ranged weapon equipped
+            let has_ranged_weapon = if let Some(equipment) = equipment_slots {
+                equipment
+                    .get_equipped_item(crate::domain::EquipmentSlot::MainHand)
+                    .is_some()
+            } else {
+                false
+            };
 
-                if has_ranged_weapon {
-                    // Find the selected target's position
-                    if let Some((_entity, pos, _dist)) = target_cycling
-                        .targets
-                        .iter()
-                        .find(|(entity, _, _)| *entity == selected_entity)
-                    {
-                        let target_x = pos.0.floor() as usize;
-                        let target_y = pos.1.floor() as usize;
-                        let target_z = pos.2 as usize;
+            if has_ranged_weapon {
+                // Find the selected target's position
+                if let Some((_entity, pos, _dist)) = target_cycling
+                    .targets
+                    .iter()
+                    .find(|(entity, _, _)| *entity == selected_entity)
+                {
+                    let target_x = pos.0.floor() as usize;
+                    let target_y = pos.1.floor() as usize;
+                    let target_z = pos.2 as usize;
 
-                        // Execute shoot action
-                        cmds.queue(ShootAction {
-                            shooter_entity: player_entity,
-                            target_pos: (target_x, target_y, target_z),
-                        });
-                        return;
-                    }
+                    // Execute shoot action
+                    cmds.queue(ShootAction {
+                        shooter_entity: player_entity,
+                        target_pos: (target_x, target_y, target_z),
+                    });
+                    return;
                 }
             }
+        }
     }
 
     if keys.is_pressed(KeyCode::O) {
@@ -342,9 +343,10 @@ pub fn render_player_debug(
         cursor.world.1.floor() as usize,
     );
 
+    let (local_x, local_y) = world_to_zone_local(cursor_x, cursor_y);
+
     // Get terrain at player position
     let terrain_str = if let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) {
-        let (local_x, local_y) = world_to_zone_local(cursor_x, cursor_y);
         if let Some(terrain) = zone.terrain.get(local_x, local_y) {
             terrain.label_formatted()
         } else {
@@ -355,9 +357,11 @@ pub fn render_player_debug(
     };
 
     debug.value = format!(
-        "MOUSE={{C|{}}},{{C|{}}} ZONE_IDX={{C|{}}} TERRAIN={} GLYPHS={{C|{}}} ACTORS={{C|{}}}",
+        "MOUSE={{C|{}}},{{C|{}}} LOCAL={{C|{}}},{{C|{}}} ZONE_IDX={{C|{}}} TERRAIN={} GLYPHS={{C|{}}} ACTORS={{C|{}}}",
         cursor_x,
         cursor_y,
+        local_x,
+        local_y,
         zone_idx,
         terrain_str,
         q_glyphs.iter().len(),

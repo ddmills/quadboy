@@ -25,7 +25,6 @@ impl ZoneGridData {
         }
     }
 
-
     pub fn set_terrain(&mut self, x: usize, y: usize, terrain: Terrain) {
         self.terrain.set(x, y, terrain);
     }

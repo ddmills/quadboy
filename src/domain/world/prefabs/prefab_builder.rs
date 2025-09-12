@@ -3,10 +3,10 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
-        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible,
-        Item, Label, LightBlocker, LightSource, Lightable, LootDrop, MaterialType, MeleeWeapon,
-        NeedsStableId, RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown,
-        StairUp, VisionBlocker,
+        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label,
+        LightBlocker, LightSource, Lightable, LootDrop, MaterialType, MeleeWeapon, NeedsStableId,
+        RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown, StairUp,
+        VisionBlocker,
     },
     rendering::{AnimatedGlyph, Glyph, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -184,7 +184,6 @@ impl<'a> PrefabBuilder<'a> {
         self.world.entity_mut(self.entity).insert(light);
         self
     }
-
 
     pub fn with_lightable(self) -> Self {
         self.world.entity_mut(self.entity).insert(Lightable::new());

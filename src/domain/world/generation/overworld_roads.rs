@@ -110,9 +110,7 @@ impl OverworldRoadGenerator {
             let from = window[0];
             let to = window[1];
 
-            let segment = RoadSegment {
-                road_type,
-            };
+            let segment = RoadSegment { road_type };
 
             network.edges.insert((from, to), segment.clone());
             network.edges.insert((to, from), segment);

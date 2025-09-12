@@ -6,10 +6,11 @@ use macroquad::{
     prelude::*,
 };
 use rendering::{
-    AmbientTransition, AnimatedGlyph, GameCamera, Layers, LightingData, Position, RenderTargets,
-    ScreenSize, Text, cleanup_smoke_trails, render_all, render_glyphs, render_text,
-    update_animated_glyphs, update_crt_uniforms, update_particle_colors_and_lifetime,
-    update_particle_movement, update_screen_size, update_smoke_spawn_timers, update_smoke_trails,
+    AmbientTransition, AnimatedGlyph, GameCamera, Layers, LightingData, ParticleGlyphPool,
+    ParticleGrid, Position, RenderTargets, ScreenSize, Text, cleanup_particle_glyphs, render_all,
+    render_glyphs, render_particle_fragments, render_text, update_animated_glyphs,
+    update_crt_uniforms, update_screen_size, update_particle_physics, update_particle_spawners,
+    update_particle_trails, update_particles,
 };
 use ui::UiLayout;
 
@@ -175,6 +176,8 @@ async fn main() {
         .init_resource::<StableIdRegistry>()
         .init_resource::<LightingData>()
         .init_resource::<AmbientTransition>()
+        .init_resource::<ParticleGrid>()
+        .init_resource::<ParticleGlyphPool>()
         .add_systems(
             ScheduleType::PreUpdate,
             (update_time, update_key_input, update_mouse_input),
@@ -215,14 +218,15 @@ async fn main() {
             (
                 bump_attack_system,
                 hit_blink_system,
-                update_particle_movement,
-                update_particle_colors_and_lifetime,
-                update_smoke_trails,
-                update_smoke_spawn_timers,
-                cleanup_smoke_trails,
                 update_animated_glyphs,
+                update_particle_physics,
+                update_particle_spawners,
+                update_particle_trails,
+                update_particles,
+                render_particle_fragments,
                 render_glyphs,
                 render_text,
+                cleanup_particle_glyphs,
             )
                 .chain(),
         )

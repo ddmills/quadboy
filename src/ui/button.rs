@@ -17,7 +17,6 @@ impl Activatable {
         ActivatableBuilder::new(&label.into(), callback).as_button(Layer::Ui)
     }
 
-
     pub fn hotkey(self, key: KeyCode) -> Activatable {
         match self {
             Activatable::Button {
