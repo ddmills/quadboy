@@ -8,7 +8,9 @@ use crate::{
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
-    rendering::{Glyph, Position, spawn_bullet_trail_in_world},
+    rendering::{
+        Glyph, Position, spawn_bullet_trail_in_world, spawn_destruction_particles_in_world,
+    },
 };
 
 pub struct ShootAction {
@@ -109,7 +111,9 @@ impl Command for ShootAction {
         audio.play(shoot_audio, 0.1);
 
         if let Some(shooter_pos) = shooter_pos {
-            spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 60.0);
+            world.resource_scope(|world, mut rand: Mut<crate::common::Rand>| {
+                spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 60.0, &mut rand);
+            });
         }
 
         if targets.is_empty() {
@@ -170,6 +174,11 @@ impl Command for ShootAction {
                                 crate::domain::MaterialType::Flesh,
                             );
                             world.send_event(event);
+                            spawn_destruction_particles_in_world(
+                                world,
+                                position_coords,
+                                crate::domain::MaterialType::Flesh,
+                            );
                         }
                     }
                 }
@@ -198,13 +207,15 @@ impl Command for ShootAction {
 
                     // Check if target was destroyed
                     if is_destroyed && let Some(position) = world.get::<Position>(target_entity) {
+                        let position_coords = position.world();
                         let event = EntityDestroyedEvent::with_material_type(
                             target_entity,
-                            position.world(),
+                            position_coords,
                             DestructionCause::Attack,
                             material_type,
                         );
                         world.send_event(event);
+                        spawn_destruction_particles_in_world(world, position_coords, material_type);
                     }
                 }
             }

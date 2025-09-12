@@ -93,6 +93,7 @@ pub fn update_particle_physics(
     mut cmds: Commands,
     mut q_particles: Query<(Entity, &mut Particle)>,
     time: Res<Time>,
+    mut rand: ResMut<crate::common::Rand>,
 ) {
     let dt = time.dt;
 
@@ -105,7 +106,7 @@ pub fn update_particle_physics(
         }
 
         // Update all curve-based properties
-        particle.update_properties(dt);
+        particle.update_properties(dt, &mut rand);
 
         // Check if particle has reached its target
         if let Some(target_pos) = particle.target_pos {
@@ -137,6 +138,7 @@ pub fn update_particle_spawners(
     mut cmds: Commands,
     mut q_spawners: Query<(Entity, &mut ParticleSpawner)>,
     time: Res<Time>,
+    mut rand: ResMut<crate::common::Rand>,
 ) {
     let dt = time.dt;
 
@@ -150,7 +152,7 @@ pub fn update_particle_spawners(
 
         if let Some(burst_count) = spawner.burst_count {
             for _ in 0..burst_count {
-                spawn_particle(&mut cmds, &spawner);
+                spawn_particle(&mut cmds, &spawner, &mut rand);
             }
             cmds.entity(entity).despawn();
             continue;
@@ -159,18 +161,22 @@ pub fn update_particle_spawners(
         let spawn_interval = 1.0 / spawner.spawn_rate;
         let elapsed_since_delay = spawner.timer - spawner.spawn_delay;
         if elapsed_since_delay >= spawn_interval {
-            spawn_particle(&mut cmds, &spawner);
+            spawn_particle(&mut cmds, &spawner, &mut rand);
             spawner.timer = spawner.spawn_delay + (elapsed_since_delay - spawn_interval);
         }
     }
 }
 
-pub fn spawn_particle(cmds: &mut Commands, spawner: &ParticleSpawner) {
+pub fn spawn_particle(
+    cmds: &mut Commands,
+    spawner: &ParticleSpawner,
+    rand: &mut crate::common::Rand,
+) {
     use super::curves::CurveEvaluator;
-    use macroquad::rand::gen_range;
 
-    let lifetime = gen_range(spawner.lifetime_min, spawner.lifetime_max);
-    let spawn_position = spawner.spawn_area.generate_position(spawner.position);
+    let lifetime =
+        spawner.lifetime_min + rand.random() * (spawner.lifetime_max - spawner.lifetime_min);
+    let spawn_position = spawner.spawn_area.generate_position(spawner.position, rand);
 
     // Initialize current values from curves
     let initial_velocity = spawner
@@ -203,7 +209,7 @@ pub fn spawn_particle(cmds: &mut Commands, spawner: &ParticleSpawner) {
             if glyphs.is_empty() {
                 '*'
             } else {
-                glyphs[gen_range(0, glyphs.len())]
+                glyphs[rand.pick_idx(glyphs)]
             }
         }
         super::core::GlyphAnimation::Sequence { glyphs, .. } => {
@@ -253,6 +259,7 @@ pub fn update_particle_trails(
     mut cmds: Commands,
     mut q_particles_with_trails: Query<(&mut ParticleTrail, &Particle)>,
     time: Res<Time>,
+    mut rand: ResMut<crate::common::Rand>,
 ) {
     let dt = time.dt;
 
@@ -262,7 +269,7 @@ pub fn update_particle_trails(
         let spawn_interval = 1.0 / trail.spawn_rate;
         if trail.last_spawn_time >= spawn_interval {
             trail.trail_spawner.position = particle.pos;
-            spawn_particle(&mut cmds, &trail.trail_spawner);
+            spawn_particle(&mut cmds, &trail.trail_spawner, &mut rand);
             trail.last_spawn_time = 0.0; // Reset timer
         }
     }

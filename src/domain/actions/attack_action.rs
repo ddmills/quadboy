@@ -4,11 +4,14 @@ use crate::{
     common::Rand,
     domain::{
         BumpAttack, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink,
-        MeleeWeapon, Player, Zone, get_energy_cost,
+        MaterialType, MeleeWeapon, Player, Zone, get_energy_cost,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
-    rendering::{Glyph, Position, spawn_directional_blood_mist, spawn_mining_sparks_in_world},
+    rendering::{
+        Glyph, Position, spawn_destruction_particles_in_world, spawn_directional_blood_mist,
+        spawn_material_hit_in_world,
+    },
 };
 
 pub struct AttackAction {
@@ -105,16 +108,14 @@ impl Command for AttackAction {
 
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if let Some((damage, can_damage)) = &weapon_damage
-                    && can_damage.contains(&crate::domain::MaterialType::Flesh)
+                    && can_damage.contains(&MaterialType::Flesh)
                 {
                     health.take_damage(*damage);
                     should_apply_hit_blink = true;
                     let is_dead = health.is_dead();
 
                     // Play hit audio for flesh target
-                    if let Some(audio_collection) =
-                        crate::domain::MaterialType::Flesh.hit_audio_collection()
-                    {
+                    if let Some(audio_collection) = MaterialType::Flesh.hit_audio_collection() {
                         world.resource_scope(|world, audio_registry: Mut<Audio>| {
                             if let Some(mut rand) = world.get_resource_mut::<Rand>() {
                                 audio_registry.play_random_from_collection(
@@ -142,7 +143,7 @@ impl Command for AttackAction {
                         if let Some(position_coords) = position_data {
                             // Play destroy audio for flesh target
                             if let Some(audio_collection) =
-                                crate::domain::MaterialType::Flesh.destroy_audio_collection()
+                                MaterialType::Flesh.destroy_audio_collection()
                             {
                                 world.resource_scope(|world, audio_registry: Mut<Audio>| {
                                     if let Some(mut rand) = world.get_resource_mut::<Rand>() {
@@ -159,9 +160,14 @@ impl Command for AttackAction {
                                 target_entity,
                                 position_coords,
                                 DestructionCause::Attack,
-                                crate::domain::MaterialType::Flesh,
+                                MaterialType::Flesh,
                             );
                             world.send_event(event);
+                            spawn_destruction_particles_in_world(
+                                world,
+                                position_coords,
+                                MaterialType::Flesh,
+                            );
                         }
                     }
                 }
@@ -177,15 +183,7 @@ impl Command for AttackAction {
                     should_apply_hit_blink = true;
                     let is_destroyed = destructible.is_destroyed();
 
-                    // Spawn spark particles when hitting stone
-                    if material_type == crate::domain::MaterialType::Stone {
-                        spawn_mining_sparks_in_world(
-                            world,
-                            self.target_pos,
-                            crate::domain::MaterialType::Stone,
-                            1.0,
-                        );
-                    }
+                    spawn_material_hit_in_world(world, self.target_pos, material_type, 1.0);
 
                     // Play hit audio
                     if let Some(audio_collection) = material_type.hit_audio_collection() {
@@ -204,13 +202,19 @@ impl Command for AttackAction {
                     if is_destroyed {
                         // Fire destruction event instead of handling directly
                         if let Some(position) = world.get::<Position>(target_entity) {
+                            let position_coords = position.world();
                             let event = EntityDestroyedEvent::with_material_type(
                                 target_entity,
-                                position.world(),
+                                position_coords,
                                 DestructionCause::Attack,
                                 material_type,
                             );
                             world.send_event(event);
+                            spawn_destruction_particles_in_world(
+                                world,
+                                position_coords,
+                                material_type,
+                            );
                         }
                     }
                 }

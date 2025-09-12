@@ -9,9 +9,7 @@ use crate::{
     domain::{
         PlayerPosition, TurnState, Zones, ai_turn,
         systems::{
-            cleanup_system::on_entity_destroyed_cleanup,
-            destruction_particle_system::on_entity_destroyed_particles_deferred,
-            loot_drop_system::on_entity_destroyed_loot,
+            cleanup_system::on_entity_destroyed_cleanup, loot_drop_system::on_entity_destroyed_loot,
         },
         turn_scheduler, update_entity_visibility_flags, update_lighting_system,
         update_player_position_resource, update_player_vision,
@@ -36,7 +34,6 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(ai_turn),
         world.register_system(on_entity_destroyed_loot),
         world.register_system(on_entity_destroyed_cleanup),
-        world.register_system(on_entity_destroyed_particles_deferred),
     ];
 
     world.insert_resource(GameSystems { all: systems });

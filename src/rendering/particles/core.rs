@@ -3,7 +3,7 @@ use macroquad::math::Vec2;
 
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, Palette},
+    common::{Grid, Palette, Rand},
     rendering::{Glyph, GlyphTextureId, Position, Visibility},
 };
 
@@ -114,7 +114,7 @@ impl Particle {
         (self.age / self.max_age).clamp(0., 1.)
     }
 
-    pub fn update_properties(&mut self, dt: f32) {
+    pub fn update_properties(&mut self, dt: f32, rand: &mut Rand) {
         let progress = self.progress();
 
         // Update curves
@@ -132,10 +132,10 @@ impl Particle {
         }
 
         // Update glyph animation
-        self.update_glyph_animation(dt);
+        self.update_glyph_animation(dt, rand);
     }
 
-    fn update_glyph_animation(&mut self, dt: f32) {
+    fn update_glyph_animation(&mut self, dt: f32, rand: &mut Rand) {
         match &mut self.glyph_animation {
             GlyphAnimation::Static(glyph) => {
                 self.current_glyph = *glyph;
@@ -153,15 +153,13 @@ impl Particle {
                 if let Some(rate) = change_rate {
                     *last_change += dt;
                     if *last_change >= 1.0 / *rate {
-                        use macroquad::rand::gen_range;
-                        let index = gen_range(0, glyphs.len());
+                        let index = rand.pick_idx(glyphs);
                         self.current_glyph = glyphs[index];
                         *last_change = 0.0;
                     }
                 } else {
                     // Change every frame if no rate specified
-                    use macroquad::rand::gen_range;
-                    let index = gen_range(0, glyphs.len());
+                    let index = rand.pick_idx(glyphs);
                     self.current_glyph = glyphs[index];
                 }
             }

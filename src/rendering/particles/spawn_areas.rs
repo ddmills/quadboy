@@ -1,5 +1,8 @@
+use std::f32::consts::PI;
+
 use macroquad::math::Vec2;
-use macroquad::rand::{gen_range, rand};
+
+use crate::common::Rand;
 
 #[derive(Clone, Debug)]
 pub enum SpawnArea {
@@ -41,26 +44,26 @@ pub enum SpawnSpacing {
 }
 
 impl SpawnArea {
-    pub fn generate_position(&self, base_position: Vec2) -> Vec2 {
+    pub fn generate_position(&self, base_position: Vec2, rand: &mut Rand) -> Vec2 {
         match self {
             SpawnArea::Point => base_position,
 
             SpawnArea::Circle {
                 radius,
                 distribution,
-            } => base_position + generate_circle_position(*radius, distribution),
+            } => base_position + generate_circle_position(*radius, distribution, rand),
 
             SpawnArea::Rectangle {
                 width,
                 height,
                 distribution,
-            } => base_position + generate_rectangle_position(*width, *height, distribution),
+            } => base_position + generate_rectangle_position(*width, *height, distribution, rand),
 
             SpawnArea::Line {
                 start,
                 end,
                 spacing,
-            } => base_position + generate_line_position(*start, *end, spacing),
+            } => base_position + generate_line_position(*start, *end, spacing, rand),
 
             SpawnArea::Arc {
                 radius,
@@ -69,47 +72,58 @@ impl SpawnArea {
                 radial_distribution,
             } => {
                 base_position
-                    + generate_arc_position(*radius, *angle_start, *angle_end, radial_distribution)
+                    + generate_arc_position(
+                        *radius,
+                        *angle_start,
+                        *angle_end,
+                        radial_distribution,
+                        rand,
+                    )
             }
         }
     }
 }
 
-fn generate_circle_position(radius: f32, distribution: &Distribution) -> Vec2 {
+fn generate_circle_position(radius: f32, distribution: &Distribution, rand: &mut Rand) -> Vec2 {
     match distribution {
         Distribution::Uniform => {
             // Random point within circle using rejection sampling for uniform distribution
-            let r = radius * (rand() as f32).sqrt(); // sqrt for uniform area distribution
-            let theta = gen_range(0.0, 2.0 * std::f32::consts::PI);
+            let r = radius * rand.random().sqrt(); // sqrt for uniform area distribution
+            let theta = rand.random() * 2.0 * PI;
             Vec2::new(r * theta.cos(), r * theta.sin())
         }
 
         Distribution::EdgeOnly => {
             // Random point on circle circumference
-            let theta = gen_range(0.0, 2.0 * std::f32::consts::PI);
+            let theta = rand.random() * 2.0 * PI;
             Vec2::new(radius * theta.cos(), radius * theta.sin())
         }
 
         Distribution::Gaussian => {
             // Gaussian distribution toward center (using Box-Muller transform approximation)
-            let r = (gen_range(0.0, 1.0) + gen_range(0.0, 1.0)) * 0.5 * radius;
-            let theta = gen_range(0.0, 2.0 * std::f32::consts::PI);
+            let r = (rand.random() + rand.random()) * 0.5 * radius;
+            let theta = rand.random() * 2.0 * PI;
             Vec2::new(r * theta.cos(), r * theta.sin())
         }
     }
 }
 
-fn generate_rectangle_position(width: f32, height: f32, distribution: &Distribution) -> Vec2 {
+fn generate_rectangle_position(
+    width: f32,
+    height: f32,
+    distribution: &Distribution,
+    rand: &mut Rand,
+) -> Vec2 {
     match distribution {
         Distribution::Uniform => Vec2::new(
-            gen_range(-width * 0.5, width * 0.5),
-            gen_range(-height * 0.5, height * 0.5),
+            rand.random() * width - width * 0.5,
+            rand.random() * height - height * 0.5,
         ),
 
         Distribution::EdgeOnly => {
             // Random point on rectangle perimeter
             let perimeter = 2.0 * (width + height);
-            let t = gen_range(0.0, perimeter);
+            let t = rand.random() * perimeter;
 
             if t < width {
                 // Top edge
@@ -128,21 +142,21 @@ fn generate_rectangle_position(width: f32, height: f32, distribution: &Distribut
 
         Distribution::Gaussian => {
             // Gaussian distribution toward center
-            let x = (gen_range(0.0, 1.0) + gen_range(0.0, 1.0) - 1.0) * width * 0.5;
-            let y = (gen_range(0.0, 1.0) + gen_range(0.0, 1.0) - 1.0) * height * 0.5;
+            let x = (rand.random() + rand.random() - 1.0) * width * 0.5;
+            let y = (rand.random() + rand.random() - 1.0) * height * 0.5;
             Vec2::new(x, y)
         }
     }
 }
 
-fn generate_line_position(start: Vec2, end: Vec2, spacing: &SpawnSpacing) -> Vec2 {
+fn generate_line_position(start: Vec2, end: Vec2, spacing: &SpawnSpacing, rand: &mut Rand) -> Vec2 {
     let t = match spacing {
-        SpawnSpacing::Uniform => gen_range(0.0, 1.0),
-        SpawnSpacing::Random => gen_range(0.0, 1.0),
+        SpawnSpacing::Uniform => rand.random(),
+        SpawnSpacing::Random => rand.random(),
         SpawnSpacing::Count(_count) => {
             // For count spacing, we need context of which particle this is
             // For now, treat as uniform random
-            gen_range(0.0, 1.0)
+            rand.random()
         }
     };
 
@@ -154,16 +168,17 @@ fn generate_arc_position(
     angle_start: f32,
     angle_end: f32,
     distribution: &Distribution,
+    rand: &mut Rand,
 ) -> Vec2 {
     let angle_range = angle_end - angle_start;
-    let angle = angle_start + gen_range(0.0, angle_range);
+    let angle = angle_start + rand.random() * angle_range;
 
     let r = match distribution {
-        Distribution::Uniform => gen_range(0.0, radius),
+        Distribution::Uniform => rand.random() * radius,
         Distribution::EdgeOnly => radius,
         Distribution::Gaussian => {
             // Gaussian distribution toward center
-            (gen_range(0.0, 1.0) + gen_range(0.0, 1.0)) * 0.5 * radius
+            (rand.random() + rand.random()) * 0.5 * radius
         }
     };
 
