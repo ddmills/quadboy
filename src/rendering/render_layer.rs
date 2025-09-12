@@ -13,6 +13,7 @@ pub enum GlyphTextureId {
     #[default]
     Cowboy,
     BodyFont,
+    Creatures,
 }
 
 impl GlyphTextureId {
@@ -21,6 +22,7 @@ impl GlyphTextureId {
         match self {
             Self::Cowboy => 0,
             Self::BodyFont => 1,
+            Self::Creatures => 2,
         }
     }
 
@@ -29,6 +31,7 @@ impl GlyphTextureId {
         match self {
             Self::Cowboy => TILE_SIZE_F32.0,
             Self::BodyFont => BODY_FONT_SIZE_F32.0,
+            Self::Creatures => TILE_SIZE_F32.0,
         }
     }
 
@@ -37,6 +40,7 @@ impl GlyphTextureId {
         match self {
             Self::Cowboy => TILE_SIZE_F32.1,
             Self::BodyFont => BODY_FONT_SIZE_F32.1,
+            Self::Creatures => TILE_SIZE_F32.1,
         }
     }
 }
@@ -116,6 +120,7 @@ impl FromWorld for Layers {
         let textures = world.get_resource::<TilesetRegistry>().unwrap();
         let texture_glyph = textures.glyph_texture.raw_miniquad_id();
         let texture_body_text = textures.font_body_texture.raw_miniquad_id();
+        let texture_creatures = textures.creatures_texture.raw_miniquad_id();
 
         let all = Layer::get_all()
             .into_iter()
@@ -123,6 +128,7 @@ impl FromWorld for Layers {
                 GlyphBatch::new(
                     texture_glyph,
                     texture_body_text,
+                    texture_creatures,
                     layer.get_target_type(),
                     4000,
                 )

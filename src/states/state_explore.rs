@@ -7,7 +7,8 @@ use crate::{
     domain::{
         Player, PlayerDebug, PlayerMovedEvent, collect_valid_targets, game_loop,
         handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
-        render_target_crosshair, render_target_info, spawn_targeting_ui, update_target_cycling,
+        render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
+        update_target_cycling,
     },
     engine::{App, Plugin, SerializableComponent},
     rendering::Position,
@@ -41,6 +42,7 @@ impl Plugin for ExploreStatePlugin {
                 (
                     collect_valid_targets,
                     update_target_cycling,
+                    update_mouse_targeting,
                     render_target_crosshair,
                     render_target_info,
                     render_player_debug,

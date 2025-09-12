@@ -1,9 +1,10 @@
 use super::{
-    SpawnPrefabCommand, spawn_apple, spawn_bandit, spawn_bedroll, spawn_boulder, spawn_cactus,
-    spawn_campfire, spawn_cavalry_sword, spawn_chest, spawn_double_barrel_shotgun, spawn_duster,
-    spawn_dynamite, spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_lever_action_rifle,
-    spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe, spawn_pine_tree,
-    spawn_poncho, spawn_stair_down, spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile,
+    SpawnPrefabCommand, spawn_apple, spawn_bandit, spawn_bat, spawn_bedroll, spawn_boulder,
+    spawn_brown_bear, spawn_cactus, spawn_campfire, spawn_cavalry_sword, spawn_chest, spawn_coyote,
+    spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite, spawn_giant_firefly,
+    spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_lever_action_rifle, spawn_long_johns,
+    spawn_navy_revolver, spawn_overcoat, spawn_pickaxe, spawn_pine_tree, spawn_poncho,
+    spawn_rattlesnake, spawn_stair_down, spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile,
     spawn_wool_shirt,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
@@ -21,6 +22,11 @@ pub enum PrefabId {
     Chest,
     GiantMushroom,
     Bandit,
+    BrownBear,
+    Rattlesnake,
+    Bat,
+    Coyote,
+    GiantFirefly,
     Hatchet,
     Lantern,
     Pickaxe,
@@ -107,6 +113,11 @@ impl Prefabs {
         self.register(PrefabId::Chest, spawn_chest);
         self.register(PrefabId::GiantMushroom, spawn_giant_mushroom);
         self.register(PrefabId::Bandit, spawn_bandit);
+        self.register(PrefabId::BrownBear, spawn_brown_bear);
+        self.register(PrefabId::Rattlesnake, spawn_rattlesnake);
+        self.register(PrefabId::Bat, spawn_bat);
+        self.register(PrefabId::Coyote, spawn_coyote);
+        self.register(PrefabId::GiantFirefly, spawn_giant_firefly);
         self.register(PrefabId::Hatchet, spawn_hatchet);
         self.register(PrefabId::Lantern, spawn_lantern);
         self.register(PrefabId::Pickaxe, spawn_pickaxe);
@@ -192,6 +203,11 @@ impl fmt::Display for PrefabId {
             PrefabId::Chest => write!(f, "Chest"),
             PrefabId::GiantMushroom => write!(f, "Giant Mushroom"),
             PrefabId::Bandit => write!(f, "Bandit"),
+            PrefabId::BrownBear => write!(f, "Brown Bear"),
+            PrefabId::Rattlesnake => write!(f, "Rattlesnake"),
+            PrefabId::Bat => write!(f, "Bat"),
+            PrefabId::Coyote => write!(f, "Coyote"),
+            PrefabId::GiantFirefly => write!(f, "Giant Firefly"),
             PrefabId::Hatchet => write!(f, "Hatchet"),
             PrefabId::Lantern => write!(f, "Lantern"),
             PrefabId::Pickaxe => write!(f, "Pickaxe"),

@@ -8,7 +8,7 @@ use crate::{
         RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown, StairUp,
         VisionBlocker,
     },
-    rendering::{AnimatedGlyph, Glyph, Layer, Position, RecordZonePosition},
+    rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -43,6 +43,22 @@ impl<'a> PrefabBuilder<'a> {
         self.world
             .entity_mut(self.entity)
             .insert(Glyph::new(glyph_char, fg1, fg2).layer(layer));
+        self
+    }
+
+    pub fn with_glyph_and_texture(
+        self,
+        glyph_char: usize,
+        fg1: Palette,
+        fg2: Palette,
+        layer: Layer,
+        texture_id: GlyphTextureId,
+    ) -> Self {
+        self.world.entity_mut(self.entity).insert(
+            Glyph::new(glyph_char, fg1, fg2)
+                .layer(layer)
+                .texture(texture_id),
+        );
         self
     }
 

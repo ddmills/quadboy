@@ -62,6 +62,7 @@ impl Default for Glyph {
 pub struct TilesetRegistry {
     pub glyph_texture: Texture2D,
     pub font_body_texture: Texture2D,
+    pub creatures_texture: Texture2D,
 }
 
 impl TilesetRegistry {
@@ -70,13 +71,16 @@ impl TilesetRegistry {
         // let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
         let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
         // let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
+        let creatures_texture_fut = load_texture("./src/assets/textures/creatures.png");
 
         let glyph_texture = glyph_texture_fut.await.unwrap();
         let font_body_texture = font_body_texture_fut.await.unwrap();
+        let creatures_texture = creatures_texture_fut.await.unwrap();
 
         TilesetRegistry {
             glyph_texture,
             font_body_texture,
+            creatures_texture,
         }
     }
 }

@@ -31,6 +31,11 @@ pub enum LootTableId {
 
     // Death loot tables
     BanditLoot,
+    BrownBearLoot,
+    RattlesnakeLoot,
+    BatLoot,
+    CoyoteLoot,
+    GiantFireflyLoot,
     BoulderLoot,
 }
 
@@ -167,17 +172,29 @@ impl LootTableRegistry {
         // Enemy tables
         self.tables.insert(
             LootTableId::ForestEnemies,
-            LootTable::builder().add(PrefabId::Bandit, 1.0).build(),
+            LootTable::builder()
+                .add(PrefabId::Bandit, 1.0)
+                .add(PrefabId::BrownBear, 0.8)
+                .add(PrefabId::Coyote, 0.6)
+                .add(PrefabId::GiantFirefly, 0.4)
+                .build(),
         );
 
         self.tables.insert(
             LootTableId::DesertEnemies,
-            LootTable::builder().add(PrefabId::Bandit, 1.0).build(),
+            LootTable::builder()
+                .add(PrefabId::Bandit, 1.0)
+                .add(PrefabId::Rattlesnake, 0.9)
+                .add(PrefabId::Coyote, 0.5)
+                .build(),
         );
 
         self.tables.insert(
             LootTableId::CavernEnemies,
-            LootTable::builder().add(PrefabId::Bandit, 1.0).build(),
+            LootTable::builder()
+                .add(PrefabId::Bandit, 1.0)
+                .add(PrefabId::Bat, 0.8)
+                .build(),
         );
 
         self.tables
@@ -185,7 +202,11 @@ impl LootTableRegistry {
 
         self.tables.insert(
             LootTableId::MountainEnemies,
-            LootTable::builder().add(PrefabId::Bandit, 1.0).build(),
+            LootTable::builder()
+                .add(PrefabId::Bandit, 1.0)
+                .add(PrefabId::BrownBear, 0.7)
+                .add(PrefabId::Coyote, 0.6)
+                .build(),
         );
 
         // Common chest loot (fallback)
@@ -204,6 +225,43 @@ impl LootTableRegistry {
         self.tables.insert(
             LootTableId::BanditLoot,
             LootTable::builder().add(PrefabId::GoldNugget, 1.0).build(),
+        );
+
+        self.tables.insert(
+            LootTableId::BrownBearLoot,
+            LootTable::builder()
+                .add(PrefabId::GoldNugget, 0.5)
+                .add(PrefabId::Apple, 1.0)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::RattlesnakeLoot,
+            LootTable::builder()
+                .add(PrefabId::GoldNugget, 0.3)
+                .add(PrefabId::Dynamite, 0.8)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::BatLoot,
+            LootTable::builder().add(PrefabId::GoldNugget, 0.2).build(),
+        );
+
+        self.tables.insert(
+            LootTableId::CoyoteLoot,
+            LootTable::builder()
+                .add(PrefabId::GoldNugget, 0.4)
+                .add(PrefabId::Apple, 0.8)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::GiantFireflyLoot,
+            LootTable::builder()
+                .add(PrefabId::GoldNugget, 0.6)
+                .add(PrefabId::Lantern, 0.5)
+                .build(),
         );
 
         self.tables.insert(

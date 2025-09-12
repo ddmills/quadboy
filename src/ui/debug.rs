@@ -176,7 +176,7 @@ pub fn spawn_debug_ui_entities(cmds: &mut Commands, cleanup_marker: impl Compone
     cmds.spawn((
         Glyph::new(0, Palette::Orange, Palette::Orange)
             .bg(Palette::Orange)
-            .alpha(0.1)
+            .alpha(0.8)
             .layer(Layer::GroundOverlay),
         Position::new_f32(0., 0., 0.),
         CursorGlyph,
@@ -210,6 +210,7 @@ pub fn spawn_debug_ui_entities(cmds: &mut Commands, cleanup_marker: impl Compone
         Text::new("Light: R:0.0 G:0.0 B:0.0 I:0.0").bg(Palette::Black),
         Position::new_f32(0., 1.0, 0.),
         LightingDebugText,
+        Visibility::Hidden,
         cleanup_marker.clone(),
     ));
 
@@ -218,6 +219,7 @@ pub fn spawn_debug_ui_entities(cmds: &mut Commands, cleanup_marker: impl Compone
         Text::new("#ff00ff").fg1(Palette::White).bg(0xff00ff_u32),
         Position::new_f32(0., 2.5, 0.),
         LightingDebugAmbient,
+        Visibility::Hidden,
         cleanup_marker,
     ));
 }

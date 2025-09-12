@@ -11,7 +11,7 @@ use crate::{
         Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
-    rendering::{GameCamera, Glyph, Layer, Position, RecordZonePosition},
+    rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -48,7 +48,9 @@ impl NewGameCommand {
         let player_entity = world
             .spawn((
                 starting_position.clone(),
-                Glyph::new(147, Palette::White, Palette::Blue).layer(Layer::Actors),
+                Glyph::new(4, Palette::White, Palette::Blue)
+                    .layer(Layer::Actors)
+                    .texture(GlyphTextureId::Creatures),
                 Player,
                 StableId::new(player_id),
                 Inventory::new(50.0),

@@ -7,7 +7,7 @@ use crate::{
         EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, MeleeWeapon, Player,
         RangedWeapon, Zone,
     },
-    engine::{KeyInput, StableIdRegistry},
+    engine::{KeyInput, Mouse, StableIdRegistry},
     rendering::{
         AnimatedGlyph, Glyph, Layer, Position, Text, Visibility, world_to_zone_idx,
         world_to_zone_local,
@@ -217,6 +217,39 @@ pub fn update_target_cycling(mut target_cycling: ResMut<TargetCycling>, keys: Re
             && let Some((entity, _, _)) = target_cycling.targets.get(idx)
         {
             target_cycling.current_selected_entity = Some(*entity);
+        }
+    }
+}
+
+pub fn update_mouse_targeting(mut target_cycling: ResMut<TargetCycling>, mouse: Res<Mouse>) {
+    // Only update targeting when mouse moves and we have targets available
+    if mouse.has_moved && !target_cycling.targets.is_empty() {
+        let mouse_world = mouse.world;
+
+        // Find the closest target to mouse position
+        let mut closest_idx = None;
+        let mut closest_distance = f32::INFINITY;
+
+        for (idx, (_entity, target_pos, _target_distance)) in
+            target_cycling.targets.iter().enumerate()
+        {
+            // Calculate distance from mouse to target (Euclidean distance)
+            let dx = target_pos.0 - mouse_world.0;
+            let dy = target_pos.1 - mouse_world.1;
+            let distance = (dx * dx + dy * dy).sqrt();
+
+            if distance < closest_distance {
+                closest_distance = distance;
+                closest_idx = Some(idx);
+            }
+        }
+
+        // Update targeting to closest target
+        if let Some(idx) = closest_idx {
+            target_cycling.current_index = Some(idx);
+            if let Some((entity, _, _)) = target_cycling.targets.get(idx) {
+                target_cycling.current_selected_entity = Some(*entity);
+            }
         }
     }
 }

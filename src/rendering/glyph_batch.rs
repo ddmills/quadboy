@@ -68,6 +68,7 @@ impl GlyphBatch {
     pub fn new(
         texture_id_1: TextureId,
         texture_id_2: TextureId,
+        texture_id_3: TextureId,
         target_type: RenderTargetType,
         max_size: usize,
     ) -> GlyphBatch {
@@ -106,7 +107,11 @@ impl GlyphBatch {
                     fragment: FRAGMENT,
                 },
                 ShaderMeta {
-                    images: vec!["tex_1".to_string(), "tex_2".to_string()],
+                    images: vec![
+                        "tex_1".to_string(),
+                        "tex_2".to_string(),
+                        "tex_3".to_string(),
+                    ],
                     uniforms: UniformBlockLayout {
                         uniforms: vec![
                             UniformDesc::new("projection", UniformType::Mat4),
@@ -178,7 +183,7 @@ impl GlyphBatch {
                 BufferUsage::Immutable,
                 BufferSource::slice(&quad_indices),
             ),
-            images: vec![texture_id_1, texture_id_2],
+            images: vec![texture_id_1, texture_id_2, texture_id_3],
         };
 
         GlyphBatch {

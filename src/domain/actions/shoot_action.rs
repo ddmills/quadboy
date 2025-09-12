@@ -3,12 +3,12 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        get_energy_cost, systems::destruction_system::{DestructionCause, EntityDestroyedEvent}, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType, RangedWeapon, Zone
+        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType,
+        RangedWeapon, Zone, get_energy_cost,
+        systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
-    rendering::{
-        spawn_bullet_trail_in_world, spawn_material_hit_in_world, Glyph, Position
-    },
+    rendering::{Glyph, Position, spawn_bullet_trail_in_world, spawn_material_hit_in_world},
 };
 
 pub struct ShootAction {
@@ -172,7 +172,7 @@ impl Command for ShootAction {
                                 MaterialType::Flesh,
                             );
                             world.send_event(event);
-                            
+
                             // Calculate direction from shooter to target for particles
                             if let Some(shooter_pos) = world.get::<Position>(self.shooter_entity) {
                                 let dx = position_coords.0 as f32 - shooter_pos.x;
@@ -221,13 +221,18 @@ impl Command for ShootAction {
                             material_type,
                         );
                         world.send_event(event);
-                        
+
                         // Calculate direction from shooter to target for particles
                         if let Some(shooter_pos) = world.get::<Position>(self.shooter_entity) {
                             let dx = position_coords.0 as f32 - shooter_pos.x;
                             let dy = position_coords.1 as f32 - shooter_pos.y;
                             let direction = macroquad::math::Vec2::new(dx, dy);
-                            spawn_material_hit_in_world(world, position_coords, material_type, direction);
+                            spawn_material_hit_in_world(
+                                world,
+                                position_coords,
+                                material_type,
+                                direction,
+                            );
                         }
                     }
                 }

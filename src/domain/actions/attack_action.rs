@@ -8,10 +8,7 @@ use crate::{
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     engine::{Audio, StableIdRegistry},
-    rendering::{
-        Glyph, Position, spawn_directional_blood_mist,
-        spawn_material_hit_in_world,
-    },
+    rendering::{Glyph, Position, spawn_directional_blood_mist, spawn_material_hit_in_world},
 };
 
 pub struct AttackAction {
@@ -163,9 +160,10 @@ impl Command for AttackAction {
                                 MaterialType::Flesh,
                             );
                             world.send_event(event);
-                            
+
                             // Calculate direction from attacker to target for particles
-                            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+                            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity)
+                            {
                                 let dx = position_coords.0 as f32 - attacker_pos.x;
                                 let dy = position_coords.1 as f32 - attacker_pos.y;
                                 let direction = macroquad::math::Vec2::new(dx, dy);
@@ -196,7 +194,12 @@ impl Command for AttackAction {
                         let dx = self.target_pos.0 as f32 - attacker_pos.x;
                         let dy = self.target_pos.1 as f32 - attacker_pos.y;
                         let direction = macroquad::math::Vec2::new(dx, dy);
-                        spawn_material_hit_in_world(world, self.target_pos, material_type, direction);
+                        spawn_material_hit_in_world(
+                            world,
+                            self.target_pos,
+                            material_type,
+                            direction,
+                        );
                     }
 
                     // Play hit audio
@@ -224,9 +227,10 @@ impl Command for AttackAction {
                                 material_type,
                             );
                             world.send_event(event);
-                            
+
                             // Calculate direction from attacker to target for particles
-                            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
+                            if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity)
+                            {
                                 let dx = position_coords.0 as f32 - attacker_pos.x;
                                 let dy = position_coords.1 as f32 - attacker_pos.y;
                                 let direction = macroquad::math::Vec2::new(dx, dy);
