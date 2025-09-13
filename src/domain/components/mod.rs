@@ -19,6 +19,7 @@ pub mod ranged_weapon;
 pub mod stairs;
 pub mod stats;
 pub mod vision;
+pub mod weapon_family;
 
 pub use attributes::{AttributePoints, Attributes};
 pub use bitmask::*;
@@ -46,3 +47,4 @@ pub use stats::{ModifierSource, StatModifier, StatModifiers, StatType, Stats};
 pub use vision::{
     ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Vision, VisionBlocker,
 };
+pub use weapon_family::WeaponFamily;

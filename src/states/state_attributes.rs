@@ -42,6 +42,12 @@ struct AttributesUIEntities {
     speed_display: Entity,
     armor_display: Entity,
     armor_regen_display: Entity,
+    rifle_display: Entity,
+    shotgun_display: Entity,
+    pistol_display: Entity,
+    blade_display: Entity,
+    cudgel_display: Entity,
+    unarmed_display: Entity,
 }
 
 pub struct AttributesStatePlugin;
@@ -274,6 +280,73 @@ fn update_attributes_display(
         text.value = format!(
             "Armor Regen:  {}  (Intelligence: {} + Modifiers: {:+})",
             armor_regen_total, armor_regen_base, armor_regen_modifiers
+        );
+    }
+
+    // Update weapon family stats
+    let rifle_base = StatType::Rifle.get_base_value(attributes);
+    let rifle_modifiers = stat_modifiers.get_total_for_stat(StatType::Rifle);
+    let rifle_total = stats.get_stat(StatType::Rifle);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.rifle_display) {
+        text.value = format!(
+            "Rifle:        {}  (Dexterity: {} + Modifiers: {:+})",
+            rifle_total, rifle_base, rifle_modifiers
+        );
+    }
+
+    let shotgun_base = StatType::Shotgun.get_base_value(attributes);
+    let shotgun_modifiers = stat_modifiers.get_total_for_stat(StatType::Shotgun);
+    let shotgun_total = stats.get_stat(StatType::Shotgun);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.shotgun_display) {
+        text.value = format!(
+            "Shotgun:      {}  (Strength: {} + Modifiers: {:+})",
+            shotgun_total, shotgun_base, shotgun_modifiers
+        );
+    }
+
+    let pistol_base = StatType::Pistol.get_base_value(attributes);
+    let pistol_modifiers = stat_modifiers.get_total_for_stat(StatType::Pistol);
+    let pistol_total = stats.get_stat(StatType::Pistol);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.pistol_display) {
+        text.value = format!(
+            "Pistol:       {}  (Strength: {} + Modifiers: {:+})",
+            pistol_total, pistol_base, pistol_modifiers
+        );
+    }
+
+    let blade_base = StatType::Blade.get_base_value(attributes);
+    let blade_modifiers = stat_modifiers.get_total_for_stat(StatType::Blade);
+    let blade_total = stats.get_stat(StatType::Blade);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.blade_display) {
+        text.value = format!(
+            "Blade:        {}  (Dexterity: {} + Modifiers: {:+})",
+            blade_total, blade_base, blade_modifiers
+        );
+    }
+
+    let cudgel_base = StatType::Cudgel.get_base_value(attributes);
+    let cudgel_modifiers = stat_modifiers.get_total_for_stat(StatType::Cudgel);
+    let cudgel_total = stats.get_stat(StatType::Cudgel);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.cudgel_display) {
+        text.value = format!(
+            "Cudgel:       {}  (Strength: {} + Modifiers: {:+})",
+            cudgel_total, cudgel_base, cudgel_modifiers
+        );
+    }
+
+    let unarmed_base = StatType::Unarmed.get_base_value(attributes);
+    let unarmed_modifiers = stat_modifiers.get_total_for_stat(StatType::Unarmed);
+    let unarmed_total = stats.get_stat(StatType::Unarmed);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.unarmed_display) {
+        text.value = format!(
+            "Unarmed:      {}  (Strength: {} + Modifiers: {:+})",
+            unarmed_total, unarmed_base, unarmed_modifiers
         );
     }
 }
@@ -558,6 +631,137 @@ fn setup_attributes_screen(
         ))
         .id();
 
+    y_pos += 1.0;
+
+    // Weapon Proficiencies Section
+    cmds.spawn((
+        Text::new("=== WEAPON PROFICIENCIES ===")
+            .fg1(Palette::Cyan)
+            .layer(Layer::Ui),
+        Position::new_f32(left_x, y_pos, 0.),
+        CleanupStateAttributes,
+    ));
+
+    y_pos += 0.5;
+
+    // Rifle
+    let rifle_base = StatType::Rifle.get_base_value(attributes);
+    let rifle_modifiers = stat_modifiers.get_total_for_stat(StatType::Rifle);
+    let rifle_total = stats.get_stat(StatType::Rifle);
+
+    let rifle_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Rifle:        {}  (Dexterity: {} + Modifiers: {:+})",
+                rifle_total, rifle_base, rifle_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    // Shotgun
+    let shotgun_base = StatType::Shotgun.get_base_value(attributes);
+    let shotgun_modifiers = stat_modifiers.get_total_for_stat(StatType::Shotgun);
+    let shotgun_total = stats.get_stat(StatType::Shotgun);
+
+    let shotgun_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Shotgun:      {}  (Strength: {} + Modifiers: {:+})",
+                shotgun_total, shotgun_base, shotgun_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    // Pistol
+    let pistol_base = StatType::Pistol.get_base_value(attributes);
+    let pistol_modifiers = stat_modifiers.get_total_for_stat(StatType::Pistol);
+    let pistol_total = stats.get_stat(StatType::Pistol);
+
+    let pistol_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Pistol:       {}  (Strength: {} + Modifiers: {:+})",
+                pistol_total, pistol_base, pistol_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    // Blade
+    let blade_base = StatType::Blade.get_base_value(attributes);
+    let blade_modifiers = stat_modifiers.get_total_for_stat(StatType::Blade);
+    let blade_total = stats.get_stat(StatType::Blade);
+
+    let blade_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Blade:        {}  (Dexterity: {} + Modifiers: {:+})",
+                blade_total, blade_base, blade_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    // Cudgel
+    let cudgel_base = StatType::Cudgel.get_base_value(attributes);
+    let cudgel_modifiers = stat_modifiers.get_total_for_stat(StatType::Cudgel);
+    let cudgel_total = stats.get_stat(StatType::Cudgel);
+
+    let cudgel_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Cudgel:       {}  (Strength: {} + Modifiers: {:+})",
+                cudgel_total, cudgel_base, cudgel_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    // Unarmed
+    let unarmed_base = StatType::Unarmed.get_base_value(attributes);
+    let unarmed_modifiers = stat_modifiers.get_total_for_stat(StatType::Unarmed);
+    let unarmed_total = stats.get_stat(StatType::Unarmed);
+
+    let unarmed_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Unarmed:      {}  (Strength: {} + Modifiers: {:+})",
+                unarmed_total, unarmed_base, unarmed_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     y_pos += 1.5;
 
     // Back Button
@@ -579,5 +783,11 @@ fn setup_attributes_screen(
         speed_display,
         armor_display,
         armor_regen_display,
+        rifle_display,
+        shotgun_display,
+        pistol_display,
+        blade_display,
+        cudgel_display,
+        unarmed_display,
     });
 }

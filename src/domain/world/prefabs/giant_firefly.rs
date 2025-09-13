@@ -18,7 +18,7 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
         )
         .with_label("Giant Firefly")
         .with_energy(-110)
-        .with_health(12)
+        .with_health()
         .with_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::electric_touch())

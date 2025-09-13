@@ -121,10 +121,10 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
-    pub fn with_health(self, health: i32) -> Self {
+    pub fn with_health(self) -> Self {
         self.world
             .entity_mut(self.entity)
-            .insert(Health::new(health));
+            .insert(Health::new_full());
         self
     }
 

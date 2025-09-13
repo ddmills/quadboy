@@ -12,6 +12,12 @@ pub enum StatType {
     Speed,      // Dexterity + modifiers (affects movement energy cost)
     Armor,      // Only affected by modifiers (no base attribute)
     ArmorRegen, // Intelligence + modifiers (affects armor regeneration rate)
+    Rifle,      // Dexterity + modifiers (rifle weapon proficiency)
+    Shotgun,    // Strength + modifiers (shotgun weapon proficiency)
+    Pistol,     // Strength + modifiers (pistol weapon proficiency)
+    Blade,      // Dexterity + modifiers (blade weapon proficiency)
+    Cudgel,     // Strength + modifiers (cudgel weapon proficiency)
+    Unarmed,    // Strength + modifiers (unarmed combat proficiency)
 }
 
 impl StatType {
@@ -21,6 +27,12 @@ impl StatType {
             StatType::Speed => attributes.dexterity as i32,
             StatType::Armor => 0, // No base attribute, only modifiers
             StatType::ArmorRegen => attributes.intelligence as i32,
+            StatType::Rifle => attributes.dexterity as i32,
+            StatType::Shotgun => attributes.strength as i32,
+            StatType::Pistol => attributes.strength as i32,
+            StatType::Blade => attributes.dexterity as i32,
+            StatType::Cudgel => attributes.strength as i32,
+            StatType::Unarmed => attributes.strength as i32,
         }
     }
 
@@ -30,6 +42,12 @@ impl StatType {
             StatType::Speed,
             StatType::Armor,
             StatType::ArmorRegen,
+            StatType::Rifle,
+            StatType::Shotgun,
+            StatType::Pistol,
+            StatType::Blade,
+            StatType::Cudgel,
+            StatType::Unarmed,
         ]
     }
 }

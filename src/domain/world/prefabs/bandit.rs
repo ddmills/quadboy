@@ -24,7 +24,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         )
         .with_label("{R|Bandit}")
         .with_energy(-100)
-        .with_health(10)
+        .with_health()
         .with_collider()
         .with_hide_when_not_visible()
         .with_level(4)
