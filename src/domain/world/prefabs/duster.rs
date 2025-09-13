@@ -10,7 +10,7 @@ pub fn spawn_duster(entity: Entity, world: &mut World, config: Prefab) {
     let mut stat_modifiers = StatModifiers::new();
     stat_modifiers.add_modifier(
         StatType::Armor,
-        StatModifier::intrinsic(2, "Thick Hide".to_string()),
+        StatModifier::intrinsic(4, "Thick Hide".to_string()),
     );
 
     PrefabBuilder::new(entity, world, &config)

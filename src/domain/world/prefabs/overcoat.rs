@@ -10,7 +10,7 @@ pub fn spawn_overcoat(entity: Entity, world: &mut World, config: Prefab) {
     let mut stat_modifiers = StatModifiers::new();
     stat_modifiers.add_modifier(
         StatType::Armor,
-        StatModifier::intrinsic(3, "Heavy Padding".to_string()),
+        StatModifier::intrinsic(6, "Heavy Padding".to_string()),
     );
 
     PrefabBuilder::new(entity, world, &config)

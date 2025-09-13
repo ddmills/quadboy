@@ -12,6 +12,10 @@ pub fn spawn_long_johns(entity: Entity, world: &mut World, config: Prefab) {
         StatType::Speed,
         StatModifier::intrinsic(4, "Lightweight Comfort".to_string()),
     );
+    stat_modifiers.add_modifier(
+        StatType::Armor,
+        StatModifier::intrinsic(1, "Padding".to_string()),
+    );
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()

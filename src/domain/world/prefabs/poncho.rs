@@ -10,7 +10,7 @@ pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) {
     let mut stat_modifiers = StatModifiers::new();
     stat_modifiers.add_modifier(
         StatType::Armor,
-        StatModifier::intrinsic(1, "Weather Resistance".to_string()),
+        StatModifier::intrinsic(2, "Weather Resistance".to_string()),
     );
 
     PrefabBuilder::new(entity, world, &config)
