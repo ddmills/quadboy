@@ -1,5 +1,9 @@
 use super::destruction_system::EntityDestroyedEvent;
-use crate::{common::Rand, domain::Destructible, engine::Audio};
+use crate::{
+    common::Rand,
+    domain::Destructible,
+    engine::{Audio, Clock},
+};
 use bevy_ecs::prelude::*;
 
 pub fn on_entity_destroyed_cleanup(
@@ -8,6 +12,7 @@ pub fn on_entity_destroyed_cleanup(
     audio_registry: Option<Res<Audio>>,
     mut rand: Option<ResMut<Rand>>,
     mut cmds: Commands,
+    mut clock: ResMut<Clock>,
 ) {
     for event in e_destroyed.read() {
         // Play destruction audio if the entity has a destructible component
@@ -19,5 +24,6 @@ pub fn on_entity_destroyed_cleanup(
         }
 
         cmds.entity(event.entity).despawn();
+        clock.force_update();
     }
 }

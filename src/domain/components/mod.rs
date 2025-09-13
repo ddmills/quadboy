@@ -1,6 +1,7 @@
 pub mod bitmask;
 pub mod bump_attack;
 pub mod collider;
+pub mod default_melee_attack;
 pub mod destructible;
 pub mod energy;
 pub mod equipment;
@@ -9,6 +10,7 @@ pub mod hit_blink;
 pub mod in_active_zone;
 pub mod inventory;
 pub mod label;
+pub mod level;
 pub mod lighting;
 pub mod loot_drop;
 pub mod melee_weapon;
@@ -19,6 +21,7 @@ pub mod vision;
 pub use bitmask::*;
 pub use bump_attack::BumpAttack;
 pub use collider::Collider;
+pub use default_melee_attack::DefaultMeleeAttack;
 pub use destructible::{Destructible, MaterialType};
 pub use energy::Energy;
 pub use equipment::{EquipmentSlot, EquipmentSlots, EquipmentType, Equippable, Equipped};
@@ -30,6 +33,7 @@ pub use inventory::{
     UnopenedContainer,
 };
 pub use label::Label;
+pub use level::Level;
 pub use lighting::{IgnoreLighting, LightBlocker, LightSource, Lightable};
 pub use loot_drop::LootDrop;
 pub use melee_weapon::MeleeWeapon;

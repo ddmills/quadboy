@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{LootDrop, LootTableId},
+    domain::{DefaultMeleeAttack, LootDrop, LootTableId},
     rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -21,6 +21,8 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
         .with_health(18)
         .with_collider()
         .with_hide_when_not_visible()
+        .with_default_melee_attack(DefaultMeleeAttack::bite())
+        .with_level(5)
         .with_loot_drop(LootDrop::new(LootTableId::CoyoteLoot, 0.3))
         .build();
 }

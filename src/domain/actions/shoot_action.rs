@@ -4,8 +4,7 @@ use crate::{
     common::Rand,
     domain::{
         Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType,
-        RangedWeapon, Zone, get_energy_cost,
-        systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
+        RangedWeapon, Zone, get_energy_cost, systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{Audio, StableIdRegistry},
     rendering::{Glyph, Position, spawn_bullet_trail_in_world, spawn_material_hit_in_world},
@@ -165,10 +164,10 @@ impl Command for ShootAction {
                                 });
                             }
 
-                            let event = EntityDestroyedEvent::with_material_type(
+                            let event = EntityDestroyedEvent::with_attacker(
                                 target_entity,
                                 position_coords,
-                                DestructionCause::Attack,
+                                self.shooter_entity,
                                 MaterialType::Flesh,
                             );
                             world.send_event(event);
@@ -214,10 +213,10 @@ impl Command for ShootAction {
                     // Check if target was destroyed
                     if is_destroyed && let Some(position) = world.get::<Position>(target_entity) {
                         let position_coords = position.world();
-                        let event = EntityDestroyedEvent::with_material_type(
+                        let event = EntityDestroyedEvent::with_attacker(
                             target_entity,
                             position_coords,
-                            DestructionCause::Attack,
+                            self.shooter_entity,
                             material_type,
                         );
                         world.send_event(event);

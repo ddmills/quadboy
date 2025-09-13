@@ -18,17 +18,20 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, Bitmasker, BumpAttack, Collider, Destructible, Energy,
-        EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink,
-        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
-        Label, LightSource, LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry,
-        MeleeWeapon, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
-        StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
-        Zones, inventory::InventoryChangedEvent, on_bitmask_spawn, on_refresh_bitmask,
+        ApplyVisibilityEffects, Bitmasker, BumpAttack, Collider, DefaultMeleeAttack, Destructible,
+        Energy, EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible,
+        HitBlink, InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible,
+        Item, Label, Level, LightSource, LoadGameResult, LoadZoneEvent, LootDrop,
+        LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult, Player, PlayerMovedEvent,
+        Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
+        Stackable, StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer, Vision,
+        VisionBlocker, Zones,
+        inventory::InventoryChangedEvent,
+        on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
         systems::destruction_system::EntityDestroyedEvent,
         systems::hit_blink_system::hit_blink_system,
+        systems::xp_system::{XPGainEvent, apply_xp_gain, award_xp_on_kill},
     },
     engine::{
         App, Audio, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType,
@@ -120,6 +123,8 @@ async fn main() {
     reg.register::<BumpAttack>();
     reg.register::<Destructible>();
     reg.register::<MeleeWeapon>();
+    reg.register::<DefaultMeleeAttack>();
+    reg.register::<Level>();
     reg.register::<UnopenedContainer>();
     reg.register::<LootDrop>();
     reg.register::<Stackable>();
@@ -147,6 +152,7 @@ async fn main() {
         .register_event::<SaveGameResult>()
         .register_event::<RefreshBitmask>()
         .register_event::<EntityDestroyedEvent>()
+        .register_event::<XPGainEvent>()
         .register_event::<InventoryChangedEvent>()
         .insert_resource(tileset_registry)
         .insert_resource(audio_registry)
@@ -218,6 +224,7 @@ async fn main() {
             (
                 bump_attack_system,
                 hit_blink_system,
+                (award_xp_on_kill, apply_xp_gain).chain(),
                 update_animated_glyphs,
                 update_particle_physics,
                 update_particle_spawners,

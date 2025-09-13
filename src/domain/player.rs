@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        AttackAction, Collider, Energy, EquipmentSlots, GameSettings, Inventory,
-        InventoryAccessible, IsExplored, MoveAction, OpenContainerAction, ShootAction, StairDown,
-        StairUp, ToggleLightAction, TurnState, WaitAction, Zone,
+        Collider, Energy, EquipmentSlots, GameSettings, Inventory, InventoryAccessible, IsExplored,
+        MeleeAttackAction, MoveAction, OpenContainerAction, ShootAction, StairDown, StairUp,
+        ToggleLightAction, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
@@ -285,7 +285,7 @@ pub fn player_input(
                 if can_move_vertically {
                     if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
                         // Bump attack - try to attack what we bumped into
-                        cmds.queue(AttackAction {
+                        cmds.queue(MeleeAttackAction {
                             attacker_entity: player_entity,
                             target_pos: (new_x, new_y, new_z),
                         });

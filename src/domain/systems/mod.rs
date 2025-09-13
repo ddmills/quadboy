@@ -11,6 +11,7 @@ pub mod loot_drop_system;
 pub mod stable_id_system;
 pub mod targeting;
 pub mod vision_system;
+pub mod xp_system;
 
 pub use ai_system::*;
 pub use energy_system::*;

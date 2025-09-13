@@ -7,6 +7,7 @@ mod interaction;
 mod item_dialog;
 mod layout;
 mod list;
+mod xp_progress_bar;
 
 pub use activatable::*;
 pub use button::*;
@@ -17,3 +18,4 @@ pub use interaction::*;
 pub use item_dialog::*;
 pub use layout::*;
 pub use list::*;
+pub use xp_progress_bar::*;

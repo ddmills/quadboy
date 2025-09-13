@@ -4,14 +4,19 @@ use macroquad::telemetry;
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::Rand,
-    domain::{Collider, Energy, EnergyActionType, InActiveZone, TurnState, Zone, get_energy_cost},
+    domain::{
+        Collider, Energy, EnergyActionType, InActiveZone, MeleeAttackAction, Player, TurnState,
+        Zone, get_energy_cost,
+    },
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 
 pub fn ai_turn(
+    mut cmds: Commands,
     turn_state: Res<TurnState>,
     mut q_energy: Query<&mut Energy, With<InActiveZone>>,
     mut q_position: Query<&mut Position, With<InActiveZone>>,
+    q_player: Query<&Position, (With<Player>, Without<InActiveZone>)>,
     q_zones: Query<&Zone>,
     q_colliders: Query<&Collider>,
 ) {
@@ -53,7 +58,35 @@ pub fn ai_turn(
 
     let (x, y, z) = position.world();
 
+    // Check for adjacent player to attack
+    let Ok(player_pos) = q_player.single() else {
+        // No player found, just wait
+        let cost = get_energy_cost(action);
+        energy.consume_energy(cost);
+        telemetry::end_zone();
+        return;
+    };
+
+    let (player_x, player_y, player_z) = player_pos.world();
     let directions = [(-1, 0), (1, 0), (0, -1), (0, 1)];
+
+    // Check if player is adjacent in any cardinal direction
+    for (dx, dy) in directions.iter() {
+        let check_x = (x as i32 + dx) as usize;
+        let check_y = (y as i32 + dy) as usize;
+
+        if check_x == player_x && check_y == player_y && z == player_z {
+            // Player is adjacent! Attack instead of moving
+            cmds.queue(MeleeAttackAction {
+                attacker_entity: current_entity,
+                target_pos: (player_x, player_y, player_z),
+            });
+            telemetry::end_zone();
+            return;
+        }
+    }
+
+    // No adjacent player, try to move randomly
     let (dx, dy) = rand.pick(&directions);
     let new_x = (x as i32 + dx) as usize;
     let new_y = (y as i32 + dy) as usize;

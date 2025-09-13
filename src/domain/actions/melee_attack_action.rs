@@ -3,15 +3,15 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        BumpAttack, Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink,
-        MaterialType, MeleeWeapon, Player, Zone, get_energy_cost,
-        systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
+        BumpAttack, DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlots,
+        Health, HitBlink, MaterialType, MeleeWeapon, Player, Zone, get_energy_cost,
+        systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{Audio, StableIdRegistry},
     rendering::{Glyph, Position, spawn_directional_blood_mist, spawn_material_hit_in_world},
 };
 
-pub struct AttackAction {
+pub struct MeleeAttackAction {
     pub attacker_entity: Entity,
     pub target_pos: (usize, usize, usize),
 }
@@ -27,29 +27,25 @@ fn apply_hit_blink(world: &mut World, target_entity: Entity) {
     }
 }
 
-impl Command for AttackAction {
+impl Command for MeleeAttackAction {
     fn apply(self, world: &mut World) {
-        // Get the equipped weapon (if any)
+        // Get the weapon damage (equipped weapon takes priority, then default attack)
         let weapon_damage = {
-            let Some(registry) = world.get_resource::<StableIdRegistry>() else {
-                return;
-            };
-
-            let Some(equipment) = world.get::<EquipmentSlots>(self.attacker_entity) else {
-                return; // No equipment slots, can't have weapon
-            };
-
-            // Check for equipped weapon in MainHand
-            let weapon_id = equipment.get_equipped_item(crate::domain::EquipmentSlot::MainHand);
-
-            if let Some(weapon_id) = weapon_id {
-                if let Some(weapon_entity) = registry.get_entity(weapon_id) {
-                    world
-                        .get::<MeleeWeapon>(weapon_entity)
-                        .map(|weapon| (weapon.damage, weapon.can_damage.clone()))
-                } else {
-                    None
-                }
+            // First check for equipped weapon
+            if let Some(registry) = world.get_resource::<StableIdRegistry>()
+                && let Some(equipment) = world.get::<EquipmentSlots>(self.attacker_entity)
+                && let Some(weapon_id) =
+                    equipment.get_equipped_item(crate::domain::EquipmentSlot::MainHand)
+                && let Some(weapon_entity) = registry.get_entity(weapon_id)
+                && let Some(weapon) = world.get::<MeleeWeapon>(weapon_entity)
+            {
+                Some((weapon.damage, weapon.can_damage.clone()))
+            }
+            // Fall back to default melee attack if no equipped weapon
+            else if let Some(default_attack) =
+                world.get::<DefaultMeleeAttack>(self.attacker_entity)
+            {
+                Some((default_attack.damage, default_attack.can_damage.clone()))
             } else {
                 None
             }
@@ -153,10 +149,10 @@ impl Command for AttackAction {
                                 });
                             }
 
-                            let event = EntityDestroyedEvent::with_material_type(
+                            let event = EntityDestroyedEvent::with_attacker(
                                 target_entity,
                                 position_coords,
-                                DestructionCause::Attack,
+                                self.attacker_entity,
                                 MaterialType::Flesh,
                             );
                             world.send_event(event);
@@ -220,10 +216,10 @@ impl Command for AttackAction {
                         // Fire destruction event instead of handling directly
                         if let Some(position) = world.get::<Position>(target_entity) {
                             let position_coords = position.world();
-                            let event = EntityDestroyedEvent::with_material_type(
+                            let event = EntityDestroyedEvent::with_attacker(
                                 target_entity,
                                 position_coords,
-                                DestructionCause::Attack,
+                                self.attacker_entity,
                                 material_type,
                             );
                             world.send_event(event);
@@ -253,7 +249,7 @@ impl Command for AttackAction {
 
         // Consume energy
         if let Some(mut energy) = world.get_mut::<Energy>(self.attacker_entity) {
-            let cost = get_energy_cost(EnergyActionType::Move); // Same cost as movement for now
+            let cost = get_energy_cost(EnergyActionType::Attack);
             energy.consume_energy(cost);
         }
     }

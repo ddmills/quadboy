@@ -21,6 +21,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         .with_health(10)
         .with_collider()
         .with_hide_when_not_visible()
+        .with_level(4)
         .with_loot_drop(LootDrop::new(LootTableId::BanditLoot, 0.5))
         .build();
 }

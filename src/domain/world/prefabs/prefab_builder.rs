@@ -2,11 +2,11 @@ use super::Prefab;
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, Destructible, Energy,
-        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label,
-        LightBlocker, LightSource, Lightable, LootDrop, MaterialType, MeleeWeapon, NeedsStableId,
-        RangedWeapon, SaveFlag, StackCount, Stackable, StackableType, StairDown, StairUp,
-        VisionBlocker,
+        ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, DefaultMeleeAttack,
+        Destructible, Energy, Equippable, Health, HideWhenNotVisible, Inventory,
+        InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable, LootDrop,
+        MaterialType, MeleeWeapon, NeedsStableId, RangedWeapon, SaveFlag, StackCount, Stackable,
+        StackableType, StairDown, StairUp, VisionBlocker,
     },
     rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -150,6 +150,11 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
+    pub fn with_default_melee_attack(self, attack: DefaultMeleeAttack) -> Self {
+        self.world.entity_mut(self.entity).insert(attack);
+        self
+    }
+
     pub fn with_ranged_weapon(self, weapon: RangedWeapon) -> Self {
         self.world.entity_mut(self.entity).insert(weapon);
         self
@@ -203,6 +208,11 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_lightable(self) -> Self {
         self.world.entity_mut(self.entity).insert(Lightable::new());
+        self
+    }
+
+    pub fn with_level(self, level: u32) -> Self {
+        self.world.entity_mut(self.entity).insert(Level::new(level));
         self
     }
 

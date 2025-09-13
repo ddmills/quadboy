@@ -6,9 +6,9 @@ use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Collider, Energy, EquipmentSlots, GameSaveData, Inventory, Label,
-        LoadZoneCommand, Overworld, Player, PlayerPosition, PlayerSaveData, TerrainNoise, Vision,
-        Zones,
+        ApplyVisibilityEffects, Collider, DefaultMeleeAttack, Energy, EquipmentSlots, GameSaveData,
+        Inventory, Label, Level, LoadZoneCommand, Overworld, Player, PlayerPosition,
+        PlayerSaveData, TerrainNoise, Vision, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
@@ -39,7 +39,7 @@ impl NewGameCommand {
     fn execute_new_game(&self, world: &mut World) -> NewGameResult {
         delete_save(&self.save_name);
 
-        let starting_position = Position::new(502, 466, SURFACE_LEVEL_Z);
+        let starting_position = Position::new(130, 233, SURFACE_LEVEL_Z);
         let start_zone = starting_position.zone_idx();
 
         let mut id_registry = StableIdRegistry::new();
@@ -60,6 +60,8 @@ impl NewGameCommand {
                 Collider,
                 Energy::new(-10),
                 Label::new("{Y-Y-Y-Y-Y-Y-Y-W scrollf|Cowboy}"),
+                DefaultMeleeAttack::fists(),
+                Level::new(1),
                 RecordZonePosition,
                 CleanupStatePlay,
             ))

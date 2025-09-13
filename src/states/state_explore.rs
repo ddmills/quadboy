@@ -11,11 +11,11 @@ use crate::{
         update_target_cycling,
     },
     engine::{App, Plugin, SerializableComponent},
-    rendering::Position,
+    rendering::{Layer, Position},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
-        Button, display_entity_names_at_mouse, render_cursor, render_lighting_debug,
-        render_tick_display, spawn_debug_ui_entities,
+        Button, XPProgressBar, display_entity_names_at_mouse, render_cursor, render_lighting_debug,
+        render_tick_display, spawn_debug_ui_entities, update_xp_progress_bars,
     },
 };
 
@@ -50,6 +50,7 @@ impl Plugin for ExploreStatePlugin {
                     render_lighting_debug,
                     render_cursor,
                     display_entity_names_at_mouse,
+                    update_xp_progress_bars,
                 ),
             )
             .on_update(app, player_input)
@@ -115,6 +116,14 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn UI buttons
     spawn_ui_buttons(&mut cmds, &callbacks);
+
+    // Spawn XP progress bar
+    cmds.spawn((
+        crate::rendering::Text::new("").layer(Layer::Ui),
+        Position::new_f32(30., 1.5, 0.),
+        XPProgressBar::new(30),
+        CleanupStateExplore,
+    ));
 }
 
 fn on_leave_explore() {
