@@ -10,6 +10,58 @@ pub struct Attributes {
     pub intelligence: u32,
 }
 
+#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+pub struct AttributePoints {
+    pub available: u32,
+    pub spent: u32,
+}
+
+impl AttributePoints {
+    pub fn new(level: u32) -> Self {
+        Self {
+            available: 5 + level,
+            spent: 0,
+        }
+    }
+
+    pub fn total_points(&self) -> u32 {
+        self.available + self.spent
+    }
+
+    pub fn can_increase(&self) -> bool {
+        self.available > 0
+    }
+
+    pub fn can_decrease(&self) -> bool {
+        self.spent > 0
+    }
+
+    pub fn increase_attribute(&mut self) -> bool {
+        if self.available > 0 {
+            self.available -= 1;
+            self.spent += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn decrease_attribute(&mut self) -> bool {
+        if self.spent > 0 {
+            self.available += 1;
+            self.spent -= 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn reset_all(&mut self) {
+        self.available = self.total_points();
+        self.spent = 0;
+    }
+}
+
 impl Attributes {
     pub fn new(strength: u32, dexterity: u32, constitution: u32, intelligence: u32) -> Self {
         Self {

@@ -20,7 +20,7 @@ pub mod stairs;
 pub mod stats;
 pub mod vision;
 
-pub use attributes::Attributes;
+pub use attributes::{AttributePoints, Attributes};
 pub use bitmask::*;
 pub use bump_attack::BumpAttack;
 pub use collider::Collider;

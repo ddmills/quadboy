@@ -3,7 +3,9 @@ use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
-    domain::{Attributes, Player, StatType, Stats, StatModifiers},
+    domain::{
+        AttributePoints, Attributes, Level, Player, StatModifiers, StatType, Stats, game_loop,
+    },
     engine::{App, Plugin},
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
@@ -13,23 +15,50 @@ use crate::{
 #[derive(Resource)]
 struct AttributesCallbacks {
     back_to_explore: SystemId,
+    increase_strength: SystemId,
+    decrease_strength: SystemId,
+    increase_dexterity: SystemId,
+    decrease_dexterity: SystemId,
+    increase_constitution: SystemId,
+    decrease_constitution: SystemId,
+    increase_intelligence: SystemId,
+    decrease_intelligence: SystemId,
+    reset_all: SystemId,
 }
 
 #[derive(Component, Clone)]
 pub struct CleanupStateAttributes;
+
+#[derive(Resource)]
+struct AttributesUIEntities {
+    level_display: Entity,
+    available_points: Entity,
+    strength_value: Entity,
+    dexterity_value: Entity,
+    constitution_value: Entity,
+    intelligence_value: Entity,
+    fortitude_display: Entity,
+    speed_display: Entity,
+}
 
 pub struct AttributesStatePlugin;
 
 impl Plugin for AttributesStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Attributes)
-            .on_enter(app, (setup_attributes_callbacks, setup_attributes_screen).chain())
+            .on_enter(
+                app,
+                (setup_attributes_callbacks, setup_attributes_screen).chain(),
+            )
+            .on_update(app, (game_loop, update_attributes_display).chain())
             .on_leave(
                 app,
                 (
                     cleanup_system::<CleanupStateAttributes>,
                     remove_attributes_callbacks,
-                ).chain(),
+                    remove_attributes_ui_entities,
+                )
+                    .chain(),
             );
     }
 }
@@ -37,6 +66,15 @@ impl Plugin for AttributesStatePlugin {
 fn setup_attributes_callbacks(world: &mut World) {
     let callbacks = AttributesCallbacks {
         back_to_explore: world.register_system(back_to_explore),
+        increase_strength: world.register_system(increase_strength),
+        decrease_strength: world.register_system(decrease_strength),
+        increase_dexterity: world.register_system(increase_dexterity),
+        decrease_dexterity: world.register_system(decrease_dexterity),
+        increase_constitution: world.register_system(increase_constitution),
+        decrease_constitution: world.register_system(decrease_constitution),
+        increase_intelligence: world.register_system(increase_intelligence),
+        decrease_intelligence: world.register_system(decrease_intelligence),
+        reset_all: world.register_system(reset_all_attributes),
     };
 
     world.insert_resource(callbacks);
@@ -46,16 +84,192 @@ fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
     game_state.next = GameState::Explore;
 }
 
+fn increase_strength(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if points.increase_attribute() {
+            attributes.strength += 1;
+        }
+    }
+}
+
+fn decrease_strength(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if attributes.strength > 0 && points.decrease_attribute() {
+            attributes.strength -= 1;
+        }
+    }
+}
+
+fn increase_dexterity(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if points.increase_attribute() {
+            attributes.dexterity += 1;
+        }
+    }
+}
+
+fn decrease_dexterity(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if attributes.dexterity > 0 && points.decrease_attribute() {
+            attributes.dexterity -= 1;
+        }
+    }
+}
+
+fn increase_constitution(
+    mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
+) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if points.increase_attribute() {
+            attributes.constitution += 1;
+        }
+    }
+}
+
+fn decrease_constitution(
+    mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
+) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if attributes.constitution > 0 && points.decrease_attribute() {
+            attributes.constitution -= 1;
+        }
+    }
+}
+
+fn increase_intelligence(
+    mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
+) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if points.increase_attribute() {
+            attributes.intelligence += 1;
+        }
+    }
+}
+
+fn decrease_intelligence(
+    mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
+) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        if attributes.intelligence > 0 && points.decrease_attribute() {
+            attributes.intelligence -= 1;
+        }
+    }
+}
+
+fn reset_all_attributes(
+    mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
+) {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
+        attributes.strength = 0;
+        attributes.dexterity = 0;
+        attributes.constitution = 0;
+        attributes.intelligence = 0;
+        points.reset_all();
+    }
+}
+
+fn update_attributes_display(
+    mut q_text: Query<&mut Text>,
+    q_player: Query<
+        (
+            &Level,
+            &Attributes,
+            &AttributePoints,
+            &Stats,
+            &StatModifiers,
+        ),
+        (
+            With<Player>,
+            Or<(Changed<Attributes>, Changed<AttributePoints>)>,
+        ),
+    >,
+    ui_entities: Option<Res<AttributesUIEntities>>,
+) {
+    let Some(ui_entities) = ui_entities else {
+        return;
+    };
+
+    // Only update if player attributes/points changed
+    let Ok((level, attributes, attribute_points, stats, stat_modifiers)) = q_player.single() else {
+        return;
+    };
+
+    // Update level display
+    if let Ok(mut text) = q_text.get_mut(ui_entities.level_display) {
+        text.value = format!("Level: {}", level.current_level);
+    }
+
+    // Update available points display
+    if let Ok(mut text) = q_text.get_mut(ui_entities.available_points) {
+        text.value = format!("Available Points: {}", attribute_points.available);
+    }
+
+    // Update attribute values
+    if let Ok(mut text) = q_text.get_mut(ui_entities.strength_value) {
+        text.value = format!("Strength:     {}", attributes.strength);
+    }
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.dexterity_value) {
+        text.value = format!("Dexterity:    {}", attributes.dexterity);
+    }
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.constitution_value) {
+        text.value = format!("Constitution: {}", attributes.constitution);
+    }
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.intelligence_value) {
+        text.value = format!("Intelligence: {}", attributes.intelligence);
+    }
+
+    // Update calculated stats
+    let fortitude_base = StatType::Fortitude.get_base_value(attributes);
+    let fortitude_modifiers = stat_modifiers.get_total_for_stat(StatType::Fortitude);
+    let fortitude_total = stats.get_stat(StatType::Fortitude);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.fortitude_display) {
+        text.value = format!(
+            "Fortitude:    {}  (Constitution: {} + Modifiers: {:+})",
+            fortitude_total, fortitude_base, fortitude_modifiers
+        );
+    }
+
+    let speed_base = StatType::Speed.get_base_value(attributes);
+    let speed_modifiers = stat_modifiers.get_total_for_stat(StatType::Speed);
+    let speed_total = stats.get_stat(StatType::Speed);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.speed_display) {
+        text.value = format!(
+            "Speed:        {}  (Dexterity: {} + Modifiers: {:+})",
+            speed_total, speed_base, speed_modifiers
+        );
+    }
+}
+
 fn remove_attributes_callbacks(mut cmds: Commands) {
     cmds.remove_resource::<AttributesCallbacks>();
 }
 
+fn remove_attributes_ui_entities(mut cmds: Commands) {
+    cmds.remove_resource::<AttributesUIEntities>();
+}
+
 fn setup_attributes_screen(
     mut cmds: Commands,
-    q_player: Query<(Entity, &Attributes, &Stats, &StatModifiers), With<Player>>,
+    q_player: Query<
+        (
+            Entity,
+            &Level,
+            &Attributes,
+            &AttributePoints,
+            &Stats,
+            &StatModifiers,
+        ),
+        With<Player>,
+    >,
     callbacks: Res<AttributesCallbacks>,
 ) {
-    let Ok((_, attributes, stats, stat_modifiers)) = q_player.single() else {
+    let Ok((_, level, attributes, attribute_points, stats, stat_modifiers)) = q_player.single()
+    else {
         return;
     };
 
@@ -72,7 +286,33 @@ fn setup_attributes_screen(
         CleanupStateAttributes,
     ));
 
-    y_pos += 1.5;
+    y_pos += 1.0;
+
+    // Level display
+    let level_display = cmds
+        .spawn((
+            Text::new(&format!("Level: {}", level.current_level))
+                .fg1(Palette::White)
+                .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    // Available points display
+    let available_points = cmds
+        .spawn((
+            Text::new(&format!("Available Points: {}", attribute_points.available))
+                .fg1(Palette::Green)
+                .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 1.0;
 
     // Base Attributes Section
     cmds.spawn((
@@ -85,41 +325,110 @@ fn setup_attributes_screen(
 
     y_pos += 0.5;
 
+    // Strength row
+    let strength_value = cmds
+        .spawn((
+            Text::new(&format!("Strength:     {}", attributes.strength))
+                .fg1(Palette::White)
+                .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     cmds.spawn((
-        Text::new(&format!("Strength:     {}", attributes.strength))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
+        Position::new_f32(left_x + 18.0, y_pos, 0.),
+        Button::new("[+]", callbacks.increase_strength),
+        CleanupStateAttributes,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Button::new("[-]", callbacks.decrease_strength),
         CleanupStateAttributes,
     ));
 
     y_pos += 0.5;
 
+    // Dexterity row
+    let dexterity_value = cmds
+        .spawn((
+            Text::new(&format!("Dexterity:    {}", attributes.dexterity))
+                .fg1(Palette::White)
+                .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     cmds.spawn((
-        Text::new(&format!("Dexterity:    {}", attributes.dexterity))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
+        Position::new_f32(left_x + 18.0, y_pos, 0.),
+        Button::new("[+]", callbacks.increase_dexterity),
+        CleanupStateAttributes,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Button::new("[-]", callbacks.decrease_dexterity),
         CleanupStateAttributes,
     ));
 
     y_pos += 0.5;
 
+    // Constitution row
+    let constitution_value = cmds
+        .spawn((
+            Text::new(&format!("Constitution: {}", attributes.constitution))
+                .fg1(Palette::White)
+                .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     cmds.spawn((
-        Text::new(&format!("Constitution: {}", attributes.constitution))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
+        Position::new_f32(left_x + 18.0, y_pos, 0.),
+        Button::new("[+]", callbacks.increase_constitution),
+        CleanupStateAttributes,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Button::new("[-]", callbacks.decrease_constitution),
         CleanupStateAttributes,
     ));
 
     y_pos += 0.5;
 
+    // Intelligence row
+    let intelligence_value = cmds
+        .spawn((
+            Text::new(&format!("Intelligence: {}", attributes.intelligence))
+                .fg1(Palette::White)
+                .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     cmds.spawn((
-        Text::new(&format!("Intelligence: {}", attributes.intelligence))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
+        Position::new_f32(left_x + 18.0, y_pos, 0.),
+        Button::new("[+]", callbacks.increase_intelligence),
+        CleanupStateAttributes,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Button::new("[-]", callbacks.decrease_intelligence),
+        CleanupStateAttributes,
+    ));
+
+    y_pos += 1.0;
+
+    // Reset All button
+    cmds.spawn((
         Position::new_f32(left_x, y_pos, 0.),
+        Button::new("[RESET ALL]", callbacks.reset_all),
         CleanupStateAttributes,
     ));
 
@@ -141,16 +450,18 @@ fn setup_attributes_screen(
     let fortitude_modifiers = stat_modifiers.get_total_for_stat(StatType::Fortitude);
     let fortitude_total = stats.get_stat(StatType::Fortitude);
 
-    cmds.spawn((
-        Text::new(&format!(
-            "Fortitude:    {}  (Constitution: {} + Modifiers: {:+})",
-            fortitude_total, fortitude_base, fortitude_modifiers
+    let fortitude_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Fortitude:    {}  (Constitution: {} + Modifiers: {:+})",
+                fortitude_total, fortitude_base, fortitude_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
         ))
-        .fg1(Palette::White)
-        .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
-        CleanupStateAttributes,
-    ));
+        .id();
 
     y_pos += 0.5;
 
@@ -159,16 +470,18 @@ fn setup_attributes_screen(
     let speed_modifiers = stat_modifiers.get_total_for_stat(StatType::Speed);
     let speed_total = stats.get_stat(StatType::Speed);
 
-    cmds.spawn((
-        Text::new(&format!(
-            "Speed:        {}  (Dexterity: {} + Modifiers: {:+})",
-            speed_total, speed_base, speed_modifiers
+    let speed_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Speed:        {}  (Dexterity: {} + Modifiers: {:+})",
+                speed_total, speed_base, speed_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
         ))
-        .fg1(Palette::White)
-        .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
-        CleanupStateAttributes,
-    ));
+        .id();
 
     y_pos += 1.5;
 
@@ -178,5 +491,16 @@ fn setup_attributes_screen(
         Button::new("({Y|ESC}) BACK", callbacks.back_to_explore).hotkey(KeyCode::Escape),
         CleanupStateAttributes,
     ));
-}
 
+    // Insert the resource with all entity IDs for dynamic updates
+    cmds.insert_resource(AttributesUIEntities {
+        level_display,
+        available_points,
+        strength_value,
+        dexterity_value,
+        constitution_value,
+        intelligence_value,
+        fortitude_display,
+        speed_display,
+    });
+}

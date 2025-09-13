@@ -2,11 +2,11 @@ use super::Prefab;
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider, DefaultMeleeAttack,
-        Destructible, Energy, Equippable, Health, HideWhenNotVisible, Inventory,
-        InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable, LootDrop,
-        MaterialType, MeleeWeapon, NeedsStableId, RangedWeapon, SaveFlag, StackCount, Stackable,
-        StackableType, StairDown, StairUp, StatModifiers, Stats, VisionBlocker,
+        ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider,
+        DefaultMeleeAttack, Destructible, Energy, Equippable, Health, HideWhenNotVisible,
+        Inventory, InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable,
+        LootDrop, MaterialType, MeleeWeapon, NeedsStableId, RangedWeapon, SaveFlag, StackCount,
+        Stackable, StackableType, StairDown, StairUp, StatModifiers, Stats, VisionBlocker,
     },
     rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,

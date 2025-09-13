@@ -26,16 +26,13 @@ pub fn recalculate_stats_system(
 }
 
 pub fn equipment_stat_modifier_system(
-    mut param_set: ParamSet<(
-        Query<&mut StatModifiers>,
-        Query<&StatModifiers, With<Item>>,
-    )>,
+    mut param_set: ParamSet<(Query<&mut StatModifiers>, Query<&StatModifiers, With<Item>>)>,
     q_equipment_changed: Query<(Entity, &EquipmentSlots), Changed<EquipmentSlots>>,
     registry: Res<StableIdRegistry>,
 ) {
     // Collect all the modifiers to add first
     let mut modifiers_to_add: Vec<(Entity, StatType, StatModifier)> = Vec::new();
-    
+
     for (entity, equipment_slots) in q_equipment_changed.iter() {
         // First, collect all equipment modifiers for this entity
         for (_slot, item_id_opt) in &equipment_slots.slots {
@@ -57,7 +54,7 @@ pub fn equipment_stat_modifier_system(
             }
         }
     }
-    
+
     // Now apply the changes to entity modifiers
     for (entity, _equipment_slots) in q_equipment_changed.iter() {
         let mut query = param_set.p0();

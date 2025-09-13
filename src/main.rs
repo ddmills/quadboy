@@ -18,14 +18,14 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, Attributes, Bitmasker, BumpAttack, Collider, DefaultMeleeAttack, Destructible,
-        Energy, EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible,
-        HitBlink, InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible,
-        Item, Label, Level, LightSource, LoadGameResult, LoadZoneEvent, LootDrop,
-        LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult, Player, PlayerMovedEvent,
-        Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
-        Stackable, StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer, Vision,
-        VisionBlocker, Zones,
+        ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack, Collider,
+        DefaultMeleeAttack, Destructible, Energy, EquipmentSlots, Equippable, Equipped,
+        GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
+        InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
+        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, MeleeWeapon, NeedsStableId,
+        NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
+        SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, StatModifiers, Stats,
+        TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -40,11 +40,11 @@ use crate::{
     },
     rendering::{CrtShader, Glyph, RecordZonePosition, TilesetRegistry},
     states::{
-        AttributesStatePlugin, CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin, CurrentAppState,
-        CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin, InventoryStatePlugin,
-        LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin, OverworldStatePlugin,
-        PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin, update_app_states,
-        update_game_states,
+        AttributesStatePlugin, CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin,
+        CurrentAppState, CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin,
+        InventoryStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin,
+        OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin,
+        update_app_states, update_game_states,
     },
     ui::{
         DialogState, ListContext, UiFocus, clear_mouse_capture_when_not_hovering,
@@ -126,6 +126,7 @@ async fn main() {
     reg.register::<DefaultMeleeAttack>();
     reg.register::<Level>();
     reg.register::<Attributes>();
+    reg.register::<AttributePoints>();
     reg.register::<Stats>();
     reg.register::<StatModifiers>();
     reg.register::<UnopenedContainer>();

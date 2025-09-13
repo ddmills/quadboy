@@ -63,7 +63,9 @@ impl StatModifiers {
 
     pub fn remove_equipment_modifiers(&mut self, item_id: u64) {
         for modifiers in self.modifiers.values_mut() {
-            modifiers.retain(|m| !matches!(m.source, ModifierSource::Equipment { item_id: id } if id == item_id));
+            modifiers.retain(
+                |m| !matches!(m.source, ModifierSource::Equipment { item_id: id } if id == item_id),
+            );
         }
     }
 

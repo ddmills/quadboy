@@ -9,7 +9,8 @@ use crate::{
     domain::{
         PlayerPosition, TurnState, Zones, ai_turn,
         systems::{
-            cleanup_system::on_entity_destroyed_cleanup, loot_drop_system::on_entity_destroyed_loot,
+            cleanup_system::on_entity_destroyed_cleanup,
+            loot_drop_system::on_entity_destroyed_loot,
             stats_system::{equipment_stat_modifier_system, recalculate_stats_system},
         },
         turn_scheduler, update_entity_visibility_flags, update_lighting_system,

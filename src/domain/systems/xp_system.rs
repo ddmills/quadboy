@@ -1,5 +1,5 @@
 use crate::domain::{
-    GameFormulas, Level,
+    AttributePoints, GameFormulas, Level,
     systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
 };
 use bevy_ecs::prelude::*;
@@ -46,17 +46,33 @@ pub fn award_xp_on_kill(
 }
 
 /// Apply XP gains to entities with Level components
-pub fn apply_xp_gain(mut e_xp_gain: EventReader<XPGainEvent>, mut q_levels: Query<&mut Level>) {
+pub fn apply_xp_gain(
+    mut e_xp_gain: EventReader<XPGainEvent>,
+    mut q_levels: Query<&mut Level>,
+    mut q_attribute_points: Query<&mut AttributePoints>,
+) {
     for xp_event in e_xp_gain.read() {
         if let Ok(mut level) = q_levels.get_mut(xp_event.recipient_entity) {
             let old_level = level.current_level;
             let leveled_up = level.add_xp(xp_event.xp_amount);
 
             if leveled_up {
-                println!(
-                    "Entity leveled up from {} to {}! (+{} XP)",
-                    old_level, level.current_level, xp_event.xp_amount
-                );
+                // Grant additional attribute points for level up
+                if let Ok(mut attribute_points) =
+                    q_attribute_points.get_mut(xp_event.recipient_entity)
+                {
+                    let levels_gained = level.current_level - old_level;
+                    attribute_points.available += levels_gained;
+                    println!(
+                        "Entity leveled up from {} to {}! (+{} XP, +{} attribute points)",
+                        old_level, level.current_level, xp_event.xp_amount, levels_gained
+                    );
+                } else {
+                    println!(
+                        "Entity leveled up from {} to {}! (+{} XP)",
+                        old_level, level.current_level, xp_event.xp_amount
+                    );
+                }
             } else {
                 println!("Entity gained {} XP", xp_event.xp_amount);
             }
