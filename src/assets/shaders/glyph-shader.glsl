@@ -15,6 +15,7 @@ varying float ignore_lighting;
 
 uniform sampler2D tex_1;
 uniform sampler2D tex_2;
+uniform sampler2D tex_3;
 uniform float time;
 uniform vec4 ambient;
 
@@ -42,8 +43,10 @@ void main() {
 
     if (abs(tex_idx - 0.0) < 0.5) {
         v = texture2D(tex_1, tex_uv);
-    } else {
+    } else if (abs(tex_idx - 1.0) < 0.5) {
         v = texture2D(tex_2, tex_uv);
+    } else {
+        v = texture2D(tex_3, tex_uv);
     }
 
     if (v.a == 0.0) { // transparent (background)
