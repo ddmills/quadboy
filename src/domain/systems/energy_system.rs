@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::telemetry;
 
 use crate::{
-    domain::{Energy, InActiveZone, Player},
+    domain::{Energy, InActiveZone, Player, StatType, Stats},
     engine::Clock,
 };
 
@@ -73,7 +73,7 @@ pub fn turn_scheduler(
     telemetry::end_zone();
 }
 
-pub fn get_energy_cost(action: EnergyActionType) -> i32 {
+pub fn get_base_energy_cost(action: EnergyActionType) -> i32 {
     match action {
         EnergyActionType::Move => 100,
         EnergyActionType::Wait => 1000,
@@ -85,5 +85,20 @@ pub fn get_energy_cost(action: EnergyActionType) -> i32 {
         EnergyActionType::ToggleLight => 25,
         EnergyActionType::Shoot => 150,
         EnergyActionType::Attack => 150,
+    }
+}
+
+pub fn get_energy_cost(action: EnergyActionType, stats: Option<&Stats>) -> i32 {
+    let base_cost = get_base_energy_cost(action);
+    match action {
+        EnergyActionType::Move => {
+            if let Some(stats) = stats {
+                let speed = stats.get_stat(StatType::Speed);
+                (base_cost - (speed * 2)).max(1) // Ensure minimum cost of 1
+            } else {
+                base_cost
+            }
+        }
+        _ => base_cost, // Other actions use base cost for now
     }
 }

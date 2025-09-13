@@ -28,6 +28,10 @@ impl Clock {
         self.tick_delta += amount;
     }
 
+    pub fn tick_delta(&self) -> u32 {
+        self.tick_delta
+    }
+
     pub fn current_tick(&self) -> u32 {
         self.tick
     }

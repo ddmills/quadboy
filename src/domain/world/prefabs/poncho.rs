@@ -1,12 +1,18 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{EquipmentSlot, EquipmentType, Equippable},
+    domain::{EquipmentSlot, EquipmentType, Equippable, StatModifier, StatModifiers, StatType},
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) {
+    let mut stat_modifiers = StatModifiers::new();
+    stat_modifiers.add_modifier(
+        StatType::Armor,
+        StatModifier::intrinsic(1, "Weather Resistance".to_string()),
+    );
+
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
         .with_glyph(69, Palette::Yellow, Palette::Brown, Layer::Objects)
@@ -16,6 +22,7 @@ pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) {
             vec![EquipmentSlot::Body],
             EquipmentType::Armor,
         ))
+        .with_stat_modifiers(stat_modifiers)
         .with_needs_stable_id()
         .build();
 }

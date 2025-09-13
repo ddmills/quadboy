@@ -4,10 +4,10 @@ use crate::{
     common::Rand,
     domain::{
         BumpAttack, DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlots,
-        Health, HitBlink, MaterialType, MeleeWeapon, Player, Zone, get_energy_cost,
+        Health, HitBlink, MaterialType, MeleeWeapon, Player, Zone, get_base_energy_cost,
         systems::destruction_system::EntityDestroyedEvent,
     },
-    engine::{Audio, StableIdRegistry},
+    engine::{Audio, Clock, StableIdRegistry},
     rendering::{Glyph, Position, spawn_directional_blood_mist, spawn_material_hit_in_world},
 };
 
@@ -95,6 +95,9 @@ impl Command for MeleeAttackAction {
             return;
         }
 
+        // Get current tick once for this attack
+        let current_tick = world.resource::<Clock>().current_tick();
+
         // Process attack on each target at position
         for &target_entity in targets.iter() {
             let mut should_apply_hit_blink = false;
@@ -103,7 +106,7 @@ impl Command for MeleeAttackAction {
                 if let Some((damage, can_damage)) = &weapon_damage
                     && can_damage.contains(&MaterialType::Flesh)
                 {
-                    health.take_damage(*damage);
+                    health.take_damage(*damage, current_tick);
                     should_apply_hit_blink = true;
                     let is_dead = health.is_dead();
 
@@ -249,7 +252,7 @@ impl Command for MeleeAttackAction {
 
         // Consume energy
         if let Some(mut energy) = world.get_mut::<Energy>(self.attacker_entity) {
-            let cost = get_energy_cost(EnergyActionType::Attack);
+            let cost = get_base_energy_cost(EnergyActionType::Attack);
             energy.consume_energy(cost);
         }
     }

@@ -4,7 +4,7 @@ use macroquad::prelude::trace;
 use crate::{
     domain::{
         Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, UnequipItemAction, Zone,
-        get_energy_cost, inventory::InventoryChangedEvent,
+        get_base_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
@@ -91,7 +91,7 @@ impl Command for DropItemAction {
         }
 
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
-            let cost = get_energy_cost(EnergyActionType::DropItem);
+            let cost = get_base_energy_cost(EnergyActionType::DropItem);
             energy.consume_energy(cost);
         }
 

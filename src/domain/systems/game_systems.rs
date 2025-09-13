@@ -9,7 +9,9 @@ use crate::{
     domain::{
         PlayerPosition, TurnState, Zones, ai_turn,
         systems::{
+            armor_regen_system::armor_regen_system,
             cleanup_system::on_entity_destroyed_cleanup,
+            health_system::update_health_system,
             loot_drop_system::on_entity_destroyed_loot,
             stats_system::{equipment_stat_modifier_system, recalculate_stats_system},
         },
@@ -31,6 +33,8 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(update_entity_pos),
         world.register_system(equipment_stat_modifier_system),
         world.register_system(recalculate_stats_system),
+        world.register_system(update_health_system), // After stats system
+        world.register_system(armor_regen_system),   // After health system
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
         world.register_system(update_lighting_system),

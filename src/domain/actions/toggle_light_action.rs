@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, EnergyActionType, LightSource, Lightable, get_energy_cost},
+    domain::{Energy, EnergyActionType, LightSource, Lightable, get_base_energy_cost},
     engine::StableIdRegistry,
 };
 
@@ -51,7 +51,7 @@ impl Command for ToggleLightAction {
         }
 
         if let Some(mut energy) = world.get_mut::<Energy>(self.actor) {
-            let cost = get_energy_cost(EnergyActionType::ToggleLight);
+            let cost = get_base_energy_cost(EnergyActionType::ToggleLight);
             energy.consume_energy(cost);
         }
     }

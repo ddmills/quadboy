@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable,
-        StackableType, Zone, get_energy_cost, inventory::InventoryChangedEvent,
+        StackableType, Zone, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
     rendering::Position,
@@ -64,7 +64,7 @@ impl Command for PickupItemAction {
                     if self.spend_energy
                         && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
                     {
-                        let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                        let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
                         energy.consume_energy(cost);
                     }
                     return;
@@ -78,7 +78,7 @@ impl Command for PickupItemAction {
                     if self.spend_energy
                         && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
                     {
-                        let cost = get_energy_cost(EnergyActionType::PickUpItem);
+                        let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
                         energy.consume_energy(cost);
                     }
                     return;
@@ -127,7 +127,7 @@ impl Command for PickupItemAction {
         if self.spend_energy
             && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
         {
-            let cost = get_energy_cost(EnergyActionType::PickUpItem);
+            let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
             energy.consume_energy(cost);
         }
 

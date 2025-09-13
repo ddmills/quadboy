@@ -4,7 +4,8 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        AttributePoints, Attributes, Level, Player, StatModifiers, StatType, Stats, game_loop,
+        AttributePoints, Attributes, Health, Level, Player, StatModifiers, StatType, Stats,
+        game_loop,
     },
     engine::{App, Plugin},
     rendering::{Layer, Position, Text},
@@ -39,6 +40,8 @@ struct AttributesUIEntities {
     intelligence_value: Entity,
     fortitude_display: Entity,
     speed_display: Entity,
+    armor_display: Entity,
+    armor_regen_display: Entity,
 }
 
 pub struct AttributesStatePlugin;
@@ -177,10 +180,15 @@ fn update_attributes_display(
             &AttributePoints,
             &Stats,
             &StatModifiers,
+            &Health,
         ),
         (
             With<Player>,
-            Or<(Changed<Attributes>, Changed<AttributePoints>)>,
+            Or<(
+                Changed<Attributes>,
+                Changed<AttributePoints>,
+                Changed<Health>,
+            )>,
         ),
     >,
     ui_entities: Option<Res<AttributesUIEntities>>,
@@ -189,8 +197,10 @@ fn update_attributes_display(
         return;
     };
 
-    // Only update if player attributes/points changed
-    let Ok((level, attributes, attribute_points, stats, stat_modifiers)) = q_player.single() else {
+    // Only update if player attributes/points/health changed
+    let Ok((level, attributes, attribute_points, stats, stat_modifiers, health)) =
+        q_player.single()
+    else {
         return;
     };
 
@@ -243,6 +253,29 @@ fn update_attributes_display(
             speed_total, speed_base, speed_modifiers
         );
     }
+
+    let armor_base = StatType::Armor.get_base_value(attributes);
+    let armor_modifiers = stat_modifiers.get_total_for_stat(StatType::Armor);
+    let armor_total = stats.get_stat(StatType::Armor);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.armor_display) {
+        let (current_armor, max_armor) = health.get_current_max_armor(stats);
+        text.value = format!(
+            "Armor:        {}/{}  (Max: {} | Modifiers: {:+})",
+            current_armor, max_armor, armor_total, armor_modifiers
+        );
+    }
+
+    let armor_regen_base = StatType::ArmorRegen.get_base_value(attributes);
+    let armor_regen_modifiers = stat_modifiers.get_total_for_stat(StatType::ArmorRegen);
+    let armor_regen_total = stats.get_stat(StatType::ArmorRegen);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.armor_regen_display) {
+        text.value = format!(
+            "Armor Regen:  {}  (Intelligence: {} + Modifiers: {:+})",
+            armor_regen_total, armor_regen_base, armor_regen_modifiers
+        );
+    }
 }
 
 fn remove_attributes_callbacks(mut cmds: Commands) {
@@ -263,12 +296,14 @@ fn setup_attributes_screen(
             &AttributePoints,
             &Stats,
             &StatModifiers,
+            &Health,
         ),
         With<Player>,
     >,
     callbacks: Res<AttributesCallbacks>,
 ) {
-    let Ok((_, level, attributes, attribute_points, stats, stat_modifiers)) = q_player.single()
+    let Ok((_, level, attributes, attribute_points, stats, stat_modifiers, health)) =
+        q_player.single()
     else {
         return;
     };
@@ -483,6 +518,46 @@ fn setup_attributes_screen(
         ))
         .id();
 
+    y_pos += 0.5;
+
+    // Armor
+    let armor_base = StatType::Armor.get_base_value(attributes);
+    let armor_modifiers = stat_modifiers.get_total_for_stat(StatType::Armor);
+    let armor_total = stats.get_stat(StatType::Armor);
+
+    let armor_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Armor:        {}/{}  (Max: {} | Modifiers: {:+})",
+                health.current_armor, armor_total, armor_total, armor_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    // Armor Regen
+    let armor_regen_base = StatType::ArmorRegen.get_base_value(attributes);
+    let armor_regen_modifiers = stat_modifiers.get_total_for_stat(StatType::ArmorRegen);
+    let armor_regen_total = stats.get_stat(StatType::ArmorRegen);
+
+    let armor_regen_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Armor Regen:  {}  (Intelligence: {} + Modifiers: {:+})",
+                armor_regen_total, armor_regen_base, armor_regen_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     y_pos += 1.5;
 
     // Back Button
@@ -502,5 +577,7 @@ fn setup_attributes_screen(
         intelligence_value,
         fortitude_display,
         speed_display,
+        armor_display,
+        armor_regen_display,
     });
 }

@@ -4,8 +4,8 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, MeleeWeapon, Player,
-        RangedWeapon, Zone,
+        EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, Level, MeleeWeapon, Player,
+        RangedWeapon, Stats, Zone,
     },
     engine::{KeyInput, Mouse, StableIdRegistry},
     rendering::{
@@ -79,14 +79,14 @@ pub fn spawn_targeting_ui(cmds: &mut Commands, cleanup_marker: impl Component + 
 
 pub fn collect_valid_targets(
     mut target_cycling: ResMut<TargetCycling>,
-    q_player: Query<(&Position, Option<&EquipmentSlots>), With<Player>>,
+    q_player: Query<(Entity, &Position, Option<&EquipmentSlots>), With<Player>>,
     q_health: Query<(Entity, &Position), With<Health>>,
     q_zones: Query<&Zone>,
     q_ranged_weapons: Query<&RangedWeapon>,
     q_melee_weapons: Query<&MeleeWeapon>,
     registry: Option<Res<StableIdRegistry>>,
 ) {
-    let Ok((player_position, equipment_slots)) = q_player.single() else {
+    let Ok((player_entity, player_position, equipment_slots)) = q_player.single() else {
         return;
     };
 
@@ -126,6 +126,11 @@ pub fn collect_valid_targets(
     if let Some(zone) = player_zone {
         // Only check entities in the same zone as the player
         for (entity, pos) in q_health.iter() {
+            // Skip self-targeting
+            if entity == player_entity {
+                continue;
+            }
+
             let target_world = pos.world();
             let target_zone_idx = world_to_zone_idx(target_world.0, target_world.1, target_world.2);
 
@@ -277,6 +282,7 @@ pub fn render_target_info(
     target_cycling: Res<TargetCycling>,
     q_zones: Query<&Zone>,
     q_health: Query<&Health>,
+    q_dynamic_health: Query<(&Health, &Level, &Stats)>, // For entities with dynamic HP
     q_names: Query<&Label>,
     mut q_target_info: Query<(&mut Text, &mut Position, &mut Visibility), With<TargetInfo>>,
     mut q_target_indicator: Query<
@@ -332,7 +338,29 @@ pub fn render_target_info(
             if let (Some(name), Some(health)) = (target_name, target_health) {
                 // Show and update target info text
                 *text_visibility = Visibility::Visible;
-                text.value = format!("{} ({}/{})", name, health.current, health.max);
+
+                // Try to get dynamic max HP and armor (for entities with Level/Stats), otherwise use current as max (legacy)
+                let (max_hp, armor_display) =
+                    if let Ok((_, level, stats)) = q_dynamic_health.get(*entity) {
+                        let max_hp = Health::get_max_hp(level, stats);
+                        let (current_armor, max_armor) = health.get_current_max_armor(stats);
+
+                        // Only show armor if entity has any max armor
+                        let armor_text = if max_armor > 0 {
+                            format!(" | A:{}/{}", current_armor, max_armor)
+                        } else {
+                            String::new()
+                        };
+
+                        (max_hp, armor_text)
+                    } else {
+                        (health.current, String::new()) // Legacy entities: assume current is max, no armor
+                    };
+
+                text.value = format!(
+                    "{} (HP:{}/{}{})",
+                    name, health.current, max_hp, armor_display
+                );
                 text_pos.x = pos.0.floor() + 1.;
                 text_pos.y = pos.1.floor();
                 text_pos.z = pos.2.floor();

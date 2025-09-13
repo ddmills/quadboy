@@ -1,9 +1,11 @@
 pub mod ai_system;
+pub mod armor_regen_system;
 pub mod bump_attack_system;
 pub mod cleanup_system;
 pub mod destruction_system;
 pub mod energy_system;
 pub mod game_systems;
+pub mod health_system;
 pub mod hit_blink_system;
 pub mod inventory_system;
 pub mod lighting_system;
@@ -15,8 +17,10 @@ pub mod vision_system;
 pub mod xp_system;
 
 pub use ai_system::*;
+pub use armor_regen_system::*;
 pub use energy_system::*;
 pub use game_systems::*;
+pub use health_system::*;
 pub use inventory_system::*;
 pub use lighting_system::*;
 pub use stable_id_system::*;

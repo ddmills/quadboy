@@ -6,7 +6,7 @@ use crate::{
     common::Rand,
     domain::{
         Collider, Energy, EnergyActionType, InActiveZone, MeleeAttackAction, Player, TurnState,
-        Zone, get_energy_cost,
+        Zone, get_base_energy_cost,
     },
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
@@ -43,14 +43,14 @@ pub fn ai_turn(
     let mut action = EnergyActionType::Wait;
 
     if rand.bool(0.75) {
-        let cost = get_energy_cost(action);
+        let cost = get_base_energy_cost(action);
         energy.consume_energy(cost);
         telemetry::end_zone();
         return;
     }
 
     let Ok(mut position) = q_position.get_mut(current_entity) else {
-        let cost = get_energy_cost(action);
+        let cost = get_base_energy_cost(action);
         energy.consume_energy(cost);
         telemetry::end_zone();
         return;
@@ -61,7 +61,7 @@ pub fn ai_turn(
     // Check for adjacent player to attack
     let Ok(player_pos) = q_player.single() else {
         // No player found, just wait
-        let cost = get_energy_cost(action);
+        let cost = get_base_energy_cost(action);
         energy.consume_energy(cost);
         telemetry::end_zone();
         return;
@@ -95,7 +95,7 @@ pub fn ai_turn(
     let max_y = (MAP_SIZE.1 * ZONE_SIZE.1) - 1;
 
     if new_x > max_x || new_y > max_y {
-        let cost = get_energy_cost(action);
+        let cost = get_base_energy_cost(action);
         energy.consume_energy(cost);
         telemetry::end_zone();
         return;
@@ -104,7 +104,7 @@ pub fn ai_turn(
     // Check if destination zone is loaded
     let dest_zone_idx = world_to_zone_idx(new_x, new_y, z);
     let Some(zone) = q_zones.iter().find(|zone| zone.idx == dest_zone_idx) else {
-        let cost = get_energy_cost(action);
+        let cost = get_base_energy_cost(action);
         energy.consume_energy(cost);
         telemetry::end_zone();
         return;
@@ -115,7 +115,7 @@ pub fn ai_turn(
         for entity in entities {
             if q_colliders.get(*entity).is_ok() {
                 // Found a collider at this position, can't move
-                let cost = get_energy_cost(action);
+                let cost = get_base_energy_cost(action);
                 energy.consume_energy(cost);
                 telemetry::end_zone();
                 return;
@@ -127,7 +127,7 @@ pub fn ai_turn(
     position.y = new_y as f32;
     action = EnergyActionType::Move;
 
-    let cost = get_energy_cost(action);
+    let cost = get_base_energy_cost(action);
     energy.consume_energy(cost);
     telemetry::end_zone();
 }

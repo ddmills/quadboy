@@ -4,9 +4,10 @@ use crate::{
     common::Rand,
     domain::{
         Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType,
-        RangedWeapon, Zone, get_energy_cost, systems::destruction_system::EntityDestroyedEvent,
+        RangedWeapon, Zone, get_base_energy_cost,
+        systems::destruction_system::EntityDestroyedEvent,
     },
-    engine::{Audio, StableIdRegistry},
+    engine::{Audio, Clock, StableIdRegistry},
     rendering::{Glyph, Position, spawn_bullet_trail_in_world, spawn_material_hit_in_world},
 };
 
@@ -116,11 +117,14 @@ impl Command for ShootAction {
         if targets.is_empty() {
             // Consume energy even if no target hit (shot fired)
             if let Some(mut energy) = world.get_mut::<Energy>(self.shooter_entity) {
-                let cost = get_energy_cost(EnergyActionType::Shoot);
+                let cost = get_base_energy_cost(EnergyActionType::Shoot);
                 energy.consume_energy(cost);
             }
             return;
         }
+
+        // Get current tick once for this shot
+        let current_tick = world.resource::<Clock>().current_tick();
 
         // Process shot on each target at position
         for &target_entity in targets.iter() {
@@ -128,7 +132,7 @@ impl Command for ShootAction {
 
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if can_damage.contains(&MaterialType::Flesh) {
-                    health.take_damage(damage);
+                    health.take_damage(damage, current_tick);
                     should_apply_hit_blink = true;
                     let is_dead = health.is_dead();
 
@@ -244,7 +248,7 @@ impl Command for ShootAction {
 
         // Consume energy
         if let Some(mut energy) = world.get_mut::<Energy>(self.shooter_entity) {
-            let cost = get_energy_cost(EnergyActionType::Shoot);
+            let cost = get_base_energy_cost(EnergyActionType::Shoot);
             energy.consume_energy(cost);
         }
     }

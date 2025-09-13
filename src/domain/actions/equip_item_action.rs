@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, EquipmentSlots, Equippable, Equipped, Inventory,
-        UnequipItemAction, get_energy_cost, inventory::InventoryChangedEvent,
+        UnequipItemAction, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
 };
@@ -90,7 +90,7 @@ impl Command for EquipItemAction {
 
         // Consume energy if entity has energy (for player actions)
         if let Some(mut energy) = world.get_mut::<Energy>(entity) {
-            let cost = get_energy_cost(EnergyActionType::EquipItem);
+            let cost = get_base_energy_cost(EnergyActionType::EquipItem);
             energy.consume_energy(cost);
         }
 

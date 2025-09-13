@@ -8,8 +8,10 @@ use super::Attributes;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StatType {
-    Fortitude, // Constitution + modifiers (affects max HP)
-    Speed,     // Dexterity + modifiers (affects movement energy cost)
+    Fortitude,  // Constitution + modifiers (affects max HP)
+    Speed,      // Dexterity + modifiers (affects movement energy cost)
+    Armor,      // Only affected by modifiers (no base attribute)
+    ArmorRegen, // Intelligence + modifiers (affects armor regeneration rate)
 }
 
 impl StatType {
@@ -17,11 +19,18 @@ impl StatType {
         match self {
             StatType::Fortitude => attributes.constitution as i32,
             StatType::Speed => attributes.dexterity as i32,
+            StatType::Armor => 0, // No base attribute, only modifiers
+            StatType::ArmorRegen => attributes.intelligence as i32,
         }
     }
 
     pub fn all() -> &'static [StatType] {
-        &[StatType::Fortitude, StatType::Speed]
+        &[
+            StatType::Fortitude,
+            StatType::Speed,
+            StatType::Armor,
+            StatType::ArmorRegen,
+        ]
     }
 }
 

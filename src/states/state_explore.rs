@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Player, PlayerDebug, PlayerMovedEvent, collect_valid_targets, game_loop,
-        handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
-        render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
-        update_target_cycling,
+        Health, Level, Player, PlayerDebug, PlayerMovedEvent, StatType, Stats,
+        collect_valid_targets, game_loop, handle_item_pickup, init_targeting_resource,
+        player_input, render_player_debug, render_target_crosshair, render_target_info,
+        spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
     engine::{App, Plugin, SerializableComponent},
-    rendering::{Layer, Position},
+    rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
         Button, XPProgressBar, display_entity_names_at_mouse, render_cursor, render_lighting_debug,
@@ -52,6 +52,8 @@ impl Plugin for ExploreStatePlugin {
                     render_cursor,
                     display_entity_names_at_mouse,
                     update_xp_progress_bars,
+                    update_player_hp_bar,
+                    update_player_armor_bar,
                 ),
             )
             .on_update(app, player_input)
@@ -70,6 +72,12 @@ impl Plugin for ExploreStatePlugin {
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct CleanupStateExplore;
+
+#[derive(Component)]
+pub struct PlayerHPBar;
+
+#[derive(Component)]
+pub struct PlayerArmorBar;
 
 fn setup_callbacks(world: &mut World) {
     let callbacks = ExploreCallbacks {
@@ -114,7 +122,7 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn player debug info
     cmds.spawn((
-        crate::rendering::Text::new("123").bg(Palette::Black),
+        Text::new("123").bg(Palette::Black),
         Position::new_f32(6., 0., 0.),
         PlayerDebug,
         CleanupStateExplore,
@@ -125,9 +133,25 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn XP progress bar
     cmds.spawn((
-        crate::rendering::Text::new("").layer(Layer::Ui),
+        Text::new("").layer(Layer::Ui),
         Position::new_f32(30., 1.5, 0.),
         XPProgressBar::new(30),
+        CleanupStateExplore,
+    ));
+
+    // Spawn player HP display
+    cmds.spawn((
+        Text::new("HP").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(1., 3., 0.),
+        PlayerHPBar,
+        CleanupStateExplore,
+    ));
+
+    // Spawn player armor display
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(1., 3.5, 0.),
+        PlayerArmorBar,
         CleanupStateExplore,
     ));
 }
@@ -146,6 +170,39 @@ fn center_camera_on_player(
         y: p.1,
         z: p.2,
     });
+}
+
+fn update_player_hp_bar(
+    q_player: Query<
+        (&Health, &Level, &Stats),
+        (With<Player>, Or<(Changed<Health>, Changed<Stats>)>),
+    >,
+    mut q_hp_display: Query<&mut Text, With<PlayerHPBar>>,
+) {
+    let Ok((health, level, stats)) = q_player.single() else {
+        return;
+    };
+    let Ok(mut hp_text) = q_hp_display.single_mut() else {
+        return;
+    };
+
+    let max_hp = Health::get_max_hp(level, stats);
+    hp_text.value = format!("HP: {}/{}", health.current, max_hp);
+}
+
+fn update_player_armor_bar(
+    q_player: Query<(&Health, &Stats), (With<Player>, Or<(Changed<Health>, Changed<Stats>)>)>,
+    mut q_armor_display: Query<&mut Text, With<PlayerArmorBar>>,
+) {
+    let Ok((health, stats)) = q_player.single() else {
+        return;
+    };
+    let Ok(mut armor_text) = q_armor_display.single_mut() else {
+        return;
+    };
+
+    let (current_armor, max_armor) = health.get_current_max_armor(stats);
+    armor_text.value = format!("Armor: {}/{}", current_armor, max_armor);
 }
 
 fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {

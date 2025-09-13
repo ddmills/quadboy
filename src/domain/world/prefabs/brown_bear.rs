@@ -1,12 +1,22 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{DefaultMeleeAttack, LootDrop, LootTableId},
+    domain::{DefaultMeleeAttack, LootDrop, LootTableId, StatModifier, StatModifiers, StatType},
     rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
+    let mut stat_modifiers = StatModifiers::new();
+    stat_modifiers.add_modifier(
+        StatType::Armor,
+        StatModifier::intrinsic(10, "Thick Hide".to_string()),
+    );
+    stat_modifiers.add_modifier(
+        StatType::ArmorRegen,
+        StatModifier::intrinsic(3, "Natural Healing".to_string()),
+    );
+
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
         .with_glyph_and_texture(
@@ -25,7 +35,7 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
         .with_level(6)
         .with_attributes(crate::domain::Attributes::new(4, 2, 5, 1))
         .with_stats(crate::domain::Stats::new())
-        .with_stat_modifiers(crate::domain::StatModifiers::new())
+        .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::BrownBearLoot, 0.3))
         .build();
 }
