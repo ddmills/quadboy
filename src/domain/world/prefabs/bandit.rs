@@ -22,6 +22,9 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         .with_collider()
         .with_hide_when_not_visible()
         .with_level(4)
+        .with_attributes(crate::domain::Attributes::new(3, 3, 2, 2))
+        .with_stats(crate::domain::Stats::new())
+        .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_loot_drop(LootDrop::new(LootTableId::BanditLoot, 0.5))
         .build();
 }

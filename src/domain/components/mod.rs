@@ -1,3 +1,4 @@
+pub mod attributes;
 pub mod bitmask;
 pub mod bump_attack;
 pub mod collider;
@@ -16,8 +17,10 @@ pub mod loot_drop;
 pub mod melee_weapon;
 pub mod ranged_weapon;
 pub mod stairs;
+pub mod stats;
 pub mod vision;
 
+pub use attributes::Attributes;
 pub use bitmask::*;
 pub use bump_attack::BumpAttack;
 pub use collider::Collider;
@@ -39,6 +42,7 @@ pub use loot_drop::LootDrop;
 pub use melee_weapon::MeleeWeapon;
 pub use ranged_weapon::RangedWeapon;
 pub use stairs::{StairDown, StairUp};
+pub use stats::{ModifierSource, StatModifier, StatModifiers, StatType, Stats};
 pub use vision::{
     ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Vision, VisionBlocker,
 };

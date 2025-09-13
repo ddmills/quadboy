@@ -6,9 +6,9 @@ use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Collider, DefaultMeleeAttack, Energy, EquipmentSlots, GameSaveData,
+        ApplyVisibilityEffects, Attributes, Collider, DefaultMeleeAttack, Energy, EquipmentSlots, GameSaveData,
         Inventory, Label, Level, LoadZoneCommand, Overworld, Player, PlayerPosition,
-        PlayerSaveData, TerrainNoise, Vision, Zones,
+        PlayerSaveData, StatModifiers, Stats, TerrainNoise, Vision, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
@@ -65,6 +65,9 @@ impl NewGameCommand {
                 RecordZonePosition,
                 CleanupStatePlay,
             ))
+            .insert(Attributes::new(0, 0, 0, 0))
+            .insert(Stats::new())
+            .insert(StatModifiers::new())
             .id();
 
         id_registry.register(player_entity, player_id);

@@ -2,11 +2,11 @@ use super::Prefab;
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, BitmaskGlyph, BitmaskStyle, Collider, DefaultMeleeAttack,
+        ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider, DefaultMeleeAttack,
         Destructible, Energy, Equippable, Health, HideWhenNotVisible, Inventory,
         InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable, LootDrop,
         MaterialType, MeleeWeapon, NeedsStableId, RangedWeapon, SaveFlag, StackCount, Stackable,
-        StackableType, StairDown, StairUp, VisionBlocker,
+        StackableType, StairDown, StairUp, StatModifiers, Stats, VisionBlocker,
     },
     rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -213,6 +213,21 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_level(self, level: u32) -> Self {
         self.world.entity_mut(self.entity).insert(Level::new(level));
+        self
+    }
+
+    pub fn with_attributes(self, attributes: Attributes) -> Self {
+        self.world.entity_mut(self.entity).insert(attributes);
+        self
+    }
+
+    pub fn with_stats(self, stats: Stats) -> Self {
+        self.world.entity_mut(self.entity).insert(stats);
+        self
+    }
+
+    pub fn with_stat_modifiers(self, stat_modifiers: StatModifiers) -> Self {
+        self.world.entity_mut(self.entity).insert(stat_modifiers);
         self
     }
 

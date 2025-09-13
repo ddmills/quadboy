@@ -23,6 +23,9 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::wing_buffet())
         .with_level(1)
+        .with_attributes(crate::domain::Attributes::new(1, 5, 1, 3))
+        .with_stats(crate::domain::Stats::new())
+        .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_loot_drop(LootDrop::new(LootTableId::BatLoot, 0.2))
         .build();
 }

@@ -10,6 +10,7 @@ use crate::{
         PlayerPosition, TurnState, Zones, ai_turn,
         systems::{
             cleanup_system::on_entity_destroyed_cleanup, loot_drop_system::on_entity_destroyed_loot,
+            stats_system::{equipment_stat_modifier_system, recalculate_stats_system},
         },
         turn_scheduler, update_entity_visibility_flags, update_lighting_system,
         update_player_position_resource, update_player_vision,
@@ -27,6 +28,8 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(apply_deferred),
         world.register_system(update_player_position_resource),
         world.register_system(update_entity_pos),
+        world.register_system(equipment_stat_modifier_system),
+        world.register_system(recalculate_stats_system),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
         world.register_system(update_lighting_system),

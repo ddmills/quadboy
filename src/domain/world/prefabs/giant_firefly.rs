@@ -23,6 +23,9 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::electric_touch())
         .with_level(2)
+        .with_attributes(crate::domain::Attributes::new(1, 3, 2, 2))
+        .with_stats(crate::domain::Stats::new())
+        .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_light_source(LightSource::new(0.6, 0xC4D434, 3).with_flicker(0.5))
         .with_loot_drop(LootDrop::new(LootTableId::GiantFireflyLoot, 0.35))
         .build();

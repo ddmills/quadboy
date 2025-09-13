@@ -23,6 +23,9 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::claw_swipe())
         .with_level(6)
+        .with_attributes(crate::domain::Attributes::new(4, 2, 5, 1))
+        .with_stats(crate::domain::Stats::new())
+        .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_loot_drop(LootDrop::new(LootTableId::BrownBearLoot, 0.3))
         .build();
 }

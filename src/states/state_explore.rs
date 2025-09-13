@@ -26,6 +26,7 @@ struct ExploreCallbacks {
     open_map: SystemId,
     open_inventory: SystemId,
     open_debug_spawn: SystemId,
+    open_attributes: SystemId,
 }
 
 pub struct ExploreStatePlugin;
@@ -75,6 +76,7 @@ fn setup_callbacks(world: &mut World) {
         open_map: world.register_system(open_map),
         open_inventory: world.register_system(open_inventory),
         open_debug_spawn: world.register_system(open_debug_spawn),
+        open_attributes: world.register_system(open_attributes),
     };
 
     world.insert_resource(callbacks);
@@ -90,6 +92,10 @@ fn open_inventory(mut game_state: ResMut<CurrentGameState>) {
 
 fn open_debug_spawn(mut game_state: ResMut<CurrentGameState>) {
     game_state.next = GameState::DebugSpawn;
+}
+
+fn open_attributes(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Attributes;
 }
 
 fn remove_explore_callbacks(mut cmds: Commands) {
@@ -160,6 +166,13 @@ fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {
         Position::new_f32(16., 1.5, 0.),
         Button::new("({Y|B}) DEBUG", callbacks.open_debug_spawn)
             .hotkey(macroquad::input::KeyCode::B),
+        CleanupStateExplore,
+    ));
+
+    cmds.spawn((
+        Position::new_f32(22., 1.5, 0.),
+        Button::new("({Y|Y}) ATTRIBUTES", callbacks.open_attributes)
+            .hotkey(macroquad::input::KeyCode::Y),
         CleanupStateExplore,
     ));
 }

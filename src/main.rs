@@ -18,13 +18,13 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, Bitmasker, BumpAttack, Collider, DefaultMeleeAttack, Destructible,
+        ApplyVisibilityEffects, Attributes, Bitmasker, BumpAttack, Collider, DefaultMeleeAttack, Destructible,
         Energy, EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible,
         HitBlink, InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible,
         Item, Label, Level, LightSource, LoadGameResult, LoadZoneEvent, LootDrop,
         LootTableRegistry, MeleeWeapon, NeedsStableId, NewGameResult, Player, PlayerMovedEvent,
         Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
-        Stackable, StairDown, StairUp, TurnState, UnloadZoneEvent, UnopenedContainer, Vision,
+        Stackable, StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer, Vision,
         VisionBlocker, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
@@ -40,7 +40,7 @@ use crate::{
     },
     rendering::{CrtShader, Glyph, RecordZonePosition, TilesetRegistry},
     states::{
-        CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin, CurrentAppState,
+        AttributesStatePlugin, CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin, CurrentAppState,
         CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin, InventoryStatePlugin,
         LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin, OverworldStatePlugin,
         PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin, update_app_states,
@@ -125,6 +125,9 @@ async fn main() {
     reg.register::<MeleeWeapon>();
     reg.register::<DefaultMeleeAttack>();
     reg.register::<Level>();
+    reg.register::<Attributes>();
+    reg.register::<Stats>();
+    reg.register::<StatModifiers>();
     reg.register::<UnopenedContainer>();
     reg.register::<LootDrop>();
     reg.register::<Stackable>();
@@ -141,6 +144,7 @@ async fn main() {
         .add_plugin(DebugSpawnStatePlugin)
         .add_plugin(InventoryStatePlugin)
         .add_plugin(ContainerStatePlugin::new())
+        .add_plugin(AttributesStatePlugin)
         .add_plugin(OverworldStatePlugin)
         .add_plugin(PauseStatePlugin)
         .register_event::<LoadGameResult>()

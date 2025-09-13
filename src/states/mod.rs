@@ -1,4 +1,5 @@
 mod state;
+mod state_attributes;
 mod state_container;
 mod state_debug_spawn;
 mod state_explore;
@@ -12,6 +13,7 @@ mod state_play;
 mod state_settings;
 
 pub use state::*;
+pub use state_attributes::*;
 pub use state_container::*;
 pub use state_debug_spawn::*;
 pub use state_explore::*;
