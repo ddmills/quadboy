@@ -19,6 +19,12 @@ pub enum AudioKey {
     RevolverShoot1,
     RifleShoot1,
     ShotgunShoot1,
+    RevolverReload,
+    RifleReload,
+    ShotgunReload,
+    RevolverEmpty,
+    RifleEmpty,
+    ShotgunEmpty,
     Pain1,
     Pain2,
 }
@@ -38,6 +44,12 @@ impl AudioKey {
             AudioKey::RevolverShoot1 => include_bytes!("../assets/audio/revolver_shoot_1.wav"),
             AudioKey::RifleShoot1 => include_bytes!("../assets/audio/rifle_shoot_1.wav"),
             AudioKey::ShotgunShoot1 => include_bytes!("../assets/audio/shotgun_shoot_1.wav"),
+            AudioKey::RevolverReload => include_bytes!("../assets/audio/revolver_reload.wav"),
+            AudioKey::RifleReload => include_bytes!("../assets/audio/rifle_reload.wav"),
+            AudioKey::ShotgunReload => include_bytes!("../assets/audio/shotgun_reload.wav"),
+            AudioKey::RevolverEmpty => include_bytes!("../assets/audio/revolver_empty.wav"),
+            AudioKey::RifleEmpty => include_bytes!("../assets/audio/rifle_empty.wav"),
+            AudioKey::ShotgunEmpty => include_bytes!("../assets/audio/shotgun_empty.wav"),
             AudioKey::Pain1 => include_bytes!("../assets/audio/pain_1.wav"),
             AudioKey::Pain2 => include_bytes!("../assets/audio/pain_2.wav"),
         }
@@ -113,6 +125,30 @@ impl Audio {
         sounds.insert(
             AudioKey::ShotgunShoot1,
             Sound::load(&ctx_guard, AudioKey::ShotgunShoot1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::RevolverReload,
+            Sound::load(&ctx_guard, AudioKey::RevolverReload.bytes()),
+        );
+        sounds.insert(
+            AudioKey::RifleReload,
+            Sound::load(&ctx_guard, AudioKey::RifleReload.bytes()),
+        );
+        sounds.insert(
+            AudioKey::ShotgunReload,
+            Sound::load(&ctx_guard, AudioKey::ShotgunReload.bytes()),
+        );
+        sounds.insert(
+            AudioKey::RevolverEmpty,
+            Sound::load(&ctx_guard, AudioKey::RevolverEmpty.bytes()),
+        );
+        sounds.insert(
+            AudioKey::RifleEmpty,
+            Sound::load(&ctx_guard, AudioKey::RifleEmpty.bytes()),
+        );
+        sounds.insert(
+            AudioKey::ShotgunEmpty,
+            Sound::load(&ctx_guard, AudioKey::ShotgunEmpty.bytes()),
         );
         sounds.insert(
             AudioKey::Pain1,

@@ -93,7 +93,7 @@ impl Command for ShootAction {
             .map(|p| p.world());
 
         // Get the equipped ranged weapon (if any)
-        let weapon_data = {
+        let weapon_info = {
             let Some(registry) = world.get_resource::<StableIdRegistry>() else {
                 return;
             };
@@ -109,10 +109,13 @@ impl Command for ShootAction {
                 if let Some(weapon_entity) = registry.get_entity(weapon_id) {
                     world.get::<RangedWeapon>(weapon_entity).map(|weapon| {
                         (
-                            weapon.damage,
+                            weapon_entity,
+                            weapon.damage_dice.clone(),
                             weapon.can_damage.clone(),
                             weapon.range,
                             weapon.shoot_audio,
+                            weapon.current_ammo,
+                            weapon.no_ammo_audio,
                         )
                     })
                 } else {
@@ -123,10 +126,37 @@ impl Command for ShootAction {
             }
         };
 
-        let Some((damage, can_damage, range, shoot_audio)) = weapon_data else {
+        let Some((
+            weapon_entity,
+            damage_dice,
+            can_damage,
+            range,
+            shoot_audio,
+            current_ammo,
+            no_ammo_audio,
+        )) = weapon_info
+        else {
             // No ranged weapon equipped
             return;
         };
+
+        // Check if weapon has ammo
+        if let Some(ammo) = current_ammo {
+            if ammo == 0 {
+                // No ammo - play empty sound and consume energy but don't shoot
+                if let Some(empty_audio) = no_ammo_audio {
+                    if let Some(audio) = world.get_resource::<Audio>() {
+                        audio.play(empty_audio, 0.2);
+                    }
+                }
+
+                if let Some(mut energy) = world.get_mut::<Energy>(self.shooter_entity) {
+                    let cost = get_base_energy_cost(EnergyActionType::Shoot);
+                    energy.consume_energy(cost);
+                }
+                return;
+            }
+        }
 
         // Check if target is within range
         if let Some((sx, sy, _sz)) = shooter_pos {
@@ -188,6 +218,15 @@ impl Command for ShootAction {
             // Resolve hit/miss for this target
             let (hit, _is_critical) = resolve_hit_miss(self.shooter_entity, target_entity, world);
 
+            // Roll damage if hit
+            let rolled_damage = if hit {
+                world.resource_scope(|_world, mut rand: Mut<Rand>| {
+                    rand.roll(&damage_dice).unwrap_or(1)
+                })
+            } else {
+                0
+            };
+
             if let Some(shooter_pos) = shooter_pos {
                 world.resource_scope(|world, mut rand: Mut<Rand>| {
                     spawn_bullet_trail_in_world(
@@ -203,7 +242,7 @@ impl Command for ShootAction {
 
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if can_damage.contains(&MaterialType::Flesh) && hit {
-                    health.take_damage(damage, current_tick);
+                    health.take_damage(rolled_damage, current_tick);
                     should_apply_hit_blink = true;
                     let is_dead = health.is_dead();
 
@@ -271,7 +310,7 @@ impl Command for ShootAction {
                 // Check if weapon can damage this material type
                 if can_damage.contains(&destructible.material_type) {
                     let material_type = destructible.material_type;
-                    destructible.take_damage(damage);
+                    destructible.take_damage(rolled_damage);
                     should_apply_hit_blink = true;
                     let is_destroyed = destructible.is_destroyed();
 
@@ -317,6 +356,13 @@ impl Command for ShootAction {
 
             if should_apply_hit_blink {
                 apply_hit_blink(world, target_entity);
+            }
+        }
+
+        // Decrement ammo for weapons with clips
+        if let Some(mut weapon) = world.get_mut::<RangedWeapon>(weapon_entity) {
+            if let Some(current) = weapon.current_ammo {
+                weapon.current_ammo = Some(current.saturating_sub(1));
             }
         }
 

@@ -6,8 +6,8 @@ use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
         Collider, Energy, EquipmentSlots, GameSettings, Inventory, InventoryAccessible, IsExplored,
-        MeleeAttackAction, MoveAction, OpenContainerAction, ShootAction, StairDown, StairUp,
-        ToggleLightAction, TurnState, WaitAction, Zone,
+        MeleeAttackAction, MoveAction, OpenContainerAction, ReloadAction, ShootAction, StairDown,
+        StairUp, ToggleLightAction, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
@@ -189,6 +189,13 @@ pub fn player_input(
             cmds.queue(ToggleLightAction::new(item_id, player_entity));
             return;
         }
+    }
+
+    if keys.is_pressed(KeyCode::R) {
+        cmds.queue(ReloadAction {
+            entity: player_entity,
+        });
+        return;
     }
 
     let movement_keys_down = keys.is_down(KeyCode::A)

@@ -257,7 +257,7 @@ impl ItemDialogBuilder {
             cmds.spawn((
                 DialogProperty {
                     label: "Damage".to_string(),
-                    value: format!("{}", melee_weapon.damage),
+                    value: melee_weapon.damage_dice.clone(),
                 },
                 DialogContent {
                     parent_dialog: dialog_entity,

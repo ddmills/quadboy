@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        Health, Level, Player, PlayerDebug, PlayerMovedEvent, StatType, Stats,
-        collect_valid_targets, game_loop, handle_item_pickup, init_targeting_resource,
-        player_input, render_player_debug, render_target_crosshair, render_target_info,
-        spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
+        EquipmentSlot, EquipmentSlots, Health, Level, Player, PlayerDebug, PlayerMovedEvent,
+        RangedWeapon, Stats, collect_valid_targets, game_loop, handle_item_pickup,
+        init_targeting_resource, player_input, render_player_debug, render_target_crosshair,
+        render_target_info, spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
-    engine::{App, Plugin, SerializableComponent},
+    engine::{App, Plugin, SerializableComponent, StableIdRegistry},
     rendering::{Layer, Position, Text},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
@@ -54,6 +54,7 @@ impl Plugin for ExploreStatePlugin {
                     update_xp_progress_bars,
                     update_player_hp_bar,
                     update_player_armor_bar,
+                    update_player_ammo_bar,
                 ),
             )
             .on_update(app, player_input)
@@ -78,6 +79,9 @@ pub struct PlayerHPBar;
 
 #[derive(Component)]
 pub struct PlayerArmorBar;
+
+#[derive(Component)]
+pub struct PlayerAmmoBar;
 
 fn setup_callbacks(world: &mut World) {
     let callbacks = ExploreCallbacks {
@@ -154,6 +158,14 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
         PlayerArmorBar,
         CleanupStateExplore,
     ));
+
+    // Spawn player ammo display
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(1., 4., 0.),
+        PlayerAmmoBar,
+        CleanupStateExplore,
+    ));
 }
 
 fn on_leave_explore() {
@@ -203,6 +215,53 @@ fn update_player_armor_bar(
 
     let (current_armor, max_armor) = health.get_current_max_armor(stats);
     armor_text.value = format!("Armor: {}/{}", current_armor, max_armor);
+}
+
+fn update_player_ammo_bar(
+    q_player_equipment: Query<&EquipmentSlots, With<Player>>,
+    q_weapons: Query<&RangedWeapon>,
+    mut q_ammo_display: Query<&mut Text, With<PlayerAmmoBar>>,
+    registry: Option<Res<StableIdRegistry>>,
+) {
+    let Ok(mut ammo_text) = q_ammo_display.single_mut() else {
+        return;
+    };
+
+    let Some(registry) = registry else {
+        ammo_text.value = "".to_string();
+        return;
+    };
+
+    let Ok(equipment_slots) = q_player_equipment.single() else {
+        ammo_text.value = "".to_string();
+        return;
+    };
+
+    let Some(weapon_id) = equipment_slots.get_equipped_item(EquipmentSlot::MainHand) else {
+        ammo_text.value = "".to_string();
+        return;
+    };
+
+    let Some(weapon_entity) = registry.get_entity(weapon_id) else {
+        ammo_text.value = "".to_string();
+        return;
+    };
+
+    let Ok(weapon) = q_weapons.get(weapon_entity) else {
+        ammo_text.value = "".to_string();
+        return;
+    };
+
+    let (Some(clip_size), Some(current_ammo)) = (weapon.clip_size, weapon.current_ammo) else {
+        ammo_text.value = "".to_string();
+        return;
+    };
+
+    let bar_chars = (0..clip_size)
+        .map(|i| if i < current_ammo { 'X' } else { '-' })
+        .collect::<String>();
+
+    ammo_text.value = format!("[{}] {}/{}", bar_chars, current_ammo, clip_size);
 }
 
 fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {

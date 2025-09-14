@@ -89,7 +89,7 @@ fn apply_hit_blink(world: &mut World, target_entity: Entity) {
 
 impl Command for MeleeAttackAction {
     fn apply(self, world: &mut World) {
-        // Get the weapon damage (equipped weapon takes priority, then default attack)
+        // Get the weapon damage dice (equipped weapon takes priority, then default attack)
         let weapon_damage = {
             // First check for equipped weapon
             if let Some(registry) = world.get_resource::<StableIdRegistry>()
@@ -99,13 +99,16 @@ impl Command for MeleeAttackAction {
                 && let Some(weapon_entity) = registry.get_entity(weapon_id)
                 && let Some(weapon) = world.get::<MeleeWeapon>(weapon_entity)
             {
-                Some((weapon.damage, weapon.can_damage.clone()))
+                Some((weapon.damage_dice.clone(), weapon.can_damage.clone()))
             }
             // Fall back to default melee attack if no equipped weapon
             else if let Some(default_attack) =
                 world.get::<DefaultMeleeAttack>(self.attacker_entity)
             {
-                Some((default_attack.damage, default_attack.can_damage.clone()))
+                Some((
+                    default_attack.damage.to_string(),
+                    default_attack.can_damage.clone(),
+                ))
             } else {
                 None
             }
@@ -165,13 +168,24 @@ impl Command for MeleeAttackAction {
             // Resolve hit/miss for this target
             let (hit, _is_critical) = resolve_hit_miss(self.attacker_entity, target_entity, world);
 
+            // Roll damage if we have a weapon and hit
+            let rolled_damage = if let Some((damage_dice, _)) = &weapon_damage
+                && hit
+            {
+                world.resource_scope(|_world, mut rand: Mut<Rand>| {
+                    rand.roll(damage_dice).unwrap_or(1)
+                })
+            } else {
+                0
+            };
+
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
-                if let Some((damage, can_damage)) = &weapon_damage
+                if let Some((_, can_damage)) = &weapon_damage
                     && can_damage.contains(&MaterialType::Flesh)
                     && hit
                 // Only apply damage if attack hits
                 {
-                    health.take_damage(*damage, current_tick);
+                    health.take_damage(rolled_damage, current_tick);
                     should_apply_hit_blink = true;
                     let is_dead = health.is_dead();
 
@@ -244,14 +258,14 @@ impl Command for MeleeAttackAction {
             }
             // Check if target has Destructible (object)
             else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
-                && let Some((damage, can_damage)) = &weapon_damage
+                && let Some((_, can_damage)) = &weapon_damage
                 && hit
             // Only apply damage if attack hits
             {
                 // Check if weapon can damage this material type
                 if can_damage.contains(&destructible.material_type) {
                     let material_type = destructible.material_type;
-                    destructible.take_damage(*damage);
+                    destructible.take_damage(rolled_damage);
                     should_apply_hit_blink = true;
                     let is_destroyed = destructible.is_destroyed();
 

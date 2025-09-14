@@ -18,6 +18,7 @@ pub enum EnergyActionType {
     ToggleLight,
     Shoot,
     Attack,
+    Reload,
 }
 
 #[derive(Resource, Default)]
@@ -85,6 +86,7 @@ pub fn get_base_energy_cost(action: EnergyActionType) -> i32 {
         EnergyActionType::ToggleLight => 25,
         EnergyActionType::Shoot => 150,
         EnergyActionType::Attack => 150,
+        EnergyActionType::Reload => 100,
     }
 }
 
