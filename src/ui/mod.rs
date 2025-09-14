@@ -1,20 +1,24 @@
+mod action_dropdown;
 mod activatable;
 mod button;
 mod debug;
 mod dialog;
 mod focus;
 mod interaction;
+mod item_actions;
 mod item_dialog;
 mod layout;
 mod list;
 mod xp_progress_bar;
 
+pub use action_dropdown::*;
 pub use activatable::*;
 pub use button::*;
 pub use debug::*;
 pub use dialog::*;
 pub use focus::*;
 pub use interaction::*;
+pub use item_actions::*;
 pub use item_dialog::*;
 pub use layout::*;
 pub use list::*;

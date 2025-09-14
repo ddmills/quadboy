@@ -27,6 +27,7 @@ impl Default for ListContext {
     }
 }
 
+#[derive(Clone)]
 pub struct ListItemData {
     pub label: String,
     pub callback: SystemId,

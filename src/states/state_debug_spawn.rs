@@ -42,6 +42,8 @@ const SPAWNABLE_PREFABS: &[PrefabId] = &[
     PrefabId::LeverActionRifle,
     PrefabId::DoubleBarrelShotgun,
     PrefabId::NavyRevolver,
+    PrefabId::Amulet,
+    PrefabId::Ring,
 ];
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]

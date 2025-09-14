@@ -1,11 +1,11 @@
 use super::{
-    SpawnPrefabCommand, spawn_apple, spawn_bandit, spawn_bat, spawn_bedroll, spawn_boulder,
-    spawn_brown_bear, spawn_cactus, spawn_campfire, spawn_cavalry_sword, spawn_chest, spawn_coyote,
-    spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite, spawn_giant_firefly,
-    spawn_giant_mushroom, spawn_hatchet, spawn_lantern, spawn_lever_action_rifle, spawn_long_johns,
-    spawn_navy_revolver, spawn_overcoat, spawn_pickaxe, spawn_pine_tree, spawn_poncho,
-    spawn_rattlesnake, spawn_stair_down, spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile,
-    spawn_wool_shirt,
+    SpawnPrefabCommand, spawn_amulet, spawn_apple, spawn_bandit, spawn_bat, spawn_bedroll,
+    spawn_boulder, spawn_brown_bear, spawn_cactus, spawn_campfire, spawn_cavalry_sword,
+    spawn_chest, spawn_coyote, spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite,
+    spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
+    spawn_lever_action_rifle, spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe,
+    spawn_pine_tree, spawn_poncho, spawn_rattlesnake, spawn_ring, spawn_stair_down, spawn_stair_up,
+    spawn_steel_toe_boots, spawn_terrain_tile, spawn_wool_shirt,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
@@ -45,6 +45,8 @@ pub enum PrefabId {
     LeverActionRifle,
     DoubleBarrelShotgun,
     NavyRevolver,
+    Amulet,
+    Ring,
 }
 
 #[allow(dead_code)]
@@ -136,6 +138,8 @@ impl Prefabs {
         self.register(PrefabId::LeverActionRifle, spawn_lever_action_rifle);
         self.register(PrefabId::DoubleBarrelShotgun, spawn_double_barrel_shotgun);
         self.register(PrefabId::NavyRevolver, spawn_navy_revolver);
+        self.register(PrefabId::Amulet, spawn_amulet);
+        self.register(PrefabId::Ring, spawn_ring);
 
         self.register(PrefabId::TerrainTile(Terrain::Grass), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);
@@ -225,6 +229,8 @@ impl fmt::Display for PrefabId {
             PrefabId::LeverActionRifle => write!(f, "Lever Action Rifle"),
             PrefabId::DoubleBarrelShotgun => write!(f, "Double Barrel Shotgun"),
             PrefabId::NavyRevolver => write!(f, "Navy Revolver"),
+            PrefabId::Amulet => write!(f, "Amulet"),
+            PrefabId::Ring => write!(f, "Ring"),
             PrefabId::TerrainTile(terrain) => match terrain {
                 Terrain::Grass => write!(f, "Grass Tile"),
                 Terrain::Dirt => write!(f, "Dirt Tile"),

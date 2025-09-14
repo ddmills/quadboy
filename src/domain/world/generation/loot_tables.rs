@@ -79,6 +79,8 @@ impl LootTableRegistry {
                 .add(PrefabId::Overcoat, 1.0)
                 .add(PrefabId::SteelToeBoots, 1.0)
                 .add(PrefabId::NavyRevolver, 0.5)
+                .add(PrefabId::Amulet, 0.3)
+                .add(PrefabId::Ring, 0.4)
                 .build(),
         );
 
@@ -107,6 +109,8 @@ impl LootTableRegistry {
                 .add(PrefabId::SteelToeBoots, 1.0)
                 .add(PrefabId::DoubleBarrelShotgun, 0.3)
                 .add(PrefabId::NavyRevolver, 0.4)
+                .add(PrefabId::Amulet, 0.2)
+                .add(PrefabId::Ring, 0.3)
                 .build(),
         );
 
@@ -132,6 +136,8 @@ impl LootTableRegistry {
                 .add(PrefabId::Overcoat, 1.0)
                 .add(PrefabId::SteelToeBoots, 2.0)
                 .add(PrefabId::NavyRevolver, 0.3)
+                .add(PrefabId::Amulet, 0.2)
+                .add(PrefabId::Ring, 0.2)
                 .build(),
         );
 
@@ -166,6 +172,8 @@ impl LootTableRegistry {
                 .add(PrefabId::SteelToeBoots, 3.0)
                 .add(PrefabId::LeverActionRifle, 0.2)
                 .add(PrefabId::NavyRevolver, 0.3)
+                .add(PrefabId::Amulet, 0.4)
+                .add(PrefabId::Ring, 0.5)
                 .build(),
         );
 
@@ -218,13 +226,19 @@ impl LootTableRegistry {
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Apple, 2.0)
                 .add(PrefabId::Bedroll, 1.0)
+                .add(PrefabId::Amulet, 0.1)
+                .add(PrefabId::Ring, 0.1)
                 .build(),
         );
 
         // Death loot tables
         self.tables.insert(
             LootTableId::BanditLoot,
-            LootTable::builder().add(PrefabId::GoldNugget, 1.0).build(),
+            LootTable::builder()
+                .add(PrefabId::GoldNugget, 1.0)
+                .add(PrefabId::Amulet, 0.05)
+                .add(PrefabId::Ring, 0.05)
+                .build(),
         );
 
         self.tables.insert(

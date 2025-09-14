@@ -53,6 +53,22 @@ impl StatType {
             StatType::Dodge,
         ]
     }
+
+    pub fn verb(&self) -> &'static str {
+        match self {
+            StatType::Fortitude => "Fortitude",
+            StatType::Speed => "Swiftness",
+            StatType::Armor => "Protection",
+            StatType::ArmorRegen => "Restoration",
+            StatType::Rifle => "Marksmanship",
+            StatType::Shotgun => "Devastation",
+            StatType::Pistol => "Precision",
+            StatType::Blade => "Sharpness",
+            StatType::Cudgel => "Smashing",
+            StatType::Unarmed => "Striking",
+            StatType::Dodge => "Evasion",
+        }
+    }
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]

@@ -1,3 +1,4 @@
+mod amulet;
 mod apple;
 mod bandit;
 mod bat;
@@ -27,6 +28,7 @@ mod poncho;
 mod prefab_builder;
 mod prefabs;
 mod rattlesnake;
+mod ring;
 mod spawn_prefab_cmd;
 mod stair_down;
 mod stair_up;
@@ -34,6 +36,7 @@ mod steel_toe_boots;
 mod terrain_tile;
 mod wool_shirt;
 
+pub use amulet::*;
 pub use apple::*;
 pub use bandit::*;
 pub use bat::*;
@@ -63,6 +66,7 @@ pub use poncho::*;
 pub use prefab_builder::*;
 pub use prefabs::*;
 pub use rattlesnake::*;
+pub use ring::*;
 pub use spawn_prefab_cmd::*;
 pub use stair_down::*;
 pub use stair_up::*;
