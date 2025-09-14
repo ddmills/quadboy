@@ -26,6 +26,7 @@ pub enum SpawnArea {
         angle_start: f32,
         angle_end: f32,
         radial_distribution: Distribution,
+        base_direction: Option<Vec2>,
     },
 }
 
@@ -70,6 +71,7 @@ impl SpawnArea {
                 angle_start,
                 angle_end,
                 radial_distribution,
+                base_direction,
             } => {
                 base_position
                     + generate_arc_position(
@@ -77,6 +79,7 @@ impl SpawnArea {
                         *angle_start,
                         *angle_end,
                         radial_distribution,
+                        *base_direction,
                         rand,
                     )
             }
@@ -168,13 +171,14 @@ fn generate_arc_position(
     angle_start: f32,
     angle_end: f32,
     distribution: &Distribution,
+    base_direction: Option<Vec2>,
     rand: &mut Rand,
 ) -> Vec2 {
     let angle_range = angle_end - angle_start;
     let angle = angle_start + rand.random() * angle_range;
 
     let r = match distribution {
-        Distribution::Uniform => rand.random() * radius,
+        Distribution::Uniform => radius * rand.random().sqrt(), // sqrt for uniform area distribution
         Distribution::EdgeOnly => radius,
         Distribution::Gaussian => {
             // Gaussian distribution toward center
@@ -183,5 +187,22 @@ fn generate_arc_position(
     };
 
     let angle_rad = angle.to_radians();
-    Vec2::new(r * angle_rad.cos(), r * angle_rad.sin())
+    let mut position = Vec2::new(r * angle_rad.cos(), r * angle_rad.sin());
+
+    // If base_direction is provided, rotate the arc to align with it
+    if let Some(direction) = base_direction {
+        if direction.length_squared() > 0.0 {
+            let direction_angle = direction.y.atan2(direction.x);
+            let cos_dir = direction_angle.cos();
+            let sin_dir = direction_angle.sin();
+
+            // Rotate position by direction angle
+            position = Vec2::new(
+                position.x * cos_dir - position.y * sin_dir,
+                position.x * sin_dir + position.y * cos_dir,
+            );
+        }
+    }
+
+    position
 }

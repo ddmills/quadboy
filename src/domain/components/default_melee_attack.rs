@@ -1,4 +1,7 @@
-use crate::{domain::components::{destructible::MaterialType, weapon_family::WeaponFamily}, engine::SerializableComponent};
+use crate::{
+    domain::components::{destructible::MaterialType, weapon_family::WeaponFamily},
+    engine::SerializableComponent,
+};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +14,12 @@ pub struct DefaultMeleeAttack {
 }
 
 impl DefaultMeleeAttack {
-    pub fn new(damage: i32, can_damage: Vec<MaterialType>, attack_name: &str, weapon_family: WeaponFamily) -> Self {
+    pub fn new(
+        damage: i32,
+        can_damage: Vec<MaterialType>,
+        attack_name: &str,
+        weapon_family: WeaponFamily,
+    ) -> Self {
         Self {
             damage,
             can_damage,
@@ -34,7 +42,12 @@ impl DefaultMeleeAttack {
     }
 
     pub fn venomous_bite() -> Self {
-        Self::new(3, vec![MaterialType::Flesh], "Venomous Bite", WeaponFamily::Unarmed)
+        Self::new(
+            3,
+            vec![MaterialType::Flesh],
+            "Venomous Bite",
+            WeaponFamily::Unarmed,
+        )
     }
 
     pub fn bite() -> Self {
@@ -42,10 +55,20 @@ impl DefaultMeleeAttack {
     }
 
     pub fn wing_buffet() -> Self {
-        Self::new(1, vec![MaterialType::Flesh], "Wing Buffet", WeaponFamily::Unarmed)
+        Self::new(
+            1,
+            vec![MaterialType::Flesh],
+            "Wing Buffet",
+            WeaponFamily::Unarmed,
+        )
     }
 
     pub fn electric_touch() -> Self {
-        Self::new(2, vec![MaterialType::Flesh], "Electric Touch", WeaponFamily::Unarmed)
+        Self::new(
+            2,
+            vec![MaterialType::Flesh],
+            "Electric Touch",
+            WeaponFamily::Unarmed,
+        )
     }
 }

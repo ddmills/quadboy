@@ -3,8 +3,9 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        BumpAttack, DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
-        Health, HitBlink, MaterialType, MeleeWeapon, Player, StatType, Stats, WeaponFamily, Zone, get_base_energy_cost,
+        BumpAttack, DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlot,
+        EquipmentSlots, Health, HitBlink, MaterialType, MeleeWeapon, Player, StatType, Stats,
+        WeaponFamily, Zone, get_base_energy_cost,
         systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{Audio, Clock, StableIdRegistry},
@@ -16,7 +17,11 @@ pub struct MeleeAttackAction {
     pub target_pos: (usize, usize, usize),
 }
 
-fn resolve_hit_miss(attacker_entity: Entity, target_entity: Entity, world: &mut World) -> (bool, bool) {
+fn resolve_hit_miss(
+    attacker_entity: Entity,
+    target_entity: Entity,
+    world: &mut World,
+) -> (bool, bool) {
     // Get target's dodge stat first (immutable borrow)
     let target_dodge = world
         .get::<Stats>(target_entity)
@@ -163,7 +168,8 @@ impl Command for MeleeAttackAction {
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if let Some((damage, can_damage)) = &weapon_damage
                     && can_damage.contains(&MaterialType::Flesh)
-                    && hit // Only apply damage if attack hits
+                    && hit
+                // Only apply damage if attack hits
                 {
                     health.take_damage(*damage, current_tick);
                     should_apply_hit_blink = true;
@@ -239,7 +245,8 @@ impl Command for MeleeAttackAction {
             // Check if target has Destructible (object)
             else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
                 && let Some((damage, can_damage)) = &weapon_damage
-                && hit // Only apply damage if attack hits
+                && hit
+            // Only apply damage if attack hits
             {
                 // Check if weapon can damage this material type
                 if can_damage.contains(&destructible.material_type) {

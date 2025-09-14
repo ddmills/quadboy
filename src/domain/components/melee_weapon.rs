@@ -1,4 +1,7 @@
-use crate::{domain::components::{destructible::MaterialType, weapon_family::WeaponFamily}, engine::SerializableComponent};
+use crate::{
+    domain::components::{destructible::MaterialType, weapon_family::WeaponFamily},
+    engine::SerializableComponent,
+};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +14,11 @@ pub struct MeleeWeapon {
 
 impl MeleeWeapon {
     pub fn new(damage: i32, can_damage: Vec<MaterialType>, weapon_family: WeaponFamily) -> Self {
-        Self { damage, can_damage, weapon_family }
+        Self {
+            damage,
+            can_damage,
+            weapon_family,
+        }
     }
 
     pub fn pickaxe() -> Self {
@@ -19,7 +26,11 @@ impl MeleeWeapon {
     }
 
     pub fn hatchet() -> Self {
-        Self::new(2, vec![MaterialType::Wood, MaterialType::Flesh], WeaponFamily::Cudgel)
+        Self::new(
+            2,
+            vec![MaterialType::Wood, MaterialType::Flesh],
+            WeaponFamily::Cudgel,
+        )
     }
 
     pub fn sword() -> Self {

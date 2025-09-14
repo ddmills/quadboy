@@ -8,17 +8,17 @@ use super::Attributes;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StatType {
-    Fortitude, // affects max HP
-    Speed, // affects movement energy cost
-    Armor, // no base attribute
+    Fortitude,  // affects max HP
+    Speed,      // affects movement energy cost
+    Armor,      // no base attribute
     ArmorRegen, // affects armor regeneration rate
-    Rifle, // rifle weapon proficiency
-    Shotgun, // shotgun weapon proficiency
-    Pistol, // pistol weapon proficiency
-    Blade, // blade weapon proficiency
-    Cudgel, // cudgel weapon proficiency
-    Unarmed, // unarmed combat proficiency
-    Dodge, // dodge/evasion ability
+    Rifle,      // rifle weapon proficiency
+    Shotgun,    // shotgun weapon proficiency
+    Pistol,     // pistol weapon proficiency
+    Blade,      // blade weapon proficiency
+    Cudgel,     // cudgel weapon proficiency
+    Unarmed,    // unarmed combat proficiency
+    Dodge,      // dodge/evasion ability
 }
 
 impl StatType {
@@ -85,10 +85,7 @@ impl StatModifiers {
     }
 
     pub fn add_modifier(&mut self, stat_type: StatType, modifier: StatModifier) {
-        self.modifiers
-            .entry(stat_type)
-            .or_default()
-            .push(modifier);
+        self.modifiers.entry(stat_type).or_default().push(modifier);
     }
 
     pub fn remove_equipment_modifiers(&mut self, item_id: u64) {

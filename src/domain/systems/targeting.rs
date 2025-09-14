@@ -4,8 +4,8 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, Level, MeleeWeapon, Player,
-        RangedWeapon, Stats, Zone,
+        DefaultMeleeAttack, EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, Level,
+        MeleeWeapon, Player, RangedWeapon, StatType, Stats, WeaponFamily, Zone,
     },
     engine::{KeyInput, Mouse, StableIdRegistry},
     rendering::{
@@ -258,6 +258,74 @@ pub fn update_mouse_targeting(mut target_cycling: ResMut<TargetCycling>, mouse: 
         }
     }
 }
+
+fn calculate_hit_chance(
+    attacker_entity: Entity,
+    target_entity: Entity,
+    q_stats: &Query<&Stats>,
+    q_equipment: &Query<&EquipmentSlots>,
+    q_melee_weapons: &Query<&MeleeWeapon>,
+    q_ranged_weapons: &Query<&RangedWeapon>,
+    q_default_attacks: &Query<&DefaultMeleeAttack>,
+    registry: &StableIdRegistry,
+) -> i32 {
+    // Get target's dodge stat
+    let target_dodge = q_stats
+        .get(target_entity)
+        .map(|stats| stats.get_stat(StatType::Dodge))
+        .unwrap_or(0);
+
+    // Determine weapon family for attacker (same logic as resolve_hit_miss)
+    let weapon_family = {
+        // First try to get equipped weapon
+        if let Ok(equipment) = q_equipment.get(attacker_entity)
+            && let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand)
+            && let Some(weapon_entity) = registry.get_entity(weapon_id)
+        {
+            // Check if it's a melee weapon
+            if let Ok(melee_weapon) = q_melee_weapons.get(weapon_entity) {
+                melee_weapon.weapon_family
+            }
+            // Check if it's a ranged weapon
+            else if let Ok(ranged_weapon) = q_ranged_weapons.get(weapon_entity) {
+                ranged_weapon.weapon_family
+            } else {
+                WeaponFamily::Unarmed
+            }
+        }
+        // Fall back to default melee attack
+        else if let Ok(default_attack) = q_default_attacks.get(attacker_entity) {
+            default_attack.weapon_family
+        }
+        // Default to unarmed if no weapon or default attack
+        else {
+            WeaponFamily::Unarmed
+        }
+    };
+
+    // Get attacker's weapon proficiency stat
+    let weapon_proficiency = q_stats
+        .get(attacker_entity)
+        .map(|stats| stats.get_stat(weapon_family.to_stat_type()))
+        .unwrap_or(0);
+
+    // Calculate hit chance: P(attack_roll + proficiency >= defense_roll + dodge) OR critical hit
+    let mut hit_count = 0;
+    for attack_roll in 1..=12 {
+        let attacker_total = attack_roll + weapon_proficiency;
+        for defense_roll in 1..=12 {
+            let defense_total = defense_roll + target_dodge;
+            // Hit if critical (natural 12) or if attack total >= defense total
+            if attack_roll == 12 || attacker_total >= defense_total {
+                hit_count += 1;
+            }
+        }
+    }
+
+    // Return percentage (out of 144 total combinations)
+    (hit_count * 100) / 144
+}
+
 pub fn render_target_crosshair(
     target_cycling: Res<TargetCycling>,
     mut q_crosshair: Query<(&mut Position, &mut Visibility), With<TargetCrosshair>>,
@@ -284,6 +352,13 @@ pub fn render_target_info(
     q_health: Query<&Health>,
     q_dynamic_health: Query<(&Health, &Level, &Stats)>, // For entities with dynamic HP
     q_names: Query<&Label>,
+    q_player: Query<Entity, With<Player>>,
+    q_stats: Query<&Stats>,
+    q_equipment: Query<&EquipmentSlots>,
+    q_melee_weapons: Query<&MeleeWeapon>,
+    q_ranged_weapons: Query<&RangedWeapon>,
+    q_default_attacks: Query<&DefaultMeleeAttack>,
+    registry: Res<StableIdRegistry>,
     mut q_target_info: Query<(&mut Text, &mut Position, &mut Visibility), With<TargetInfo>>,
     mut q_target_indicator: Query<
         (&mut Position, &mut Visibility),
@@ -357,9 +432,26 @@ pub fn render_target_info(
                         (health.current, String::new()) // Legacy entities: assume current is max, no armor
                     };
 
+                // Calculate hit chance if player exists
+                let hit_chance_display = if let Ok(player_entity) = q_player.single() {
+                    let hit_chance = calculate_hit_chance(
+                        player_entity,
+                        *entity,
+                        &q_stats,
+                        &q_equipment,
+                        &q_melee_weapons,
+                        &q_ranged_weapons,
+                        &q_default_attacks,
+                        &registry,
+                    );
+                    format!(" [Hit: {}%]", hit_chance)
+                } else {
+                    String::new()
+                };
+
                 text.value = format!(
-                    "{} (HP:{}/{}{})",
-                    name, health.current, max_hp, armor_display
+                    "{} (HP:{}/{}{}{})",
+                    name, health.current, max_hp, armor_display, hit_chance_display
                 );
                 text_pos.x = pos.0.floor() + 1.;
                 text_pos.y = pos.1.floor();

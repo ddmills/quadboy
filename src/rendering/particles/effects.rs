@@ -36,6 +36,7 @@ pub fn spawn_blood_spray(world: &mut World, position: Vec2, direction: Vec2, int
             angle_start: -spread_angle,
             angle_end: spread_angle,
             radial_distribution: Distribution::Uniform,
+            base_direction: Some(direction),
         })
         .gravity(Vec2::new(0.0, 1.0))
         .priority(150)
@@ -110,23 +111,29 @@ pub fn spawn_bullet_trail(
     ParticleSpawner::new(start_pos)
         .glyph_animation(GlyphAnimation::RandomPool {
             glyphs: vec!['*', '◦', '○'],
-            change_rate: Some(20.0),
+            change_rate: Some(5.0),
             last_change: 0.0,
         })
-        .color_curve(ColorCurve::EaseOut {
-            values: vec![0xFFFF00, 0xFF4400],
+        .color_curve(ColorCurve::Linear {
+            values: vec![0xFFFF00, 0xFF4400, 0xE6E6E6],
         })
-        .spawn_area(SpawnArea::Circle {
-            radius: 0.8,
-            distribution: Distribution::EdgeOnly,
+        .bg_curve(ColorCurve::Linear {
+            values: vec![0xFFFF00, 0xFF4400, 0xE6E6E6],
+        })
+        .spawn_area(SpawnArea::Arc {
+            radius: 1.5,
+            angle_start: -20.0,
+            angle_end: 20.0,
+            radial_distribution: Distribution::Gaussian,
+            base_direction: Some(direction),
         })
         .velocity_curve(VelocityCurve::EaseOut {
-            values: vec![Vec2::new(3.0, -1.0), Vec2::new(0.5, 1.0)],
+            values: vec![direction * 5.0, direction * 2.0],
         })
-        .gravity(Vec2::new(0.0, 2.0))
+        // .gravity(Vec2::new(0.0, 2.0))
         .priority(180)
-        .lifetime_range(0.1..0.3)
-        .burst(4)
+        .lifetime_range(0.2..0.3)
+        .burst(20)
         .spawn_world(world);
 
     // Delayed blood spray at impact (only if hit)
@@ -156,6 +163,7 @@ fn spawn_delayed_blood_impact(
             angle_start: -60.0,
             angle_end: 60.0,
             radial_distribution: Distribution::Gaussian,
+            base_direction: Some(bullet_direction),
         })
         .velocity_curve(VelocityCurve::EaseOut {
             values: vec![
@@ -204,6 +212,7 @@ pub fn spawn_material_hit(
             angle_start: -spread_angle,
             angle_end: spread_angle,
             radial_distribution: Distribution::Uniform,
+            base_direction: Some(direction),
         })
         .gravity(Vec2::new(0.0, 3.0))
         .priority(180)

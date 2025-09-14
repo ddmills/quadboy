@@ -4,10 +4,15 @@ use macroquad::prelude::trace;
 use crate::{
     common::Rand,
     domain::{
-        get_base_energy_cost, systems::destruction_system::EntityDestroyedEvent, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, Health, HitBlink, MaterialType, Player, RangedWeapon, StatType, Stats, WeaponFamily, Zone
+        Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, Health, HitBlink,
+        MaterialType, Player, RangedWeapon, StatType, Stats, WeaponFamily, Zone,
+        get_base_energy_cost, systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{Audio, Clock, StableIdRegistry},
-    rendering::{spawn_bullet_trail_in_world, spawn_material_hit_in_world, world_to_zone_idx, world_to_zone_local, Glyph, Position},
+    rendering::{
+        Glyph, Position, spawn_bullet_trail_in_world, spawn_material_hit_in_world,
+        world_to_zone_idx, world_to_zone_local,
+    },
 };
 
 pub struct ShootAction {
@@ -15,7 +20,11 @@ pub struct ShootAction {
     pub target_pos: (usize, usize, usize),
 }
 
-fn resolve_hit_miss(attacker_entity: Entity, target_entity: Entity, world: &mut World) -> (bool, bool) {
+fn resolve_hit_miss(
+    attacker_entity: Entity,
+    target_entity: Entity,
+    world: &mut World,
+) -> (bool, bool) {
     // Get target's dodge stat first (immutable borrow)
     let target_dodge = world
         .get::<Stats>(target_entity)
@@ -132,11 +141,8 @@ impl Command for ShootAction {
 
         // Find target at position
         let targets = {
-            let zone_idx = world_to_zone_idx(
-                self.target_pos.0,
-                self.target_pos.1,
-                self.target_pos.2,
-            );
+            let zone_idx =
+                world_to_zone_idx(self.target_pos.0, self.target_pos.1, self.target_pos.2);
             let local = world_to_zone_local(self.target_pos.0, self.target_pos.1);
 
             let mut found_targets = vec![];
@@ -144,7 +150,12 @@ impl Command for ShootAction {
             for zone in zones.iter(world) {
                 if zone.idx == zone_idx {
                     if let Some(entities) = zone.entities.get(local.0, local.1) {
-                        found_targets.extend(entities.iter().filter(|e| world.get::<Health>(**e).is_some()).copied());
+                        found_targets.extend(
+                            entities
+                                .iter()
+                                .filter(|e| world.get::<Health>(**e).is_some())
+                                .copied(),
+                        );
                     }
                     break;
                 }
@@ -179,7 +190,14 @@ impl Command for ShootAction {
 
             if let Some(shooter_pos) = shooter_pos {
                 world.resource_scope(|world, mut rand: Mut<Rand>| {
-                    spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 60.0, &mut rand, hit);
+                    spawn_bullet_trail_in_world(
+                        world,
+                        shooter_pos,
+                        self.target_pos,
+                        60.0,
+                        &mut rand,
+                        hit,
+                    );
                 });
             }
 
@@ -247,7 +265,8 @@ impl Command for ShootAction {
             }
             // Check if target has Destructible (object)
             else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
-                && hit // Only apply damage if attack hits
+                && hit
+            // Only apply damage if attack hits
             {
                 // Check if weapon can damage this material type
                 if can_damage.contains(&destructible.material_type) {

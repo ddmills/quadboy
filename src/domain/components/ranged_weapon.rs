@@ -32,14 +32,32 @@ impl RangedWeapon {
     }
 
     pub fn revolver() -> Self {
-        Self::new(6, 12, vec![MaterialType::Flesh], AudioKey::RevolverShoot1, WeaponFamily::Pistol)
+        Self::new(
+            6,
+            12,
+            vec![MaterialType::Flesh],
+            AudioKey::RevolverShoot1,
+            WeaponFamily::Pistol,
+        )
     }
 
     pub fn rifle() -> Self {
-        Self::new(8, 16, vec![MaterialType::Flesh], AudioKey::RifleShoot1, WeaponFamily::Rifle)
+        Self::new(
+            8,
+            16,
+            vec![MaterialType::Flesh],
+            AudioKey::RifleShoot1,
+            WeaponFamily::Rifle,
+        )
     }
 
     pub fn shotgun() -> Self {
-        Self::new(10, 8, vec![MaterialType::Flesh], AudioKey::ShotgunShoot1, WeaponFamily::Shotgun)
+        Self::new(
+            10,
+            8,
+            vec![MaterialType::Flesh],
+            AudioKey::ShotgunShoot1,
+            WeaponFamily::Shotgun,
+        )
     }
 }

@@ -1,7 +1,10 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{Attributes, DefaultMeleeAttack, LootDrop, LootTableId, StatModifier, StatModifiers, StatType, Stats},
+    domain::{
+        Attributes, DefaultMeleeAttack, LootDrop, LootTableId, StatModifier, StatModifiers,
+        StatType, Stats,
+    },
     rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
