@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{EquipmentSlot, EquipmentType, Equippable, RangedWeapon},
+    domain::{EquipmentSlot, EquipmentType, Equippable, Weapon},
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -16,7 +16,7 @@ pub fn spawn_navy_revolver(entity: Entity, world: &mut World, config: Prefab) {
             vec![EquipmentSlot::MainHand],
             EquipmentType::Weapon,
         ))
-        .with_ranged_weapon(RangedWeapon::revolver())
+        .with_weapon(Weapon::revolver())
         .with_needs_stable_id()
         .build();
 }

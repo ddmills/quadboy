@@ -1,7 +1,10 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{DefaultMeleeAttack, LootDrop, LootTableId, StatModifier, StatModifiers, StatType},
+    domain::{
+        CreatureType, DefaultMeleeAttack, LootDrop, LootTableId, StatModifier, StatModifiers,
+        StatType,
+    },
     rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -37,5 +40,6 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
         .with_stats(crate::domain::Stats::new())
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::BrownBearLoot, 0.3))
+        .with_creature_type(CreatureType::Bear)
         .build();
 }

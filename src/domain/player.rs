@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        Collider, Energy, EquipmentSlots, GameSettings, Inventory, InventoryAccessible, IsExplored,
-        MeleeAttackAction, MoveAction, OpenContainerAction, ReloadAction, ShootAction, StairDown,
+        AttackAction, Collider, Energy, EquipmentSlots, GameSettings, Inventory,
+        InventoryAccessible, IsExplored, MoveAction, OpenContainerAction, ReloadAction, StairDown,
         StairUp, ToggleLightAction, TurnState, WaitAction, Zone,
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
@@ -120,10 +120,11 @@ pub fn player_input(
                     let target_y = pos.1.floor() as usize;
                     let target_z = pos.2 as usize;
 
-                    // Execute shoot action
-                    cmds.queue(ShootAction {
-                        shooter_entity: player_entity,
+                    // Execute attack action (targeted attack, not bump)
+                    cmds.queue(AttackAction {
+                        attacker_entity: player_entity,
                         target_pos: (target_x, target_y, target_z),
+                        is_bump_attack: false,
                     });
                     return;
                 }
@@ -292,9 +293,10 @@ pub fn player_input(
                 if can_move_vertically {
                     if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
                         // Bump attack - try to attack what we bumped into
-                        cmds.queue(MeleeAttackAction {
+                        cmds.queue(AttackAction {
                             attacker_entity: player_entity,
                             target_pos: (new_x, new_y, new_z),
+                            is_bump_attack: true,
                         });
                         movement_timer.0 = now;
                     } else {

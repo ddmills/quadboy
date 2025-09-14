@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{EquipmentSlot, EquipmentType, Equippable, RangedWeapon},
+    domain::{EquipmentSlot, EquipmentType, Equippable, Weapon},
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -16,7 +16,7 @@ pub fn spawn_double_barrel_shotgun(entity: Entity, world: &mut World, config: Pr
             vec![EquipmentSlot::BothHands],
             EquipmentType::Weapon,
         ))
-        .with_ranged_weapon(RangedWeapon::shotgun())
+        .with_weapon(Weapon::shotgun())
         .with_needs_stable_id()
         .build();
 }

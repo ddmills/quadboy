@@ -109,21 +109,18 @@ pub fn spawn_bullet_trail(
 
     // Muzzle flash
     ParticleSpawner::new(start_pos)
-        .glyph_animation(GlyphAnimation::RandomPool {
-            glyphs: vec!['*', '◦', '○'],
-            change_rate: Some(5.0),
-            last_change: 0.0,
+        .glyph_animation(GlyphAnimation::Sequence {
+            glyphs: vec!['◦', '○', '*'],
+            duration_per_glyph: 0.1,
         })
-        .color_curve(ColorCurve::Linear {
-            values: vec![0xFFFF00, 0xFF4400, 0xE6E6E6],
-        })
+        .color_curve(ColorCurve::Constant(0xFF4400))
         .bg_curve(ColorCurve::Linear {
             values: vec![0xFFFF00, 0xFF4400, 0xE6E6E6],
         })
         .spawn_area(SpawnArea::Arc {
-            radius: 1.5,
-            angle_start: -20.0,
-            angle_end: 20.0,
+            radius: 2.5,
+            angle_start: -30.0,
+            angle_end: 30.0,
             radial_distribution: Distribution::Gaussian,
             base_direction: Some(direction),
         })
@@ -133,7 +130,7 @@ pub fn spawn_bullet_trail(
         // .gravity(Vec2::new(0.0, 2.0))
         .priority(180)
         .lifetime_range(0.2..0.3)
-        .burst(20)
+        .burst(40)
         .spawn_world(world);
 
     // Delayed blood spray at impact (only if hit)

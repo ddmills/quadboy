@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{Equippable, MeleeWeapon},
+    domain::{Equippable, Weapon},
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -13,7 +13,7 @@ pub fn spawn_hatchet(entity: Entity, world: &mut World, config: Prefab) {
         .with_label("Hatchet")
         .with_item(2.0)
         .with_equippable(Equippable::tool())
-        .with_melee_weapon(MeleeWeapon::hatchet())
+        .with_weapon(Weapon::hatchet())
         .with_needs_stable_id()
         .build();
 }

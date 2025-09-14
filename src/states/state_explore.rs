@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::Palette,
     domain::{
-        EquipmentSlot, EquipmentSlots, Health, Level, Player, PlayerDebug, PlayerMovedEvent,
-        RangedWeapon, Stats, collect_valid_targets, game_loop, handle_item_pickup,
+        EquipmentSlot, EquipmentSlots, Health, Level, Player, PlayerDebug, PlayerMovedEvent, Stats,
+        Weapon, WeaponType, collect_valid_targets, game_loop, handle_item_pickup,
         init_targeting_resource, player_input, render_player_debug, render_target_crosshair,
         render_target_info, spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
@@ -219,7 +219,7 @@ fn update_player_armor_bar(
 
 fn update_player_ammo_bar(
     q_player_equipment: Query<&EquipmentSlots, With<Player>>,
-    q_weapons: Query<&RangedWeapon>,
+    q_weapons: Query<&Weapon>,
     mut q_ammo_display: Query<&mut Text, With<PlayerAmmoBar>>,
     registry: Option<Res<StableIdRegistry>>,
 ) {
@@ -251,6 +251,11 @@ fn update_player_ammo_bar(
         ammo_text.value = "".to_string();
         return;
     };
+
+    if weapon.weapon_type != WeaponType::Ranged {
+        ammo_text.value = "".to_string();
+        return;
+    }
 
     let (Some(clip_size), Some(current_ammo)) = (weapon.clip_size, weapon.current_ammo) else {
         ammo_text.value = "".to_string();

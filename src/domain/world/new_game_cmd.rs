@@ -48,7 +48,7 @@ impl NewGameCommand {
         let player_entity = world
             .spawn((
                 starting_position.clone(),
-                Glyph::new(4, Palette::White, Palette::Blue)
+                Glyph::new(2, Palette::White, Palette::Blue)
                     .layer(Layer::Actors)
                     .texture(GlyphTextureId::Creatures),
                 Player,
@@ -59,7 +59,7 @@ impl NewGameCommand {
                 ApplyVisibilityEffects,
                 Collider,
                 Energy::new(-10),
-                Label::new("{Y-Y-Y-Y-Y-Y-Y-W scrollf|Cowboy}"),
+                Label::new("{Y|Cowboy}"),
                 DefaultMeleeAttack::fists(),
                 Level::new(1),
                 RecordZonePosition,

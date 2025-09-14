@@ -2,8 +2,8 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        Attributes, DefaultMeleeAttack, LootDrop, LootTableId, StatModifier, StatModifiers,
-        StatType, Stats,
+        Attributes, CreatureType, DefaultMeleeAttack, LootDrop, LootTableId, StatModifier,
+        StatModifiers, StatType, Stats,
     },
     rendering::{GlyphTextureId, Layer},
 };
@@ -36,5 +36,6 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
         .with_stats(Stats::new())
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::RattlesnakeLoot, 0.4))
+        .with_creature_type(CreatureType::Rattlesnake)
         .build();
 }

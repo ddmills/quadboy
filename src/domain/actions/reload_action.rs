@@ -2,7 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, RangedWeapon, get_base_energy_cost,
+        Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, Weapon, WeaponType,
+        get_base_energy_cost,
     },
     engine::{Audio, StableIdRegistry},
 };
@@ -32,9 +33,14 @@ impl Command for ReloadAction {
         };
 
         let (clip_size, reload_audio, energy_cost) = {
-            let Some(weapon) = world.get::<RangedWeapon>(weapon_entity) else {
+            let Some(weapon) = world.get::<Weapon>(weapon_entity) else {
                 return;
             };
+
+            // Only ranged weapons can be reloaded
+            if weapon.weapon_type != WeaponType::Ranged {
+                return;
+            }
 
             let Some(clip_size) = weapon.clip_size else {
                 return;
@@ -51,7 +57,7 @@ impl Command for ReloadAction {
             (clip_size, weapon.reload_audio, energy_cost)
         };
 
-        if let Some(mut weapon) = world.get_mut::<RangedWeapon>(weapon_entity) {
+        if let Some(mut weapon) = world.get_mut::<Weapon>(weapon_entity) {
             weapon.current_ammo = Some(clip_size);
         }
 

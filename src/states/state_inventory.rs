@@ -5,7 +5,7 @@ use crate::{
     common::Palette,
     domain::{
         DropItemAction, EquipItemAction, EquipmentSlot, Equippable, Equipped, Inventory, Item,
-        Label, MeleeWeapon, Player, PlayerPosition, StackCount, UnequipItemAction, game_loop,
+        Label, Player, PlayerPosition, StackCount, UnequipItemAction, Weapon, game_loop,
         inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableIdRegistry},
@@ -232,7 +232,7 @@ fn examine_selected_item(
     q_glyphs: Query<&Glyph>,
     q_items: Query<&Item>,
     q_equippable: Query<&Equippable>,
-    q_melee_weapons: Query<&MeleeWeapon>,
+    q_weapons: Query<&Weapon>,
     q_stack_counts: Query<&StackCount>,
 ) {
     let Some(item_id) = list_context.context_data else {
@@ -273,7 +273,7 @@ fn examine_selected_item(
         &q_glyphs,
         &q_items,
         &q_equippable,
-        &q_melee_weapons,
+        &q_weapons,
         &q_stack_counts,
         CleanupStateInventory,
     );

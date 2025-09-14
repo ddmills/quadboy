@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{EquipmentSlot, EquipmentType, Equippable, RangedWeapon},
+    domain::{EquipmentSlot, EquipmentType, Equippable, Weapon},
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -16,7 +16,7 @@ pub fn spawn_lever_action_rifle(entity: Entity, world: &mut World, config: Prefa
             vec![EquipmentSlot::BothHands],
             EquipmentType::Weapon,
         ))
-        .with_ranged_weapon(RangedWeapon::rifle())
+        .with_weapon(Weapon::rifle())
         .with_needs_stable_id()
         .build();
 }

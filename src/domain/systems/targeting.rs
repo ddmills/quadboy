@@ -5,7 +5,7 @@ use crate::{
     common::Palette,
     domain::{
         DefaultMeleeAttack, EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, Level,
-        MeleeWeapon, Player, RangedWeapon, StatType, Stats, WeaponFamily, Zone,
+        Player, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
     },
     engine::{KeyInput, Mouse, StableIdRegistry},
     rendering::{
@@ -82,8 +82,7 @@ pub fn collect_valid_targets(
     q_player: Query<(Entity, &Position, Option<&EquipmentSlots>), With<Player>>,
     q_health: Query<(Entity, &Position), With<Health>>,
     q_zones: Query<&Zone>,
-    q_ranged_weapons: Query<&RangedWeapon>,
-    q_melee_weapons: Query<&MeleeWeapon>,
+    q_weapons: Query<&Weapon>,
     registry: Option<Res<StableIdRegistry>>,
 ) {
     let Ok((player_entity, player_position, equipment_slots)) = q_player.single() else {
@@ -95,15 +94,14 @@ pub fn collect_valid_targets(
         if let (Some(equipment), Some(registry)) = (equipment_slots, registry.as_deref()) {
             if let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand) {
                 if let Some(weapon_entity) = registry.get_entity(weapon_id) {
-                    // First check if it's a ranged weapon
-                    if let Ok(ranged_weapon) = q_ranged_weapons.get(weapon_entity) {
-                        ranged_weapon.range
+                    // Check if it's a weapon
+                    if let Ok(weapon) = q_weapons.get(weapon_entity) {
+                        match weapon.weapon_type {
+                            WeaponType::Ranged => weapon.range.unwrap_or(DEFAULT_WEAPON_RANGE),
+                            WeaponType::Melee => 1, // Melee weapons have range 1 (adjacent only)
+                        }
                     }
-                    // Then check if it's a melee weapon
-                    else if q_melee_weapons.get(weapon_entity).is_ok() {
-                        1 // Melee weapons have range 1 (adjacent only)
-                    }
-                    // If weapon entity exists but has neither component
+                    // If weapon entity exists but has no weapon component
                     else {
                         DEFAULT_WEAPON_RANGE
                     }
@@ -264,8 +262,7 @@ fn calculate_hit_chance(
     target_entity: Entity,
     q_stats: &Query<&Stats>,
     q_equipment: &Query<&EquipmentSlots>,
-    q_melee_weapons: &Query<&MeleeWeapon>,
-    q_ranged_weapons: &Query<&RangedWeapon>,
+    q_weapons: &Query<&Weapon>,
     q_default_attacks: &Query<&DefaultMeleeAttack>,
     registry: &StableIdRegistry,
 ) -> i32 {
@@ -282,13 +279,9 @@ fn calculate_hit_chance(
             && let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand)
             && let Some(weapon_entity) = registry.get_entity(weapon_id)
         {
-            // Check if it's a melee weapon
-            if let Ok(melee_weapon) = q_melee_weapons.get(weapon_entity) {
-                melee_weapon.weapon_family
-            }
-            // Check if it's a ranged weapon
-            else if let Ok(ranged_weapon) = q_ranged_weapons.get(weapon_entity) {
-                ranged_weapon.weapon_family
+            // Check if it's a weapon
+            if let Ok(weapon) = q_weapons.get(weapon_entity) {
+                weapon.weapon_family
             } else {
                 WeaponFamily::Unarmed
             }
@@ -355,8 +348,7 @@ pub fn render_target_info(
     q_player: Query<Entity, With<Player>>,
     q_stats: Query<&Stats>,
     q_equipment: Query<&EquipmentSlots>,
-    q_melee_weapons: Query<&MeleeWeapon>,
-    q_ranged_weapons: Query<&RangedWeapon>,
+    q_weapons: Query<&Weapon>,
     q_default_attacks: Query<&DefaultMeleeAttack>,
     registry: Res<StableIdRegistry>,
     mut q_target_info: Query<(&mut Text, &mut Position, &mut Visibility), With<TargetInfo>>,
@@ -439,8 +431,7 @@ pub fn render_target_info(
                         *entity,
                         &q_stats,
                         &q_equipment,
-                        &q_melee_weapons,
-                        &q_ranged_weapons,
+                        &q_weapons,
                         &q_default_attacks,
                         &registry,
                     );

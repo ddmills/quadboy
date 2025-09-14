@@ -2,11 +2,11 @@ use super::Prefab;
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider,
+        ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider, CreatureType,
         DefaultMeleeAttack, Destructible, Energy, Equippable, Health, HideWhenNotVisible,
         Inventory, InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable,
-        LootDrop, MaterialType, MeleeWeapon, NeedsStableId, RangedWeapon, SaveFlag, StackCount,
-        Stackable, StackableType, StairDown, StairUp, StatModifiers, Stats, VisionBlocker,
+        LootDrop, MaterialType, NeedsStableId, SaveFlag, StackCount, Stackable, StackableType,
+        StairDown, StairUp, StatModifiers, Stats, VisionBlocker, Weapon,
     },
     rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -145,17 +145,12 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
-    pub fn with_melee_weapon(self, weapon: MeleeWeapon) -> Self {
-        self.world.entity_mut(self.entity).insert(weapon);
-        self
-    }
-
     pub fn with_default_melee_attack(self, attack: DefaultMeleeAttack) -> Self {
         self.world.entity_mut(self.entity).insert(attack);
         self
     }
 
-    pub fn with_ranged_weapon(self, weapon: RangedWeapon) -> Self {
+    pub fn with_weapon(self, weapon: Weapon) -> Self {
         self.world.entity_mut(self.entity).insert(weapon);
         self
     }
@@ -228,6 +223,11 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_stat_modifiers(self, stat_modifiers: StatModifiers) -> Self {
         self.world.entity_mut(self.entity).insert(stat_modifiers);
+        self
+    }
+
+    pub fn with_creature_type(self, creature_type: CreatureType) -> Self {
+        self.world.entity_mut(self.entity).insert(creature_type);
         self
     }
 

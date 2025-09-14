@@ -27,6 +27,11 @@ pub enum AudioKey {
     ShotgunEmpty,
     Pain1,
     Pain2,
+    Growl1,
+    Growl2,
+    Hiss1,
+    Bark1,
+    Punch1,
 }
 
 impl AudioKey {
@@ -52,6 +57,11 @@ impl AudioKey {
             AudioKey::ShotgunEmpty => include_bytes!("../assets/audio/shotgun_empty.wav"),
             AudioKey::Pain1 => include_bytes!("../assets/audio/pain_1.wav"),
             AudioKey::Pain2 => include_bytes!("../assets/audio/pain_2.wav"),
+            AudioKey::Growl1 => include_bytes!("../assets/audio/growl_1.wav"),
+            AudioKey::Growl2 => include_bytes!("../assets/audio/growl_2.wav"),
+            AudioKey::Hiss1 => include_bytes!("../assets/audio/hiss_1.wav"),
+            AudioKey::Bark1 => include_bytes!("../assets/audio/bark_1.wav"),
+            AudioKey::Punch1 => include_bytes!("../assets/audio/punch_1.wav"),
         }
     }
 }
@@ -157,6 +167,26 @@ impl Audio {
         sounds.insert(
             AudioKey::Pain2,
             Sound::load(&ctx_guard, AudioKey::Pain2.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Growl1,
+            Sound::load(&ctx_guard, AudioKey::Growl1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Growl2,
+            Sound::load(&ctx_guard, AudioKey::Growl2.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Hiss1,
+            Sound::load(&ctx_guard, AudioKey::Hiss1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Bark1,
+            Sound::load(&ctx_guard, AudioKey::Bark1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Punch1,
+            Sound::load(&ctx_guard, AudioKey::Punch1.bytes()),
         );
 
         let mut collections = HashMap::new();

@@ -2,7 +2,7 @@ use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
 
 use crate::{
-    domain::{Equippable, Item, Label, MeleeWeapon, StackCount},
+    domain::{Equippable, Item, Label, StackCount, Weapon},
     engine::{AudioKey, StableIdRegistry},
     rendering::{Glyph, Layer, Position, text_content_length},
     ui::{
@@ -94,7 +94,7 @@ impl ItemDialogBuilder {
         q_glyphs: &Query<&Glyph>,
         q_items: &Query<&Item>,
         q_equippable: &Query<&Equippable>,
-        q_melee_weapons: &Query<&MeleeWeapon>,
+        q_weapons: &Query<&Weapon>,
         q_stack_counts: &Query<&StackCount>,
         cleanup_component: impl Bundle + Clone,
     ) -> Entity {
@@ -253,11 +253,11 @@ impl ItemDialogBuilder {
             order += 1;
         }
 
-        if let Ok(melee_weapon) = q_melee_weapons.get(item_entity) {
+        if let Ok(weapon) = q_weapons.get(item_entity) {
             cmds.spawn((
                 DialogProperty {
                     label: "Damage".to_string(),
-                    value: melee_weapon.damage_dice.clone(),
+                    value: weapon.damage_dice.clone(),
                 },
                 DialogContent {
                     parent_dialog: dialog_entity,
@@ -271,6 +271,55 @@ impl ItemDialogBuilder {
                 cleanup_component.clone(),
                 ChildOf(dialog_entity),
             ));
+            content_y += 0.5;
+            order += 1;
+
+            // Add weapon type-specific properties
+            if weapon.is_ranged() {
+                if let Some(range) = weapon.range {
+                    cmds.spawn((
+                        DialogProperty {
+                            label: "Range".to_string(),
+                            value: range.to_string(),
+                        },
+                        DialogContent {
+                            parent_dialog: dialog_entity,
+                            order,
+                        },
+                        Position::new_f32(
+                            self.position.x + 1.0,
+                            self.position.y + content_y,
+                            self.position.z,
+                        ),
+                        cleanup_component.clone(),
+                        ChildOf(dialog_entity),
+                    ));
+                    content_y += 0.5;
+                    order += 1;
+                }
+
+                if let (Some(current), Some(max)) = (weapon.current_ammo, weapon.clip_size) {
+                    cmds.spawn((
+                        DialogProperty {
+                            label: "Ammo".to_string(),
+                            value: format!("{}/{}", current, max),
+                        },
+                        DialogContent {
+                            parent_dialog: dialog_entity,
+                            order,
+                        },
+                        Position::new_f32(
+                            self.position.x + 1.0,
+                            self.position.y + content_y,
+                            self.position.z,
+                        ),
+                        cleanup_component.clone(),
+                        ChildOf(dialog_entity),
+                    ));
+                    content_y += 0.5;
+                    order += 1;
+                }
+            }
         }
 
         // Add buttons
@@ -338,7 +387,7 @@ pub fn spawn_item_dialog(
     q_glyphs: &Query<&Glyph>,
     q_items: &Query<&Item>,
     q_equippable: &Query<&Equippable>,
-    q_melee_weapons: &Query<&MeleeWeapon>,
+    q_weapons: &Query<&Weapon>,
     q_stack_counts: &Query<&StackCount>,
     cleanup_component: impl Bundle + Clone,
 ) -> Option<Entity> {
@@ -354,7 +403,7 @@ pub fn spawn_item_dialog(
         q_glyphs,
         q_items,
         q_equippable,
-        q_melee_weapons,
+        q_weapons,
         q_stack_counts,
         cleanup_component,
     ))

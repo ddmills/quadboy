@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{LootDrop, LootTableId, StatModifier, StatModifiers, StatType},
+    domain::{CreatureType, LootDrop, LootTableId, StatModifier, StatModifiers, StatType},
     rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -32,5 +32,6 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         .with_stats(crate::domain::Stats::new())
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::BanditLoot, 0.5))
+        .with_creature_type(CreatureType::Bandit)
         .build();
 }

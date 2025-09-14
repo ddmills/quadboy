@@ -4,8 +4,8 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        Equippable, Equipped, Inventory, Item, Label, MeleeWeapon, Player, StackCount,
-        TransferItemAction, game_loop, inventory::InventoryChangedEvent,
+        Equippable, Equipped, Inventory, Item, Label, Player, StackCount, TransferItemAction,
+        Weapon, game_loop, inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, KeyInput, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, Text},
@@ -348,7 +348,7 @@ fn examine_selected_item(
     q_glyphs: Query<&Glyph>,
     q_items: Query<&Item>,
     q_equippable: Query<&Equippable>,
-    q_melee_weapons: Query<&MeleeWeapon>,
+    q_weapons: Query<&Weapon>,
     q_stack_counts: Query<&StackCount>,
 ) {
     let Some(item_id) = list_context.context_data else {
@@ -373,7 +373,7 @@ fn examine_selected_item(
         &q_glyphs,
         &q_items,
         &q_equippable,
-        &q_melee_weapons,
+        &q_weapons,
         &q_stack_counts,
         CleanupStateContainer,
     );

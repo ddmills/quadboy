@@ -1,7 +1,7 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{DefaultMeleeAttack, LootDrop, LootTableId},
+    domain::{CreatureType, DefaultMeleeAttack, LootDrop, LootTableId},
     rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -27,5 +27,6 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
         .with_stats(crate::domain::Stats::new())
         .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_loot_drop(LootDrop::new(LootTableId::BatLoot, 0.2))
+        .with_creature_type(CreatureType::Bat)
         .build();
 }

@@ -19,13 +19,13 @@ use crate::{
     common::Rand,
     domain::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack, Collider,
-        DefaultMeleeAttack, Destructible, Energy, EquipmentSlots, Equippable, Equipped,
-        GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
-        InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
-        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, MeleeWeapon, NeedsStableId,
-        NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
+        CreatureType, DefaultMeleeAttack, Destructible, Energy, EquipmentSlots, Equippable,
+        Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory,
+        Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
+        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, NeedsStableId, NewGameResult,
+        Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
         SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, StatModifiers, Stats,
-        TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Zones,
+        TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -122,8 +122,9 @@ async fn main() {
     reg.register::<HitBlink>();
     reg.register::<BumpAttack>();
     reg.register::<Destructible>();
-    reg.register::<MeleeWeapon>();
+    reg.register::<Weapon>();
     reg.register::<DefaultMeleeAttack>();
+    reg.register::<CreatureType>();
     reg.register::<Level>();
     reg.register::<Attributes>();
     reg.register::<AttributePoints>();

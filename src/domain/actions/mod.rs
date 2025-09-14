@@ -1,24 +1,22 @@
+mod attack_action;
 mod drop_item_action;
 mod equip_item_action;
-mod melee_attack_action;
 mod move_action;
 mod open_container_action;
 mod pickup_item_action;
 mod reload_action;
-mod shoot_action;
 mod toggle_light_action;
 mod transfer_item_action;
 mod unequip_item_action;
 mod wait_action;
 
+pub use attack_action::*;
 pub use drop_item_action::*;
 pub use equip_item_action::*;
-pub use melee_attack_action::*;
 pub use move_action::*;
 pub use open_container_action::*;
 pub use pickup_item_action::*;
 pub use reload_action::*;
-pub use shoot_action::*;
 pub use toggle_light_action::*;
 pub use transfer_item_action::*;
 pub use unequip_item_action::*;

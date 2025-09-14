@@ -5,8 +5,8 @@ use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     common::Rand,
     domain::{
-        Collider, Energy, EnergyActionType, InActiveZone, MeleeAttackAction, Player, TurnState,
-        Zone, get_base_energy_cost,
+        AttackAction, Collider, Energy, EnergyActionType, InActiveZone, Player, TurnState, Zone,
+        get_base_energy_cost,
     },
     rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
@@ -77,9 +77,10 @@ pub fn ai_turn(
 
         if check_x == player_x && check_y == player_y && z == player_z {
             // Player is adjacent! Attack instead of moving
-            cmds.queue(MeleeAttackAction {
+            cmds.queue(AttackAction {
                 attacker_entity: current_entity,
                 target_pos: (player_x, player_y, player_z),
+                is_bump_attack: false, // AI uses targeted attacks, not bump attacks
             });
             telemetry::end_zone();
             return;
