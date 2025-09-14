@@ -38,7 +38,7 @@ pub struct DialogBackground;
 pub struct DialogBorder;
 
 /// Component that marks content belonging to a specific dialog
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct DialogContent {
     pub parent_dialog: Entity,
     pub order: usize,

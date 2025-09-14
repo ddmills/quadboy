@@ -4,20 +4,17 @@ use macroquad::input::{KeyCode, is_key_pressed};
 use crate::{
     common::Palette,
     domain::{
-        DropItemAction, EquipItemAction, EquipmentSlot, Equippable, Equipped, Inventory, Item,
-        Label, LightSource, Lightable, Player, PlayerPosition, StackCount, ToggleLightAction,
-        UnequipItemAction, Weapon, game_loop, inventory::InventoryChangedEvent,
+        Consumable, DropItemAction, EatAction, EquipItemAction, EquipmentSlot, Equippable,
+        Equipped, Inventory, Item, Label, LightSource, LightStateChangedEvent, Lightable, Player,
+        PlayerPosition, StackCount, ToggleLightAction, UnequipItemAction, Weapon, game_loop,
+        inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, Text, Visibility},
+    rendering::{Glyph, Layer, Position, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
-        ActionDropdown, ActionDropdownList, ActivatableBuilder, Dialog, DialogState,
-        ItemActionCallbacks, ItemActionRegistry, ItemDialogBuilder, ItemDialogButton, List,
-        ListContext, ListItem, ListItemData, UiFocus, cleanup_action_dropdowns,
-        clear_hidden_dropdown_lists, list_cursor_visibility, render_dialog_content,
-        setup_action_dropdowns, setup_buttons, setup_dialogs, setup_lists, spawn_item_dialog,
-        update_list_context,
+        ActivatableBuilder, Dialog, DialogContent, DialogState, List, ListContext, ListItem,
+        ListItemData, UiFocus,
     },
 };
 
@@ -27,8 +24,11 @@ struct InventoryCallbacks {
     drop_item: SystemId,
     toggle_equip_item: SystemId,
     toggle_light: SystemId,
+    eat_item: SystemId,
     show_actions: SystemId,
     close_dialog: SystemId,
+    open_item_actions: SystemId,
+    examine_item: SystemId,
 }
 
 #[derive(Component, Clone)]
@@ -39,6 +39,29 @@ pub struct CleanupStateEquipSlotSelect;
 
 #[derive(Component)]
 pub struct InventoryWeightText;
+
+#[derive(Component)]
+pub struct ItemDetailPanel;
+
+#[derive(Component)]
+pub struct ItemDetailIcon;
+
+#[derive(Component)]
+pub struct ItemDetailName;
+
+#[derive(Component)]
+pub struct ItemDetailProperties;
+
+#[derive(Component)]
+pub struct ItemActionDialog {
+    pub item_id: u64,
+}
+
+#[derive(Resource, Default)]
+struct ActionDialogRefreshTimer {
+    frames_to_wait: u32,
+    needs_refresh: bool,
+}
 
 #[derive(Resource)]
 pub struct InventoryContext {
@@ -157,29 +180,24 @@ fn setup_equip_slot_screen(
 }
 
 fn setup_inventory_callbacks(world: &mut World) {
-    let drop_item = world.register_system(drop_selected_item);
-    let toggle_equip_item = world.register_system(toggle_equip_selected_item);
-    let toggle_light = world.register_system(toggle_light_selected_item);
+    let drop_item = world.register_system(drop_selected_item_from_dialog);
+    let toggle_equip_item = world.register_system(toggle_equip_selected_item_from_dialog);
+    let toggle_light = world.register_system(toggle_light_selected_item_from_dialog);
+    let eat_item = world.register_system(eat_selected_item_from_dialog);
 
     let callbacks = InventoryCallbacks {
         back_to_explore: world.register_system(back_to_explore),
         drop_item,
         toggle_equip_item,
         toggle_light,
-        show_actions: world.register_system(handle_item_selection_callback),
+        eat_item,
+        show_actions: world.register_system(handle_item_click),
         close_dialog: world.register_system(close_dialog),
-    };
-
-    // Set up action registry and callbacks
-    let action_callbacks = ItemActionCallbacks {
-        drop: drop_item,
-        toggle_equip: toggle_equip_item,
-        toggle_light,
+        open_item_actions: world.register_system(handle_item_click),
+        examine_item: world.register_system(examine_item),
     };
 
     world.insert_resource(callbacks);
-    world.insert_resource(ItemActionRegistry::new());
-    world.insert_resource(action_callbacks);
 }
 
 fn drop_selected_item(
@@ -263,171 +281,380 @@ fn toggle_light_selected_item(
     }
 }
 
-fn show_actions_for_selected_item(
-    ui_focus: Res<UiFocus>,
-    q_lists: Query<&List>,
-    q_list_items: Query<&ListItem>,
+fn handle_item_click(
+    cmds: Commands,
+    list_context: Res<ListContext>,
     id_registry: Res<StableIdRegistry>,
-    mut q_action_dropdown: Query<&mut ActionDropdown>,
-    q_entities: Query<Entity>, // Add this to verify entities still exist
+    q_labels: Query<&Label>,
+    q_equippable: Query<&Equippable>,
+    q_equipped: Query<&Equipped>,
+    q_lightable: Query<&Lightable>,
+    q_light_source: Query<&LightSource>,
+    q_consumable: Query<&Consumable>,
+    dialog_state: ResMut<DialogState>,
+    callbacks: Res<InventoryCallbacks>,
 ) {
-    // Check if we currently have a focused list item
-    let Some(focused_element) = ui_focus.focused_element else {
-        // No focus, hide dropdown
-        for mut dropdown in q_action_dropdown.iter_mut() {
-            dropdown.hide();
-        }
-        return;
-    };
-
-    // Verify the focused element still exists
-    if q_entities.get(focused_element).is_err() {
-        // Entity no longer exists, hide dropdown
-        for mut dropdown in q_action_dropdown.iter_mut() {
-            dropdown.hide();
-        }
-        return;
-    };
-
-    // Check if the focused element is a list item in our inventory list
-    let Ok(list_item) = q_list_items.get(focused_element) else {
-        // Not focusing a list item, hide dropdown
-        for mut dropdown in q_action_dropdown.iter_mut() {
-            dropdown.hide();
-        }
-        return;
-    };
-
-    // Get the list to check if it's the inventory list
-    let Ok(list) = q_lists.get(list_item.parent_list) else {
-        return;
-    };
-
-    // Make sure the item index is valid
-    if list_item.index >= list.items.len() {
-        return;
-    }
-
-    // Get the item ID from the list item data
-    let selected_item = &list.items[list_item.index];
-    let Some(item_id) = selected_item.context_data else {
-        // Hide dropdown if no item context data
-        for mut dropdown in q_action_dropdown.iter_mut() {
-            dropdown.hide();
-        }
-        return;
-    };
-
-    // Verify the item exists in the registry
-    let Some(_item_entity) = id_registry.get_entity(item_id) else {
-        return;
-    };
-
-    // Show the action dropdown for this item
-    for mut dropdown in q_action_dropdown.iter_mut() {
-        dropdown.show_for_item(item_id);
+    if let Some(item_id) = list_context.context_data {
+        spawn_item_actions_dialog(
+            cmds,
+            item_id,
+            &id_registry,
+            &q_labels,
+            &q_equippable,
+            &q_equipped,
+            &q_lightable,
+            &q_light_source,
+            &q_consumable,
+            dialog_state,
+            &callbacks,
+        );
     }
 }
 
-fn handle_item_selection_callback(list_context: Res<ListContext>) {
-    // This is the callback that gets triggered when an item is clicked
-    // We don't need to do anything special here since show_actions_for_selected_item
-    // will handle the dropdown display based on the list context
-}
-
-fn update_action_dropdown_list(world: &mut World) {
-    // Temporarily disable list content updates to prevent entity panic
-    // This will show empty dropdown lists but prevent crashes
-    // TODO: Fix the underlying entity lifecycle issue
-    return;
-
-    // Find dropdowns that need content updates
-    let dropdowns_needing_update: Vec<Entity> = {
-        let mut q_dropdown = world.query::<(Entity, &ActionDropdown)>();
-        q_dropdown
-            .iter(world)
-            .filter_map(|(entity, dropdown)| {
-                if dropdown.is_visible && dropdown.ui_spawned && dropdown.needs_content_update() {
-                    Some(entity)
-                } else {
-                    None
-                }
-            })
-            .collect()
+fn build_item_action_list(
+    item_id: u64,
+    id_registry: &StableIdRegistry,
+    q_equippable: &Query<&Equippable>,
+    q_equipped: &Query<&Equipped>,
+    q_lightable: &Query<&Lightable>,
+    q_light_source: &Query<&LightSource>,
+    q_consumable: &Query<&Consumable>,
+    callbacks: &InventoryCallbacks,
+) -> Vec<ListItemData> {
+    let Some(item_entity) = id_registry.get_entity(item_id) else {
+        return Vec::new();
     };
 
-    if dropdowns_needing_update.is_empty() {
-        return; // No updates needed
+    let mut list_items = Vec::new();
+
+    // Drop action - always available
+    list_items.push(ListItemData::new("({Y|D}) Drop", callbacks.drop_item).with_hotkey(KeyCode::D));
+
+    // Equip/Unequip action - only for equippable items
+    if q_equippable.get(item_entity).is_ok() {
+        let label = if q_equipped.get(item_entity).is_ok() {
+            "({Y|E}) Unequip"
+        } else {
+            "({Y|E}) Equip"
+        };
+        list_items
+            .push(ListItemData::new(label, callbacks.toggle_equip_item).with_hotkey(KeyCode::E));
     }
 
-    // Update content for each dropdown that needs it
-    for dropdown_entity in dropdowns_needing_update {
-        // Get the target item ID for this dropdown
-        let item_id = {
-            let mut q_dropdown = world.query::<&ActionDropdown>();
-            if let Ok(dropdown) = q_dropdown.get(world, dropdown_entity) {
-                dropdown.target_item_id
+    // Light/Extinguish action - only for lightable items with light source
+    if q_lightable.get(item_entity).is_ok() && q_light_source.get(item_entity).is_ok() {
+        let label = if let Ok(light_source) = q_light_source.get(item_entity) {
+            if light_source.is_enabled {
+                "({Y|L}) Extinguish"
             } else {
-                continue;
+                "({Y|L}) Light"
             }
+        } else {
+            "({Y|L}) Toggle Light"
         };
-
-        let Some(item_id) = item_id else {
-            continue;
-        };
-
-        // Update content with proper resource scoping
-        world.resource_scope(|world, id_registry: Mut<StableIdRegistry>| {
-            let Some(item_entity) = id_registry.get_entity(item_id) else {
-                return;
-            };
-
-            // Get other resources
-            let Some(action_registry) = world.get_resource::<ItemActionRegistry>() else {
-                return;
-            };
-
-            let Some(action_callbacks) = world.get_resource::<ItemActionCallbacks>() else {
-                return;
-            };
-
-            // Create action items for this item
-            let action_items =
-                action_registry.create_action_list(item_entity, world, action_callbacks);
-
-            // Update only lists that are actually visible
-            let mut q_dropdown_lists =
-                world.query_filtered::<(&mut List, &Visibility), With<ActionDropdownList>>();
-            for (mut dropdown_list, visibility) in q_dropdown_lists.iter_mut(world) {
-                if *visibility == Visibility::Visible {
-                    dropdown_list.items = action_items.clone();
-                }
-            }
-        });
-
-        // Mark the dropdown as updated
-        let mut q_dropdown = world.query::<&mut ActionDropdown>();
-        if let Ok(mut dropdown) = q_dropdown.get_mut(world, dropdown_entity) {
-            dropdown.mark_content_updated();
-        }
+        list_items.push(ListItemData::new(label, callbacks.toggle_light).with_hotkey(KeyCode::L));
     }
+
+    // Eat action - only for consumable items
+    if q_consumable.get(item_entity).is_ok() {
+        list_items
+            .push(ListItemData::new("({Y|C}) Eat", callbacks.eat_item).with_hotkey(KeyCode::C));
+    }
+
+    // Examine action - always available
+    list_items
+        .push(ListItemData::new("({Y|X}) Examine", callbacks.examine_item).with_hotkey(KeyCode::X));
+
+    // Cancel option
+    list_items.push(
+        ListItemData::new("({Y|ESC}) Cancel", callbacks.close_dialog).with_hotkey(KeyCode::Escape),
+    );
+
+    list_items
+}
+
+fn spawn_item_actions_dialog(
+    mut cmds: Commands,
+    item_id: u64,
+    id_registry: &StableIdRegistry,
+    q_labels: &Query<&Label>,
+    q_equippable: &Query<&Equippable>,
+    q_equipped: &Query<&Equipped>,
+    q_lightable: &Query<&Lightable>,
+    q_light_source: &Query<&LightSource>,
+    q_consumable: &Query<&Consumable>,
+    mut dialog_state: ResMut<DialogState>,
+    callbacks: &InventoryCallbacks,
+) {
+    let Some(item_entity) = id_registry.get_entity(item_id) else {
+        return;
+    };
+
+    let item_name = q_labels
+        .get(item_entity)
+        .map(|l| l.get())
+        .unwrap_or("Unknown Item");
+
+    // Build action list using helper function
+    let list_items = build_item_action_list(
+        item_id,
+        id_registry,
+        q_equippable,
+        q_equipped,
+        q_lightable,
+        q_light_source,
+        q_consumable,
+        callbacks,
+    );
+
+    // Calculate dialog height based on number of actions
+    let dialog_width = 24.0;
+    let dialog_height = (list_items.len() as f32 + 2.5).min(12.0);
+    let dialog_x = 30.0;
+    let dialog_y = 8.0;
+
+    let dialog_entity = cmds
+        .spawn((
+            Dialog::new(item_name, dialog_width, dialog_height),
+            Position::new_f32(dialog_x, dialog_y, 0.0),
+            ItemActionDialog { item_id },
+            CleanupStateInventory,
+        ))
+        .id();
+
+    // Spawn the list
+    cmds.spawn((
+        List::new(list_items).with_focus_order(10000),
+        Position::new_f32(dialog_x + 1.0, dialog_y + 1.5, 0.0),
+        DialogContent {
+            parent_dialog: dialog_entity,
+            order: 1,
+        },
+        CleanupStateInventory,
+    ));
+
+    dialog_state.is_open = true;
 }
 
 fn close_dialog(
     mut cmds: Commands,
     q_dialogs: Query<Entity, With<Dialog>>,
+    q_dialog_content: Query<Entity, With<DialogContent>>,
     mut dialog_state: ResMut<DialogState>,
 ) {
     for dialog_entity in q_dialogs.iter() {
-        cmds.entity(dialog_entity).despawn();
+        cmds.entity(dialog_entity).despawn_recursive();
+    }
+    for content_entity in q_dialog_content.iter() {
+        cmds.entity(content_entity).despawn_recursive();
     }
     dialog_state.is_open = false;
 }
 
+fn drop_selected_item_from_dialog(
+    mut cmds: Commands,
+    context: Res<InventoryContext>,
+    player_pos: Res<PlayerPosition>,
+    q_action_dialog: Query<&ItemActionDialog>,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    q_dialog_content: Query<Entity, With<DialogContent>>,
+    mut dialog_state: ResMut<DialogState>,
+) {
+    if let Ok(action_dialog) = q_action_dialog.single() {
+        let world_pos = player_pos.world();
+        cmds.queue(DropItemAction {
+            entity: context.player_entity,
+            item_stable_id: action_dialog.item_id,
+            drop_position: world_pos,
+        });
+
+        // Close dialog
+        for dialog_entity in q_dialogs.iter() {
+            cmds.entity(dialog_entity).despawn_recursive();
+        }
+        for content_entity in q_dialog_content.iter() {
+            cmds.entity(content_entity).despawn_recursive();
+        }
+        dialog_state.is_open = false;
+    }
+}
+
+fn toggle_equip_selected_item_from_dialog(
+    mut cmds: Commands,
+    mut game_state: ResMut<CurrentGameState>,
+    q_equippable: Query<&Equippable>,
+    q_equipped: Query<&Equipped>,
+    mut context: ResMut<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
+    q_action_dialog: Query<&ItemActionDialog>,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    q_dialog_content: Query<Entity, With<DialogContent>>,
+    mut dialog_state: ResMut<DialogState>,
+) {
+    if let Ok(action_dialog) = q_action_dialog.single() {
+        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+            return;
+        };
+
+        if q_equipped.get(item_entity).is_ok() {
+            cmds.queue(UnequipItemAction::new(action_dialog.item_id));
+        } else if let Ok(equippable) = q_equippable.get(item_entity) {
+            if equippable.slot_requirements.len() == 1 {
+                let Some(player_id) = id_registry.get_id(context.player_entity) else {
+                    return;
+                };
+
+                cmds.queue(EquipItemAction {
+                    entity_id: player_id,
+                    item_id: action_dialog.item_id,
+                });
+            } else {
+                context.selected_item_id = Some(action_dialog.item_id);
+                context.available_slots = equippable.slot_requirements.clone();
+                game_state.next = GameState::EquipSlotSelect;
+                // Close dialog only when going to slot selection
+                for dialog_entity in q_dialogs.iter() {
+                    cmds.entity(dialog_entity).despawn();
+                }
+                for content_entity in q_dialog_content.iter() {
+                    cmds.entity(content_entity).despawn();
+                }
+                dialog_state.is_open = false;
+            }
+        }
+    }
+}
+
+fn toggle_light_selected_item_from_dialog(
+    mut cmds: Commands,
+    context: Res<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
+    q_lightable: Query<&Lightable>,
+    q_light_source: Query<&LightSource>,
+    q_action_dialog: Query<&ItemActionDialog>,
+) {
+    if let Ok(action_dialog) = q_action_dialog.single() {
+        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+            return;
+        };
+
+        // Check if item can be lit/extinguished
+        if q_lightable.get(item_entity).is_ok() && q_light_source.get(item_entity).is_ok() {
+            cmds.queue(ToggleLightAction::new(
+                action_dialog.item_id,
+                context.player_entity,
+            ));
+        }
+    }
+}
+
+fn eat_selected_item_from_dialog(
+    mut cmds: Commands,
+    context: Res<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
+    q_consumable: Query<&Consumable>,
+    q_action_dialog: Query<&ItemActionDialog>,
+) {
+    if let Ok(action_dialog) = q_action_dialog.single() {
+        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+            return;
+        };
+
+        // Check if item is consumable
+        if q_consumable.get(item_entity).is_ok() {
+            let Some(player_id) = id_registry.get_id(context.player_entity) else {
+                return;
+            };
+
+            cmds.queue(EatAction::new(action_dialog.item_id, player_id));
+        }
+    }
+}
+
+fn examine_item(
+    mut cmds: Commands,
+    id_registry: Res<StableIdRegistry>,
+    q_labels: Query<&Label>,
+    q_items: Query<&Item>,
+    q_weapons: Query<&Weapon>,
+    q_equipped: Query<&Equipped>,
+    q_action_dialog: Query<&ItemActionDialog>,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    q_dialog_content: Query<Entity, With<DialogContent>>,
+    mut dialog_state: ResMut<DialogState>,
+) {
+    if let Ok(action_dialog) = q_action_dialog.single() {
+        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+            return;
+        };
+
+        // Close action dialog first
+        for dialog_entity in q_dialogs.iter() {
+            cmds.entity(dialog_entity).despawn_recursive();
+        }
+        for content_entity in q_dialog_content.iter() {
+            cmds.entity(content_entity).despawn_recursive();
+        }
+
+        // Create examine dialog
+        let item_name = q_labels
+            .get(item_entity)
+            .map(|l| l.get())
+            .unwrap_or("Unknown Item");
+
+        let dialog_entity = cmds
+            .spawn((
+                Dialog::new(&format!("Examining: {}", item_name), 35.0, 12.0),
+                Position::new_f32(22.0, 8.0, 0.0),
+                CleanupStateInventory,
+            ))
+            .id();
+
+        // Build description
+        let mut description = vec![format!("{}", item_name)];
+        description.push(String::new());
+
+        if let Ok(item) = q_items.get(item_entity) {
+            description.push(format!("Weight: {:.1} kg", item.weight));
+        }
+
+        if let Ok(weapon) = q_weapons.get(item_entity) {
+            description.push(format!("Damage: {}", weapon.damage_dice));
+            if let Some(range) = weapon.range {
+                description.push(format!("Range: {}", range));
+            }
+        }
+
+        if let Ok(equipped) = q_equipped.get(item_entity) {
+            let slots = equipped
+                .slots
+                .iter()
+                .map(|s| s.display_name())
+                .collect::<Vec<_>>()
+                .join(", ");
+            description.push(format!("Equipped: {}", slots));
+        }
+
+        let description_text = description.join("\n");
+
+        cmds.spawn((
+            Text::new(&description_text)
+                .fg1(Palette::White)
+                .layer(Layer::DialogContent),
+            Position::new_f32(23.0, 10.0, 0.0),
+            DialogContent {
+                parent_dialog: dialog_entity,
+                order: 1,
+            },
+            CleanupStateInventory,
+        ));
+
+        dialog_state.is_open = true;
+    }
+}
+
 fn remove_inventory_callbacks(mut cmds: Commands) {
     cmds.remove_resource::<InventoryCallbacks>();
-    cmds.remove_resource::<ItemActionRegistry>();
-    cmds.remove_resource::<ItemActionCallbacks>();
 }
 
 pub struct InventoryStatePlugin;
@@ -444,16 +671,9 @@ impl Plugin for InventoryStatePlugin {
                 (
                     game_loop,
                     refresh_inventory_display,
-                    setup_lists,
-                    update_list_context,
-                    list_cursor_visibility,
-                    show_actions_for_selected_item,
-                    setup_action_dropdowns,
-                    clear_hidden_dropdown_lists,
-                    update_action_dropdown_list,
-                    setup_dialogs,
-                    render_dialog_content,
-                    setup_buttons,
+                    refresh_action_dialog_on_events,
+                    refresh_action_dialog_with_timer,
+                    update_item_detail_panel,
                 )
                     .chain(),
             )
@@ -461,7 +681,6 @@ impl Plugin for InventoryStatePlugin {
                 app,
                 (
                     cleanup_system::<CleanupStateInventory>,
-                    cleanup_action_dropdowns,
                     remove_inventory_callbacks,
                 )
                     .chain(),
@@ -493,6 +712,8 @@ fn setup_inventory_screen(
         selected_item_id: None,
         available_slots: Vec::new(),
     });
+
+    cmds.init_resource::<ActionDialogRefreshTimer>();
 
     let Ok(inventory) = q_inventory.get(player_entity) else {
         return;
@@ -564,11 +785,47 @@ fn setup_inventory_screen(
         CleanupStateInventory,
     ));
 
-    // Add action dropdown positioned to the right of the inventory list
+    // Add item detail panel on the right
+    let detail_x = left_x + 20.0;
+    let detail_y = 3.0;
+
+    // Panel header
     cmds.spawn((
-        ActionDropdown::new(),
-        Position::new_f32(left_x + 18., 3., 0.),
+        Text::new("ITEM DETAILS")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x, detail_y - 1.0, 0.),
         CleanupStateInventory,
+        ItemDetailPanel,
+    ));
+
+    // Item icon (will be updated when item is focused)
+    cmds.spawn((
+        Glyph::idx(0)
+            .scale((2.0, 2.0))
+            .layer(Layer::Ui)
+            .fg1(Palette::White),
+        Position::new_f32(detail_x + 1.0, detail_y + 1.0, 0.),
+        CleanupStateInventory,
+        ItemDetailIcon,
+    ));
+
+    // Item name
+    cmds.spawn((
+        Text::new("Select an item")
+            .fg1(Palette::Gray)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 5.0, detail_y + 1.0, 0.),
+        CleanupStateInventory,
+        ItemDetailName,
+    ));
+
+    // Item properties
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 4.0, 0.),
+        CleanupStateInventory,
+        ItemDetailProperties,
     ));
 
     let help_y = 3.5 + (inventory.count() as f32 * 0.5) + 1.0;
@@ -606,6 +863,114 @@ fn setup_inventory_screen(
 fn handle_equip_slot_input(mut game_state: ResMut<CurrentGameState>) {
     if is_key_pressed(KeyCode::Escape) {
         game_state.next = GameState::Inventory;
+    }
+}
+
+fn update_item_detail_panel(
+    ui_focus: Res<UiFocus>,
+    id_registry: Res<StableIdRegistry>,
+    q_list_items: Query<&ListItem>,
+    q_lists: Query<&List>,
+    q_labels: Query<&Label>,
+    q_items: Query<&Item>,
+    q_equipped: Query<&Equipped>,
+    q_stack_counts: Query<&StackCount>,
+    q_weapons: Query<&Weapon>,
+    mut glyph_queries: ParamSet<(Query<&Glyph>, Query<&mut Glyph, With<ItemDetailIcon>>)>,
+    mut q_detail_name: Query<&mut Text, (With<ItemDetailName>, Without<ItemDetailProperties>)>,
+    mut q_detail_props: Query<&mut Text, With<ItemDetailProperties>>,
+) {
+    // Get the focused list item
+    let Some(focused_entity) = ui_focus.focused_element else {
+        return;
+    };
+
+    let Ok(list_item) = q_list_items.get(focused_entity) else {
+        return;
+    };
+
+    let Ok(list) = q_lists.get(list_item.parent_list) else {
+        return;
+    };
+
+    // Get the item ID from the list data
+    if list_item.index >= list.items.len() {
+        return;
+    }
+
+    let Some(item_id) = list.items[list_item.index].context_data else {
+        return;
+    };
+
+    let Some(item_entity) = id_registry.get_entity(item_id) else {
+        return;
+    };
+
+    // Update icon - first get the item glyph data
+    let item_glyph_data = glyph_queries
+        .p0()
+        .get(item_entity)
+        .ok()
+        .map(|g| (g.idx, g.fg1, g.fg2, g.texture_id));
+
+    // Then update the detail icon
+    if let Some((idx, fg1, fg2, texture_id)) = item_glyph_data {
+        for mut detail_glyph in glyph_queries.p1().iter_mut() {
+            detail_glyph.idx = idx;
+            detail_glyph.fg1 = fg1;
+            detail_glyph.fg2 = fg2;
+            detail_glyph.texture_id = texture_id;
+        }
+    }
+
+    // Update name
+    for mut detail_text in q_detail_name.iter_mut() {
+        if let Ok(label) = q_labels.get(item_entity) {
+            detail_text.value = label.get().to_string();
+        }
+    }
+
+    // Update properties
+    for mut detail_text in q_detail_props.iter_mut() {
+        let mut props = Vec::new();
+
+        // Weight
+        if let Ok(item) = q_items.get(item_entity) {
+            props.push(format!("Weight: {:.1} kg", item.weight));
+        }
+
+        // Stack count
+        if let Ok(stack) = q_stack_counts.get(item_entity) {
+            if stack.count > 1 {
+                props.push(format!("Quantity: {}", stack.count));
+            }
+        }
+
+        // Equipped status
+        if let Ok(equipped) = q_equipped.get(item_entity) {
+            let slots = equipped
+                .slots
+                .iter()
+                .map(|s| s.display_name())
+                .collect::<Vec<_>>()
+                .join(", ");
+            props.push(format!("Equipped: {}", slots));
+        }
+
+        // Weapon stats
+        if let Ok(weapon) = q_weapons.get(item_entity) {
+            props.push(format!("Damage: {}", weapon.damage_dice));
+            if let Some(range) = weapon.range {
+                props.push(format!("Range: {}", range));
+            }
+            if let Some(ammo) = weapon.current_ammo {
+                if let Some(clip) = weapon.clip_size {
+                    props.push(format!("Ammo: {}/{}", ammo, clip));
+                }
+            }
+        }
+
+        detail_text.value = props.join("\n");
     }
 }
 
@@ -650,5 +1015,95 @@ fn refresh_inventory_display(
                 player_inventory.capacity
             );
         }
+    }
+}
+
+fn refresh_action_dialog_on_events(
+    mut refresh_timer: ResMut<ActionDialogRefreshTimer>,
+    mut e_inventory_changed: EventReader<InventoryChangedEvent>,
+    mut e_light_changed: EventReader<LightStateChangedEvent>,
+) {
+    // Check if we have any events to process
+    let has_inventory_event = !e_inventory_changed.is_empty();
+    let has_light_event = !e_light_changed.is_empty();
+
+    if has_inventory_event || has_light_event {
+        // Clear the events
+        e_inventory_changed.clear();
+        e_light_changed.clear();
+
+        // Set frame counter to wait 2 frames for component changes to be fully applied
+        refresh_timer.needs_refresh = true;
+        refresh_timer.frames_to_wait = 2;
+    }
+}
+
+fn refresh_action_dialog_with_timer(
+    mut cmds: Commands,
+    mut refresh_timer: ResMut<ActionDialogRefreshTimer>,
+    q_equippable: Query<&Equippable>,
+    q_equipped: Query<&Equipped>,
+    q_lightable: Query<&Lightable>,
+    q_light_source: Query<&LightSource>,
+    q_consumable: Query<&Consumable>,
+    mut q_lists: Query<&mut List, With<DialogContent>>,
+    id_registry: Res<StableIdRegistry>,
+    q_action_dialog: Query<&ItemActionDialog>,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    q_dialog_content: Query<Entity, With<DialogContent>>,
+    mut dialog_state: ResMut<DialogState>,
+    callbacks: Res<InventoryCallbacks>,
+) {
+    if !refresh_timer.needs_refresh {
+        return;
+    }
+
+    // Decrement frame counter
+    if refresh_timer.frames_to_wait > 0 {
+        refresh_timer.frames_to_wait -= 1;
+        return; // Still waiting
+    }
+
+    // Reset the refresh state
+    refresh_timer.needs_refresh = false;
+
+    // Only proceed if there's an active action dialog
+    let Ok(action_dialog) = q_action_dialog.single() else {
+        return;
+    };
+
+    // Check if the item still exists (it may have been consumed)
+    if id_registry.get_entity(action_dialog.item_id).is_none() {
+        // Item no longer exists, close the dialog
+        for dialog_entity in q_dialogs.iter() {
+            cmds.entity(dialog_entity).despawn_recursive();
+        }
+        for content_entity in q_dialog_content.iter() {
+            cmds.entity(content_entity).despawn_recursive();
+        }
+        dialog_state.is_open = false;
+        return;
+    }
+
+    // Find the List entity with DialogContent component (it's the action list in the dialog)
+    for mut list in q_lists.iter_mut() {
+        // Build new list items with updated labels
+        let new_items = build_item_action_list(
+            action_dialog.item_id,
+            &id_registry,
+            &q_equippable,
+            &q_equipped,
+            &q_lightable,
+            &q_light_source,
+            &q_consumable,
+            &callbacks,
+        );
+
+        // Directly mutate the List's items
+        list.items = new_items;
+        // Manually trigger change detection so setup_lists will update the UI
+        list.set_changed();
+
+        return; // Found and updated, exit early
     }
 }

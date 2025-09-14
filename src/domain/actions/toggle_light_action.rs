@@ -5,6 +5,17 @@ use crate::{
     engine::StableIdRegistry,
 };
 
+#[derive(Event)]
+pub struct LightStateChangedEvent {
+    pub item_id: u64,
+}
+
+impl LightStateChangedEvent {
+    pub fn new(item_id: u64) -> Self {
+        Self { item_id }
+    }
+}
+
 pub struct ToggleLightAction {
     pub item_id: u64,  // Stable ID of the item to toggle
     pub actor: Entity, // Entity that is doing the action
@@ -54,5 +65,8 @@ impl Command for ToggleLightAction {
             let cost = get_base_energy_cost(EnergyActionType::ToggleLight);
             energy.consume_energy(cost);
         }
+
+        // Send event to notify that light state has changed
+        world.send_event(LightStateChangedEvent::new(self.item_id));
     }
 }

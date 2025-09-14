@@ -19,13 +19,14 @@ use crate::{
     common::Rand,
     domain::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack, Collider,
-        CreatureType, DefaultMeleeAttack, Destructible, Energy, EquipmentSlots, Equippable,
-        Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory,
-        Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
-        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, NeedsStableId, NewGameResult,
-        Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag, SaveGameResult,
-        SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, StatModifiers, Stats,
-        TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
+        Consumable, CreatureType, DefaultMeleeAttack, Destructible, Energy, EquipmentSlots,
+        Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone,
+        InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, Level,
+        LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
+        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
+        StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer,
+        Vision, VisionBlocker, Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -49,10 +50,10 @@ use crate::{
     ui::{
         DialogState, ListContext, UiFocus, clear_mouse_capture_when_not_hovering,
         hotkey_pressed_timer_system, list_cursor_visibility, list_mouse_wheel_scroll,
-        selectable_list_interaction, setup_buttons, setup_lists, sync_focus_to_interaction,
-        tab_navigation, ui_interaction_system, unified_click_system,
-        unified_keyboard_activation_system, unified_style_system, update_focus_from_mouse,
-        update_list_context,
+        render_dialog_content, selectable_list_interaction, setup_buttons, setup_dialogs,
+        setup_lists, sync_focus_to_interaction, tab_navigation, ui_interaction_system,
+        unified_click_system, unified_keyboard_activation_system, unified_style_system,
+        update_focus_from_mouse, update_list_context,
     },
 };
 
@@ -98,6 +99,7 @@ async fn main() {
     reg.register::<CleanupStateExplore>();
     reg.register::<Label>();
     reg.register::<Collider>();
+    reg.register::<Consumable>();
     reg.register::<Energy>();
     reg.register::<StairDown>();
     reg.register::<StairUp>();
@@ -160,6 +162,7 @@ async fn main() {
         .register_event::<EntityDestroyedEvent>()
         .register_event::<XPGainEvent>()
         .register_event::<InventoryChangedEvent>()
+        .register_event::<LightStateChangedEvent>()
         .insert_resource(tileset_registry)
         .insert_resource(audio_registry)
         .insert_resource(reg)
@@ -207,6 +210,8 @@ async fn main() {
                 tab_navigation,
                 list_cursor_visibility,
                 update_list_context,
+                setup_dialogs,
+                render_dialog_content,
                 update_focus_from_mouse,
                 sync_focus_to_interaction,
                 selectable_list_interaction,

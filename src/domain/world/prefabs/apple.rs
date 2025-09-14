@@ -1,5 +1,9 @@
 use super::{Prefab, PrefabBuilder};
-use crate::{common::Palette, domain::StackableType, rendering::Layer};
+use crate::{
+    common::Palette,
+    domain::{ConsumableEffect, StackableType},
+    rendering::Layer,
+};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) {
@@ -10,5 +14,6 @@ pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) {
         .with_item(0.2)
         .with_needs_stable_id()
         .with_stackable(StackableType::Apple, 1)
+        .with_consumable(ConsumableEffect::Heal(2), true)
         .build();
 }

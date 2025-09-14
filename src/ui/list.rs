@@ -6,7 +6,10 @@ use crate::{
     common::Palette,
     engine::{Audio, AudioKey, KeyInput, Mouse},
     rendering::{Glyph, Layer, Position, Text, Visibility},
-    ui::{Activatable, ActivatableBuilder, FocusType, Interactable, Interaction, UiFocus},
+    ui::{
+        Activatable, ActivatableBuilder, DialogContent, FocusType, Interactable, Interaction,
+        UiFocus,
+    },
 };
 use bevy_ecs::prelude::ChildOf;
 
@@ -191,6 +194,7 @@ pub fn setup_lists(
             Option<&SelectableList>,
             Option<&SelectableListState>,
             Option<&Children>,
+            Option<&DialogContent>,
         ),
         Changed<List>,
     >,
@@ -211,8 +215,14 @@ pub fn setup_lists(
         Query<&Position>,
     )>,
 ) {
-    for (list_entity, mut list, selectable_opt, selectable_state_opt, existing_children) in
-        q_lists.iter_mut()
+    for (
+        list_entity,
+        mut list,
+        selectable_opt,
+        selectable_state_opt,
+        existing_children,
+        dialog_content_opt,
+    ) in q_lists.iter_mut()
     {
         // Get and copy the position data first
         let list_pos = {
@@ -271,8 +281,13 @@ pub fn setup_lists(
 
         // Ensure we have exactly one cursor
         if existing_cursors.is_empty() {
+            let layer = if dialog_content_opt.is_some() {
+                Layer::DialogContent
+            } else {
+                Layer::Ui
+            };
             cmds.spawn((
-                Text::new("→").fg1(Palette::Yellow).layer(Layer::Ui),
+                Text::new("→").fg1(Palette::Yellow).layer(layer),
                 Position::new_f32(0., 0., 0.),
                 ListCursor {
                     parent_list: list_entity,
@@ -316,8 +331,14 @@ pub fn setup_lists(
                     if glyph.scale != (list.width, item_spacing) {
                         glyph.scale = (list.width, item_spacing);
                     }
-                    if glyph.layer_id != Layer::UiPanels {
-                        glyph.layer_id = Layer::UiPanels;
+                    // Update layer based on whether this is in a dialog
+                    let expected_layer = if dialog_content_opt.is_some() {
+                        Layer::DialogPanels
+                    } else {
+                        Layer::UiPanels
+                    };
+                    if glyph.layer_id != expected_layer {
+                        glyph.layer_id = expected_layer;
                     }
 
                     *interactable = Interactable::new(14., item_spacing);
@@ -330,11 +351,15 @@ pub fn setup_lists(
                     cmds.entity(bg_entity).insert(Visibility::Visible);
                 }
             } else {
+                // Use DialogPanels layer if this list is in a dialog
+                let layer = if dialog_content_opt.is_some() {
+                    Layer::DialogPanels
+                } else {
+                    Layer::UiPanels
+                };
                 cmds.spawn((
                     Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
-                    Glyph::idx(6)
-                        .scale((list.width, item_spacing))
-                        .layer(Layer::UiPanels),
+                    Glyph::idx(6).scale((list.width, item_spacing)).layer(layer),
                     ListItemBg {
                         index: actual_index,
                         parent_list: list_entity,
@@ -356,6 +381,12 @@ pub fn setup_lists(
                     // Update existing text item
                     text_item.index = actual_index;
                     text.value = item_data.label.clone();
+                    // Update layer if in dialog
+                    text.layer_id = if dialog_content_opt.is_some() {
+                        Layer::DialogContent
+                    } else {
+                        Layer::Ui
+                    };
                     pos.x = list_pos.x + 1.0;
                     pos.y = list_pos.y + item_y;
                     pos.z = list_pos.z;
@@ -366,7 +397,8 @@ pub fn setup_lists(
 
                 // For existing entities, only update the Activatable component and visibility
                 // Avoid reinserting Interaction and Interactable to prevent breaking interaction detection
-                cmds.entity(text_entity).insert((
+                let mut entity_cmds = cmds.entity(text_entity);
+                entity_cmds.insert((
                     activatable,
                     if is_visible {
                         Visibility::Visible
@@ -374,12 +406,23 @@ pub fn setup_lists(
                         Visibility::Hidden
                     },
                 ));
+
+                // If the parent list is part of a dialog, ensure the list item has DialogContent
+                if let Some(dialog_content) = dialog_content_opt {
+                    entity_cmds.insert(dialog_content.clone());
+                }
             } else {
                 // Create new text item with Activatable component
                 let activatable =
                     item_data.to_activatable(actual_index, list_entity, list.focus_order);
-                cmds.spawn((
-                    Text::new(&item_data.label).layer(Layer::Ui),
+                // Use DialogContent layer if this list is in a dialog
+                let layer = if dialog_content_opt.is_some() {
+                    Layer::DialogContent
+                } else {
+                    Layer::Ui
+                };
+                let mut entity_cmds = cmds.spawn((
+                    Text::new(&item_data.label).layer(layer),
                     Position::new_f32(list_pos.x + 1.0, list_pos.y + item_y, list_pos.z),
                     ListItem {
                         index: actual_index,
@@ -395,6 +438,11 @@ pub fn setup_lists(
                     },
                     ChildOf(list_entity),
                 ));
+
+                // If the parent list is part of a dialog, add DialogContent to the list item
+                if let Some(dialog_content) = dialog_content_opt {
+                    entity_cmds.insert(dialog_content.clone());
+                }
             }
         }
 
@@ -454,8 +502,13 @@ pub fn setup_lists(
                 let down_y = list_pos.y + (visible_count as f32 * 0.5);
 
                 if existing_scroll_down_indicators.is_empty() {
+                    let layer = if dialog_content_opt.is_some() {
+                        Layer::DialogContent
+                    } else {
+                        Layer::Ui
+                    };
                     cmds.spawn((
-                        Text::new("▼").fg1(Palette::Yellow).layer(Layer::Ui),
+                        Text::new("▼").fg1(Palette::Yellow).layer(layer),
                         Position::new_f32(list_pos.x, down_y, list_pos.z),
                         ListScrollDownIndicator {
                             parent_list: list_entity,

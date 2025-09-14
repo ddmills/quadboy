@@ -12,8 +12,7 @@ use crate::{
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
         ActivatableBuilder, Dialog, DialogState, ItemDialogBuilder, List, ListContext, ListItem,
-        ListItemData, UiFocus, render_dialog_content, setup_buttons, setup_dialogs, setup_lists,
-        spawn_item_dialog,
+        ListItemData, UiFocus, spawn_item_dialog,
     },
 };
 
@@ -65,16 +64,7 @@ impl Plugin for ContainerStatePlugin {
             )
             .on_update(
                 app,
-                (
-                    handle_container_input,
-                    refresh_container_display,
-                    setup_lists,
-                    game_loop,
-                    setup_dialogs,
-                    render_dialog_content,
-                    setup_buttons,
-                )
-                    .chain(),
+                (handle_container_input, refresh_container_display, game_loop).chain(),
             )
             .on_leave(
                 app,

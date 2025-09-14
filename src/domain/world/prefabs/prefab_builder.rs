@@ -2,11 +2,12 @@ use super::Prefab;
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider, CreatureType,
-        DefaultMeleeAttack, Destructible, Energy, Equippable, Health, HideWhenNotVisible,
-        Inventory, InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable,
-        LootDrop, MaterialType, NeedsStableId, SaveFlag, StackCount, Stackable, StackableType,
-        StairDown, StairUp, StatModifiers, Stats, VisionBlocker, Weapon,
+        ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider, Consumable,
+        ConsumableEffect, CreatureType, DefaultMeleeAttack, Destructible, Energy, Equippable,
+        Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label, Level,
+        LightBlocker, LightSource, Lightable, LootDrop, MaterialType, NeedsStableId, SaveFlag,
+        StackCount, Stackable, StackableType, StairDown, StairUp, StatModifiers, Stats,
+        VisionBlocker, Weapon,
     },
     rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
@@ -228,6 +229,13 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_creature_type(self, creature_type: CreatureType) -> Self {
         self.world.entity_mut(self.entity).insert(creature_type);
+        self
+    }
+
+    pub fn with_consumable(self, effect: ConsumableEffect, consume_on_use: bool) -> Self {
+        self.world
+            .entity_mut(self.entity)
+            .insert(Consumable::new(effect, consume_on_use));
         self
     }
 

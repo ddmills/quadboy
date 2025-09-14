@@ -6,7 +6,8 @@
       "Bash(tree:*)",
       "Read(/D:\\code\\quadboy\\src/**)",
       "Bash(find:*)",
-      "Bash(RUSTFLAGS=-Awarnings cargo check)"
+      "Bash(RUSTFLAGS=-Awarnings cargo check)",
+      "Bash(cargo:*)"
     ],
     "deny": [],
     "ask": []
