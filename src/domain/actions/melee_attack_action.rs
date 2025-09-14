@@ -3,8 +3,8 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        BumpAttack, DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlots,
-        Health, HitBlink, MaterialType, MeleeWeapon, Player, Zone, get_base_energy_cost,
+        BumpAttack, DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
+        Health, HitBlink, MaterialType, MeleeWeapon, Player, StatType, Stats, WeaponFamily, Zone, get_base_energy_cost,
         systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{Audio, Clock, StableIdRegistry},
@@ -14,6 +14,61 @@ use crate::{
 pub struct MeleeAttackAction {
     pub attacker_entity: Entity,
     pub target_pos: (usize, usize, usize),
+}
+
+fn resolve_hit_miss(attacker_entity: Entity, target_entity: Entity, world: &mut World) -> (bool, bool) {
+    // Get target's dodge stat first (immutable borrow)
+    let target_dodge = world
+        .get::<Stats>(target_entity)
+        .map(|stats| stats.get_stat(StatType::Dodge))
+        .unwrap_or(0);
+
+    // Determine weapon family for attacker
+    let weapon_family = {
+        // First try to get equipped melee weapon
+        if let Some(registry) = world.get_resource::<StableIdRegistry>()
+            && let Some(equipment) = world.get::<EquipmentSlots>(attacker_entity)
+            && let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand)
+            && let Some(weapon_entity) = registry.get_entity(weapon_id)
+            && let Some(melee_weapon) = world.get::<MeleeWeapon>(weapon_entity)
+        {
+            melee_weapon.weapon_family
+        }
+        // Fall back to default melee attack
+        else if let Some(default_attack) = world.get::<DefaultMeleeAttack>(attacker_entity) {
+            default_attack.weapon_family
+        }
+        // Default to unarmed if no weapon or default attack
+        else {
+            WeaponFamily::Unarmed
+        }
+    };
+
+    // Get attacker's weapon proficiency stat
+    let weapon_proficiency = world
+        .get::<Stats>(attacker_entity)
+        .map(|stats| stats.get_stat(weapon_family.to_stat_type()))
+        .unwrap_or(0);
+
+    let Some(mut rand) = world.get_resource_mut::<Rand>() else {
+        return (true, false); // Default to hit if no RNG
+    };
+
+    // Roll raw d12 and check for critical BEFORE adding modifiers
+    let raw_roll = rand.d12();
+    let is_critical = raw_roll == 12; // Critical only on natural 12
+
+    // Calculate final attack roll with weapon proficiency
+    let attacker_roll = raw_roll + weapon_proficiency;
+
+    // Roll defender's Defense Value (d12 + Dodge)
+    let defender_roll = rand.d12();
+    let defense_value = defender_roll + target_dodge;
+
+    // Critical hits always hit, otherwise compare rolls
+    let hit = is_critical || attacker_roll >= defense_value;
+
+    (hit, is_critical)
 }
 
 fn apply_hit_blink(world: &mut World, target_entity: Entity) {
@@ -102,9 +157,13 @@ impl Command for MeleeAttackAction {
         for &target_entity in targets.iter() {
             let mut should_apply_hit_blink = false;
 
+            // Resolve hit/miss for this target
+            let (hit, _is_critical) = resolve_hit_miss(self.attacker_entity, target_entity, world);
+
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
                 if let Some((damage, can_damage)) = &weapon_damage
                     && can_damage.contains(&MaterialType::Flesh)
+                    && hit // Only apply damage if attack hits
                 {
                     health.take_damage(*damage, current_tick);
                     should_apply_hit_blink = true;
@@ -180,6 +239,7 @@ impl Command for MeleeAttackAction {
             // Check if target has Destructible (object)
             else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
                 && let Some((damage, can_damage)) = &weapon_damage
+                && hit // Only apply damage if attack hits
             {
                 // Check if weapon can damage this material type
                 if can_damage.contains(&destructible.material_type) {

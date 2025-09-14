@@ -37,6 +37,10 @@ impl Rand {
         (self.random() * (max as f32 - min as f32)) as i32 + min
     }
 
+    pub fn d12(&mut self) -> i32 {
+        self.range_n(1, 13)
+    }
+
     #[inline]
     pub fn random(&mut self) -> f32 {
         self.r.random()

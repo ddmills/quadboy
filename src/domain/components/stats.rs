@@ -8,16 +8,17 @@ use super::Attributes;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StatType {
-    Fortitude,  // Constitution + modifiers (affects max HP)
-    Speed,      // Dexterity + modifiers (affects movement energy cost)
-    Armor,      // Only affected by modifiers (no base attribute)
-    ArmorRegen, // Intelligence + modifiers (affects armor regeneration rate)
-    Rifle,      // Dexterity + modifiers (rifle weapon proficiency)
-    Shotgun,    // Strength + modifiers (shotgun weapon proficiency)
-    Pistol,     // Strength + modifiers (pistol weapon proficiency)
-    Blade,      // Dexterity + modifiers (blade weapon proficiency)
-    Cudgel,     // Strength + modifiers (cudgel weapon proficiency)
-    Unarmed,    // Strength + modifiers (unarmed combat proficiency)
+    Fortitude, // affects max HP
+    Speed, // affects movement energy cost
+    Armor, // no base attribute
+    ArmorRegen, // affects armor regeneration rate
+    Rifle, // rifle weapon proficiency
+    Shotgun, // shotgun weapon proficiency
+    Pistol, // pistol weapon proficiency
+    Blade, // blade weapon proficiency
+    Cudgel, // cudgel weapon proficiency
+    Unarmed, // unarmed combat proficiency
+    Dodge, // dodge/evasion ability
 }
 
 impl StatType {
@@ -33,6 +34,7 @@ impl StatType {
             StatType::Blade => attributes.dexterity as i32,
             StatType::Cudgel => attributes.strength as i32,
             StatType::Unarmed => attributes.strength as i32,
+            StatType::Dodge => attributes.dexterity as i32,
         }
     }
 
@@ -48,6 +50,7 @@ impl StatType {
             StatType::Blade,
             StatType::Cudgel,
             StatType::Unarmed,
+            StatType::Dodge,
         ]
     }
 }
@@ -84,7 +87,7 @@ impl StatModifiers {
     pub fn add_modifier(&mut self, stat_type: StatType, modifier: StatModifier) {
         self.modifiers
             .entry(stat_type)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(modifier);
     }
 

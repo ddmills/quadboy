@@ -48,6 +48,7 @@ struct AttributesUIEntities {
     blade_display: Entity,
     cudgel_display: Entity,
     unarmed_display: Entity,
+    dodge_display: Entity,
 }
 
 pub struct AttributesStatePlugin;
@@ -347,6 +348,17 @@ fn update_attributes_display(
         text.value = format!(
             "Unarmed:      {}  (Strength: {} + Modifiers: {:+})",
             unarmed_total, unarmed_base, unarmed_modifiers
+        );
+    }
+
+    let dodge_base = StatType::Dodge.get_base_value(attributes);
+    let dodge_modifiers = stat_modifiers.get_total_for_stat(StatType::Dodge);
+    let dodge_total = stats.get_stat(StatType::Dodge);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.dodge_display) {
+        text.value = format!(
+            "Dodge:        {}  (Dexterity: {} + Modifiers: {:+})",
+            dodge_total, dodge_base, dodge_modifiers
         );
     }
 }
@@ -762,6 +774,26 @@ fn setup_attributes_screen(
         ))
         .id();
 
+    y_pos += 0.5;
+
+    // Dodge
+    let dodge_base = StatType::Dodge.get_base_value(attributes);
+    let dodge_modifiers = stat_modifiers.get_total_for_stat(StatType::Dodge);
+    let dodge_total = stats.get_stat(StatType::Dodge);
+
+    let dodge_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Dodge:        {}  (Dexterity: {} + Modifiers: {:+})",
+                dodge_total, dodge_base, dodge_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     y_pos += 1.5;
 
     // Back Button
@@ -789,5 +821,6 @@ fn setup_attributes_screen(
         blade_display,
         cudgel_display,
         unarmed_display,
+        dodge_display,
     });
 }

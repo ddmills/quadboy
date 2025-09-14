@@ -1,19 +1,69 @@
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
     common::Rand,
     domain::{
-        Destructible, Energy, EnergyActionType, EquipmentSlots, Health, HitBlink, MaterialType,
-        RangedWeapon, Zone, get_base_energy_cost,
-        systems::destruction_system::EntityDestroyedEvent,
+        get_base_energy_cost, systems::destruction_system::EntityDestroyedEvent, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, Health, HitBlink, MaterialType, Player, RangedWeapon, StatType, Stats, WeaponFamily, Zone
     },
     engine::{Audio, Clock, StableIdRegistry},
-    rendering::{Glyph, Position, spawn_bullet_trail_in_world, spawn_material_hit_in_world},
+    rendering::{spawn_bullet_trail_in_world, spawn_material_hit_in_world, world_to_zone_idx, world_to_zone_local, Glyph, Position},
 };
 
 pub struct ShootAction {
     pub shooter_entity: Entity,
     pub target_pos: (usize, usize, usize),
+}
+
+fn resolve_hit_miss(attacker_entity: Entity, target_entity: Entity, world: &mut World) -> (bool, bool) {
+    // Get target's dodge stat first (immutable borrow)
+    let target_dodge = world
+        .get::<Stats>(target_entity)
+        .map(|stats| stats.get_stat(StatType::Dodge))
+        .unwrap_or(0);
+
+    // Determine weapon family for attacker
+    let weapon_family = {
+        // Try to get equipped ranged weapon
+        if let Some(registry) = world.get_resource::<StableIdRegistry>()
+            && let Some(equipment) = world.get::<EquipmentSlots>(attacker_entity)
+            && let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand)
+            && let Some(weapon_entity) = registry.get_entity(weapon_id)
+            && let Some(ranged_weapon) = world.get::<RangedWeapon>(weapon_entity)
+        {
+            ranged_weapon.weapon_family
+        }
+        // Default to unarmed if no ranged weapon equipped
+        else {
+            WeaponFamily::Unarmed
+        }
+    };
+
+    // Get attacker's weapon proficiency stat
+    let weapon_proficiency = world
+        .get::<Stats>(attacker_entity)
+        .map(|stats| stats.get_stat(weapon_family.to_stat_type()))
+        .unwrap_or(0);
+
+    let Some(mut rand) = world.get_resource_mut::<Rand>() else {
+        return (true, false); // Default to hit if no RNG
+    };
+
+    // Roll raw d12 and check for critical BEFORE adding modifiers
+    let raw_roll = rand.d12();
+    let is_critical = raw_roll == 12; // Critical only on natural 12
+
+    // Calculate final attack roll with weapon proficiency
+    let attacker_roll = raw_roll + weapon_proficiency;
+
+    // Roll defender's Defense Value (d12 + Dodge)
+    let defender_roll = rand.d12();
+    let defense_value = defender_roll + target_dodge;
+
+    // Critical hits always hit, otherwise compare rolls
+    let hit = is_critical || attacker_roll >= defense_value;
+
+    (hit, is_critical)
 }
 
 fn apply_hit_blink(world: &mut World, target_entity: Entity) {
@@ -44,7 +94,7 @@ impl Command for ShootAction {
             };
 
             // Check for equipped weapon in MainHand
-            let weapon_id = equipment.get_equipped_item(crate::domain::EquipmentSlot::MainHand);
+            let weapon_id = equipment.get_equipped_item(EquipmentSlot::MainHand);
 
             if let Some(weapon_id) = weapon_id {
                 if let Some(weapon_entity) = registry.get_entity(weapon_id) {
@@ -82,19 +132,19 @@ impl Command for ShootAction {
 
         // Find target at position
         let targets = {
-            let zone_idx = crate::rendering::world_to_zone_idx(
+            let zone_idx = world_to_zone_idx(
                 self.target_pos.0,
                 self.target_pos.1,
                 self.target_pos.2,
             );
-            let local = crate::rendering::world_to_zone_local(self.target_pos.0, self.target_pos.1);
+            let local = world_to_zone_local(self.target_pos.0, self.target_pos.1);
 
-            let mut found_targets = Vec::new();
+            let mut found_targets = vec![];
             let mut zones = world.query::<&Zone>();
             for zone in zones.iter(world) {
                 if zone.idx == zone_idx {
                     if let Some(entities) = zone.entities.get(local.0, local.1) {
-                        found_targets.extend(entities.iter().copied());
+                        found_targets.extend(entities.iter().filter(|e| world.get::<Health>(**e).is_some()).copied());
                     }
                     break;
                 }
@@ -107,12 +157,6 @@ impl Command for ShootAction {
         };
 
         audio.play(shoot_audio, 0.1);
-
-        if let Some(shooter_pos) = shooter_pos {
-            world.resource_scope(|world, mut rand: Mut<crate::common::Rand>| {
-                spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 60.0, &mut rand);
-            });
-        }
 
         if targets.is_empty() {
             // Consume energy even if no target hit (shot fired)
@@ -130,8 +174,17 @@ impl Command for ShootAction {
         for &target_entity in targets.iter() {
             let mut should_apply_hit_blink = false;
 
+            // Resolve hit/miss for this target
+            let (hit, _is_critical) = resolve_hit_miss(self.shooter_entity, target_entity, world);
+
+            if let Some(shooter_pos) = shooter_pos {
+                world.resource_scope(|world, mut rand: Mut<Rand>| {
+                    spawn_bullet_trail_in_world(world, shooter_pos, self.target_pos, 60.0, &mut rand, hit);
+                });
+            }
+
             if let Some(mut health) = world.get_mut::<Health>(target_entity) {
-                if can_damage.contains(&MaterialType::Flesh) {
+                if can_damage.contains(&MaterialType::Flesh) && hit {
                     health.take_damage(damage, current_tick);
                     should_apply_hit_blink = true;
                     let is_dead = health.is_dead();
@@ -193,7 +246,9 @@ impl Command for ShootAction {
                 }
             }
             // Check if target has Destructible (object)
-            else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity) {
+            else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
+                && hit // Only apply damage if attack hits
+            {
                 // Check if weapon can damage this material type
                 if can_damage.contains(&destructible.material_type) {
                     let material_type = destructible.material_type;

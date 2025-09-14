@@ -4,6 +4,7 @@ use macroquad::math::Vec2;
 use super::core::{GlyphAnimation, Particle, ParticleSpawner, ParticleTrail};
 use super::curves::{AlphaCurve, ColorCurve, VelocityCurve};
 use super::spawn_areas::{Distribution, SpawnArea};
+use crate::common::Rand;
 use crate::domain::MaterialType;
 use crate::rendering::world_to_zone_local_f32;
 
@@ -49,7 +50,8 @@ pub fn spawn_bullet_trail(
     start_pos: Vec2,
     target_pos: Vec2,
     bullet_speed: f32,
-    rand: &mut crate::common::Rand,
+    rand: &mut Rand,
+    spawn_blood: bool,
 ) {
     let direction = (target_pos - start_pos).normalize();
     let distance = start_pos.distance(target_pos);
@@ -127,8 +129,10 @@ pub fn spawn_bullet_trail(
         .burst(4)
         .spawn_world(world);
 
-    // Delayed blood spray at impact
-    spawn_delayed_blood_impact(world, target_pos, direction, travel_time);
+    // Delayed blood spray at impact (only if hit)
+    if spawn_blood {
+        spawn_delayed_blood_impact(world, target_pos, direction, travel_time);
+    }
 }
 
 fn spawn_delayed_blood_impact(
@@ -214,7 +218,8 @@ pub fn spawn_bullet_trail_in_world(
     start_world: (usize, usize, usize),
     target_world: (usize, usize, usize),
     speed: f32,
-    rand: &mut crate::common::Rand,
+    rand: &mut Rand,
+    spawn_blood: bool,
 ) {
     let start_local =
         world_to_zone_local_f32(start_world.0 as f32 + 0.5, start_world.1 as f32 + 0.5);
@@ -224,7 +229,7 @@ pub fn spawn_bullet_trail_in_world(
         world_to_zone_local_f32(target_world.0 as f32 + 0.5, target_world.1 as f32 + 0.5);
     let target_pos = Vec2::new(target_local.0, target_local.1);
 
-    spawn_bullet_trail(world, start_pos, target_pos, speed, rand);
+    spawn_bullet_trail(world, start_pos, target_pos, speed, rand, spawn_blood);
 }
 
 pub fn spawn_material_hit_in_world(
