@@ -11,6 +11,9 @@ pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(22, Palette::Gray, Palette::Yellow, Layer::Objects)
         .with_label("Lantern")
+        .with_description(
+            "Brass and glass, tarnished with age. The wick burns memories as much as oil.",
+        )
         .with_item(1.0)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::OffHand],

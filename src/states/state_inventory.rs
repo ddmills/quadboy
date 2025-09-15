@@ -1,20 +1,20 @@
-use bevy_ecs::{prelude::*, system::SystemId};
+use bevy_ecs::{prelude::*, schedule::common_conditions::resource_changed, system::SystemId};
 use macroquad::input::{KeyCode, is_key_pressed};
 
 use crate::{
     common::Palette,
     domain::{
-        Consumable, DropItemAction, EatAction, EquipItemAction, EquipmentSlot, Equippable,
-        Equipped, Inventory, Item, Label, LightSource, LightStateChangedEvent, Lightable, Player,
-        PlayerPosition, StackCount, ToggleLightAction, UnequipItemAction, Weapon, game_loop,
-        inventory::InventoryChangedEvent,
+        Consumable, Description, DropItemAction, EatAction, EquipItemAction, EquipmentSlot,
+        Equippable, Equipped, Inventory, Item, Label, LightSource, LightStateChangedEvent,
+        Lightable, Player, PlayerPosition, StackCount, ToggleLightAction, UnequipItemAction,
+        Weapon, game_loop, inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, Text},
+    rendering::{Glyph, Layer, Position, ScreenSize, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
         ActivatableBuilder, Dialog, DialogContent, DialogState, List, ListContext, ListItem,
-        ListItemData, UiFocus,
+        ListItemData, UiFocus, center_dialogs_on_screen_change, spawn_examine_dialog,
     },
 };
 
@@ -29,6 +29,7 @@ struct InventoryCallbacks {
     close_dialog: SystemId,
     open_item_actions: SystemId,
     examine_item: SystemId,
+    close_examine_dialog: SystemId,
 }
 
 #[derive(Component, Clone)]
@@ -195,6 +196,7 @@ fn setup_inventory_callbacks(world: &mut World) {
         close_dialog: world.register_system(close_dialog),
         open_item_actions: world.register_system(handle_item_click),
         examine_item: world.register_system(examine_item),
+        close_examine_dialog: world.register_system(close_examine_dialog),
     };
 
     world.insert_resource(callbacks);
@@ -293,6 +295,7 @@ fn handle_item_click(
     q_consumable: Query<&Consumable>,
     dialog_state: ResMut<DialogState>,
     callbacks: Res<InventoryCallbacks>,
+    screen: Res<ScreenSize>,
 ) {
     if let Some(item_id) = list_context.context_data {
         spawn_item_actions_dialog(
@@ -307,6 +310,7 @@ fn handle_item_click(
             &q_consumable,
             dialog_state,
             &callbacks,
+            &screen,
         );
     }
 }
@@ -385,6 +389,7 @@ fn spawn_item_actions_dialog(
     q_consumable: &Query<&Consumable>,
     mut dialog_state: ResMut<DialogState>,
     callbacks: &InventoryCallbacks,
+    screen: &ScreenSize,
 ) {
     let Some(item_entity) = id_registry.get_entity(item_id) else {
         return;
@@ -410,8 +415,8 @@ fn spawn_item_actions_dialog(
     // Calculate dialog height based on number of actions
     let dialog_width = 24.0;
     let dialog_height = (list_items.len() as f32 + 2.5).min(12.0);
-    let dialog_x = 30.0;
-    let dialog_y = 8.0;
+    let dialog_x = ((screen.tile_w as f32 - dialog_width) / 2.0).round();
+    let dialog_y = ((screen.tile_h as f32 - dialog_height) / 2.0).round();
 
     let dialog_entity = cmds
         .spawn((
@@ -575,13 +580,14 @@ fn examine_item(
     mut cmds: Commands,
     id_registry: Res<StableIdRegistry>,
     q_labels: Query<&Label>,
-    q_items: Query<&Item>,
-    q_weapons: Query<&Weapon>,
-    q_equipped: Query<&Equipped>,
+    q_descriptions: Query<&Description>,
+    q_glyphs: Query<&Glyph>,
     q_action_dialog: Query<&ItemActionDialog>,
     q_dialogs: Query<Entity, With<Dialog>>,
     q_dialog_content: Query<Entity, With<DialogContent>>,
     mut dialog_state: ResMut<DialogState>,
+    callbacks: Res<InventoryCallbacks>,
+    screen: Res<ScreenSize>,
 ) {
     if let Ok(action_dialog) = q_action_dialog.single() {
         let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
@@ -596,61 +602,31 @@ fn examine_item(
             cmds.entity(content_entity).despawn_recursive();
         }
 
-        // Create examine dialog
-        let item_name = q_labels
-            .get(item_entity)
-            .map(|l| l.get())
-            .unwrap_or("Unknown Item");
-
-        let dialog_entity = cmds
-            .spawn((
-                Dialog::new(&format!("Examining: {}", item_name), 35.0, 12.0),
-                Position::new_f32(22.0, 8.0, 0.0),
-                CleanupStateInventory,
-            ))
-            .id();
-
-        // Build description
-        let mut description = vec![format!("{}", item_name)];
-        description.push(String::new());
-
-        if let Ok(item) = q_items.get(item_entity) {
-            description.push(format!("Weight: {:.1} kg", item.weight));
-        }
-
-        if let Ok(weapon) = q_weapons.get(item_entity) {
-            description.push(format!("Damage: {}", weapon.damage_dice));
-            if let Some(range) = weapon.range {
-                description.push(format!("Range: {}", range));
-            }
-        }
-
-        if let Ok(equipped) = q_equipped.get(item_entity) {
-            let slots = equipped
-                .slots
-                .iter()
-                .map(|s| s.display_name())
-                .collect::<Vec<_>>()
-                .join(", ");
-            description.push(format!("Equipped: {}", slots));
-        }
-
-        let description_text = description.join("\n");
-
-        cmds.spawn((
-            Text::new(&description_text)
-                .fg1(Palette::White)
-                .layer(Layer::DialogContent),
-            Position::new_f32(23.0, 10.0, 0.0),
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order: 1,
-            },
+        // Create examine dialog using the new system
+        spawn_examine_dialog(
+            &mut cmds,
+            item_entity,
+            callbacks.close_examine_dialog,
+            &q_labels,
+            &q_descriptions,
+            &q_glyphs,
             CleanupStateInventory,
-        ));
+            &screen,
+        );
 
         dialog_state.is_open = true;
     }
+}
+
+fn close_examine_dialog(
+    mut cmds: Commands,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    mut dialog_state: ResMut<DialogState>,
+) {
+    for dialog_entity in q_dialogs.iter() {
+        cmds.entity(dialog_entity).despawn();
+    }
+    dialog_state.is_open = false;
 }
 
 fn remove_inventory_callbacks(mut cmds: Commands) {
@@ -676,6 +652,10 @@ impl Plugin for InventoryStatePlugin {
                     update_item_detail_panel,
                 )
                     .chain(),
+            )
+            .on_update(
+                app,
+                center_dialogs_on_screen_change.run_if(resource_changed::<ScreenSize>),
             )
             .on_leave(
                 app,

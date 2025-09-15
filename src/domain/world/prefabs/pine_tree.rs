@@ -18,6 +18,7 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) {
             Layer::Objects,
         )
         .with_label("{c|P}ine {c|T}ree")
+        .with_description("Scarred bark and sap like blood. Roots deep in soil that's tasted iron.")
         .with_collider()
         .with_destructible(5, MaterialType::Wood)
         .with_vision_blocker()

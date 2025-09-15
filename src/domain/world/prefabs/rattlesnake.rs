@@ -26,6 +26,9 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
             GlyphTextureId::Creatures,
         )
         .with_label("Rattlesnake")
+        .with_description(
+            "Coiled malice baking in the sun. The desert's way of keeping honest men honest.",
+        )
         .with_energy(-120)
         .with_health()
         .with_collider()

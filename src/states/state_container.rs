@@ -1,18 +1,18 @@
-use bevy_ecs::{prelude::*, system::SystemId};
+use bevy_ecs::{prelude::*, schedule::common_conditions::resource_changed, system::SystemId};
 use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
     domain::{
-        Equippable, Equipped, Inventory, Item, Label, Player, StackCount, TransferItemAction,
-        Weapon, game_loop, inventory::InventoryChangedEvent,
+        Description, Equipped, Inventory, Label, Player, StackCount, TransferItemAction, game_loop,
+        inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, KeyInput, Plugin, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, Text},
+    rendering::{Glyph, Layer, Position, ScreenSize, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
-        ActivatableBuilder, Dialog, DialogState, ItemDialogBuilder, List, ListContext, ListItem,
-        ListItemData, UiFocus, spawn_item_dialog,
+        ActivatableBuilder, Dialog, DialogState, List, ListContext, ListItem, ListItemData,
+        UiFocus, center_dialogs_on_screen_change, spawn_examine_dialog,
     },
 };
 
@@ -65,6 +65,10 @@ impl Plugin for ContainerStatePlugin {
             .on_update(
                 app,
                 (handle_container_input, refresh_container_display, game_loop).chain(),
+            )
+            .on_update(
+                app,
+                center_dialogs_on_screen_change.run_if(resource_changed::<ScreenSize>),
             )
             .on_leave(
                 app,
@@ -335,11 +339,10 @@ fn examine_selected_item(
     callbacks: Res<ContainerCallbacks>,
     id_registry: Res<StableIdRegistry>,
     q_labels: Query<&Label>,
+    q_descriptions: Query<&Description>,
     q_glyphs: Query<&Glyph>,
-    q_items: Query<&Item>,
-    q_equippable: Query<&Equippable>,
-    q_weapons: Query<&Weapon>,
-    q_stack_counts: Query<&StackCount>,
+    mut dialog_state: ResMut<DialogState>,
+    screen: Res<ScreenSize>,
 ) {
     let Some(item_id) = list_context.context_data else {
         return;
@@ -349,24 +352,18 @@ fn examine_selected_item(
         return;
     };
 
-    let builder = ItemDialogBuilder::new(item_entity)
-        .with_position(5.0, 3.0)
-        .with_size(20.0, 8.0)
-        .with_close_callback(callbacks.close_dialog);
-
-    spawn_item_dialog(
+    spawn_examine_dialog(
         &mut cmds,
-        item_id,
-        builder,
-        &id_registry,
+        item_entity,
+        callbacks.close_dialog,
         &q_labels,
+        &q_descriptions,
         &q_glyphs,
-        &q_items,
-        &q_equippable,
-        &q_weapons,
-        &q_stack_counts,
         CleanupStateContainer,
+        &screen,
     );
+
+    dialog_state.is_open = true;
 }
 
 fn close_dialog(

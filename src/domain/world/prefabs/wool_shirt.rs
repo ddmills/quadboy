@@ -17,6 +17,7 @@ pub fn spawn_wool_shirt(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(71, Palette::Gray, Palette::White, Layer::Objects)
         .with_label("Wool Shirt")
+        .with_description("Rough-spun and twice-mended. Smells of campfire smoke and old sweat.")
         .with_item(0.8)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Body],

@@ -17,6 +17,9 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
             GlyphTextureId::Creatures,
         )
         .with_label("Giant Firefly")
+        .with_description(
+            "Swollen with unnatural light, drifting through the dark like fevered dreams.",
+        )
         .with_energy(-110)
         .with_health()
         .with_collider()

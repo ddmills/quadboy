@@ -12,6 +12,7 @@ mod render_layer;
 mod render_target;
 mod renderer;
 mod text;
+mod text_wrap;
 mod visibility;
 
 pub use ambient_transition::*;
@@ -28,4 +29,5 @@ pub use render_layer::*;
 pub use render_target::*;
 pub use renderer::*;
 pub use text::*;
+pub use text_wrap::*;
 pub use visibility::*;

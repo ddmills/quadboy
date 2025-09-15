@@ -17,6 +17,9 @@ pub fn spawn_overcoat(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(52, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("Overcoat")
+        .with_description(
+            "Buffalo hide and brass buttons. Heavy with the weight of winters survived.",
+        )
         .with_item(2.0)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Body],

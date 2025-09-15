@@ -11,6 +11,9 @@ pub fn spawn_pickaxe(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(23, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("Pickaxe")
+        .with_description(
+            "Iron head on hickory shaft. Every strike echoes with desperate hope and broken backs.",
+        )
         .with_item(2.0)
         .with_equippable(Equippable::tool())
         .with_weapon(Weapon::pickaxe())

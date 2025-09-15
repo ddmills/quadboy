@@ -70,7 +70,6 @@ pub fn player_input(
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
     mut movement_timer: Local<(f64, bool)>, // (last_move_time, past_initial_delay)
-    mut game_state: ResMut<CurrentGameState>,
     turn_state: Res<TurnState>,
     settings: Res<GameSettings>,
     q_zone: Query<&Zone>,
@@ -82,18 +81,6 @@ pub fn player_input(
     let delay = settings.input_initial_delay;
     let (player_entity, position, equipment_slots) = q_player.single().unwrap();
     let (x, y, z) = position.world();
-
-    if keys.is_pressed(KeyCode::Escape) {
-        game_state.next = GameState::Pause;
-    }
-
-    if keys.is_pressed(KeyCode::M) {
-        game_state.next = GameState::Overworld;
-    }
-
-    if keys.is_pressed(KeyCode::I) {
-        game_state.next = GameState::Inventory;
-    }
 
     if keys.is_pressed(KeyCode::F) && turn_state.is_players_turn {
         // Fire at selected target if one exists

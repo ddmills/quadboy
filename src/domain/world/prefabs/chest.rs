@@ -7,6 +7,7 @@ pub fn spawn_chest(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(125, Palette::Brown, Palette::Yellow, Layer::Objects)
         .with_label("Chest")
+        .with_description("Iron bands and old wood that remembers better days. Lock's been shot off more than once.")
         .with_inventory(25.0)
         .with_inventory_accessible()
         .with_needs_stable_id()

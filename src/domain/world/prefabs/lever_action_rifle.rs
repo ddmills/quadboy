@@ -11,6 +11,9 @@ pub fn spawn_lever_action_rifle(entity: Entity, world: &mut World, config: Prefa
         .with_base_components()
         .with_glyph(203, Palette::Gray, Palette::Brown, Layer::Objects)
         .with_label("Lever-action Rifle")
+        .with_description(
+            "Precision machinery worn smooth by killing hands. Distance makes cowards of us all.",
+        )
         .with_item(4.0)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::BothHands],

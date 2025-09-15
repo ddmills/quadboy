@@ -7,6 +7,9 @@ pub fn spawn_stair_down(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(107, Palette::White, Palette::Clear, Layer::Objects)
         .with_label("Stairs Down")
+        .with_description(
+            "Carved by forgotten hands into living rock. Each step descends toward older darkness.",
+        )
         .with_stair_down()
         .build();
 }

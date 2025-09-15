@@ -19,10 +19,10 @@ use crate::{
     common::Rand,
     domain::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack, Collider,
-        Consumable, CreatureType, DefaultMeleeAttack, Destructible, Energy, EquipmentSlots,
-        Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone,
-        InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item, Label, Level,
-        LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
+        Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
+        EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink,
+        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
+        Label, Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
         LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
         RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
         StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer,
@@ -98,6 +98,7 @@ async fn main() {
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
     reg.register::<Label>();
+    reg.register::<Description>();
     reg.register::<Collider>();
     reg.register::<Consumable>();
     reg.register::<Energy>();

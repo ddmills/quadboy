@@ -17,6 +17,7 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
             GlyphTextureId::Creatures,
         )
         .with_label("Coyote")
+        .with_description("Mangy and lean, forever watching from the ridge line. They know death when they smell it.")
         .with_energy(-130)
         .with_health()
         .with_collider()

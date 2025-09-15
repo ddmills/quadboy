@@ -11,6 +11,7 @@ pub fn spawn_bedroll(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(54, Palette::Purple, Palette::Gray, Layer::Objects)
         .with_label("Bedroll")
+        .with_description("Canvas and wool, stained with trail dust and darker things. Dreams come harder on the ground.")
         .with_item(2.0)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::OffHand],

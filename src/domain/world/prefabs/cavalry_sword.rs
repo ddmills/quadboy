@@ -11,6 +11,9 @@ pub fn spawn_cavalry_sword(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(20, Palette::Yellow, Palette::Gray, Layer::Objects)
         .with_label("Cavalry Sword")
+        .with_description(
+            "Tarnished steel that remembers charges and screaming. Some wars never end.",
+        )
         .with_item(3.0)
         .with_equippable(Equippable::weapon_one_handed())
         .with_weapon(Weapon::sword())

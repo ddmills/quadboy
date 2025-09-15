@@ -11,6 +11,7 @@ pub fn spawn_double_barrel_shotgun(entity: Entity, world: &mut World, config: Pr
         .with_base_components()
         .with_glyph(204, Palette::Gray, Palette::Brown, Layer::Objects)
         .with_label("Double-barrel Shotgun")
+        .with_description("Twin mouths of judgment. Conversation ender, problem solver.")
         .with_item(3.5)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::BothHands],

@@ -14,6 +14,9 @@ pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(glyph_idx, Palette::Green, Palette::Purple, Layer::Objects)
         .with_label("Cactus")
+        .with_description(
+            "Twisted flesh armored in thorns. Patience made plant, waiting decades for rain.",
+        )
         .with_collider()
         .with_vision_blocker()
         .with_destructible(10, MaterialType::Wood)

@@ -11,6 +11,9 @@ pub fn spawn_hatchet(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(21, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("Hatchet")
+        .with_description(
+            "Worn handle stained with pine sap and worse. Sharp enough for kindling or bone.",
+        )
         .with_item(2.0)
         .with_equippable(Equippable::tool())
         .with_weapon(Weapon::hatchet())

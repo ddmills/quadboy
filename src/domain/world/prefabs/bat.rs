@@ -17,6 +17,9 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
             GlyphTextureId::Creatures,
         )
         .with_label("Bat")
+        .with_description(
+            "Leather wings and needle teeth, shrieking in frequencies that make horses mad.",
+        )
         .with_energy(-80)
         .with_health()
         .with_collider()

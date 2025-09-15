@@ -12,6 +12,9 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
         .with_glyph(68, Palette::Gray, Palette::Gray, Layer::Objects)
         .with_bitmask(BitmaskStyle::Wall)
         .with_label("Boulder")
+        .with_description(
+            "Wind-carved monument to father time. Each crack a chronicle of forgotten years.",
+        )
         .with_collider()
         .with_destructible(10, MaterialType::Stone)
         .with_vision_blocker()

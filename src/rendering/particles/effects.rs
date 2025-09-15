@@ -118,9 +118,9 @@ pub fn spawn_bullet_trail(
             values: vec![0xFFFF00, 0xFF4400, 0xE6E6E6],
         })
         .spawn_area(SpawnArea::Arc {
-            radius: 2.5,
-            angle_start: -30.0,
-            angle_end: 30.0,
+            radius: 1.5,
+            angle_start: -25.0,
+            angle_end: 25.0,
             radial_distribution: Distribution::Gaussian,
             base_direction: Some(direction),
         })

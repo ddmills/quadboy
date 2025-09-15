@@ -3,8 +3,8 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider, Consumable,
-        ConsumableEffect, CreatureType, DefaultMeleeAttack, Destructible, Energy, Equippable,
-        Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label, Level,
+        ConsumableEffect, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
+        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label, Level,
         LightBlocker, LightSource, Lightable, LootDrop, MaterialType, NeedsStableId, SaveFlag,
         StackCount, Stackable, StackableType, StairDown, StairUp, StatModifiers, Stats,
         VisionBlocker, Weapon,
@@ -83,6 +83,13 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn with_label(self, label: &str) -> Self {
         self.world.entity_mut(self.entity).insert(Label::new(label));
+        self
+    }
+
+    pub fn with_description(self, description: &str) -> Self {
+        self.world
+            .entity_mut(self.entity)
+            .insert(Description::new(description));
         self
     }
 

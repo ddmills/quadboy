@@ -30,6 +30,7 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
             GlyphTextureId::Creatures,
         )
         .with_label("{X|Brown Bear}")
+        .with_description("Eight hundred pounds of primal rage and hunger. The old gods still walk these mountains.")
         .with_energy(-150)
         .with_health()
         .with_collider()

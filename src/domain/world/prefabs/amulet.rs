@@ -23,6 +23,9 @@ pub fn spawn_amulet(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(42, Palette::Yellow, Palette::Purple, Layer::Objects)
         .with_label(&label)
+        .with_description(
+            "Worn smooth by desperate fingers. Whatever power it held has long since fled.",
+        )
         .with_item(0.1)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Neck],

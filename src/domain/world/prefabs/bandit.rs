@@ -23,6 +23,9 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
             GlyphTextureId::Creatures,
         )
         .with_label("{R|Bandit}")
+        .with_description(
+            "Eyes like burnt coal and a soul to match. The desert makes men into something else.",
+        )
         .with_energy(-100)
         .with_health()
         .with_collider()

@@ -7,6 +7,9 @@ pub fn spawn_stair_up(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(108, Palette::White, Palette::Clear, Layer::Objects)
         .with_label("Stairs Up")
+        .with_description(
+            "Worn smooth by desperate feet. The ascent always feels longer than the descent.",
+        )
         .with_stair_up()
         .build();
 }

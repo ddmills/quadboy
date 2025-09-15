@@ -21,6 +21,9 @@ pub fn spawn_long_johns(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(53, Palette::White, Palette::Gray, Layer::Objects)
         .with_label("Long Johns")
+        .with_description(
+            "Threadbare dignity against the cold. The frontier strips everything else away.",
+        )
         .with_item(0.5)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Legs],

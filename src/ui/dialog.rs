@@ -1,8 +1,9 @@
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
     common::Palette,
-    rendering::{Glyph, Layer, Position, Text},
+    rendering::{Glyph, GlyphTextureId, Layer, Position, ScreenSize, Text},
 };
 
 /// Resource to track if any dialog is currently open
@@ -66,6 +67,7 @@ pub struct DialogIcon {
     pub scale: f32,
     pub fg1: Option<u32>,
     pub fg2: Option<u32>,
+    pub texture_id: GlyphTextureId,
 }
 
 /// Key-value property display (e.g., "Weight: 3.0 kg")
@@ -283,6 +285,7 @@ pub fn render_dialog_content(
         let mut glyph = Glyph::idx(dialog_icon.glyph_idx)
             .scale((dialog_icon.scale, dialog_icon.scale))
             .layer(Layer::DialogContent)
+            .texture(dialog_icon.texture_id)
             .fg1_opt(dialog_icon.fg1);
 
         if let Some(fg2) = dialog_icon.fg2 {
@@ -315,6 +318,37 @@ pub fn render_dialog_content(
                     .layer(Layer::DialogPanels)
                     .fg1(Palette::Gray),
             );
+        }
+    }
+}
+
+pub fn center_dialogs_on_screen_change(
+    screen: Res<ScreenSize>,
+    mut q_dialogs: Query<(Entity, &Dialog, &mut Position)>,
+    mut q_dialog_children: Query<&mut Position, (With<DialogContent>, Without<Dialog>)>,
+    children: Query<&Children>,
+) {
+    for (dialog_entity, dialog, mut position) in q_dialogs.iter_mut() {
+        trace!("Re center dialog");
+        let center_x = ((screen.tile_w as f32 - dialog.width) / 2.0).round();
+        let center_y = ((screen.tile_h as f32 - dialog.height) / 2.0).round();
+
+        // Calculate position delta
+        let delta_x = center_x - position.x;
+        let delta_y = center_y - position.y;
+
+        // Update dialog position
+        position.x = center_x;
+        position.y = center_y;
+
+        // Update all child positions by the same delta
+        if let Ok(dialog_children) = children.get(dialog_entity) {
+            for child_entity in dialog_children.iter() {
+                if let Ok(mut child_position) = q_dialog_children.get_mut(child_entity) {
+                    child_position.x += delta_x;
+                    child_position.y += delta_y;
+                }
+            }
         }
     }
 }

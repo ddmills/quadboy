@@ -17,6 +17,7 @@ pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(69, Palette::Yellow, Palette::Brown, Layer::Objects)
         .with_label("Poncho")
+        .with_description("Faded patterns from another land. Rain runs off like tears on stone.")
         .with_item(1.0)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Body],

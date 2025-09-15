@@ -11,6 +11,9 @@ pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(41, Palette::Red, Palette::Green, Layer::Objects)
         .with_label("{R|Apple}")
+        .with_description(
+            "Wrinkled and bitter-sweet. Someone planted these trees long ago, before the troubles.",
+        )
         .with_item(0.2)
         .with_needs_stable_id()
         .with_stackable(StackableType::Apple, 1)

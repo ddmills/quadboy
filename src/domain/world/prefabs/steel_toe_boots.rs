@@ -21,6 +21,9 @@ pub fn spawn_steel_toe_boots(entity: Entity, world: &mut World, config: Prefab) 
         .with_base_components()
         .with_glyph(70, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("{W-Y-W-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C scrollf|Steel-toe} Boots")
+        .with_description(
+            "Leather cracked like drought earth. Every scuff tells a story nobody wants to hear.",
+        )
         .with_item(1.5)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Feet],

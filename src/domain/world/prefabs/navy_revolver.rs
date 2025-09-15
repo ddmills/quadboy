@@ -11,6 +11,7 @@ pub fn spawn_navy_revolver(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(201, Palette::Gray, Palette::Brown, Layer::Objects)
         .with_label("Navy Revolver")
+        .with_description("Cold iron weight on the hip. Six arguments that don't require words.")
         .with_item(1.5)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::MainHand],

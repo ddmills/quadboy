@@ -25,10 +25,10 @@ impl BiomeType {
     pub fn get_ambient_color(&self) -> u32 {
         match self {
             BiomeType::OpenAir => 0xFFFFFF,
-            BiomeType::Forest => 0x0F1814,
-            BiomeType::Desert => 0x1B120D,
-            BiomeType::Cavern => 0x160D1D,
-            BiomeType::Mountain => 0x182830,
+            BiomeType::Forest => 0x1A201D,
+            BiomeType::Desert => 0x1D1A19,
+            BiomeType::Cavern => 0x171518,
+            BiomeType::Mountain => 0x151718,
         }
     }
 

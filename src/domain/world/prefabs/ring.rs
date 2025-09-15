@@ -23,6 +23,9 @@ pub fn spawn_ring(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(43, Palette::Yellow, Palette::Red, Layer::Objects)
         .with_label(&label)
+        .with_description(
+            "Simple band of tarnished metal. Promises and curses wear the same weight.",
+        )
         .with_item(0.05)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Ring1, EquipmentSlot::Ring2],

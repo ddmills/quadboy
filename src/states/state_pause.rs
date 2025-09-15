@@ -14,7 +14,7 @@ use crate::{
     engine::{Plugin, Time},
     rendering::{Position, Text},
     states::{AppState, CurrentAppState, CurrentGameState, GameStatePlugin, cleanup_system},
-    ui::Button,
+    ui::{List, ListItemData},
 };
 
 use super::GameState;
@@ -105,26 +105,21 @@ fn on_enter_pause(mut cmds: Commands, callbacks: Res<PauseCallbacks>) {
     ));
 
     cmds.spawn((
+        List::new(vec![
+            ListItemData::new("({Y|ESC}) CONTINUE", callbacks.continue_game)
+                .with_hotkey(KeyCode::Escape),
+            ListItemData::new("({Y|S}) SAVE GAME", callbacks.save_game).with_hotkey(KeyCode::S),
+            ListItemData::new("({R|Q}) QUIT TO MAIN MENU", callbacks.quit_to_menu)
+                .with_hotkey(KeyCode::Q),
+        ])
+        .with_focus_order(1000),
         Position::new_f32(4., 3.5, 0.),
-        Button::new("({Y|ESC}) CONTINUE", callbacks.continue_game).hotkey(KeyCode::Escape),
-        CleanupStatePause,
-    ));
-
-    cmds.spawn((
-        Position::new_f32(4., 4., 0.),
-        Button::new("({Y|S}) SAVE GAME", callbacks.save_game).hotkey(KeyCode::S),
-        CleanupStatePause,
-    ));
-
-    cmds.spawn((
-        Position::new_f32(4., 5., 0.),
-        Button::new("({R|Q}) QUIT TO MAIN MENU", callbacks.quit_to_menu).hotkey(KeyCode::Q),
         CleanupStatePause,
     ));
 
     cmds.spawn((
         Text::new("").bg(Palette::Black),
-        Position::new_f32(4., 6., 0.),
+        Position::new_f32(4., 5., 0.),
         CleanupStatePause,
         SaveStatusDisplay,
     ));

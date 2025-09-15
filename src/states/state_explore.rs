@@ -1,21 +1,23 @@
-use bevy_ecs::{prelude::*, system::SystemId};
+use bevy_ecs::{prelude::*, schedule::common_conditions::resource_changed, system::SystemId};
 use macroquad::prelude::trace;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     common::Palette,
     domain::{
-        EquipmentSlot, EquipmentSlots, Health, Level, Player, PlayerDebug, PlayerMovedEvent, Stats,
-        Weapon, WeaponType, collect_valid_targets, game_loop, handle_item_pickup,
-        init_targeting_resource, player_input, render_player_debug, render_target_crosshair,
-        render_target_info, spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
+        CreatureType, Description, EquipmentSlot, EquipmentSlots, Health, Item, Label, Level,
+        Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats, Weapon, WeaponType, Zone,
+        collect_valid_targets, game_loop, handle_item_pickup, init_targeting_resource,
+        player_input, render_player_debug, render_target_crosshair, render_target_info,
+        spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
-    engine::{App, Plugin, SerializableComponent, StableIdRegistry},
-    rendering::{Layer, Position, Text},
+    engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableIdRegistry},
+    rendering::{Glyph, Layer, Position, ScreenSize, Text, world_to_zone_idx, world_to_zone_local},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
-        Button, XPProgressBar, display_entity_names_at_mouse, render_cursor, render_lighting_debug,
-        render_tick_display, spawn_debug_ui_entities, update_xp_progress_bars,
+        Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
+        display_entity_names_at_mouse, render_cursor, render_lighting_debug, render_tick_display,
+        spawn_debug_ui_entities, spawn_examine_dialog, update_xp_progress_bars,
     },
 };
 
@@ -27,6 +29,9 @@ struct ExploreCallbacks {
     open_inventory: SystemId,
     open_debug_spawn: SystemId,
     open_attributes: SystemId,
+    open_pause: SystemId,
+    examine_entity: SystemId,
+    close_examine_dialog: SystemId,
 }
 
 pub struct ExploreStatePlugin;
@@ -55,10 +60,15 @@ impl Plugin for ExploreStatePlugin {
                     update_player_hp_bar,
                     update_player_armor_bar,
                     update_player_ammo_bar,
+                    handle_examine_input,
                 ),
             )
             .on_update(app, player_input)
             .on_update(app, (handle_item_pickup, game_loop))
+            .on_update(
+                app,
+                center_dialogs_on_screen_change.run_if(resource_changed::<ScreenSize>),
+            )
             .on_leave(
                 app,
                 (
@@ -89,6 +99,9 @@ fn setup_callbacks(world: &mut World) {
         open_inventory: world.register_system(open_inventory),
         open_debug_spawn: world.register_system(open_debug_spawn),
         open_attributes: world.register_system(open_attributes),
+        open_pause: world.register_system(open_pause),
+        examine_entity: world.register_system(examine_entity_at_mouse),
+        close_examine_dialog: world.register_system(close_examine_dialog),
     };
 
     world.insert_resource(callbacks);
@@ -108,6 +121,10 @@ fn open_debug_spawn(mut game_state: ResMut<CurrentGameState>) {
 
 fn open_attributes(mut game_state: ResMut<CurrentGameState>) {
     game_state.next = GameState::Attributes;
+}
+
+fn open_pause(mut game_state: ResMut<CurrentGameState>) {
+    game_state.next = GameState::Pause;
 }
 
 fn remove_explore_callbacks(mut cmds: Commands) {
@@ -296,4 +313,123 @@ fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {
             .hotkey(macroquad::input::KeyCode::Y),
         CleanupStateExplore,
     ));
+
+    cmds.spawn((
+        Position::new_f32(30., 1.5, 0.),
+        Button::new("({Y|ESC}) PAUSE", callbacks.open_pause)
+            .hotkey(macroquad::input::KeyCode::Escape),
+        CleanupStateExplore,
+    ));
+}
+
+fn handle_examine_input(
+    keys: Res<KeyInput>,
+    dialog_state: Res<DialogState>,
+    callbacks: Res<ExploreCallbacks>,
+    mut cmds: Commands,
+) {
+    // Only handle X key if no dialog is currently open
+    if !dialog_state.is_open && keys.is_pressed(macroquad::input::KeyCode::X) {
+        cmds.run_system(callbacks.examine_entity);
+    }
+}
+
+fn examine_entity_at_mouse(
+    mut cmds: Commands,
+    mouse: Res<Mouse>,
+    player_pos: Res<PlayerPosition>,
+    q_zones: Query<&Zone>,
+    q_creatures: Query<&CreatureType>,
+    q_items: Query<&Item>,
+    q_descriptions: Query<&Description>,
+    q_labels: Query<&Label>,
+    q_glyphs: Query<&Glyph>,
+    callbacks: Res<ExploreCallbacks>,
+    mut dialog_state: ResMut<DialogState>,
+    screen: Res<ScreenSize>,
+) {
+    let mouse_x = mouse.world.0.floor() as usize;
+    let mouse_y = mouse.world.1.floor() as usize;
+    let mouse_z = player_pos.z as usize;
+
+    let zone_idx = world_to_zone_idx(mouse_x, mouse_y, mouse_z);
+    let (local_x, local_y) = world_to_zone_local(mouse_x, mouse_y);
+
+    let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) else {
+        return;
+    };
+
+    let Some(entities) = zone.entities.get(local_x, local_y) else {
+        return;
+    };
+
+    // Find the best entity to examine based on priority
+    let mut best_entity: Option<(Entity, u32)> = None;
+
+    for entity in entities {
+        let priority = get_examinable_entity_priority(
+            *entity,
+            &q_creatures,
+            &q_items,
+            &q_descriptions,
+            &q_labels,
+        );
+
+        if let Some((_, new_priority)) = priority {
+            match best_entity {
+                None => best_entity = Some((*entity, new_priority)),
+                Some((_, current_priority)) => {
+                    if new_priority < current_priority {
+                        best_entity = Some((*entity, new_priority));
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some((entity, _)) = best_entity {
+        spawn_examine_dialog(
+            &mut cmds,
+            entity,
+            callbacks.close_examine_dialog,
+            &q_labels,
+            &q_descriptions,
+            &q_glyphs,
+            CleanupStateExplore,
+            &screen,
+        );
+        dialog_state.is_open = true;
+    }
+}
+
+fn get_examinable_entity_priority(
+    entity: Entity,
+    q_creatures: &Query<&CreatureType>,
+    q_items: &Query<&Item>,
+    q_descriptions: &Query<&Description>,
+    q_labels: &Query<&Label>,
+) -> Option<(Entity, u32)> {
+    // Priority levels (lower number = higher priority)
+    if q_creatures.get(entity).is_ok() {
+        Some((entity, 1)) // Highest priority: Creatures
+    } else if q_items.get(entity).is_ok() {
+        Some((entity, 2)) // Second priority: Items
+    } else if q_descriptions.get(entity).is_ok() {
+        Some((entity, 3)) // Third priority: Entities with descriptions
+    } else if q_labels.get(entity).is_ok() {
+        Some((entity, 4)) // Lowest priority: Any labeled entity
+    } else {
+        None // Not examinable
+    }
+}
+
+fn close_examine_dialog(
+    mut cmds: Commands,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    mut dialog_state: ResMut<DialogState>,
+) {
+    for dialog_entity in q_dialogs.iter() {
+        cmds.entity(dialog_entity).despawn();
+    }
+    dialog_state.is_open = false;
 }

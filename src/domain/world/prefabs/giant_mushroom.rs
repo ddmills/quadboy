@@ -17,6 +17,9 @@ pub fn spawn_giant_mushroom(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(glyph_char, Palette::White, Palette::Red, Layer::Objects)
         .with_label("{R|G}iant {R|M}ushroom")
+        .with_description(
+            "Pale and bloated in the underground dark. Fed on things better left buried.",
+        )
         .with_collider()
         .with_vision_blocker()
         .with_light_source(LightSource::mushroom())

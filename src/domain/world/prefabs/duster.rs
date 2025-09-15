@@ -17,6 +17,9 @@ pub fn spawn_duster(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph(52, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("Duster")
+        .with_description(
+            "Trail-beaten canvas that's seen too many sunsets. Pockets full of dust and regret.",
+        )
         .with_item(1.5)
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::Body],
