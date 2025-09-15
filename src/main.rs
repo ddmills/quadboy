@@ -23,10 +23,10 @@ use crate::{
         EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink,
         InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
         Label, Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
-        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
-        StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer,
-        Vision, VisionBlocker, Weapon, Zones,
+        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMap, PlayerMovedEvent,
+        Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
+        Stackable, StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent,
+        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -190,6 +190,7 @@ async fn main() {
         .init_resource::<Prefabs>()
         .init_resource::<Rand>()
         .init_resource::<StableIdRegistry>()
+        .insert_resource(PlayerMap::new())
         .init_resource::<LightingData>()
         .init_resource::<AmbientTransition>()
         .init_resource::<ParticleGrid>()

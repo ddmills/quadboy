@@ -1,18 +1,22 @@
 use bevy_ecs::{prelude::*, schedule::common_conditions::resource_changed, system::SystemId};
-use macroquad::prelude::trace;
+use macroquad::{color::Color, input::KeyCode, prelude::trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::Palette,
+    cfg::ZONE_SIZE,
+    common::{Palette, hex},
     domain::{
-        CreatureType, Description, EquipmentSlot, EquipmentSlots, Health, Item, Label, Level,
-        Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats, Weapon, WeaponType, Zone,
-        collect_valid_targets, game_loop, handle_item_pickup, init_targeting_resource,
-        player_input, render_player_debug, render_target_crosshair, render_target_info,
-        spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
+        CreatureType, Description, EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Item,
+        Label, Level, Player, PlayerDebug, PlayerMap, PlayerMovedEvent, PlayerPosition, Stats,
+        Weapon, WeaponType, Zone, collect_valid_targets, game_loop, handle_item_pickup,
+        init_targeting_resource, player_input, render_player_debug, render_target_crosshair,
+        render_target_info, spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, ScreenSize, Text, world_to_zone_idx, world_to_zone_local},
+    rendering::{
+        Glyph, Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx,
+        world_to_zone_local, zone_local_to_world,
+    },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
         Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
@@ -56,6 +60,7 @@ impl Plugin for ExploreStatePlugin {
                     render_lighting_debug,
                     render_cursor,
                     display_entity_names_at_mouse,
+                    render_player_map_overlay,
                     update_xp_progress_bars,
                     update_player_hp_bar,
                     update_player_armor_bar,
@@ -92,6 +97,9 @@ pub struct PlayerArmorBar;
 
 #[derive(Component)]
 pub struct PlayerAmmoBar;
+
+#[derive(Component)]
+pub struct PlayerMapOverlay;
 
 fn setup_callbacks(world: &mut World) {
     let callbacks = ExploreCallbacks {
@@ -432,4 +440,100 @@ fn close_examine_dialog(
         cmds.entity(dialog_entity).despawn();
     }
     dialog_state.is_open = false;
+}
+
+fn render_player_map_overlay(
+    mut cmds: Commands,
+    keys: Res<KeyInput>,
+    player_map: Res<PlayerMap>,
+    player_pos: Res<PlayerPosition>,
+    q_zones: Query<&Zone>,
+    q_overlay: Query<Entity, With<PlayerMapOverlay>>,
+    mut overlay_entities: Local<Vec<Entity>>,
+    mut overlay_enabled: Local<bool>,
+    mut last_player_pos: Local<Option<(usize, usize, usize)>>,
+) {
+    // Toggle overlay on J key press
+    if keys.is_pressed(KeyCode::J) {
+        *overlay_enabled = !*overlay_enabled;
+    }
+
+    let has_overlay = !overlay_entities.is_empty();
+    let current_player_pos = player_pos.world();
+    let player_moved = last_player_pos.map_or(true, |last_pos| last_pos != current_player_pos);
+
+    // Update last known player position
+    *last_player_pos = Some(current_player_pos);
+
+    if *overlay_enabled && (!has_overlay || player_moved) {
+        // Remove existing overlay if player moved
+        if player_moved && has_overlay {
+            trace!("Player moved, regenerating PlayerMap overlay");
+            for entity in overlay_entities.drain(..) {
+                cmds.entity(entity).despawn();
+            }
+        }
+        // Spawn overlay
+        let zone_idx = player_pos.zone_idx();
+        if let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) {
+            trace!("Spawning PlayerMap overlay for zone {}", zone_idx);
+            let dijkstra_map = player_map.get_map();
+
+            for x in 0..ZONE_SIZE.0 {
+                for y in 0..ZONE_SIZE.1 {
+                    let world_pos = zone_local_to_world(zone.idx, x, y);
+
+                    if dijkstra_map.is_blocked(x, y) {
+                        // Show blocked tiles as red X
+                        let entity = cmds
+                            .spawn((
+                                Text::new("X")
+                                    .fg1(0xB62DAF_u32) // Bright red
+                                    .layer(Layer::Overlay),
+                                Position::new_world(world_pos),
+                                Visibility::Visible,
+                                IgnoreLighting,
+                                PlayerMapOverlay,
+                                CleanupStateExplore,
+                            ))
+                            .id();
+
+                        overlay_entities.push(entity);
+                    } else if let Some(cost) = dijkstra_map.get_cost(x, y) {
+                        if cost.is_finite() && cost >= 0.0 {
+                            let display_num = (cost.min(12.0) as u32).to_string();
+
+                            // Color gradient from green to red (0-12 range)
+                            let t = (cost / 12.0).min(1.0);
+                            let r = (t * 255.0) as u8;
+                            let g = ((1.0 - t) * 255.0) as u8;
+                            let color = hex(r, g, 0);
+
+                            let entity = cmds
+                                .spawn((
+                                    Text::new(&display_num).fg1(color).layer(Layer::Overlay),
+                                    Position::new_world(world_pos),
+                                    Visibility::Visible,
+                                    IgnoreLighting,
+                                    PlayerMapOverlay,
+                                    CleanupStateExplore,
+                                ))
+                                .id();
+
+                            overlay_entities.push(entity);
+                        }
+                    }
+                }
+            }
+        }
+    } else if !*overlay_enabled && has_overlay {
+        // Remove overlay
+        trace!(
+            "Removing PlayerMap overlay ({} entities)",
+            overlay_entities.len()
+        );
+        for entity in overlay_entities.drain(..) {
+            cmds.entity(entity).despawn();
+        }
+    }
 }

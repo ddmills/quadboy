@@ -13,6 +13,7 @@ use crate::{
             cleanup_system::on_entity_destroyed_cleanup,
             health_system::update_health_system,
             loot_drop_system::on_entity_destroyed_loot,
+            player_map::update_player_map,
             stats_system::{equipment_stat_modifier_system, recalculate_stats_system},
         },
         turn_scheduler, update_entity_visibility_flags, update_lighting_system,
@@ -30,6 +31,7 @@ pub fn register_game_systems(world: &mut World) {
     let systems = vec![
         world.register_system(apply_deferred),
         world.register_system(update_player_position_resource),
+        world.register_system(update_player_map), // After player position update
         world.register_system(update_entity_pos),
         world.register_system(equipment_stat_modifier_system),
         world.register_system(recalculate_stats_system),
