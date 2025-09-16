@@ -1,5 +1,4 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 use crate::{
     common::Palette,
@@ -329,11 +328,10 @@ pub fn center_dialogs_on_screen_change(
     children: Query<&Children>,
 ) {
     for (dialog_entity, dialog, mut position) in q_dialogs.iter_mut() {
-        trace!("Re center dialog");
         let center_x = ((screen.tile_w as f32 - dialog.width) / 2.0).round();
         let center_y = ((screen.tile_h as f32 - dialog.height) / 2.0).round();
 
-        // Calculate position delta
+        // Calculate position deltat
         let delta_x = center_x - position.x;
         let delta_y = center_y - position.y;
 

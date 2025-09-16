@@ -53,7 +53,9 @@ pub fn update_camera(
     time: Res<Time>,
     settings: Res<GameSettings>,
 ) {
-    let player = q_player.single().unwrap();
+    let Ok(player) = q_player.single() else {
+        return;
+    };
     let a = time.overstep_fraction() as f32;
 
     let z_pos = zone_center_world(player.zone_idx());

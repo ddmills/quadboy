@@ -2,8 +2,8 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        CreatureType, DefaultMeleeAttack, LootDrop, LootTableId, StatModifier, StatModifiers,
-        StatType,
+        AiBehavior, CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop,
+        LootTableId, StatModifier, StatModifiers, StatType,
     },
     rendering::{GlyphTextureId, Layer},
 };
@@ -42,5 +42,10 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::BrownBearLoot, 0.3))
         .with_creature_type(CreatureType::Bear)
+        .with_component(AiBehavior::BearAi {
+            aggressive: false,
+            detection_range: 16.0,
+        })
+        .with_component(FactionMember::new(FactionId::Wildlife))
         .build();
 }

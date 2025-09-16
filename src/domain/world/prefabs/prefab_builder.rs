@@ -246,6 +246,11 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
+    pub fn with_component<C: bevy_ecs::component::Component>(self, component: C) -> Self {
+        self.world.entity_mut(self.entity).insert(component);
+        self
+    }
+
     pub fn build(self) -> Entity {
         self.entity
     }

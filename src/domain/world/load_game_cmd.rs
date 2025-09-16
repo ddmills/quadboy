@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{LoadZoneCommand, Overworld, PlayerPosition, TerrainNoise, Zones},
+    domain::{LoadZoneCommand, Overworld, Player, PlayerPosition, TerrainNoise, Zones},
     engine::{Clock, StableIdRegistry, deserialize, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
@@ -51,6 +51,17 @@ impl LoadGameCommand {
         camera.focus_on(position.x, position.y);
 
         let _ = LoadZoneCommand(zone_idx).apply(world);
+
+        // Clean up any existing player entities before loading the saved player
+        let existing_players: Vec<Entity> = world
+            .query::<Entity>()
+            .iter(world)
+            .filter(|&entity| world.get::<Player>(entity).is_some())
+            .collect();
+
+        for player_entity in existing_players {
+            world.despawn(player_entity);
+        }
 
         deserialize(game_data.player.entity, world);
 

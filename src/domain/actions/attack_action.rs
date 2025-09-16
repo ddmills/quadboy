@@ -8,7 +8,7 @@ use crate::{
         Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
         systems::destruction_system::EntityDestroyedEvent,
     },
-    engine::{Audio, AudioKey, Clock, StableIdRegistry},
+    engine::{Audio, Clock, StableIdRegistry},
     rendering::{
         Glyph, Position, spawn_bullet_trail_in_world, spawn_directional_blood_mist,
         spawn_material_hit_in_world, world_to_zone_idx, world_to_zone_local,
@@ -149,14 +149,10 @@ impl AttackAction {
         }
 
         let weapon_damage = {
-            if let Some(default_attack) = world.get::<DefaultMeleeAttack>(self.attacker_entity) {
-                Some((
+            world.get::<DefaultMeleeAttack>(self.attacker_entity).map(|default_attack| (
                     default_attack.damage.to_string(),
                     default_attack.can_damage.clone(),
                 ))
-            } else {
-                None
-            }
         };
 
         self.process_melee_attack(world, weapon_damage);
@@ -192,13 +188,12 @@ impl AttackAction {
         attacker_pos: Option<(usize, usize, usize)>,
     ) {
         // Check if weapon has ammo
-        if let Some(ammo) = weapon.current_ammo {
-            if ammo == 0 {
-                if let Some(empty_audio) = weapon.no_ammo_audio {
-                    if let Some(audio) = world.get_resource::<Audio>() {
+        if let Some(ammo) = weapon.current_ammo
+            && ammo == 0 {
+                if let Some(empty_audio) = weapon.no_ammo_audio
+                    && let Some(audio) = world.get_resource::<Audio>() {
                         audio.play(empty_audio, 0.2);
                     }
-                }
 
                 if let Some(mut energy) = world.get_mut::<Energy>(self.attacker_entity) {
                     let cost = get_base_energy_cost(EnergyActionType::Shoot);
@@ -206,11 +201,10 @@ impl AttackAction {
                 }
                 return;
             }
-        }
 
         // Check if target is within range
-        if let Some(range) = weapon.range {
-            if let Some((sx, sy, _sz)) = attacker_pos {
+        if let Some(range) = weapon.range
+            && let Some((sx, sy, _sz)) = attacker_pos {
                 let distance = ((self.target_pos.0 as i32 - sx as i32).abs()
                     + (self.target_pos.1 as i32 - sy as i32).abs())
                     as usize;
@@ -219,16 +213,14 @@ impl AttackAction {
                     return;
                 }
             }
-        }
 
         // Find targets (ranged only targets entities with Health)
         let targets = self.find_ranged_targets(world);
 
-        if let Some(shoot_audio) = weapon.shoot_audio {
-            if let Some(audio) = world.get_resource::<Audio>() {
+        if let Some(shoot_audio) = weapon.shoot_audio
+            && let Some(audio) = world.get_resource::<Audio>() {
                 audio.play(shoot_audio, 0.1);
             }
-        }
 
         if targets.is_empty() {
             // Consume energy even if no target hit (shot fired)
@@ -285,11 +277,10 @@ impl AttackAction {
         }
 
         // Decrement ammo
-        if let Some(mut weapon_mut) = world.get_mut::<Weapon>(weapon_entity) {
-            if let Some(current) = weapon_mut.current_ammo {
+        if let Some(mut weapon_mut) = world.get_mut::<Weapon>(weapon_entity)
+            && let Some(current) = weapon_mut.current_ammo {
                 weapon_mut.current_ammo = Some(current.saturating_sub(1));
             }
-        }
 
         // Consume energy
         if let Some(mut energy) = world.get_mut::<Energy>(self.attacker_entity) {
@@ -432,11 +423,10 @@ impl AttackAction {
 
                     if let Some(position_coords) = position_data {
                         // Play creature-specific death audio
-                        if let Some(creature_type) = world.get::<CreatureType>(target_entity) {
-                            if let Some(audio) = world.get_resource::<Audio>() {
+                        if let Some(creature_type) = world.get::<CreatureType>(target_entity)
+                            && let Some(audio) = world.get_resource::<Audio>() {
                                 audio.play(creature_type.death_audio_key(), 0.5);
                             }
-                        }
 
                         let event = EntityDestroyedEvent::with_attacker(
                             target_entity,
@@ -464,8 +454,7 @@ impl AttackAction {
         // Check if target has Destructible (object)
         else if let Some(mut destructible) = world.get_mut::<Destructible>(target_entity)
             && hit
-        {
-            if can_damage.contains(&destructible.material_type) {
+            && can_damage.contains(&destructible.material_type) {
                 let material_type = destructible.material_type;
                 destructible.take_damage(rolled_damage);
                 *should_apply_hit_blink = true;
@@ -491,8 +480,8 @@ impl AttackAction {
                     });
                 }
 
-                if is_destroyed {
-                    if let Some(position) = world.get::<Position>(target_entity) {
+                if is_destroyed
+                    && let Some(position) = world.get::<Position>(target_entity) {
                         let position_coords = position.world();
                         let event = EntityDestroyedEvent::with_attacker(
                             target_entity,
@@ -514,8 +503,6 @@ impl AttackAction {
                             );
                         }
                     }
-                }
             }
-        }
     }
 }

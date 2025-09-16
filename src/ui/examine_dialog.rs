@@ -10,31 +10,23 @@ use crate::{
 
 pub struct ExamineDialogBuilder {
     entity: Entity,
-    position: Position,
     width: f32,
-    height: f32,
     close_callback: SystemId,
+    relationship_text: Option<String>,
 }
 
 impl ExamineDialogBuilder {
     pub fn new(entity: Entity, close_callback: SystemId) -> Self {
         Self {
             entity,
-            position: Position::new_f32(0.0, 0.0, 0.0), // Will be centered by dialog system
             width: 24.0,
-            height: 12.0, // Will be adjusted based on description
             close_callback,
+            relationship_text: None,
         }
     }
 
-    pub fn with_position(mut self, x: f32, y: f32) -> Self {
-        self.position = Position::new_f32(x, y, 0.0);
-        self
-    }
-
-    pub fn with_size(mut self, width: f32, height: f32) -> Self {
-        self.width = width;
-        self.height = height;
+    pub fn with_relationship_text(mut self, relationship_text: Option<String>) -> Self {
+        self.relationship_text = relationship_text;
         self
     }
 
@@ -67,7 +59,20 @@ impl ExamineDialogBuilder {
             (description_lines.len() as f32 * 0.5) + 0.5 // 0.5 units per line + spacing
         };
 
-        let total_height = (4.0 + description_height + 2.0).ceil(); // Icon + name + description + button, rounded up
+        let relationship_height = if self.relationship_text.is_some() {
+            0.5 // 0.5 height for text
+        } else {
+            0.0
+        };
+
+        let description_gap = if self.relationship_text.is_some() && !description_lines.is_empty() {
+            0.5 // Extra gap before description when relationship text is present
+        } else {
+            0.0
+        };
+
+        let total_height =
+            (4.0 + relationship_height + description_gap + description_height + 2.0).ceil(); // Icon + name + relationship + gap + description + button, rounded up
 
         // Calculate centered position before creating dialog and children
         let center_x = ((screen.tile_w as f32 - self.width) / 2.0).round();
@@ -132,13 +137,47 @@ impl ExamineDialogBuilder {
             ChildOf(dialog_entity),
         ));
 
-        content_y += 1.0; // Space for name
         order += 1;
+
+        // Add relationship text directly under the name if provided
+        if let Some(relationship_text) = &self.relationship_text {
+            content_y += 0.5; // Space for name
+
+            let relationship_visual_length = text_content_length(relationship_text);
+            let relationship_x = centered_position.x + (self.width / 2.0)
+                - (relationship_visual_length as f32 * 0.25);
+
+            cmds.spawn((
+                DialogText {
+                    value: relationship_text.clone(),
+                    style: DialogTextStyle::Normal,
+                },
+                DialogContent {
+                    parent_dialog: dialog_entity,
+                    order,
+                },
+                Position::new_f32(
+                    relationship_x,
+                    centered_position.y + content_y,
+                    centered_position.z,
+                ),
+                cleanup_component.clone(),
+                ChildOf(dialog_entity),
+            ));
+
+            content_y += 0.5; // Space for relationship text
+            order += 1;
+
+            // Add gap before description if description exists
+            if !description_lines.is_empty() {
+                content_y += 0.5; // Extra gap before description
+            }
+        } else {
+            content_y += 1.0; // Space for name
+        }
 
         // Add description if available
         if !description_lines.is_empty() {
-            // No additional spacing - move up by 0.5 from previous value
-
             for (i, line) in description_lines.iter().enumerate() {
                 let line_visual_length = text_content_length(line);
                 let centered_x =
@@ -166,6 +205,7 @@ impl ExamineDialogBuilder {
 
         // Add close button at the bottom
         let button_y = centered_position.y + total_height - 2.0;
+
         cmds.spawn((
             ActivatableBuilder::new("[{Y|ESC}] Close", self.close_callback)
                 .with_audio(AudioKey::ButtonBack1)
@@ -190,21 +230,11 @@ impl ExamineDialogBuilder {
 }
 
 pub fn spawn_examine_dialog(
-    cmds: &mut Commands,
+    world: &mut World,
     entity: Entity,
+    player_entity: Entity,
     close_callback: SystemId,
-    q_labels: &Query<&Label>,
-    q_descriptions: &Query<&Description>,
-    q_glyphs: &Query<&Glyph>,
-    cleanup_component: impl Bundle + Clone,
-    screen: &ScreenSize,
-) -> Entity {
-    ExamineDialogBuilder::new(entity, close_callback).spawn(
-        cmds,
-        q_labels,
-        q_descriptions,
-        q_glyphs,
-        cleanup_component,
-        screen,
-    )
+) {
+    let cmd = crate::ui::SpawnExamineDialogCommand::new(entity, player_entity, close_callback);
+    cmd.apply(world);
 }

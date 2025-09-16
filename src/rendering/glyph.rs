@@ -68,9 +68,10 @@ pub struct TilesetRegistry {
 impl TilesetRegistry {
     pub async fn load() -> Self {
         let glyph_texture_fut = load_texture("./src/assets/textures/cowboy.png");
-        // let font_body_texture_fut = load_texture("./src/assets/textures/tocky_2_8x12.png");
+        // let font_body_texture_fut = load_texture("./src/assets/textures/bizcat_8x12.png");
+        let font_body_texture_fut = load_texture("./src/assets/textures/tocky_8x12.png");
         // let font_body_texture_fut = load_texture("./src/assets/textures/acer_8x12.png");
-        let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
+        // let font_body_texture_fut = load_texture("./src/assets/textures/tamzen_8x12.png");
         let creatures_texture_fut = load_texture("./src/assets/textures/creatures.png");
 
         let glyph_texture = glyph_texture_fut.await.unwrap();

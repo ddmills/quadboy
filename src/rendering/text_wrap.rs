@@ -309,14 +309,13 @@ pub fn carry_formatting_to_next_line(previous_line: &str, current_line: &str) ->
     }
 
     // If we have active formatting and current line doesn't start with formatting, prepend it
-    if let Some(formatting) = active_formatting {
-        if !current_line.starts_with(START_SEQ) {
+    if let Some(formatting) = active_formatting
+        && !current_line.starts_with(START_SEQ) {
             return format!(
                 "{}{}{}{}{}",
                 START_SEQ, formatting, FLAG_SEQ, current_line, END_SEQ
             );
         }
-    }
 
     current_line.to_string()
 }

@@ -35,10 +35,10 @@ pub fn equipment_stat_modifier_system(
 
     for (entity, equipment_slots) in q_equipment_changed.iter() {
         // First, collect all equipment modifiers for this entity
-        for (_slot, item_id_opt) in &equipment_slots.slots {
-            if let Some(item_id) = item_id_opt {
-                if let Some(item_entity) = registry.get_entity(*item_id) {
-                    if let Ok(item_modifiers) = param_set.p1().get(item_entity) {
+        for item_id_opt in equipment_slots.slots.values() {
+            if let Some(item_id) = item_id_opt
+                && let Some(item_entity) = registry.get_entity(*item_id)
+                    && let Ok(item_modifiers) = param_set.p1().get(item_entity) {
                         // Collect all stat modifiers from this item
                         for (stat_type, modifiers) in &item_modifiers.modifiers {
                             for modifier in modifiers {
@@ -50,8 +50,6 @@ pub fn equipment_stat_modifier_system(
                             }
                         }
                     }
-                }
-            }
         }
     }
 

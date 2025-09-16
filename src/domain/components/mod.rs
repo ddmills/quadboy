@@ -1,3 +1,4 @@
+pub mod ai_behavior;
 pub mod attributes;
 pub mod bitmask;
 pub mod bump_attack;
@@ -9,6 +10,7 @@ pub mod destructible;
 pub mod enemy_type;
 pub mod energy;
 pub mod equipment;
+pub mod faction;
 pub mod health;
 pub mod hit_blink;
 pub mod in_active_zone;
@@ -24,6 +26,7 @@ pub mod weapon;
 pub mod weapon_family;
 pub mod weapon_type;
 
+pub use ai_behavior::AiBehavior;
 pub use attributes::{AttributePoints, Attributes};
 pub use bitmask::*;
 pub use bump_attack::BumpAttack;
@@ -35,6 +38,7 @@ pub use destructible::{Destructible, MaterialType};
 pub use enemy_type::CreatureType;
 pub use energy::Energy;
 pub use equipment::{EquipmentSlot, EquipmentSlots, EquipmentType, Equippable, Equipped};
+pub use faction::{FactionId, FactionMember, FactionModifier};
 pub use health::Health;
 pub use hit_blink::HitBlink;
 pub use in_active_zone::InActiveZone;

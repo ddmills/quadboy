@@ -1,20 +1,31 @@
 use super::destruction_system::EntityDestroyedEvent;
 use crate::{
     common::Rand,
-    domain::Destructible,
+    domain::{Destructible, Player},
     engine::{Audio, Clock},
+    states::{CurrentGameState, GameState},
 };
 use bevy_ecs::prelude::*;
 
 pub fn on_entity_destroyed_cleanup(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
     q_destructible: Query<&Destructible>,
+    q_player: Query<&Player>,
     audio_registry: Option<Res<Audio>>,
     mut rand: Option<ResMut<Rand>>,
     mut cmds: Commands,
     mut clock: ResMut<Clock>,
+    mut game_state: ResMut<CurrentGameState>,
 ) {
     for event in e_destroyed.read() {
+        // Check if the destroyed entity is the player
+        if q_player.contains(event.entity) {
+            // Transition to game over state instead of despawning player
+            game_state.next = GameState::GameOver;
+            clock.force_update();
+            continue;
+        }
+
         // Play destruction audio if the entity has a destructible component
         if let Ok(destructible) = q_destructible.get(event.entity)
             && let Some(audio_collection) = destructible.material_type.destroy_audio_collection()

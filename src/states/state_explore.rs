@@ -1,20 +1,20 @@
 use bevy_ecs::{prelude::*, schedule::common_conditions::resource_changed, system::SystemId};
-use macroquad::{color::Color, input::KeyCode, prelude::trace};
+use macroquad::{input::KeyCode, prelude::trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::ZONE_SIZE,
     common::{Palette, hex},
     domain::{
-        CreatureType, Description, EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Item,
-        Label, Level, Player, PlayerDebug, PlayerMap, PlayerMovedEvent, PlayerPosition, Stats,
-        Weapon, WeaponType, Zone, collect_valid_targets, game_loop, handle_item_pickup,
+        CreatureType, Description, EquipmentSlot, EquipmentSlots, FactionId, FactionMap, Health,
+        IgnoreLighting, Item, Label, Level, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
+        Stats, Weapon, WeaponType, Zone, collect_valid_targets, game_loop, handle_item_pickup,
         init_targeting_resource, player_input, render_player_debug, render_target_crosshair,
         render_target_info, spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableIdRegistry},
     rendering::{
-        Glyph, Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx,
+        Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx,
         world_to_zone_local, zone_local_to_world,
     },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
@@ -99,7 +99,7 @@ pub struct PlayerArmorBar;
 pub struct PlayerAmmoBar;
 
 #[derive(Component)]
-pub struct PlayerMapOverlay;
+pub struct FactionMapOverlay;
 
 fn setup_callbacks(world: &mut World) {
     let callbacks = ExploreCallbacks {
@@ -342,28 +342,29 @@ fn handle_examine_input(
     }
 }
 
-fn examine_entity_at_mouse(
-    mut cmds: Commands,
-    mouse: Res<Mouse>,
-    player_pos: Res<PlayerPosition>,
-    q_zones: Query<&Zone>,
-    q_creatures: Query<&CreatureType>,
-    q_items: Query<&Item>,
-    q_descriptions: Query<&Description>,
-    q_labels: Query<&Label>,
-    q_glyphs: Query<&Glyph>,
-    callbacks: Res<ExploreCallbacks>,
-    mut dialog_state: ResMut<DialogState>,
-    screen: Res<ScreenSize>,
-) {
-    let mouse_x = mouse.world.0.floor() as usize;
-    let mouse_y = mouse.world.1.floor() as usize;
-    let mouse_z = player_pos.z as usize;
+fn examine_entity_at_mouse(world: &mut World) {
+    let (mouse_x, mouse_y, mouse_z, close_examine_dialog_id) = {
+        let mouse = world.get_resource::<Mouse>().unwrap();
+        let player_pos = world.get_resource::<PlayerPosition>().unwrap();
+        let callbacks = world.get_resource::<ExploreCallbacks>().unwrap();
+
+        (
+            mouse.world.0.floor() as usize,
+            mouse.world.1.floor() as usize,
+            player_pos.z as usize,
+            callbacks.close_examine_dialog,
+        )
+    };
 
     let zone_idx = world_to_zone_idx(mouse_x, mouse_y, mouse_z);
     let (local_x, local_y) = world_to_zone_local(mouse_x, mouse_y);
 
-    let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) else {
+    let zone = {
+        let mut q_zones = world.query::<&Zone>();
+        q_zones.iter(world).find(|z| z.idx == zone_idx)
+    };
+
+    let Some(zone) = zone else {
         return;
     };
 
@@ -375,13 +376,7 @@ fn examine_entity_at_mouse(
     let mut best_entity: Option<(Entity, u32)> = None;
 
     for entity in entities {
-        let priority = get_examinable_entity_priority(
-            *entity,
-            &q_creatures,
-            &q_items,
-            &q_descriptions,
-            &q_labels,
-        );
+        let priority = get_examinable_entity_priority_world(*entity, world);
 
         if let Some((_, new_priority)) = priority {
             match best_entity {
@@ -396,17 +391,16 @@ fn examine_entity_at_mouse(
     }
 
     if let Some((entity, _)) = best_entity {
-        spawn_examine_dialog(
-            &mut cmds,
-            entity,
-            callbacks.close_examine_dialog,
-            &q_labels,
-            &q_descriptions,
-            &q_glyphs,
-            CleanupStateExplore,
-            &screen,
-        );
-        dialog_state.is_open = true;
+        let player_entity = {
+            let mut q_player = world.query_filtered::<Entity, With<Player>>();
+            q_player.single(world).unwrap()
+        };
+
+        spawn_examine_dialog(world, entity, player_entity, close_examine_dialog_id);
+
+        if let Some(mut dialog_state) = world.get_resource_mut::<DialogState>() {
+            dialog_state.is_open = true;
+        }
     }
 }
 
@@ -431,6 +425,21 @@ fn get_examinable_entity_priority(
     }
 }
 
+fn get_examinable_entity_priority_world(entity: Entity, world: &World) -> Option<(Entity, u32)> {
+    // Priority levels (lower number = higher priority)
+    if world.get::<CreatureType>(entity).is_some() {
+        Some((entity, 1)) // Highest priority: Creatures
+    } else if world.get::<Item>(entity).is_some() {
+        Some((entity, 2)) // Second priority: Items
+    } else if world.get::<Description>(entity).is_some() {
+        Some((entity, 3)) // Third priority: Entities with descriptions
+    } else if world.get::<Label>(entity).is_some() {
+        Some((entity, 4)) // Lowest priority: Any labeled entity
+    } else {
+        None // Not examinable
+    }
+}
+
 fn close_examine_dialog(
     mut cmds: Commands,
     q_dialogs: Query<Entity, With<Dialog>>,
@@ -445,10 +454,10 @@ fn close_examine_dialog(
 fn render_player_map_overlay(
     mut cmds: Commands,
     keys: Res<KeyInput>,
-    player_map: Res<PlayerMap>,
+    faction_map: Res<FactionMap>,
     player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
-    q_overlay: Query<Entity, With<PlayerMapOverlay>>,
+    q_overlay: Query<Entity, With<FactionMapOverlay>>,
     mut overlay_entities: Local<Vec<Entity>>,
     mut overlay_enabled: Local<bool>,
     mut last_player_pos: Local<Option<(usize, usize, usize)>>,
@@ -460,7 +469,7 @@ fn render_player_map_overlay(
 
     let has_overlay = !overlay_entities.is_empty();
     let current_player_pos = player_pos.world();
-    let player_moved = last_player_pos.map_or(true, |last_pos| last_pos != current_player_pos);
+    let player_moved = last_player_pos.is_none_or(|last_pos| last_pos != current_player_pos);
 
     // Update last known player position
     *last_player_pos = Some(current_player_pos);
@@ -468,7 +477,7 @@ fn render_player_map_overlay(
     if *overlay_enabled && (!has_overlay || player_moved) {
         // Remove existing overlay if player moved
         if player_moved && has_overlay {
-            trace!("Player moved, regenerating PlayerMap overlay");
+            trace!("Player moved, regenerating FactionMap overlay");
             for entity in overlay_entities.drain(..) {
                 cmds.entity(entity).despawn();
             }
@@ -476,52 +485,51 @@ fn render_player_map_overlay(
         // Spawn overlay
         let zone_idx = player_pos.zone_idx();
         if let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) {
-            trace!("Spawning PlayerMap overlay for zone {}", zone_idx);
-            let dijkstra_map = player_map.get_map();
+            trace!("Spawning FactionMap overlay for zone {}", zone_idx);
+            if let Some(dijkstra_map) = faction_map.get_map(FactionId::Player) {
+                for x in 0..ZONE_SIZE.0 {
+                    for y in 0..ZONE_SIZE.1 {
+                        let world_pos = zone_local_to_world(zone.idx, x, y);
 
-            for x in 0..ZONE_SIZE.0 {
-                for y in 0..ZONE_SIZE.1 {
-                    let world_pos = zone_local_to_world(zone.idx, x, y);
-
-                    if dijkstra_map.is_blocked(x, y) {
-                        // Show blocked tiles as red X
-                        let entity = cmds
-                            .spawn((
-                                Text::new("X")
-                                    .fg1(0xB62DAF_u32) // Bright red
-                                    .layer(Layer::Overlay),
-                                Position::new_world(world_pos),
-                                Visibility::Visible,
-                                IgnoreLighting,
-                                PlayerMapOverlay,
-                                CleanupStateExplore,
-                            ))
-                            .id();
-
-                        overlay_entities.push(entity);
-                    } else if let Some(cost) = dijkstra_map.get_cost(x, y) {
-                        if cost.is_finite() && cost >= 0.0 {
-                            let display_num = (cost.min(12.0) as u32).to_string();
-
-                            // Color gradient from green to red (0-12 range)
-                            let t = (cost / 12.0).min(1.0);
-                            let r = (t * 255.0) as u8;
-                            let g = ((1.0 - t) * 255.0) as u8;
-                            let color = hex(r, g, 0);
-
+                        if dijkstra_map.is_blocked(x, y) {
+                            // Show blocked tiles as red X
                             let entity = cmds
                                 .spawn((
-                                    Text::new(&display_num).fg1(color).layer(Layer::Overlay),
+                                    Text::new("X")
+                                        .fg1(0xB62DAF_u32) // Bright red
+                                        .layer(Layer::Overlay),
                                     Position::new_world(world_pos),
                                     Visibility::Visible,
                                     IgnoreLighting,
-                                    PlayerMapOverlay,
+                                    FactionMapOverlay,
                                     CleanupStateExplore,
                                 ))
                                 .id();
 
                             overlay_entities.push(entity);
-                        }
+                        } else if let Some(cost) = dijkstra_map.get_cost(x, y)
+                            && cost.is_finite() && cost >= 0.0 {
+                                let display_num = (cost.min(12.0) as u32).to_string();
+
+                                // Color gradient from green to red (0-12 range)
+                                let t = (cost / 12.0).min(1.0);
+                                let r = (t * 255.0) as u8;
+                                let g = ((1.0 - t) * 255.0) as u8;
+                                let color = hex(r, g, 0);
+
+                                let entity = cmds
+                                    .spawn((
+                                        Text::new(&display_num).fg1(color).layer(Layer::Overlay),
+                                        Position::new_world(world_pos),
+                                        Visibility::Visible,
+                                        IgnoreLighting,
+                                        FactionMapOverlay,
+                                        CleanupStateExplore,
+                                    ))
+                                    .id();
+
+                                overlay_entities.push(entity);
+                            }
                     }
                 }
             }
@@ -529,7 +537,7 @@ fn render_player_map_overlay(
     } else if !*overlay_enabled && has_overlay {
         // Remove overlay
         trace!(
-            "Removing PlayerMap overlay ({} entities)",
+            "Removing FactionMap overlay ({} entities)",
             overlay_entities.len()
         );
         for entity in overlay_entities.drain(..) {

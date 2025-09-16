@@ -106,7 +106,7 @@ void main() {
                     flickered_intensity *= flicker_mod;
                 }
                 
-                float dynamic_strength = (1.0 - ambient_intensity) * 0.6 + 0.2; // Range: 0.2 to 0.8
+                float dynamic_strength = (1.0 - ambient_intensity) * 0.8 + 0.1; // Range: 0.2 to 0.8
                 float effective_dynamic = flickered_intensity * dynamic_strength;
                 gl_FragColor.rgb = mix(gl_FragColor.rgb, dynamic_color, effective_dynamic);
             }

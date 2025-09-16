@@ -11,7 +11,6 @@ use crate::{
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
-    states::{CurrentGameState, GameState},
 };
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
@@ -79,7 +78,9 @@ pub fn player_input(
     let now = time.fixed_t;
     let mut rate = settings.input_delay;
     let delay = settings.input_initial_delay;
-    let (player_entity, position, equipment_slots) = q_player.single().unwrap();
+    let Ok((player_entity, position, equipment_slots)) = q_player.single() else {
+        return;
+    };
     let (x, y, z) = position.world();
 
     if keys.is_pressed(KeyCode::F) && turn_state.is_players_turn {

@@ -95,75 +95,67 @@ fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
 }
 
 fn increase_strength(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if points.increase_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && points.increase_attribute() {
             attributes.strength += 1;
         }
-    }
 }
 
 fn decrease_strength(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if attributes.strength > 0 && points.decrease_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && attributes.strength > 0 && points.decrease_attribute() {
             attributes.strength -= 1;
         }
-    }
 }
 
 fn increase_dexterity(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if points.increase_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && points.increase_attribute() {
             attributes.dexterity += 1;
         }
-    }
 }
 
 fn decrease_dexterity(mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if attributes.dexterity > 0 && points.decrease_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && attributes.dexterity > 0 && points.decrease_attribute() {
             attributes.dexterity -= 1;
         }
-    }
 }
 
 fn increase_constitution(
     mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
 ) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if points.increase_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && points.increase_attribute() {
             attributes.constitution += 1;
         }
-    }
 }
 
 fn decrease_constitution(
     mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
 ) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if attributes.constitution > 0 && points.decrease_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && attributes.constitution > 0 && points.decrease_attribute() {
             attributes.constitution -= 1;
         }
-    }
 }
 
 fn increase_intelligence(
     mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
 ) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if points.increase_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && points.increase_attribute() {
             attributes.intelligence += 1;
         }
-    }
 }
 
 fn decrease_intelligence(
     mut q_player: Query<(&mut Attributes, &mut AttributePoints), With<Player>>,
 ) {
-    if let Ok((mut attributes, mut points)) = q_player.single_mut() {
-        if attributes.intelligence > 0 && points.decrease_attribute() {
+    if let Ok((mut attributes, mut points)) = q_player.single_mut()
+        && attributes.intelligence > 0 && points.decrease_attribute() {
             attributes.intelligence -= 1;
         }
-    }
 }
 
 fn reset_all_attributes(

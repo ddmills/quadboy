@@ -1,7 +1,10 @@
 use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
-    domain::{DefaultMeleeAttack, LightSource, LootDrop, LootTableId},
+    domain::{
+        AiBehavior, DefaultMeleeAttack, FactionId, FactionMember, LightSource, LootDrop,
+        LootTableId,
+    },
     rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -31,5 +34,7 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_light_source(LightSource::new(0.6, 0xC4D434, 3).with_flicker(0.5))
         .with_loot_drop(LootDrop::new(LootTableId::GiantFireflyLoot, 0.35))
+        .with_component(AiBehavior::Wander)
+        .with_component(FactionMember::new(FactionId::Wildlife))
         .build();
 }

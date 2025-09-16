@@ -3,7 +3,6 @@ use crate::{
     engine::Clock,
 };
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 pub fn armor_regen_system(mut q_health: Query<(&mut Health, &Stats)>, clock: Res<Clock>) {
     let current_tick = clock.current_tick();

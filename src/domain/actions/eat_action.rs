@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Consumable, ConsumableEffect, Energy, EnergyActionType, Health, InInventory, Inventory,
-        Item, Level, Player, StackCount, Stackable, Stats, get_base_energy_cost,
+        Item, Level, StackCount, Stackable, Stats, get_base_energy_cost,
         inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,

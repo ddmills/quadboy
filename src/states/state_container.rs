@@ -4,11 +4,11 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        Description, Equipped, Inventory, Label, Player, StackCount, TransferItemAction, game_loop,
+        Equipped, Inventory, Label, Player, StackCount, TransferItemAction, game_loop,
         inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, KeyInput, Plugin, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, ScreenSize, Text},
+    rendering::{Layer, Position, ScreenSize, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
         ActivatableBuilder, Dialog, DialogState, List, ListContext, ListItem, ListItemData,
@@ -333,37 +333,32 @@ fn build_container_list_items(
     items
 }
 
-fn examine_selected_item(
-    mut cmds: Commands,
-    list_context: Res<ListContext>,
-    callbacks: Res<ContainerCallbacks>,
-    id_registry: Res<StableIdRegistry>,
-    q_labels: Query<&Label>,
-    q_descriptions: Query<&Description>,
-    q_glyphs: Query<&Glyph>,
-    mut dialog_state: ResMut<DialogState>,
-    screen: Res<ScreenSize>,
-) {
+fn examine_selected_item(world: &mut World) {
+    let list_context = world.get_resource::<ListContext>().unwrap();
     let Some(item_id) = list_context.context_data else {
         return;
     };
 
+    let id_registry = world.get_resource::<StableIdRegistry>().unwrap();
     let Some(item_entity) = id_registry.get_entity(item_id) else {
         return;
     };
 
-    spawn_examine_dialog(
-        &mut cmds,
-        item_entity,
-        callbacks.close_dialog,
-        &q_labels,
-        &q_descriptions,
-        &q_glyphs,
-        CleanupStateContainer,
-        &screen,
-    );
+    let close_dialog_id = {
+        let callbacks = world.get_resource::<ContainerCallbacks>().unwrap();
+        callbacks.close_dialog
+    };
 
-    dialog_state.is_open = true;
+    let player_entity = {
+        let mut q_player = world.query_filtered::<Entity, With<Player>>();
+        q_player.single(world).unwrap()
+    };
+
+    spawn_examine_dialog(world, item_entity, player_entity, close_dialog_id);
+
+    if let Some(mut dialog_state) = world.get_resource_mut::<DialogState>() {
+        dialog_state.is_open = true;
+    }
 }
 
 fn close_dialog(

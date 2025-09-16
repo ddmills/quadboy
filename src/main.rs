@@ -18,15 +18,16 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack, Collider,
-        Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
-        EquipmentSlots, Equippable, Equipped, GameSettings, Health, HideWhenNotVisible, HitBlink,
-        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
-        Label, Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
-        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMap, PlayerMovedEvent,
-        Prefabs, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
-        Stackable, StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent,
-        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
+        AiBehavior, ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack,
+        Collider, Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
+        EquipmentSlots, Equippable, Equipped, FactionMap, FactionMember, FactionRelations,
+        GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
+        InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
+        LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry,
+        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, RefreshBitmask, SaveFlag,
+        SaveGameResult, SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp,
+        StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
+        Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -43,9 +44,9 @@ use crate::{
     states::{
         AttributesStatePlugin, CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin,
         CurrentAppState, CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin,
-        InventoryStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin, NewGameStatePlugin,
-        OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin, SettingsStatePlugin,
-        update_app_states, update_game_states,
+        GameOverStatePlugin, InventoryStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin,
+        NewGameStatePlugin, OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin,
+        SettingsStatePlugin, update_app_states, update_game_states,
     },
     ui::{
         DialogState, ListContext, UiFocus, clear_mouse_capture_when_not_hovering,
@@ -128,6 +129,7 @@ async fn main() {
     reg.register::<Weapon>();
     reg.register::<DefaultMeleeAttack>();
     reg.register::<CreatureType>();
+    reg.register::<AiBehavior>();
     reg.register::<Level>();
     reg.register::<Attributes>();
     reg.register::<AttributePoints>();
@@ -138,6 +140,7 @@ async fn main() {
     reg.register::<Stackable>();
     reg.register::<StackCount>();
     reg.register::<LightSource>();
+    reg.register::<FactionMember>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)
@@ -152,6 +155,7 @@ async fn main() {
         .add_plugin(AttributesStatePlugin)
         .add_plugin(OverworldStatePlugin)
         .add_plugin(PauseStatePlugin)
+        .add_plugin(GameOverStatePlugin)
         .register_event::<LoadGameResult>()
         .register_event::<LoadZoneEvent>()
         .register_event::<NewGameResult>()
@@ -190,11 +194,12 @@ async fn main() {
         .init_resource::<Prefabs>()
         .init_resource::<Rand>()
         .init_resource::<StableIdRegistry>()
-        .insert_resource(PlayerMap::new())
+        .insert_resource(FactionMap::new())
         .init_resource::<LightingData>()
         .init_resource::<AmbientTransition>()
         .init_resource::<ParticleGrid>()
         .init_resource::<ParticleGlyphPool>()
+        .insert_resource(FactionRelations::new())
         .add_systems(
             ScheduleType::PreUpdate,
             (update_time, update_key_input, update_mouse_input),

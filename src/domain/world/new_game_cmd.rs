@@ -7,8 +7,9 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Collider, DefaultMeleeAttack, Energy,
-        EquipmentSlots, GameSaveData, Health, Inventory, Label, Level, LoadZoneCommand, Overworld,
-        Player, PlayerPosition, PlayerSaveData, StatModifiers, Stats, TerrainNoise, Vision, Zones,
+        EquipmentSlots, FactionId, FactionMember, GameSaveData, Health, Inventory, Label, Level,
+        LoadZoneCommand, Overworld, Player, PlayerPosition, PlayerSaveData, StatModifiers, Stats,
+        TerrainNoise, Vision, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
@@ -65,6 +66,7 @@ impl NewGameCommand {
                 RecordZonePosition,
                 CleanupStatePlay,
             ))
+            .insert(FactionMember::new(FactionId::Player))
             .insert(Attributes::new(0, 0, 0, 0))
             .insert(AttributePoints::new(1)) // Level 1 = 5 + 1 = 6 points
             .insert(Stats::new())

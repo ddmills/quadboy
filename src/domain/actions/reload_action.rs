@@ -61,11 +61,10 @@ impl Command for ReloadAction {
             weapon.current_ammo = Some(clip_size);
         }
 
-        if let Some(reload_audio) = reload_audio {
-            if let Some(audio) = world.get_resource::<Audio>() {
+        if let Some(reload_audio) = reload_audio
+            && let Some(audio) = world.get_resource::<Audio>() {
                 audio.play(reload_audio, 0.3);
             }
-        }
 
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
             energy.consume_energy(energy_cost);
