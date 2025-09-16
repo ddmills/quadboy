@@ -12,14 +12,12 @@ use crate::{
 #[derive(Resource)]
 pub struct FactionMap {
     maps: HashMap<FactionId, DijkstraMap>,
-    current_zone: Option<usize>,
 }
 
 impl FactionMap {
     pub fn new() -> Self {
         Self {
             maps: HashMap::new(),
-            current_zone: None,
         }
     }
 
@@ -30,21 +28,25 @@ impl FactionMap {
     fn update_obstacles(
         &mut self,
         zone: &Zone,
-        q_colliders: &Query<(Entity, &Position), (With<Collider>, With<InActiveZone>)>,
+        faction_ids: &[FactionId],
+        q_colliders: &Query<(Entity, &Position), With<Collider>>,
     ) {
-        for map in self.maps.values_mut() {
-            for x in 0..ZONE_SIZE.0 {
-                for y in 0..ZONE_SIZE.1 {
-                    map.set_passable(x, y);
+        for faction_id in faction_ids {
+            if let Some(map) = self.maps.get_mut(faction_id) {
+                // Clear the map first
+                for x in 0..ZONE_SIZE.0 {
+                    for y in 0..ZONE_SIZE.1 {
+                        map.set_passable(x, y);
+                    }
                 }
-            }
 
-            for (_entity, position) in q_colliders.iter() {
-                let zone_idx = position.zone_idx();
-
-                if zone_idx == zone.idx {
-                    let local_pos = position.zone_local();
-                    map.set_blocked(local_pos.0, local_pos.1);
+                // Add obstacles
+                for (_entity, position) in q_colliders.iter() {
+                    let zone_idx = position.zone_idx();
+                    if zone_idx == zone.idx {
+                        let local_pos = position.zone_local();
+                        map.set_blocked(local_pos.0, local_pos.1);
+                    }
                 }
             }
         }
@@ -53,11 +55,12 @@ impl FactionMap {
     pub fn recalculate(
         &mut self,
         zone: &Zone,
-        q_colliders: &Query<(Entity, &Position), (With<Collider>, With<InActiveZone>)>,
+        q_colliders: &Query<(Entity, &Position), With<Collider>>,
         q_faction_members: &Query<(&Position, &FactionMember), With<InActiveZone>>,
     ) {
         let mut faction_goals: HashMap<FactionId, Vec<(usize, usize)>> = HashMap::new();
 
+        // Find all faction members in this zone
         for (position, faction_member) in q_faction_members.iter() {
             let zone_idx = position.zone_idx();
             if zone_idx == zone.idx {
@@ -69,18 +72,18 @@ impl FactionMap {
             }
         }
 
+        // Create maps for any new factions
         for faction_id in faction_goals.keys() {
             if !self.maps.contains_key(faction_id) {
-                self.maps
-                    .insert(*faction_id, DijkstraMap::new(ZONE_SIZE.0, ZONE_SIZE.1));
+                self.maps.insert(*faction_id, DijkstraMap::new(ZONE_SIZE.0, ZONE_SIZE.1));
             }
         }
 
-        self.maps
-            .retain(|faction_id, _| faction_goals.contains_key(faction_id));
+        // Update obstacles for all factions in this zone
+        let faction_list: Vec<_> = faction_goals.keys().cloned().collect();
+        self.update_obstacles(zone, &faction_list, q_colliders);
 
-        self.update_obstacles(zone, q_colliders);
-
+        // Calculate pathfinding for each faction
         for (faction_id, goals) in faction_goals {
             if let Some(map) = self.maps.get_mut(&faction_id) {
                 map.calculate_uniform(&goals);
@@ -88,12 +91,6 @@ impl FactionMap {
         }
     }
 
-    pub fn set_current_zone(&mut self, zone_idx: usize) {
-        if self.current_zone != Some(zone_idx) {
-            self.current_zone = Some(zone_idx);
-            self.maps.clear();
-        }
-    }
 }
 
 pub fn update_faction_maps(
@@ -101,19 +98,16 @@ pub fn update_faction_maps(
     clock: Res<Clock>,
     player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
-    q_colliders: Query<(Entity, &Position), (With<Collider>, With<InActiveZone>)>,
+    q_colliders: Query<(Entity, &Position), With<Collider>>,
     q_faction_members: Query<(&Position, &FactionMember), With<InActiveZone>>,
 ) {
     if clock.is_frozen() {
         return;
     }
 
-    // Get the player's current zone
+    // Process only the player's current zone for faction mapping
     let player_zone_idx = player_pos.zone_idx();
-
-    // Find and process only the zone the player is in
-    if let Some(zone) = q_zones.iter().find(|zone| zone.idx == player_zone_idx) {
-        faction_map.set_current_zone(zone.idx);
+    if let Some(zone) = q_zones.iter().find(|z| z.idx == player_zone_idx) {
         faction_map.recalculate(zone, &q_colliders, &q_faction_members);
     }
 }

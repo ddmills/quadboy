@@ -49,4 +49,5 @@ pub enum AiState {
     Fighting,
     Fleeing,
     Returning,
+    Waiting,
 }

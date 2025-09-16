@@ -7,17 +7,14 @@ use macroquad::{prelude::trace, telemetry};
 
 use crate::{
     domain::{
-        PlayerPosition, TurnState, Zones, ai_turn,
-        systems::{
+        ai_turn, manage_pursuit_timeout, systems::{
             armor_regen_system::armor_regen_system,
             cleanup_system::on_entity_destroyed_cleanup,
             faction_map::update_faction_maps,
             health_system::update_health_system,
             loot_drop_system::on_entity_destroyed_loot,
             stats_system::{equipment_stat_modifier_system, recalculate_stats_system},
-        },
-        tick_faction_modifiers, turn_scheduler, update_entity_visibility_flags,
-        update_lighting_system, update_player_position_resource, update_player_vision,
+        }, tick_faction_modifiers, turn_scheduler, update_entity_visibility_flags, update_lighting_system, update_player_position_resource, update_player_vision, PlayerPosition, TurnState, Zones
     },
     rendering::update_entity_pos,
 };
@@ -31,12 +28,12 @@ pub fn register_game_systems(world: &mut World) {
     let systems = vec![
         world.register_system(apply_deferred),
         world.register_system(update_player_position_resource),
-        world.register_system(update_faction_maps), // Faction maps system
+        world.register_system(update_faction_maps),
         world.register_system(update_entity_pos),
         world.register_system(equipment_stat_modifier_system),
         world.register_system(recalculate_stats_system),
-        world.register_system(update_health_system), // After stats system
-        world.register_system(armor_regen_system),   // After health system
+        world.register_system(update_health_system),
+        world.register_system(armor_regen_system),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
         world.register_system(update_lighting_system),
@@ -44,6 +41,8 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(turn_scheduler),
         world.register_system(on_entity_destroyed_loot),
         world.register_system(on_entity_destroyed_cleanup),
+        world.register_system(ai_turn),
+        world.register_system(manage_pursuit_timeout),
     ];
 
     world.insert_resource(GameSystems { all: systems });
@@ -60,9 +59,6 @@ fn exec_game_systems(world: &mut World) {
     for id in system_ids {
         let _ = world.run_system(id);
     }
-
-    // Call ai_turn directly with world access (after all other systems)
-    ai_turn(world);
 }
 
 #[inline]

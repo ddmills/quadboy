@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::telemetry;
 
 use crate::{
-    domain::{Energy, InActiveZone, Player, StatType, Stats},
+    domain::{Energy, InActiveZone, Player, PursuingPlayer, StatType, Stats},
     engine::Clock,
 };
 
@@ -29,7 +29,7 @@ pub struct TurnState {
 }
 
 pub fn turn_scheduler(
-    mut q_energy: Query<(Entity, &mut Energy), With<InActiveZone>>,
+    mut q_energy: Query<(Entity, &mut Energy), Or<(With<InActiveZone>, With<PursuingPlayer>)>>,
     mut turn_state: ResMut<TurnState>,
     mut clock: ResMut<Clock>,
     q_player: Query<Entity, With<Player>>,

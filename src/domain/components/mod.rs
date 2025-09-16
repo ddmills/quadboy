@@ -20,6 +20,7 @@ pub mod label;
 pub mod level;
 pub mod lighting;
 pub mod loot_drop;
+pub mod pursuing_player;
 pub mod stairs;
 pub mod stats;
 pub mod vision;
@@ -52,6 +53,7 @@ pub use label::Label;
 pub use level::Level;
 pub use lighting::{IgnoreLighting, LightBlocker, LightSource, Lightable};
 pub use loot_drop::LootDrop;
+pub use pursuing_player::PursuingPlayer;
 pub use stairs::{StairDown, StairUp};
 pub use stats::{ModifierSource, StatModifier, StatModifiers, StatType, Stats};
 pub use vision::{
