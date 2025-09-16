@@ -62,7 +62,7 @@ impl NewGameCommand {
                 Energy::new(-10),
                 Label::new("{Y|Cowboy}"),
                 DefaultMeleeAttack::fists(),
-                Level::new(1),
+                Level::new(2),
                 RecordZonePosition,
                 CleanupStatePlay,
             ))

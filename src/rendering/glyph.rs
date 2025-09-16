@@ -9,10 +9,11 @@ use crate::{
         ZoneStatus,
     },
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
+    tracy_plot, tracy_span,
     ui::{DialogState, UiLayout},
 };
 use bevy_ecs::prelude::*;
-use macroquad::{prelude::*, telemetry};
+use macroquad::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::{GameCamera, Layer, Layers, LightingData, Position, Renderable, ScreenSize};
@@ -273,151 +274,196 @@ pub fn render_glyphs(
     dialog_state: Res<DialogState>,
     lighting_data: Res<LightingData>,
 ) {
-    layers.iter_mut().for_each(|layer| {
-        layer.clear();
-    });
+    tracy_span!("render_glyphs");
 
-    telemetry::begin_zone("render_glyphs");
+    let glyph_count = q_glyphs.iter().count() as f64;
+    tracy_plot!("Rendered Glyphs", glyph_count);
 
-    let screen_w = screen.width as f32;
-    let screen_h = screen.height as f32;
-    let tile_w = TILE_SIZE_F32.0;
-    let tile_h = TILE_SIZE_F32.1;
-    let cam_x = (camera.x * tile_w).floor();
-    let cam_y = (camera.y * tile_h).floor();
-    let camera_width = camera.width;
-    let camera_height = camera.height;
-    let ui_panel_x = (ui.game_panel.x as f32) * tile_w;
-    let ui_panel_y = (ui.game_panel.y as f32) * tile_h;
-    let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
-
-    let world_left = -tile_w;
-    let world_right = camera_width + tile_w;
-    let world_top = -tile_h;
-    let world_bottom = camera_height + tile_h;
-
-    for (entity, glyph, pos, visibility) in q_glyphs.iter() {
-        if *visibility == Visibility::Hidden {
-            continue;
-        }
-        let is_world_layer = glyph.layer_id.get_target_type() == RenderTargetType::World;
-
-        if glyph.is_dormant || (is_world_layer && pos.z.floor() != player_z) {
-            continue;
-        }
-
-        let texture_id = glyph.texture_id;
-        let w = texture_id.get_glyph_width() * glyph.scale.0;
-        let h = texture_id.get_glyph_height() * glyph.scale.1;
-
-        let mut x = (pos.x * tile_w).floor();
-        let mut y = (pos.y * tile_h).floor();
-
-        // Apply position offset if present
-        if let Some((offset_x, offset_y)) = glyph.position_offset {
-            x += offset_x * tile_w;
-            y += offset_y * tile_h;
-        }
-
-        let mut is_shrouded = false;
-        let mut ignore_lighting = true;
-
-        if is_world_layer {
-            let Ok((
-                is_visible,
-                is_explored,
-                apply_visibility_effects,
-                hide_when_not_visible,
-                ignore_lighting_opt,
-            )) = q_visibility.get(entity)
-            else {
-                continue;
-            };
-
-            ignore_lighting = ignore_lighting_opt.is_some();
-
-            if (hide_when_not_visible.is_some() && is_visible.is_none())
-                || (apply_visibility_effects.is_some() && is_explored.is_none())
-            {
-                continue;
-            }
-
-            let world_x = x - cam_x;
-            let world_y = y - cam_y;
-
-            if world_x + w < world_left
-                || world_x - w > world_right
-                || world_y + h < world_top
-                || world_y - h > world_bottom
-            {
-                continue;
-            }
-
-            x = world_x + ui_panel_x;
-            y = world_y + ui_panel_y;
-
-            is_shrouded =
-                apply_visibility_effects.is_some() && is_explored.is_some() && is_visible.is_none();
-        } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
-            continue;
-        }
-
-        let mut style = glyph.get_style();
-
-        // Dim non-dialog layers when dialog is open
-        if dialog_state.is_open
-            && glyph.layer_id != Layer::DialogPanels
-            && glyph.layer_id != Layer::DialogContent
-        {
-            style = dim_glyph_style(style);
-        }
-
-        let light_value = if is_world_layer && !ignore_lighting {
-            let world_pos = pos.world();
-            let (local_x, local_y) = world_to_zone_local(world_pos.0, world_pos.1);
-
-            lighting_data
-                .get_light(local_x, local_y)
-                .cloned()
-                .unwrap_or_else(|| LightValue {
-                    rgb: Vec3::new(1.0, 1.0, 1.0),
-                    intensity: 1.,
-                    flicker: 0.,
-                })
-        } else {
-            LightValue {
-                rgb: Vec3::new(1.0, 1.0, 1.0),
-                intensity: 1.,
-                flicker: 0.,
-            }
-        };
-
-        let layer = layers.get_mut(glyph.layer_id);
-
-        layer.add(Renderable {
-            idx: glyph.idx,
-            fg1: style.fg1,
-            fg2: style.fg2,
-            bg: style.bg,
-            outline: style.outline,
-            x,
-            y,
-            w,
-            h,
-            tex_idx: texture_id.get_texture_idx(),
-            is_shrouded: is_shrouded as u32,
-            light_rgba: Vec4::new(
-                light_value.rgb.x,
-                light_value.rgb.y,
-                light_value.rgb.z,
-                light_value.intensity,
-            ),
-            light_flicker: light_value.flicker,
-            ignore_lighting: if ignore_lighting { 1.0 } else { 0.0 },
+    {
+        tracy_span!("render_glyphs_clear_layers");
+        layers.iter_mut().for_each(|layer| {
+            layer.clear();
         });
     }
 
-    telemetry::end_zone();
+    let (
+        screen_w,
+        screen_h,
+        tile_w,
+        tile_h,
+        cam_x,
+        cam_y,
+        camera_width,
+        camera_height,
+        ui_panel_x,
+        ui_panel_y,
+        player_z,
+        world_left,
+        world_right,
+        world_top,
+        world_bottom,
+    ) = {
+        tracy_span!("render_glyphs_calculate_bounds");
+        let screen_w = screen.width as f32;
+        let screen_h = screen.height as f32;
+        let tile_w = TILE_SIZE_F32.0;
+        let tile_h = TILE_SIZE_F32.1;
+        let cam_x = (camera.x * tile_w).floor();
+        let cam_y = (camera.y * tile_h).floor();
+        let camera_width = camera.width;
+        let camera_height = camera.height;
+        let ui_panel_x = (ui.game_panel.x as f32) * tile_w;
+        let ui_panel_y = (ui.game_panel.y as f32) * tile_h;
+        let player_z = player.single().map(|p| p.z.floor()).unwrap_or(0.);
+
+        let world_left = -tile_w;
+        let world_right = camera_width + tile_w;
+        let world_top = -tile_h;
+        let world_bottom = camera_height + tile_h;
+
+        (
+            screen_w,
+            screen_h,
+            tile_w,
+            tile_h,
+            cam_x,
+            cam_y,
+            camera_width,
+            camera_height,
+            ui_panel_x,
+            ui_panel_y,
+            player_z,
+            world_left,
+            world_right,
+            world_top,
+            world_bottom,
+        )
+    };
+
+    {
+        tracy_span!("render_glyphs_process_entities");
+        for (entity, glyph, pos, visibility) in q_glyphs.iter() {
+            if *visibility == Visibility::Hidden {
+                continue;
+            }
+            let is_world_layer = glyph.layer_id.get_target_type() == RenderTargetType::World;
+
+            if glyph.is_dormant || (is_world_layer && pos.z.floor() != player_z) {
+                continue;
+            }
+
+            let texture_id = glyph.texture_id;
+            let w = texture_id.get_glyph_width() * glyph.scale.0;
+            let h = texture_id.get_glyph_height() * glyph.scale.1;
+
+            let mut x = (pos.x * tile_w).floor();
+            let mut y = (pos.y * tile_h).floor();
+
+            // Apply position offset if present
+            if let Some((offset_x, offset_y)) = glyph.position_offset {
+                x += offset_x * tile_w;
+                y += offset_y * tile_h;
+            }
+
+            let mut is_shrouded = false;
+            let mut ignore_lighting = true;
+
+            if is_world_layer {
+                let Ok((
+                    is_visible,
+                    is_explored,
+                    apply_visibility_effects,
+                    hide_when_not_visible,
+                    ignore_lighting_opt,
+                )) = q_visibility.get(entity)
+                else {
+                    continue;
+                };
+
+                ignore_lighting = ignore_lighting_opt.is_some();
+
+                if (hide_when_not_visible.is_some() && is_visible.is_none())
+                    || (apply_visibility_effects.is_some() && is_explored.is_none())
+                {
+                    continue;
+                }
+
+                let world_x = x - cam_x;
+                let world_y = y - cam_y;
+
+                if world_x + w < world_left
+                    || world_x - w > world_right
+                    || world_y + h < world_top
+                    || world_y - h > world_bottom
+                {
+                    continue;
+                }
+
+                x = world_x + ui_panel_x;
+                y = world_y + ui_panel_y;
+
+                is_shrouded = apply_visibility_effects.is_some()
+                    && is_explored.is_some()
+                    && is_visible.is_none();
+            } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
+                continue;
+            }
+
+            let mut style = glyph.get_style();
+
+            // Dim non-dialog layers when dialog is open
+            if dialog_state.is_open
+                && glyph.layer_id != Layer::DialogPanels
+                && glyph.layer_id != Layer::DialogContent
+            {
+                style = dim_glyph_style(style);
+            }
+
+            let light_value = if is_world_layer && !ignore_lighting {
+                let world_pos = pos.world();
+                let (local_x, local_y) = world_to_zone_local(world_pos.0, world_pos.1);
+
+                lighting_data
+                    .get_light(local_x, local_y)
+                    .cloned()
+                    .unwrap_or_else(|| LightValue {
+                        rgb: Vec3::new(1.0, 1.0, 1.0),
+                        intensity: 1.,
+                        flicker: 0.,
+                    })
+            } else {
+                LightValue {
+                    rgb: Vec3::new(1.0, 1.0, 1.0),
+                    intensity: 1.,
+                    flicker: 0.,
+                }
+            };
+
+            let layer = layers.get_mut(glyph.layer_id);
+
+            layer.add(Renderable {
+                idx: glyph.idx,
+                fg1: style.fg1,
+                fg2: style.fg2,
+                bg: style.bg,
+                outline: style.outline,
+                x,
+                y,
+                w,
+                h,
+                tex_idx: texture_id.get_texture_idx(),
+                is_shrouded: is_shrouded as u32,
+                light_rgba: Vec4::new(
+                    light_value.rgb.x,
+                    light_value.rgb.y,
+                    light_value.rgb.z,
+                    light_value.intensity,
+                ),
+                light_flicker: light_value.flicker,
+                ignore_lighting: if ignore_lighting { 1.0 } else { 0.0 },
+            });
+        }
+    }
 }
 
 pub fn on_zone_status_change(mut q_changed: Query<(&mut Glyph, &ZoneStatus), Changed<ZoneStatus>>) {

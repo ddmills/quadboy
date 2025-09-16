@@ -1,7 +1,6 @@
 use bevy_ecs::{event::EventRegistry, prelude::*, system::ScheduleSystem};
-use macroquad::telemetry;
 
-use crate::engine::ExitApp;
+use crate::{engine::ExitApp, tracy_span};
 
 pub enum ScheduleType {
     PreUpdate,
@@ -37,25 +36,35 @@ impl App {
     }
 
     pub fn run(&mut self) -> bool {
-        telemetry::begin_zone("schedule_pre_update");
-        self.schedule_pre_update.run(&mut self.world);
-        telemetry::end_zone();
+        {
+            tracy_span!("schedule_pre_update");
+            ("schedule_pre_update");
+            self.schedule_pre_update.run(&mut self.world);
+        }
 
-        telemetry::begin_zone("schedule_update");
-        self.schedule_update.run(&mut self.world);
-        telemetry::end_zone();
+        {
+            tracy_span!("schedule_update");
+            ("schedule_update");
+            self.schedule_update.run(&mut self.world);
+        }
 
-        telemetry::begin_zone("schedule_post_update");
-        self.schedule_post_update.run(&mut self.world);
-        telemetry::end_zone();
+        {
+            tracy_span!("schedule_post_update");
+            ("schedule_post_update");
+            self.schedule_post_update.run(&mut self.world);
+        }
 
-        telemetry::begin_zone("schedule_frame_final");
-        self.schedule_frame_final.run(&mut self.world);
-        telemetry::end_zone();
+        {
+            tracy_span!("schedule_frame_final");
+            ("schedule_frame_final");
+            self.schedule_frame_final.run(&mut self.world);
+        }
 
-        telemetry::begin_zone("schedule_state_transition");
-        self.schedule_state_transition.run(&mut self.world);
-        telemetry::end_zone();
+        {
+            tracy_span!("schedule_state_transition");
+            ("schedule_state_transition");
+            self.schedule_state_transition.run(&mut self.world);
+        }
 
         let exit = self
             .world

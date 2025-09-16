@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
-use crate::rendering::Text;
+use crate::{rendering::Text, tracy_plot};
 
 #[derive(Resource)]
 pub struct Time {
@@ -55,6 +55,9 @@ pub fn update_time(mut time: ResMut<Time>) {
     time.dt = dt;
     time.fps = fps;
     time.elapsed = get_time();
+
+    tracy_plot!("FPS", fps as f64);
+    tracy_plot!("Frame Time (ms)", (dt * 1000.0) as f64);
 
     if time.frames.len() >= time.frames_count {
         time.frames.pop_front();

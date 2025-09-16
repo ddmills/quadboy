@@ -13,6 +13,8 @@ pub struct AiController {
     #[serde(skip)]
     pub current_target: Option<Entity>,
     pub state: AiState,
+    #[serde(skip)]
+    pub cached_home_path: Option<Vec<(usize, usize, usize)>>,
 }
 
 impl AiController {
@@ -25,6 +27,7 @@ impl AiController {
             detection_range: 15.0,
             current_target: None,
             state: AiState::Idle,
+            cached_home_path: None,
         }
     }
 

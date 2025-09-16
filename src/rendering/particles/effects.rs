@@ -261,3 +261,76 @@ pub fn spawn_directional_blood_mist(
 
     spawn_blood_spray(world, pos, direction, intensity);
 }
+
+/// Level up celebration effect - golden sparkles and light burst
+pub fn spawn_level_up_celebration(world: &mut World, world_pos: (usize, usize, usize)) {
+    let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
+    let pos = Vec2::new(local_pos.0, local_pos.1);
+
+    // Golden sparkles radiating outward
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: vec!['*', '✦', '✧', '◆', '◇', '○', '●'],
+            change_rate: Some(12.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![0xFFD700, 0xFFA500, 0xFF6347], // Gold to orange to red
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![1.0, 0.0],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![Vec2::new(0.0, -4.0), Vec2::new(0.0, 2.0)],
+        })
+        .spawn_area(SpawnArea::Circle {
+            radius: 2.0,
+            distribution: Distribution::Uniform,
+        })
+        .gravity(Vec2::new(0.0, 1.0))
+        .priority(200)
+        .lifetime_range(1.0..2.0)
+        .burst(25)
+        .spawn_world(world);
+
+    // Bright central flash
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::Sequence {
+            glyphs: vec!['◉', '◎', '○', '◦', ' '],
+            duration_per_glyph: 0.15,
+        })
+        .color_curve(ColorCurve::Linear {
+            values: vec![0xFFFFFF, 0xFFD700, 0xFFA500],
+        })
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0xFFD700, 0x000000],
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![1.0, 0.0],
+        })
+        .priority(210)
+        .lifetime_range(0.8..0.8)
+        .burst(1)
+        .spawn_world(world);
+
+    // Rising golden motes
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: vec!['•', '·', '⋅'],
+            change_rate: Some(8.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::Constant(0xFFD700))
+        .alpha_curve(AlphaCurve::Linear {
+            values: vec![0.8, 0.0],
+        })
+        .velocity_curve(VelocityCurve::Constant(Vec2::new(0.0, -3.0)))
+        .spawn_area(SpawnArea::Circle {
+            radius: 1.5,
+            distribution: Distribution::Gaussian,
+        })
+        .priority(180)
+        .lifetime_range(1.5..2.5)
+        .burst(15)
+        .spawn_world(world);
+}

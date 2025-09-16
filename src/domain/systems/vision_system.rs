@@ -9,9 +9,9 @@ use crate::{
     },
     engine::Clock,
     rendering::{LightingData, Position, world_to_zone_idx, world_to_zone_local},
+    tracy_span,
 };
 use bevy_ecs::prelude::*;
-use macroquad::telemetry;
 use ordered_float::Pow;
 
 pub fn update_player_vision(
@@ -23,15 +23,14 @@ pub fn update_player_vision(
     zones: Res<Zones>,
     lighting_data: Res<LightingData>,
 ) {
-    telemetry::begin_zone("update_player_vision");
+    tracy_span!("update_player_vision");
+    ("update_player_vision");
 
     if clock.is_frozen() {
-        telemetry::end_zone();
         return;
     }
 
     let Ok(vision) = q_player.single() else {
-        telemetry::end_zone();
         return;
     };
 
@@ -41,33 +40,41 @@ pub fn update_player_vision(
         world_to_zone_idx(player_world_pos.0, player_world_pos.1, player_world_pos.2);
 
     let Some(zone_entity) = zones.cache.get(&player_zone_idx) else {
-        telemetry::end_zone();
         return;
     };
 
     let Ok(mut zone) = q_zones.get_mut(*zone_entity) else {
-        telemetry::end_zone();
         return;
     };
 
     zone.visible.clear(false);
     let mut vis = vec![];
 
-    let mut blocker_cache: HashMap<(i32, i32), bool> = HashMap::new();
-    for blocker_pos in q_vision_blockers.iter() {
-        if blocker_pos.zone_idx() == player_zone_idx {
-            let local_pos = blocker_pos.zone_local();
-            blocker_cache.insert((local_pos.0 as i32, local_pos.1 as i32), true);
+    let mut blocker_cache: HashMap<(i32, i32), bool> = {
+        tracy_span!("vision_build_blocker_cache");
+        let mut blocker_cache: HashMap<(i32, i32), bool> = HashMap::new();
+        for blocker_pos in q_vision_blockers.iter() {
+            if blocker_pos.zone_idx() == player_zone_idx {
+                let local_pos = blocker_pos.zone_local();
+                blocker_cache.insert((local_pos.0 as i32, local_pos.1 as i32), true);
+            }
         }
-    }
 
-    let player_x = player_local_pos.0 as i32;
-    let player_y = player_local_pos.1 as i32;
+        blocker_cache
+    };
 
-    let max_vision_range = vision.range;
+    let (player_x, player_y, max_vision_range, vision_range) = {
+        tracy_span!("vision_calculate_settings");
+        let player_x = player_local_pos.0 as i32;
+        let player_y = player_local_pos.1 as i32;
 
-    let daylight = lighting_data.get_ambient_intensity().pow(3.);
-    let vision_range = (daylight * max_vision_range as f32).round().max(2.0) as f64;
+        let max_vision_range = vision.range;
+
+        let daylight = lighting_data.get_ambient_intensity().pow(3.);
+        let vision_range = (daylight * max_vision_range as f32).round().max(2.0) as f64;
+
+        (player_x, player_y, max_vision_range, vision_range)
+    };
 
     let settings = ShadowcastSettings {
         start_x: player_x,
@@ -97,14 +104,18 @@ pub fn update_player_vision(
         },
     };
 
-    shadowcast(settings);
-
-    for (local_x, local_y) in vis {
-        zone.visible.set(local_x, local_y, true);
-        zone.explored.set(local_x, local_y, true);
+    {
+        tracy_span!("vision_shadowcast");
+        shadowcast(settings);
     }
 
-    telemetry::end_zone();
+    {
+        tracy_span!("vision_apply_results");
+        for (local_x, local_y) in vis {
+            zone.visible.set(local_x, local_y, true);
+            zone.explored.set(local_x, local_y, true);
+        }
+    }
 }
 
 pub fn update_entity_visibility_flags(
@@ -128,7 +139,7 @@ pub fn update_entity_visibility_flags(
         return;
     }
 
-    telemetry::begin_zone("update_entity_visibility_flags");
+    ("update_entity_visibility_flags");
 
     for (entity, position, has_visible, has_explored, has_bitmask) in q_entities.iter_mut() {
         let world_pos = position.world();
@@ -175,5 +186,4 @@ pub fn update_entity_visibility_flags(
             cmds.entity(entity).insert(IsExplored);
         }
     }
-    telemetry::end_zone();
 }

@@ -6,6 +6,7 @@ use crate::{
     domain::PlayerPosition,
     engine::Time,
     rendering::{Glyph, Position, Visibility, zone_local_to_world_f32},
+    tracy_plot, tracy_span,
 };
 
 use super::core::{
@@ -14,6 +15,11 @@ use super::core::{
 };
 
 pub fn update_particles(mut particle_grid: ResMut<ParticleGrid>, q_particles: Query<&Particle>) {
+    tracy_span!("update_particles");
+
+    let particle_count = q_particles.iter().count() as f64;
+    tracy_plot!("Active Particles", particle_count);
+
     particle_grid.clear();
 
     for particle in q_particles.iter() {
@@ -42,6 +48,7 @@ pub fn render_particle_fragments(
     mut q_glyph: Query<(&mut Glyph, &mut Position), With<ParticleGlyph>>,
     player_position: Option<Res<PlayerPosition>>,
 ) {
+    tracy_span!("render_particle_fragments");
     let player_z = player_position.as_ref().map(|p| p.z).unwrap_or(0.0);
     let zone_idx = player_position.as_ref().map(|p| p.zone_idx()).unwrap_or(0);
 
@@ -79,6 +86,7 @@ pub fn render_particle_fragments(
 }
 
 pub fn cleanup_particle_glyphs(mut cmds: Commands, mut particle_pool: ResMut<ParticleGlyphPool>) {
+    tracy_span!("cleanup_particle_glyphs");
     let mut used = particle_pool.used_glyphs.clone();
     particle_pool.used_glyphs = vec![];
 
@@ -95,6 +103,7 @@ pub fn update_particle_physics(
     time: Res<Time>,
     mut rand: ResMut<crate::common::Rand>,
 ) {
+    tracy_span!("update_particle_physics");
     let dt = time.dt;
 
     for (entity, mut particle) in q_particles.iter_mut() {
@@ -140,6 +149,7 @@ pub fn update_particle_spawners(
     time: Res<Time>,
     mut rand: ResMut<crate::common::Rand>,
 ) {
+    tracy_span!("update_particle_spawners");
     let dt = time.dt;
 
     for (entity, mut spawner) in q_spawners.iter_mut() {
@@ -261,6 +271,7 @@ pub fn update_particle_trails(
     time: Res<Time>,
     mut rand: ResMut<crate::common::Rand>,
 ) {
+    tracy_span!("update_particle_trails");
     let dt = time.dt;
 
     for (mut trail, particle) in q_particles_with_trails.iter_mut() {

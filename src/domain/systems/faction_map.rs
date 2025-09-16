@@ -7,6 +7,7 @@ use crate::{
     domain::{Collider, FactionId, FactionMember, InActiveZone, PlayerPosition, Zone},
     engine::Clock,
     rendering::Position,
+    tracy_span,
 };
 
 #[derive(Resource)]
@@ -60,37 +61,49 @@ impl FactionMap {
     ) {
         let mut faction_goals: HashMap<FactionId, Vec<(usize, usize)>> = HashMap::new();
 
-        // Find all faction members in this zone
-        for (position, faction_member) in q_faction_members.iter() {
-            let zone_idx = position.zone_idx();
-            if zone_idx == zone.idx {
-                let local_pos = position.zone_local();
-                faction_goals
-                    .entry(faction_member.faction_id)
-                    .or_default()
-                    .push(local_pos);
+        {
+            tracy_span!("faction_map_collect_goals");
+            // Find all faction members in this zone
+            for (position, faction_member) in q_faction_members.iter() {
+                let zone_idx = position.zone_idx();
+                if zone_idx == zone.idx {
+                    let local_pos = position.zone_local();
+                    faction_goals
+                        .entry(faction_member.faction_id)
+                        .or_default()
+                        .push(local_pos);
+                }
             }
         }
 
-        // Create maps for any new factions
-        for faction_id in faction_goals.keys() {
-            if !self.maps.contains_key(faction_id) {
-                self.maps.insert(*faction_id, DijkstraMap::new(ZONE_SIZE.0, ZONE_SIZE.1));
+        {
+            tracy_span!("faction_map_create_maps");
+            // Create maps for any new factions
+            for faction_id in faction_goals.keys() {
+                if !self.maps.contains_key(faction_id) {
+                    self.maps
+                        .insert(*faction_id, DijkstraMap::new(ZONE_SIZE.0, ZONE_SIZE.1));
+                }
             }
         }
 
-        // Update obstacles for all factions in this zone
-        let faction_list: Vec<_> = faction_goals.keys().cloned().collect();
-        self.update_obstacles(zone, &faction_list, q_colliders);
+        {
+            tracy_span!("faction_map_update_obstacles");
+            // Update obstacles for all factions in this zone
+            let faction_list: Vec<_> = faction_goals.keys().cloned().collect();
+            self.update_obstacles(zone, &faction_list, q_colliders);
+        }
 
-        // Calculate pathfinding for each faction
-        for (faction_id, goals) in faction_goals {
-            if let Some(map) = self.maps.get_mut(&faction_id) {
-                map.calculate_uniform(&goals);
+        {
+            tracy_span!("faction_map_calculate_pathfinding");
+            // Calculate pathfinding for each faction
+            for (faction_id, goals) in faction_goals {
+                if let Some(map) = self.maps.get_mut(&faction_id) {
+                    map.calculate_uniform(&goals);
+                }
             }
         }
     }
-
 }
 
 pub fn update_faction_maps(
@@ -101,6 +114,7 @@ pub fn update_faction_maps(
     q_colliders: Query<(Entity, &Position), With<Collider>>,
     q_faction_members: Query<(&Position, &FactionMember), With<InActiveZone>>,
 ) {
+    tracy_span!("update_faction_maps");
     if clock.is_frozen() {
         return;
     }

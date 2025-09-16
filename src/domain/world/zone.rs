@@ -1,18 +1,19 @@
 use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
-use macroquad::telemetry;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid},
     domain::{
-        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs, PursuingPlayer, Terrain,
-        UnloadZoneCommand, ZoneGenerator,
+        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs, PursuingPlayer,
+        Terrain, UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
-    rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz},
+    rendering::{
+        Position, world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz,
+    },
     states::CleanupStatePlay,
 };
 
@@ -362,12 +363,10 @@ pub fn load_nearby_zones(
 }
 
 pub fn spawn_zone(world: &mut World, zone_idx: usize) {
-    telemetry::begin_zone("spawn_zone");
-    telemetry::begin_zone("generate_zone");
+    ("spawn_zone");
+    ("generate_zone");
 
     let data = ZoneGenerator::generate_zone(world, zone_idx);
-
-    telemetry::end_zone();
 
     let zone_entity_id = world
         .spawn((
@@ -383,8 +382,6 @@ pub fn spawn_zone(world: &mut World, zone_idx: usize) {
         // todo: Remove clone
         Prefabs::spawn_world(world, config.clone());
     }
-
-    telemetry::end_zone();
 }
 
 pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {

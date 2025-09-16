@@ -2,7 +2,8 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop, LootTableId,
+        Attributes, CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop,
+        LootTableId,
         components::ai_controller::{AiController, AiTemplate},
     },
     rendering::{GlyphTextureId, Layer, Position},
@@ -26,8 +27,8 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
         .with_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::bite())
-        .with_level(5)
-        .with_attributes(crate::domain::Attributes::new(3, 4, 3, 3))
+        .with_level(2)
+        .with_attributes(Attributes::new(1, 2, 1, 2))
         .with_stats(crate::domain::Stats::new())
         .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_loot_drop(LootDrop::new(LootTableId::CoyoteLoot, 0.3))

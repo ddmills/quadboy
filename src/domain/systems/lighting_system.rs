@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
 use bevy_ecs::prelude::*;
-use macroquad::telemetry;
 
 use crate::{
     common::{
@@ -14,6 +13,7 @@ use crate::{
     },
     engine::{Clock, StableIdRegistry},
     rendering::{LightingData, Position, world_to_zone_local},
+    tracy_span,
 };
 
 #[derive(Clone)]
@@ -37,125 +37,141 @@ pub fn update_lighting_system(
     q_equipped_lights: Query<&LightSource, With<Equipped>>,
     q_entities_with_equipment: Query<(&Position, &EquipmentSlots), With<InActiveZone>>,
 ) {
-    telemetry::begin_zone("update_lighting_system");
+    tracy_span!("update_lighting_system");
+    ("update_lighting_system");
 
     if clock.is_frozen() {
-        telemetry::end_zone();
         return;
     }
 
     let player_zone_idx = player_pos.zone_idx();
     let biome_type = overworld.get_zone_type(player_zone_idx);
 
-    // Calculate ambient light based on biome and daylight
-    let (ambient_color, ambient_intensity) = if biome_type.uses_daylight_cycle() {
-        let daylight = clock.get_daylight();
-        let biome_color_rgba = biome_type.get_ambient_color().to_rgba(1.0);
-        let biome_intensity = biome_type.get_ambient_intensity();
+    let (ambient_color, ambient_intensity) = {
+        tracy_span!("lighting_calculate_ambient");
+        // Calculate ambient light based on biome and daylight
+        if biome_type.uses_daylight_cycle() {
+            let daylight = clock.get_daylight();
+            let biome_color_rgba = biome_type.get_ambient_color().to_rgba(1.0);
+            let biome_intensity = biome_type.get_ambient_intensity();
 
-        // Blend biome color with daylight, preserving more daylight color at night
-        let night_blend_factor = (1.0 - daylight.intensity).powf(1.2) * 0.3;
-        let blended_r = daylight.color.x * biome_color_rgba[0] * (1.0 - night_blend_factor)
-            + daylight.color.x * night_blend_factor;
-        let blended_g = daylight.color.y * biome_color_rgba[1] * (1.0 - night_blend_factor)
-            + daylight.color.y * night_blend_factor;
-        let blended_b = daylight.color.z * biome_color_rgba[2] * (1.0 - night_blend_factor)
-            + daylight.color.z * night_blend_factor;
+            // Blend biome color with daylight, preserving more daylight color at night
+            let night_blend_factor = (1.0 - daylight.intensity).powf(1.2) * 0.3;
+            let blended_r = daylight.color.x * biome_color_rgba[0] * (1.0 - night_blend_factor)
+                + daylight.color.x * night_blend_factor;
+            let blended_g = daylight.color.y * biome_color_rgba[1] * (1.0 - night_blend_factor)
+                + daylight.color.y * night_blend_factor;
+            let blended_b = daylight.color.z * biome_color_rgba[2] * (1.0 - night_blend_factor)
+                + daylight.color.z * night_blend_factor;
 
-        let final_r = (blended_r * 255.0) as u32;
-        let final_g = (blended_g * 255.0) as u32;
-        let final_b = (blended_b * 255.0) as u32;
-        let final_color = (final_r << 16) | (final_g << 8) | final_b;
-        let final_intensity = daylight.intensity * biome_intensity;
+            let final_r = (blended_r * 255.0) as u32;
+            let final_g = (blended_g * 255.0) as u32;
+            let final_b = (blended_b * 255.0) as u32;
+            let final_color = (final_r << 16) | (final_g << 8) | final_b;
+            let final_intensity = daylight.intensity * biome_intensity;
 
-        (final_color, final_intensity)
-    } else {
-        (
-            biome_type.get_ambient_color(),
-            biome_type.get_ambient_intensity(),
-        )
+            (final_color, final_intensity)
+        } else {
+            (
+                biome_type.get_ambient_color(),
+                biome_type.get_ambient_intensity(),
+            )
+        }
     };
 
     lighting_data.clear();
     lighting_data.set_ambient(ambient_color, ambient_intensity);
 
-    // Build blocker set for fast lookups - only include blockers in player's zone
-    let blocker_positions: HashSet<_> = q_blockers
-        .iter()
-        .filter(|pos| pos.zone_idx() == player_zone_idx)
-        .map(|pos| {
-            let (local_x, local_y) = pos.zone_local();
-            (local_x as i32, local_y as i32)
-        })
-        .collect();
+    let blocker_positions: HashSet<_> = {
+        tracy_span!("lighting_build_blockers");
+        // Build blocker set for fast lookups - only include blockers in player's zone
+        q_blockers
+            .iter()
+            .filter(|pos| pos.zone_idx() == player_zone_idx)
+            .map(|pos| {
+                let (local_x, local_y) = pos.zone_local();
+                (local_x as i32, local_y as i32)
+            })
+            .collect()
+    };
 
-    // Phase 1: Collect all light fragments (single collection like Haxe)
-    let mut all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
+    let mut all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = {
+        tracy_span!("lighting_collect_fragments");
+        let mut all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
 
-    // Process all enabled lights in the zone
-    for (entity, pos, light) in q_lights.iter() {
-        if !light.is_enabled || pos.zone_idx() != player_zone_idx {
-            continue;
+        // Process all enabled lights in the zone
+        for (entity, pos, light) in q_lights.iter() {
+            if !light.is_enabled || pos.zone_idx() != player_zone_idx {
+                continue;
+            }
+
+            apply_light_source(pos, light, entity, &blocker_positions, &mut all_fragments);
         }
 
-        apply_light_source(pos, light, entity, &blocker_positions, &mut all_fragments);
-    }
+        // Process equipped light sources
+        for (owner_pos, equipment_slots) in q_entities_with_equipment.iter() {
+            if owner_pos.zone_idx() != player_zone_idx {
+                continue;
+            }
 
-    // Process equipped light sources
-    for (owner_pos, equipment_slots) in q_entities_with_equipment.iter() {
-        if owner_pos.zone_idx() != player_zone_idx {
-            continue;
-        }
-
-        for slot_id in equipment_slots.slots.values().filter_map(|&id| id) {
-            if let Some(item_entity) = registry.get_entity(slot_id)
-                && let Ok(light) = q_equipped_lights.get(item_entity)
-                && light.is_enabled
-            {
-                apply_light_source(
-                    owner_pos,
-                    light,
-                    item_entity,
-                    &blocker_positions,
-                    &mut all_fragments,
-                );
+            for slot_id in equipment_slots.slots.values().filter_map(|&id| id) {
+                if let Some(item_entity) = registry.get_entity(slot_id)
+                    && let Ok(light) = q_equipped_lights.get(item_entity)
+                    && light.is_enabled
+                {
+                    apply_light_source(
+                        owner_pos,
+                        light,
+                        item_entity,
+                        &blocker_positions,
+                        &mut all_fragments,
+                    );
+                }
             }
         }
-    }
 
-    // Phase 2: Separate floors and walls, apply floors immediately
-    let mut floor_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
-    let mut wall_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
+        all_fragments
+    };
 
-    for ((x, y), contributions) in all_fragments {
-        if blocker_positions.contains(&(x, y)) {
-            // This is a wall
-            wall_fragments.insert((x, y), contributions);
-        } else {
-            // This is a floor - apply immediately and store for POV checking
-            apply_combined_light(x, y, &contributions, &mut lighting_data);
-            floor_fragments.insert((x, y), contributions);
+    let (mut floor_fragments, mut wall_fragments) = {
+        tracy_span!("lighting_separate_floors_walls");
+        // Phase 2: Separate floors and walls, apply floors immediately
+        let mut floor_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
+        let mut wall_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
+
+        for ((x, y), contributions) in all_fragments {
+            if blocker_positions.contains(&(x, y)) {
+                // This is a wall
+                wall_fragments.insert((x, y), contributions);
+            } else {
+                // This is a floor - apply immediately and store for POV checking
+                apply_combined_light(x, y, &contributions, &mut lighting_data);
+                floor_fragments.insert((x, y), contributions);
+            }
+        }
+
+        (floor_fragments, wall_fragments)
+    };
+
+    {
+        tracy_span!("lighting_apply_pov_walls");
+        // Phase 3: Apply POV-based wall lighting
+        let player_world_pos = player_pos.world();
+        let (player_local_x, player_local_y) =
+            world_to_zone_local(player_world_pos.0, player_world_pos.1);
+
+        for ((wall_x, wall_y), wall_contributions) in wall_fragments {
+            apply_pov_wall_lighting(
+                wall_x,
+                wall_y,
+                player_local_x as i32,
+                player_local_y as i32,
+                &wall_contributions,
+                &floor_fragments,
+                &mut lighting_data,
+            );
         }
     }
-
-    // Phase 3: Apply POV-based wall lighting
-    let player_world_pos = player_pos.world();
-    let (player_local_x, player_local_y) =
-        world_to_zone_local(player_world_pos.0, player_world_pos.1);
-
-    for ((wall_x, wall_y), wall_contributions) in wall_fragments {
-        apply_pov_wall_lighting(
-            wall_x,
-            wall_y,
-            player_local_x as i32,
-            player_local_y as i32,
-            &wall_contributions,
-            &floor_fragments,
-            &mut lighting_data,
-        );
-    }
-
-    telemetry::end_zone();
 }
 
 fn apply_light_source(

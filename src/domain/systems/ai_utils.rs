@@ -1,16 +1,23 @@
+use std::collections::HashSet;
+
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
-    common::Rand,
+    common::{
+        Rand,
+        algorithm::{
+            astar::{AStarSettings, astar},
+            distance::Distance,
+        },
+    },
     domain::{
-        AttackAction, Collider, Energy, EnergyActionType, FactionMap, FactionMember,
-        PlayerPosition, Zone,
-        actions::MoveAction,
-        are_hostile,
+        AiController, AttackAction, Collider, Energy, EnergyActionType, FactionMap, FactionMember,
+        PlayerPosition, StairDown, StairUp, Zone, actions::MoveAction, are_hostile,
         get_base_energy_cost,
     },
     rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_xyz},
 };
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 pub fn find_hostile_in_range(
     entity: Entity,
@@ -176,37 +183,86 @@ pub fn return_to_home(
     world: &mut World,
 ) -> bool {
     let (x, y, z) = entity_pos.world();
-    let (home_x, home_y, _) = home_pos.world();
+    let (home_x, home_y, home_z) = home_pos.world();
 
-    let dx = if home_x > x {
-        1
-    } else if home_x < x {
-        -1
+    // If already at home, we're done
+    if x == home_x && y == home_y && z == home_z {
+        return true;
+    }
+
+    let current_pos = (x, y, z);
+    let target_pos = (home_x, home_y, home_z);
+
+    // Get cached path if it exists
+    let cached_path = if let Some(ai) = world.get::<AiController>(entity) {
+        ai.cached_home_path.clone()
     } else {
-        0
-    };
-    let dy = if home_y > y {
-        1
-    } else if home_y < y {
-        -1
-    } else {
-        0
+        None
     };
 
-    if dx != 0 || dy != 0 {
-        let new_x = (x as i32 + dx) as usize;
-        let new_y = (y as i32 + dy) as usize;
+    // Try to use cached path first
+    if let Some(mut path) = cached_path {
+        // Remove positions we've already passed
+        while !path.is_empty() && path[0] == current_pos {
+            path.remove(0);
+        }
 
-        if is_move_valid(world, new_x, new_y, z) {
+        // Try to move to the next step in the cached path
+        if !path.is_empty() {
+            let next_step = path[0];
+            if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
+                let move_action = MoveAction {
+                    entity,
+                    new_position: next_step,
+                };
+                move_action.apply(world);
+
+                // Update the cached path by removing the step we just took
+                path.remove(0);
+                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+                    ai.cached_home_path = if path.is_empty() { None } else { Some(path) };
+                }
+                return true;
+            } else {
+                // Next step is blocked, clear the cached path and recalculate
+                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+                    ai.cached_home_path = None;
+                }
+            }
+        }
+    }
+
+    // No cached path or cached path is blocked, calculate new path with A*
+    if let Some(path) = find_path_astar(current_pos, target_pos, world, Some(50.0)) {
+        // Cache the new path (excluding the current position)
+        let path_to_cache = if path.len() > 1 {
+            path[1..].to_vec()
+        } else {
+            Vec::new()
+        };
+
+        if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+            ai.cached_home_path = if path_to_cache.is_empty() {
+                None
+            } else {
+                Some(path_to_cache)
+            };
+        }
+
+        // Move to the next step in the path
+        if path.len() > 1 {
+            let next_step = path[1];
             let move_action = MoveAction {
                 entity,
-                new_position: (new_x, new_y, z),
+                new_position: next_step,
             };
             move_action.apply(world);
             return true;
         }
     }
 
+    trace!("STUCK");
+    // If A* also fails, we're truly stuck
     false
 }
 
@@ -228,9 +284,9 @@ pub fn distance_from_home(entity_pos: &Position, home_pos: &Position) -> f32 {
 
 pub fn consume_wait_energy(entity: Entity, world: &mut World) {
     if let Some(mut energy) = world.get_mut::<Energy>(entity) {
-        // Use a smaller energy cost for teleport waiting so entities get turns frequently enough
-        // to check if the wait period has elapsed (200 ticks)
-        energy.consume_energy(50);
+        // Use moderate energy cost for teleport waiting - enough to check wait period but not spam turns
+        // 200 energy gives entities turns roughly every 2-3 game ticks while waiting
+        energy.consume_energy(200);
     }
 }
 
@@ -285,7 +341,11 @@ fn move_toward_target_cross_zone(
 
     // Fallback: Move toward player's last known position
     if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
-        let target_pos = Position::new(player_pos.x as usize, player_pos.y as usize, player_pos.z as usize);
+        let target_pos = Position::new(
+            player_pos.x as usize,
+            player_pos.y as usize,
+            player_pos.z as usize,
+        );
         return move_toward_position(entity, entity_pos, &target_pos, world);
     }
 
@@ -344,8 +404,8 @@ fn move_toward_position(
 
 pub fn check_at_zone_boundary(pos: &Position) -> bool {
     let (local_x, local_y) = pos.zone_local();
-    let at_boundary = local_x <= 1 || local_x >= ZONE_SIZE.0 - 2 ||
-        local_y <= 1 || local_y >= ZONE_SIZE.1 - 2;
+    let at_boundary =
+        local_x <= 1 || local_x >= ZONE_SIZE.0 - 2 || local_y <= 1 || local_y >= ZONE_SIZE.1 - 2;
     if at_boundary {
         println!("Entity at zone boundary: local ({}, {})", local_x, local_y);
     }
@@ -356,37 +416,116 @@ pub fn teleport_to_zone_edge(
     entity: Entity,
     current_pos: &Position,
     target_zone_idx: usize,
-    world: &mut World
+    world: &mut World,
 ) -> bool {
-    println!("Attempting teleportation for entity {:?} to zone {}", entity, target_zone_idx);
+    println!(
+        "Attempting teleportation for entity {:?} to zone {}",
+        entity, target_zone_idx
+    );
     // Get player's current position to teleport near them
     let player_pos = if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
-        (player_pos.x as usize, player_pos.y as usize, player_pos.z as usize)
+        (
+            player_pos.x as usize,
+            player_pos.y as usize,
+            player_pos.z as usize,
+        )
     } else {
         return false; // No player position available
     };
 
     let current_zone = current_pos.zone_idx();
-    let (curr_zx, curr_zy, _curr_zz) = zone_xyz(current_zone);
+    let (curr_zx, curr_zy, curr_zz) = zone_xyz(current_zone);
     let (target_zx, target_zy, target_zz) = zone_xyz(target_zone_idx);
 
-    // Determine which edge of the target zone to teleport to based on current zone position
+    // Check for vertical movement (different Z levels)
+    if target_zz != curr_zz {
+        // For vertical movement, find nearest staircase in current zone
+        if let Some((stair_x, stair_y)) = find_nearest_staircase(current_pos, target_zz, world) {
+            println!(
+                "Teleporting entity {:?} to staircase at ({}, {})",
+                entity, stair_x, stair_y
+            );
+
+            // Update entity position to staircase and move to target Z level
+            if let Some(mut pos) = world.get_mut::<Position>(entity) {
+                pos.x = stair_x as f32;
+                pos.y = stair_y as f32;
+                pos.z = target_zz as f32; // Move to target Z level where player is
+            }
+
+            // Consume energy for teleportation
+            if let Some(mut energy) = world.get_mut::<Energy>(entity) {
+                energy.consume_energy(100);
+            }
+
+            return true;
+        } else {
+            println!("No suitable staircase found for vertical pursuit");
+            return false;
+        }
+    }
+
+    // Convert player world coordinates to local coordinates within target zone
+    let (player_local_x, player_local_y) = (player_pos.0 % ZONE_SIZE.0, player_pos.1 % ZONE_SIZE.1);
+
+    // Find an open tile near the player on the appropriate edge, fallback to original working positions
     let (new_x, new_y) = if target_zx > curr_zx {
-        // Coming from west, teleport to west edge of target zone
-        (target_zx * ZONE_SIZE.0, player_pos.1)
+        // Coming from west, place on west edge of target zone
+        let edge_x = target_zx * ZONE_SIZE.0;
+        // Use player's local Y position within the target zone
+        let target_y = target_zy * ZONE_SIZE.1 + player_local_y;
+        if let Some(open_y) =
+            find_open_position_along_edge(world, edge_x, target_y, target_zz as usize, true)
+        {
+            (edge_x, open_y)
+        } else {
+            // Fallback to original working position: west edge, center of zone
+            (edge_x, target_zy * ZONE_SIZE.1 + ZONE_SIZE.1 / 2)
+        }
     } else if target_zx < curr_zx {
-        // Coming from east, teleport to east edge of target zone
-        ((target_zx + 1) * ZONE_SIZE.0 - 2, player_pos.1)
+        // Coming from east, place on east edge of target zone
+        let edge_x = (target_zx + 1) * ZONE_SIZE.0 - 1;
+        // Use player's local Y position within the target zone
+        let target_y = target_zy * ZONE_SIZE.1 + player_local_y;
+        if let Some(open_y) =
+            find_open_position_along_edge(world, edge_x, target_y, target_zz as usize, true)
+        {
+            (edge_x, open_y)
+        } else {
+            // Fallback to original working position: east edge, center of zone
+            (edge_x, target_zy * ZONE_SIZE.1 + ZONE_SIZE.1 / 2)
+        }
     } else if target_zy > curr_zy {
-        // Coming from north, teleport to north edge of target zone
-        (player_pos.0, target_zy * ZONE_SIZE.1)
+        // Coming from north, place on north edge of target zone
+        let edge_y = target_zy * ZONE_SIZE.1;
+        // Use player's local X position within the target zone
+        let target_x = target_zx * ZONE_SIZE.0 + player_local_x;
+        if let Some(open_x) =
+            find_open_position_along_edge(world, edge_y, target_x, target_zz as usize, false)
+        {
+            trace!("using open pos on edge!");
+            (open_x, edge_y)
+        } else {
+            trace!("fallback to center!");
+            // Fallback to original working position: north edge, center of zone
+            (target_zx * ZONE_SIZE.0 + ZONE_SIZE.0 / 2, edge_y)
+        }
     } else if target_zy < curr_zy {
-        // Coming from south, teleport to south edge of target zone
-        (player_pos.0, (target_zy + 1) * ZONE_SIZE.1 - 2)
+        // Coming from south, place on south edge of target zone
+        let edge_y = (target_zy + 1) * ZONE_SIZE.1 - 1;
+        // Use player's local X position within the target zone
+        let target_x = target_zx * ZONE_SIZE.0 + player_local_x;
+        if let Some(open_x) =
+            find_open_position_along_edge(world, edge_y, target_x, target_zz as usize, false)
+        {
+            (open_x, edge_y)
+        } else {
+            // Fallback to original working position: south edge, center of zone
+            (target_zx * ZONE_SIZE.0 + ZONE_SIZE.0 / 2, edge_y)
+        }
     } else {
         return false; // Same zone
     };
-
 
     // Update entity position directly
     if let Some(mut pos) = world.get_mut::<Position>(entity) {
@@ -397,9 +536,301 @@ pub fn teleport_to_zone_edge(
 
     // Consume energy for teleportation
     if let Some(mut energy) = world.get_mut::<Energy>(entity) {
-        energy.consume_energy(500); // High energy cost for teleportation
+        energy.consume_energy(100); // High energy cost for teleportation
     }
 
     println!("Teleportation successful to ({}, {})", new_x, new_y);
     true
+}
+
+/// Find an open position along an edge closest to a target coordinate
+/// If search_along_y is true, varies Y coordinate around target_coord while keeping X fixed
+/// If search_along_y is false, varies X coordinate around target_coord while keeping Y fixed
+fn find_open_position_along_edge(
+    world: &mut World,
+    fixed_coord: usize,
+    target_coord: usize,
+    z: usize,
+    search_along_y: bool,
+) -> Option<usize> {
+    let mut valid_positions = Vec::new();
+
+    // First try the target position
+    let (test_x, test_y) = if search_along_y {
+        (fixed_coord, target_coord)
+    } else {
+        (target_coord, fixed_coord)
+    };
+
+    if is_move_valid(world, test_x, test_y, z) {
+        valid_positions.push(target_coord);
+    }
+
+    // Determine zone bounds for search
+    let zone_idx = world_to_zone_idx(
+        if search_along_y {
+            fixed_coord
+        } else {
+            target_coord
+        },
+        if search_along_y {
+            target_coord
+        } else {
+            fixed_coord
+        },
+        z,
+    );
+    let (zx, zy, _) = zone_xyz(zone_idx);
+    let zone_min_x = zx * ZONE_SIZE.0;
+    let zone_max_x = zone_min_x + ZONE_SIZE.0 - 1;
+    let zone_min_y = zy * ZONE_SIZE.1;
+    let zone_max_y = zone_min_y + ZONE_SIZE.1 - 1;
+
+    // Search outward from target position in both directions
+    for offset in 1..=10 {
+        // Try positive offset with bounds check
+        let pos_coord = target_coord + offset;
+        let pos_valid = if search_along_y {
+            pos_coord <= zone_max_y
+        } else {
+            pos_coord <= zone_max_x
+        };
+
+        if pos_valid {
+            let (test_x, test_y) = if search_along_y {
+                (fixed_coord, pos_coord)
+            } else {
+                (pos_coord, fixed_coord)
+            };
+
+            if is_move_valid(world, test_x, test_y, z) {
+                valid_positions.push(pos_coord);
+            }
+        }
+
+        // Try negative offset with bounds check
+        if offset <= target_coord {
+            let neg_coord = target_coord - offset;
+            let neg_valid = if search_along_y {
+                neg_coord >= zone_min_y
+            } else {
+                neg_coord >= zone_min_x
+            };
+
+            if neg_valid {
+                let (test_x, test_y) = if search_along_y {
+                    (fixed_coord, neg_coord)
+                } else {
+                    (neg_coord, fixed_coord)
+                };
+
+                if is_move_valid(world, test_x, test_y, z) {
+                    valid_positions.push(neg_coord);
+                }
+            }
+        }
+    }
+
+    // Return the position closest to the target coordinate
+    valid_positions.into_iter().min_by_key(|&coord| {
+        if coord > target_coord {
+            coord - target_coord
+        } else {
+            target_coord - coord
+        }
+    })
+}
+
+fn find_nearest_staircase(
+    current_pos: &Position,
+    target_z: usize,
+    world: &mut World,
+) -> Option<(usize, usize)> {
+    let (current_x, current_y, current_z) = current_pos.world();
+    let current_zone_idx = world_to_zone_idx(current_x, current_y, current_z);
+
+    let need_stair_up = target_z < current_z;
+    let need_stair_down = target_z > current_z;
+
+    if !need_stair_up && !need_stair_down {
+        return None;
+    }
+
+    let mut nearest_stair: Option<(usize, usize, f32)> = None;
+
+    if need_stair_up {
+        let mut q_stairs_up = world.query_filtered::<&Position, With<StairUp>>();
+        for stair_pos in q_stairs_up.iter(world) {
+            let (stair_x, stair_y, stair_z) = stair_pos.world();
+            let stair_zone_idx = world_to_zone_idx(stair_x, stair_y, stair_z);
+
+            if stair_zone_idx == current_zone_idx && stair_z == current_z {
+                let distance = ((current_x as f32 - stair_x as f32).powi(2)
+                    + (current_y as f32 - stair_y as f32).powi(2))
+                .sqrt();
+
+                if nearest_stair.is_none() || distance < nearest_stair.unwrap().2 {
+                    nearest_stair = Some((stair_x, stair_y, distance));
+                }
+            }
+        }
+    } else if need_stair_down {
+        let mut q_stairs_down = world.query_filtered::<&Position, With<StairDown>>();
+        for stair_pos in q_stairs_down.iter(world) {
+            let (stair_x, stair_y, stair_z) = stair_pos.world();
+            let stair_zone_idx = world_to_zone_idx(stair_x, stair_y, stair_z);
+
+            if stair_zone_idx == current_zone_idx && stair_z == current_z {
+                let distance = ((current_x as f32 - stair_x as f32).powi(2)
+                    + (current_y as f32 - stair_y as f32).powi(2))
+                .sqrt();
+
+                if nearest_stair.is_none() || distance < nearest_stair.unwrap().2 {
+                    nearest_stair = Some((stair_x, stair_y, distance));
+                }
+            }
+        }
+    }
+
+    nearest_stair.map(|(x, y, _)| (x, y))
+}
+
+fn get_valid_neighbors(pos: (usize, usize, usize), world: &mut World) -> Vec<[usize; 3]> {
+    let (x, y, z) = pos;
+    let mut neighbors = Vec::new();
+
+    // 8-directional movement (4 cardinal + 4 diagonal)
+    let directions = [
+        (-1, -1),
+        (0, -1),
+        (1, -1), // NW, N, NE
+        (-1, 0),
+        (1, 0), // W,     E
+        (-1, 1),
+        (0, 1),
+        (1, 1), // SW, S, SE
+    ];
+
+    for (dx, dy) in directions.iter() {
+        let new_x_i32 = x as i32 + dx;
+        let new_y_i32 = y as i32 + dy;
+
+        // Check bounds
+        if new_x_i32 < 0 || new_y_i32 < 0 {
+            continue;
+        }
+
+        let new_x = new_x_i32 as usize;
+        let new_y = new_y_i32 as usize;
+
+        // Check world bounds
+        let max_x = (MAP_SIZE.0 * ZONE_SIZE.0) - 1;
+        let max_y = (MAP_SIZE.1 * ZONE_SIZE.1) - 1;
+        if new_x > max_x || new_y > max_y {
+            continue;
+        }
+
+        // Check if move is valid (no colliders)
+        if is_move_valid(world, new_x, new_y, z) {
+            neighbors.push([new_x, new_y, z]);
+        }
+    }
+
+    neighbors
+}
+
+pub fn find_path_astar(
+    from: (usize, usize, usize),
+    to: (usize, usize, usize),
+    world: &mut World,
+    max_distance: Option<f32>,
+) -> Option<Vec<(usize, usize, usize)>> {
+    // Pre-compute valid positions to avoid borrowing issues in closures
+    let mut valid_positions = HashSet::new();
+
+    // Compute a reasonable search area based on distance
+    let distance = Distance::chebyshev(
+        [from.0 as i32, from.1 as i32, from.2 as i32],
+        [to.0 as i32, to.1 as i32, to.2 as i32],
+    ) as usize;
+    let search_radius = (distance + 20).min(100); // Add buffer, but cap at reasonable size
+
+    let min_x = from.0.saturating_sub(search_radius);
+    let max_x = (from.0 + search_radius).min((MAP_SIZE.0 * ZONE_SIZE.0) - 1);
+    let min_y = from.1.saturating_sub(search_radius);
+    let max_y = (from.1 + search_radius).min((MAP_SIZE.1 * ZONE_SIZE.1) - 1);
+
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            if is_move_valid(world, x, y, from.2) {
+                valid_positions.insert((x, y, from.2));
+            }
+        }
+    }
+
+    let result = astar(AStarSettings {
+        start: [from.0, from.1, from.2],
+        is_goal: |[x, y, z]| x == to.0 && y == to.1 && z == to.2,
+        cost: |[from_x, from_y, _from_z], [to_x, to_y, _to_z]| {
+            // Calculate cost based on movement type
+            let dx = (to_x as i32 - from_x as i32).abs();
+            let dy = (to_y as i32 - from_y as i32).abs();
+
+            if dx <= 1 && dy <= 1 {
+                1.0
+            } else {
+                f32::INFINITY
+            }
+        },
+        heuristic: |[x, y, z]| {
+            // Chebyshev distance for 8-directional movement
+            Distance::chebyshev(
+                [x as i32, y as i32, z as i32],
+                [to.0 as i32, to.1 as i32, to.2 as i32],
+            )
+        },
+        neighbors: |[x, y, z]| {
+            let mut neighbors = Vec::new();
+
+            // 8-directional movement
+            let directions = [
+                (-1, -1),
+                (0, -1),
+                (1, -1),
+                (-1, 0),
+                (1, 0),
+                (-1, 1),
+                (0, 1),
+                (1, 1),
+            ];
+
+            for (dx, dy) in directions.iter() {
+                let new_x_i32 = x as i32 + dx;
+                let new_y_i32 = y as i32 + dy;
+
+                if new_x_i32 >= 0 && new_y_i32 >= 0 {
+                    let new_x = new_x_i32 as usize;
+                    let new_y = new_y_i32 as usize;
+
+                    if valid_positions.contains(&(new_x, new_y, z)) {
+                        neighbors.push([new_x, new_y, z]);
+                    }
+                }
+            }
+
+            neighbors
+        },
+        max_depth: 500, // Reasonable depth for pathfinding
+        max_cost: max_distance,
+    });
+
+    if result.is_success {
+        // A* returns path in reverse order, so reverse it to get from start to goal
+        let mut path: Vec<(usize, usize, usize)> =
+            result.path.into_iter().map(|[x, y, z]| (x, y, z)).collect();
+        path.reverse();
+        Some(path)
+    } else {
+        None
+    }
 }

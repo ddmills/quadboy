@@ -1,10 +1,11 @@
 use bevy_ecs::prelude::*;
-use macroquad::{miniquad::PassAction, prelude::*, telemetry};
+use macroquad::{miniquad::PassAction, prelude::*};
 
 use crate::{
     cfg::{TEXEL_SIZE_F32, TILE_SIZE},
     engine::Time,
     rendering::{AmbientTransition, CrtShader},
+    tracy_span,
 };
 
 use super::{Layers, ScreenSize, create_render_target};
@@ -56,7 +57,7 @@ pub fn render_all(
     mut ambient_transition: ResMut<AmbientTransition>,
     lighting_data: Res<super::LightingData>,
 ) {
-    telemetry::begin_zone("render_all");
+    tracy_span!("render_all");
     let target_size = uvec2(
         (screen.tile_w * TILE_SIZE.0) as u32,
         (screen.tile_h * TILE_SIZE.1) as u32,
@@ -135,7 +136,6 @@ pub fn render_all(
 
     set_default_camera();
     gl_use_default_material();
-    telemetry::end_zone();
 }
 
 fn start_pass(target: &RenderTarget, clear_color: macroquad::prelude::Vec4) {

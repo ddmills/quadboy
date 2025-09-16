@@ -24,16 +24,19 @@ use crate::{
         GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
         InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
         LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry,
-        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, PursuingPlayer, RefreshBitmask, SaveFlag,
-        SaveGameResult, SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp,
-        StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
-        Weapon, Zones,
+        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, PursuingPlayer,
+        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
+        StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer,
+        Vision, VisionBlocker, Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
         systems::destruction_system::EntityDestroyedEvent,
         systems::hit_blink_system::hit_blink_system,
-        systems::xp_system::{XPGainEvent, apply_xp_gain, award_xp_on_kill},
+        systems::xp_system::{
+            LevelUpEvent, LevelUpParticleQueue, XPGainEvent, apply_xp_gain, award_xp_on_kill,
+            handle_level_up, process_level_up_particles,
+        },
     },
     engine::{
         App, Audio, Clock, ExitAppPlugin, FpsDisplay, Mouse, ScheduleType,
@@ -83,6 +86,9 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    #[cfg(feature = "tracy")]
+    tracy_client::Client::start();
+
     set_default_filter_mode(FilterMode::Nearest);
 
     let tileset_registry = TilesetRegistry::load().await;
@@ -167,12 +173,14 @@ async fn main() {
         .register_event::<RefreshBitmask>()
         .register_event::<EntityDestroyedEvent>()
         .register_event::<XPGainEvent>()
+        .register_event::<LevelUpEvent>()
         .register_event::<InventoryChangedEvent>()
         .register_event::<LightStateChangedEvent>()
         .insert_resource(tileset_registry)
         .insert_resource(audio_registry)
         .insert_resource(reg)
         .insert_resource(LootTableRegistry::new())
+        .init_resource::<LevelUpParticleQueue>()
         .init_resource::<Mouse>()
         .init_resource::<ScreenSize>()
         .init_resource::<UiFocus>()
@@ -243,7 +251,8 @@ async fn main() {
             (
                 bump_attack_system,
                 hit_blink_system,
-                (award_xp_on_kill, apply_xp_gain).chain(),
+                (award_xp_on_kill, apply_xp_gain, handle_level_up).chain(),
+                process_level_up_particles,
                 update_animated_glyphs,
                 update_particle_physics,
                 update_particle_spawners,
@@ -278,6 +287,7 @@ async fn main() {
     ));
 
     while app.run() {
+        tracy_frame_mark!();
         next_frame().await;
     }
 }

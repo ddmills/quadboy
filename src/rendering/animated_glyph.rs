@@ -2,7 +2,10 @@ use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::Glyph;
-use crate::engine::{SerializableComponent, Time};
+use crate::{
+    engine::{SerializableComponent, Time},
+    tracy_plot, tracy_span,
+};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct AnimatedGlyph {
@@ -36,6 +39,11 @@ pub fn update_animated_glyphs(
     mut q_animated: Query<(&mut AnimatedGlyph, &mut Glyph)>,
     time: Res<Time>,
 ) {
+    tracy_span!("update_animated_glyphs");
+
+    let animated_count = q_animated.iter().count() as f64;
+    tracy_plot!("Animated Glyphs", animated_count);
+
     for (mut anim_glyph, mut glyph) in q_animated.iter_mut() {
         if !anim_glyph.is_playing || anim_glyph.frames.is_empty() {
             continue;

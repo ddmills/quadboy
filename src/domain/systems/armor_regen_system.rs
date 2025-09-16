@@ -1,10 +1,12 @@
 use crate::{
     domain::{Health, StatType, Stats},
     engine::Clock,
+    tracy_span,
 };
 use bevy_ecs::prelude::*;
 
 pub fn armor_regen_system(mut q_health: Query<(&mut Health, &Stats)>, clock: Res<Clock>) {
+    tracy_span!("armor_regen_system");
     let current_tick = clock.current_tick();
 
     for (mut health, stats) in q_health.iter_mut() {
@@ -21,7 +23,7 @@ pub fn armor_regen_system(mut q_health: Query<(&mut Health, &Stats)>, clock: Res
         }
 
         let armor_regen_stat = stats.get_stat(StatType::ArmorRegen) as f32;
-        let regen_per_tick = (1.0 + armor_regen_stat) / 5000.0;
+        let regen_per_tick = (1.0 + armor_regen_stat) / 500.0;
 
         // Accumulate fractional progress (stored as u32 representing thousandths)
         let fractional_amount = clock.tick_delta() as f32 * regen_per_tick;

@@ -28,6 +28,12 @@ cargo check                    # Quick compile check
 RUSTFLAGS=-Awarnings cargo check # Compile without all the extra warning output
 ```
 
+### Profiling
+```bash
+cargo build --features tracy   # Build with Tracy profiling enabled
+cargo run --features tracy     # Run with Tracy profiling enabled
+```
+
 ## Architecture Overview
 
 QuadBoy is a Rust game built with **Macroquad** for graphics and **Bevy ECS** for entity management. The architecture follows a modular plugin-based design with clear separation of concerns.
