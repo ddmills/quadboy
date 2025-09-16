@@ -921,9 +921,10 @@ fn update_item_detail_panel(
 
         // Stack count
         if let Ok(stack) = q_stack_counts.get(item_entity)
-            && stack.count > 1 {
-                props.push(format!("Quantity: {}", stack.count));
-            }
+            && stack.count > 1
+        {
+            props.push(format!("Quantity: {}", stack.count));
+        }
 
         // Equipped status
         if let Ok(equipped) = q_equipped.get(item_entity) {
@@ -943,9 +944,10 @@ fn update_item_detail_panel(
                 props.push(format!("Range: {}", range));
             }
             if let Some(ammo) = weapon.current_ammo
-                && let Some(clip) = weapon.clip_size {
-                    props.push(format!("Ammo: {}/{}", ammo, clip));
-                }
+                && let Some(clip) = weapon.clip_size
+            {
+                props.push(format!("Ammo: {}/{}", ammo, clip));
+            }
         }
 
         detail_text.value = props.join("\n");

@@ -2,10 +2,10 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        AiBehavior, CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop,
-        LootTableId,
+        CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop, LootTableId,
+        components::ai_controller::{AiController, AiTemplate},
     },
-    rendering::{GlyphTextureId, Layer},
+    rendering::{GlyphTextureId, Layer, Position},
 };
 use bevy_ecs::{entity::Entity, world::World};
 
@@ -32,7 +32,8 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_loot_drop(LootDrop::new(LootTableId::CoyoteLoot, 0.3))
         .with_creature_type(CreatureType::Coyote)
-        .with_component(AiBehavior::Wander)
+        .with_component(AiController::new(AiTemplate::BasicAggressive, Position::new(config.pos.0, config.pos.1, config.pos.2))
+            .with_ranges(25.0, 12.0, 18.0))
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();
 }

@@ -2,10 +2,11 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        AiBehavior, CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop,
-        LootTableId, StatModifier, StatModifiers, StatType,
+        CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop, LootTableId,
+        StatModifier, StatModifiers, StatType,
+        components::ai_controller::{AiController, AiTemplate},
     },
-    rendering::{GlyphTextureId, Layer},
+    rendering::{GlyphTextureId, Layer, Position},
 };
 use bevy_ecs::{entity::Entity, world::World};
 
@@ -42,10 +43,8 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::BrownBearLoot, 0.3))
         .with_creature_type(CreatureType::Bear)
-        .with_component(AiBehavior::BearAi {
-            aggressive: false,
-            detection_range: 16.0,
-        })
+        .with_component(AiController::new(AiTemplate::BasicAggressive, Position::new(config.pos.0, config.pos.1, config.pos.2))
+            .with_ranges(30.0, 15.0, 16.0))
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();
 }

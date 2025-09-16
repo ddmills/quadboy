@@ -18,7 +18,6 @@ impl GameFormulas {
         let denominator = (Self::XP_SPREAD + 1) as f64;
 
         let power_result = (clamped_numerator / denominator).powf(Self::XP_POWER);
-        
 
         (power_result * Self::XP_BASE_GAIN as f64).floor() as u32
     }

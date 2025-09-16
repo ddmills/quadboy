@@ -64,16 +64,14 @@ pub fn get_effective_relationship(entity_a: Entity, entity_b: Entity, world: &Wo
     let mut effective_relationship = base_relationship;
 
     // Check if entity_a is charmed (would make them friendly to enemies)
-    if faction_a.has_modifier("charmed")
-        && base_relationship < 0 {
-            effective_relationship = 50; // Charmed makes hostile become friendly
-        }
+    if faction_a.has_modifier("charmed") && base_relationship < 0 {
+        effective_relationship = 50; // Charmed makes hostile become friendly
+    }
 
     // Check if entity_a is enraged (would make them hostile to everyone)
-    if faction_a.has_modifier("enraged")
-        && base_relationship >= 0 {
-            effective_relationship = -75; // Enraged makes neutral/friendly become hostile
-        }
+    if faction_a.has_modifier("enraged") && base_relationship >= 0 {
+        effective_relationship = -75; // Enraged makes neutral/friendly become hostile
+    }
 
     // Check if entity_a is feared (would make them avoid everyone)
     if faction_a.has_modifier("feared") {

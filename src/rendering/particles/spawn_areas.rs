@@ -191,17 +191,18 @@ fn generate_arc_position(
 
     // If base_direction is provided, rotate the arc to align with it
     if let Some(direction) = base_direction
-        && direction.length_squared() > 0.0 {
-            let direction_angle = direction.y.atan2(direction.x);
-            let cos_dir = direction_angle.cos();
-            let sin_dir = direction_angle.sin();
+        && direction.length_squared() > 0.0
+    {
+        let direction_angle = direction.y.atan2(direction.x);
+        let cos_dir = direction_angle.cos();
+        let sin_dir = direction_angle.sin();
 
-            // Rotate position by direction angle
-            position = Vec2::new(
-                position.x * cos_dir - position.y * sin_dir,
-                position.x * sin_dir + position.y * cos_dir,
-            );
-        }
+        // Rotate position by direction angle
+        position = Vec2::new(
+            position.x * cos_dir - position.y * sin_dir,
+            position.x * sin_dir + position.y * cos_dir,
+        );
+    }
 
     position
 }

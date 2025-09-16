@@ -2,10 +2,11 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        AiBehavior, Attributes, CreatureType, DefaultMeleeAttack, FactionId, FactionMember,
-        LootDrop, LootTableId, StatModifier, StatModifiers, StatType, Stats,
+        Attributes, CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop,
+        LootTableId, StatModifier, StatModifiers, StatType, Stats,
+        components::ai_controller::{AiController, AiTemplate},
     },
-    rendering::{GlyphTextureId, Layer},
+    rendering::{GlyphTextureId, Layer, Position},
 };
 use bevy_ecs::{entity::Entity, world::World};
 
@@ -40,7 +41,13 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::RattlesnakeLoot, 0.4))
         .with_creature_type(CreatureType::Rattlesnake)
-        .with_component(AiBehavior::Wander)
+        .with_component(
+            AiController::new(
+                AiTemplate::BasicAggressive,
+                Position::new(config.pos.0, config.pos.1, config.pos.2),
+            )
+            .with_ranges(16.0, 8.0, 10.0),
+        )
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();
 }

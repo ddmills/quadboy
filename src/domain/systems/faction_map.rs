@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::{
     cfg::ZONE_SIZE,
     common::algorithm::dijkstra::DijkstraMap,
-    domain::{Collider, FactionId, FactionMember, InActiveZone, Zone},
+    domain::{Collider, FactionId, FactionMember, InActiveZone, PlayerPosition, Zone},
     engine::Clock,
     rendering::Position,
 };
@@ -99,6 +99,7 @@ impl FactionMap {
 pub fn update_faction_maps(
     mut faction_map: ResMut<FactionMap>,
     clock: Res<Clock>,
+    player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
     q_colliders: Query<(Entity, &Position), (With<Collider>, With<InActiveZone>)>,
     q_faction_members: Query<(&Position, &FactionMember), With<InActiveZone>>,
@@ -107,7 +108,11 @@ pub fn update_faction_maps(
         return;
     }
 
-    if let Some(zone) = q_zones.iter().next() {
+    // Get the player's current zone
+    let player_zone_idx = player_pos.zone_idx();
+
+    // Find and process only the zone the player is in
+    if let Some(zone) = q_zones.iter().find(|zone| zone.idx == player_zone_idx) {
         faction_map.set_current_zone(zone.idx);
         faction_map.recalculate(zone, &q_colliders, &q_faction_members);
     }

@@ -2,8 +2,7 @@ use crate::engine::SerializableComponent;
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Serialize, Deserialize, Clone, Debug, SerializableComponent)]
-#[derive(Default)]
+#[derive(Component, Serialize, Deserialize, Clone, Debug, SerializableComponent, Default)]
 pub enum AiBehavior {
     #[default]
     Wander,
@@ -12,4 +11,3 @@ pub enum AiBehavior {
         detection_range: f32,
     },
 }
-

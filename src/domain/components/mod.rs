@@ -1,4 +1,5 @@
 pub mod ai_behavior;
+pub mod ai_controller;
 pub mod attributes;
 pub mod bitmask;
 pub mod bump_attack;
@@ -27,6 +28,7 @@ pub mod weapon_family;
 pub mod weapon_type;
 
 pub use ai_behavior::AiBehavior;
+pub use ai_controller::{AiController, AiState, AiTemplate};
 pub use attributes::{AttributePoints, Attributes};
 pub use bitmask::*;
 pub use bump_attack::BumpAttack;

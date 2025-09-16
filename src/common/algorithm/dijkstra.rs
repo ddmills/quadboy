@@ -60,10 +60,11 @@ impl DijkstraMap {
 
     pub fn set_passable(&mut self, x: usize, y: usize) {
         if let Some(cost) = self.costs.get_mut(x, y)
-            && *cost == f32::NEG_INFINITY {
-                *cost = f32::INFINITY;
-                self.dirty = true;
-            }
+            && *cost == f32::NEG_INFINITY
+        {
+            *cost = f32::INFINITY;
+            self.dirty = true;
+        }
     }
 
     pub fn is_blocked(&self, x: usize, y: usize) -> bool {
@@ -80,9 +81,10 @@ impl DijkstraMap {
         for x in 0..self.width() {
             for y in 0..self.height() {
                 if let Some(cost) = self.costs.get_mut(x, y)
-                    && *cost != f32::NEG_INFINITY {
-                        *cost = f32::INFINITY;
-                    }
+                    && *cost != f32::NEG_INFINITY
+                {
+                    *cost = f32::INFINITY;
+                }
             }
         }
 
@@ -104,9 +106,10 @@ impl DijkstraMap {
         }) = heap.pop()
         {
             if let Some(&current_cost) = self.costs.get(x, y)
-                && cost > current_cost {
-                    continue;
-                }
+                && cost > current_cost
+            {
+                continue;
+            }
 
             for (dx, dy) in &[
                 (-1, 0),
@@ -139,13 +142,14 @@ impl DijkstraMap {
                 let new_cost = cost + move_cost;
 
                 if let Some(neighbor_cost) = self.costs.get_mut(nx, ny)
-                    && new_cost < *neighbor_cost {
-                        *neighbor_cost = new_cost;
-                        heap.push(DijkstraNode {
-                            cost: new_cost,
-                            position: (nx, ny),
-                        });
-                    }
+                    && new_cost < *neighbor_cost
+                {
+                    *neighbor_cost = new_cost;
+                    heap.push(DijkstraNode {
+                        cost: new_cost,
+                        position: (nx, ny),
+                    });
+                }
             }
         }
 
@@ -177,10 +181,12 @@ impl DijkstraMap {
             let (nx, ny) = (nx as usize, ny as usize);
 
             if let Some(neighbor_cost) = self.get_cost(nx, ny)
-                && neighbor_cost < best_cost && !neighbor_cost.is_infinite() {
-                    best_cost = neighbor_cost;
-                    best_direction = Some((*dx, *dy));
-                }
+                && neighbor_cost < best_cost
+                && !neighbor_cost.is_infinite()
+            {
+                best_cost = neighbor_cost;
+                best_direction = Some((*dx, *dy));
+            }
         }
 
         best_direction
@@ -200,9 +206,11 @@ impl DijkstraMap {
             let (nx, ny) = (nx as usize, ny as usize);
 
             if let Some(cost) = self.get_cost(nx, ny)
-                && !cost.is_infinite() && cost != f32::NEG_INFINITY {
-                    neighbors.push(((nx, ny), cost));
-                }
+                && !cost.is_infinite()
+                && cost != f32::NEG_INFINITY
+            {
+                neighbors.push(((nx, ny), cost));
+            }
         }
 
         neighbors.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
@@ -230,10 +238,12 @@ impl DijkstraMap {
             let (nx, ny) = (nx as usize, ny as usize);
 
             if let Some(neighbor_cost) = self.get_cost(nx, ny)
-                && neighbor_cost > worst_cost && neighbor_cost.is_finite() {
-                    worst_cost = neighbor_cost;
-                    worst_direction = Some((*dx, *dy));
-                }
+                && neighbor_cost > worst_cost
+                && neighbor_cost.is_finite()
+            {
+                worst_cost = neighbor_cost;
+                worst_direction = Some((*dx, *dy));
+            }
         }
 
         worst_direction
@@ -277,10 +287,12 @@ impl DijkstraMap {
                 let (nx, ny) = (nx as usize, ny as usize);
 
                 if let Some(neighbor_cost) = self.get_cost(nx, ny)
-                    && neighbor_cost < best_perp_cost && neighbor_cost.is_finite() {
-                        best_perp_cost = neighbor_cost;
-                        best_perp_direction = Some((dx, dy));
-                    }
+                    && neighbor_cost < best_perp_cost
+                    && neighbor_cost.is_finite()
+                {
+                    best_perp_cost = neighbor_cost;
+                    best_perp_direction = Some((dx, dy));
+                }
             }
 
             best_perp_direction
@@ -315,15 +327,16 @@ impl DijkstraMap {
             let (nx, ny) = (nx as usize, ny as usize);
 
             if let Some(neighbor_cost) = self.get_cost(nx, ny)
-                && neighbor_cost.is_finite() {
-                    // Weight inversely proportional to cost (lower cost = higher weight)
-                    let weight = if neighbor_cost == 0.0 {
-                        1000.0 // Very high weight for goal
-                    } else {
-                        1.0 / neighbor_cost
-                    };
-                    directions.push(((*dx, *dy), weight));
-                }
+                && neighbor_cost.is_finite()
+            {
+                // Weight inversely proportional to cost (lower cost = higher weight)
+                let weight = if neighbor_cost == 0.0 {
+                    1000.0 // Very high weight for goal
+                } else {
+                    1.0 / neighbor_cost
+                };
+                directions.push(((*dx, *dy), weight));
+            }
         }
 
         if directions.is_empty() {

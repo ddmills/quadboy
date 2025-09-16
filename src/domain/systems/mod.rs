@@ -1,4 +1,5 @@
 pub mod ai_system;
+pub mod ai_utils;
 pub mod armor_regen_system;
 pub mod bump_attack_system;
 pub mod cleanup_system;

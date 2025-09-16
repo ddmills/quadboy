@@ -62,9 +62,10 @@ impl Command for ReloadAction {
         }
 
         if let Some(reload_audio) = reload_audio
-            && let Some(audio) = world.get_resource::<Audio>() {
-                audio.play(reload_audio, 0.3);
-            }
+            && let Some(audio) = world.get_resource::<Audio>()
+        {
+            audio.play(reload_audio, 0.3);
+        }
 
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
             energy.consume_energy(energy_cost);

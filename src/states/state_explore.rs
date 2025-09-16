@@ -14,8 +14,8 @@ use crate::{
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableIdRegistry},
     rendering::{
-        Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx,
-        world_to_zone_local, zone_local_to_world,
+        Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx, world_to_zone_local,
+        zone_local_to_world,
     },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
@@ -508,28 +508,30 @@ fn render_player_map_overlay(
 
                             overlay_entities.push(entity);
                         } else if let Some(cost) = dijkstra_map.get_cost(x, y)
-                            && cost.is_finite() && cost >= 0.0 {
-                                let display_num = (cost.min(12.0) as u32).to_string();
+                            && cost.is_finite()
+                            && cost >= 0.0
+                        {
+                            let display_num = (cost.min(12.0) as u32).to_string();
 
-                                // Color gradient from green to red (0-12 range)
-                                let t = (cost / 12.0).min(1.0);
-                                let r = (t * 255.0) as u8;
-                                let g = ((1.0 - t) * 255.0) as u8;
-                                let color = hex(r, g, 0);
+                            // Color gradient from green to red (0-12 range)
+                            let t = (cost / 12.0).min(1.0);
+                            let r = (t * 255.0) as u8;
+                            let g = ((1.0 - t) * 255.0) as u8;
+                            let color = hex(r, g, 0);
 
-                                let entity = cmds
-                                    .spawn((
-                                        Text::new(&display_num).fg1(color).layer(Layer::Overlay),
-                                        Position::new_world(world_pos),
-                                        Visibility::Visible,
-                                        IgnoreLighting,
-                                        FactionMapOverlay,
-                                        CleanupStateExplore,
-                                    ))
-                                    .id();
+                            let entity = cmds
+                                .spawn((
+                                    Text::new(&display_num).fg1(color).layer(Layer::Overlay),
+                                    Position::new_world(world_pos),
+                                    Visibility::Visible,
+                                    IgnoreLighting,
+                                    FactionMapOverlay,
+                                    CleanupStateExplore,
+                                ))
+                                .id();
 
-                                overlay_entities.push(entity);
-                            }
+                            overlay_entities.push(entity);
+                        }
                     }
                 }
             }

@@ -38,18 +38,19 @@ pub fn equipment_stat_modifier_system(
         for item_id_opt in equipment_slots.slots.values() {
             if let Some(item_id) = item_id_opt
                 && let Some(item_entity) = registry.get_entity(*item_id)
-                    && let Ok(item_modifiers) = param_set.p1().get(item_entity) {
-                        // Collect all stat modifiers from this item
-                        for (stat_type, modifiers) in &item_modifiers.modifiers {
-                            for modifier in modifiers {
-                                modifiers_to_add.push((
-                                    entity,
-                                    *stat_type,
-                                    StatModifier::equipment(modifier.value, *item_id),
-                                ));
-                            }
-                        }
+                && let Ok(item_modifiers) = param_set.p1().get(item_entity)
+            {
+                // Collect all stat modifiers from this item
+                for (stat_type, modifiers) in &item_modifiers.modifiers {
+                    for modifier in modifiers {
+                        modifiers_to_add.push((
+                            entity,
+                            *stat_type,
+                            StatModifier::equipment(modifier.value, *item_id),
+                        ));
                     }
+                }
+            }
         }
     }
 

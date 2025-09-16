@@ -18,7 +18,7 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        AiBehavior, ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack,
+        AiController, ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack,
         Collider, Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
         EquipmentSlots, Equippable, Equipped, FactionMap, FactionMember, FactionRelations,
         GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
@@ -129,7 +129,7 @@ async fn main() {
     reg.register::<Weapon>();
     reg.register::<DefaultMeleeAttack>();
     reg.register::<CreatureType>();
-    reg.register::<AiBehavior>();
+    reg.register::<AiController>();
     reg.register::<Level>();
     reg.register::<Attributes>();
     reg.register::<AttributePoints>();

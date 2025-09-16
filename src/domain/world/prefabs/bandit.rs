@@ -2,10 +2,11 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        AiBehavior, CreatureType, FactionId, FactionMember, LootDrop, LootTableId, StatModifier,
-        StatModifiers, StatType,
+        CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop, LootTableId,
+        StatModifier, StatModifiers, StatType,
+        components::ai_controller::{AiController, AiTemplate},
     },
-    rendering::{GlyphTextureId, Layer},
+    rendering::{GlyphTextureId, Layer, Position},
 };
 use bevy_ecs::{entity::Entity, world::World};
 
@@ -33,13 +34,20 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         .with_health()
         .with_collider()
         .with_hide_when_not_visible()
+        .with_default_melee_attack(DefaultMeleeAttack::fists())
         .with_level(4)
         .with_attributes(crate::domain::Attributes::new(3, 3, 2, 2))
         .with_stats(crate::domain::Stats::new())
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::BanditLoot, 0.5))
         .with_creature_type(CreatureType::Bandit)
-        .with_component(AiBehavior::Wander)
+        .with_component(
+            AiController::new(
+                AiTemplate::BasicAggressive,
+                Position::new(config.pos.0, config.pos.1, config.pos.2),
+            )
+            .with_ranges(20.0, 10.0, 15.0),
+        )
         .with_component(FactionMember::new(FactionId::Bandits))
         .build();
 }
