@@ -157,6 +157,7 @@ fn process_basic_aggressive(
         update_ai_state(world, entity, AiState::Pursuing);
         update_ai_target(world, entity, Some(hostile));
         add_pursuing_player_component(world, entity, hostile);
+        clear_cached_pursuit_path(world, entity); // Clear cached path when starting new pursuit
         return;
     }
 
@@ -232,16 +233,52 @@ fn process_basic_aggressive(
         // Normal pursuit logic
         let last_seen_at = pursuing_clone.last_seen_at;
         let last_seen_pos = Position::new(last_seen_at.0, last_seen_at.1, last_seen_at.2);
-        if move_toward_last_known_position(entity, entity_pos, &last_seen_pos, world) {
-            update_ai_state(world, entity, AiState::Pursuing);
-            return;
-        }
-        // If we reached last known position, stop pursuing
+
+        // Check if we've reached the last known position first
         if entity_pos.world() == last_seen_at {
-            remove_pursuing_player_component(world, entity);
+            if let Some(mut pursuing) = world.get_mut::<PursuingPlayer>(entity) {
+                if !pursuing.searching_at_last_position {
+                    pursuing.start_searching(current_tick);
+                    update_ai_state(world, entity, AiState::Pursuing); // Keep pursuing while searching
+                    return;
+                }
+
+                // Already searching - check if we should stop
+                if pursuing.should_stop_searching(current_tick) {
+                    // Search timeout - go to Returning state to head home
+                    remove_pursuing_player_component(world, entity);
+                    clear_cached_pursuit_path(world, entity); // Clear pursuit path when giving up
+                    update_ai_state(world, entity, AiState::Returning);
+                    return;
+                }
+
+                // Continue searching - wander around last known position
+                let last_known_pos = Position::new(last_seen_at.0, last_seen_at.1, last_seen_at.2);
+                if wander_near_point(entity, entity_pos, &last_known_pos, ai.wander_range, world) {
+                    update_ai_state(world, entity, AiState::Pursuing); // Still pursuing/searching
+                    return;
+                } else {
+                    // Can't wander but still searching - wait
+                    consume_wait_energy(entity, world);
+                    update_ai_state(world, entity, AiState::Pursuing);
+                    return;
+                }
+            }
+        } else {
+            // Not at last known position - try to move toward it
+            if move_toward_last_known_position(entity, entity_pos, &last_seen_pos, world) {
+                update_ai_state(world, entity, AiState::Pursuing);
+                return;
+            } else {
+                // Can't move toward last known position (blocked) - wait but keep pursuing
+                consume_wait_energy(entity, world);
+                update_ai_state(world, entity, AiState::Pursuing);
+                return;
+            }
         }
     }
 
+    // If no pursuit component, try normal wandering near home
     if wander_near_point(
         entity,
         entity_pos,
@@ -251,13 +288,11 @@ fn process_basic_aggressive(
     ) {
         update_ai_state(world, entity, AiState::Wandering);
         update_ai_target(world, entity, None);
-        remove_pursuing_player_component(world, entity);
         return;
     }
 
     update_ai_state(world, entity, AiState::Idle);
     update_ai_target(world, entity, None);
-    remove_pursuing_player_component(world, entity);
     consume_wait_energy(entity, world);
 }
 
@@ -304,6 +339,7 @@ fn add_pursuing_player_component(world: &mut World, entity: Entity, target_entit
 }
 
 fn remove_pursuing_player_component(world: &mut World, entity: Entity) {
+    clear_cached_pursuit_path(world, entity); // Clear pursuit path when removing pursuit component
     world.entity_mut(entity).remove::<PursuingPlayer>();
 }
 
@@ -355,5 +391,11 @@ fn calculate_teleport_wait_time(
 fn clear_cached_path(world: &mut World, entity: Entity) {
     if let Some(mut ai) = world.get_mut::<AiController>(entity) {
         ai.cached_home_path = None;
+    }
+}
+
+fn clear_cached_pursuit_path(world: &mut World, entity: Entity) {
+    if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+        ai.cached_pursuit_path = None;
     }
 }

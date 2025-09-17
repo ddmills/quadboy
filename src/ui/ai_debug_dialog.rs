@@ -101,6 +101,15 @@ impl AiDebugDialogBuilder {
                         ));
                         info_lines.push(format!("Time Remaining: {} ticks", wait_remaining));
                     }
+                } else if pursuing.searching_at_last_position {
+                    info_lines.push("Status: Searching at last known position".to_string());
+                    let search_elapsed = pursuing.search_elapsed_time(clock.current_tick());
+                    let search_remaining = pursuing.search_duration.saturating_sub(search_elapsed);
+                    info_lines.push(format!(
+                        "Search Time: {} / {} ticks",
+                        search_elapsed, pursuing.search_duration
+                    ));
+                    info_lines.push(format!("Search Remaining: {} ticks", search_remaining));
                 } else {
                     info_lines.push("Status: Actively pursuing".to_string());
                 }

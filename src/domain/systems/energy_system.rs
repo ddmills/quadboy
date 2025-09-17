@@ -29,7 +29,7 @@ pub struct TurnState {
 }
 
 pub fn turn_scheduler(
-    mut q_energy: Query<(Entity, &mut Energy), Or<(With<InActiveZone>, With<PursuingPlayer>)>>,
+    mut q_energy: Query<(Entity, &mut Energy)>,
     mut turn_state: ResMut<TurnState>,
     mut clock: ResMut<Clock>,
     q_player: Query<Entity, With<Player>>,

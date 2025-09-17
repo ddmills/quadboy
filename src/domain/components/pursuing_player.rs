@@ -10,6 +10,9 @@ pub struct PursuingPlayer {
     pub waiting_to_teleport: bool,
     pub wait_started_tick: Option<u32>,
     pub teleport_wait_duration: u32,
+    pub searching_at_last_position: bool,
+    pub search_started_tick: Option<u32>,
+    pub search_duration: u32,
 }
 
 impl PursuingPlayer {
@@ -23,6 +26,9 @@ impl PursuingPlayer {
             waiting_to_teleport: false,
             wait_started_tick: None,
             teleport_wait_duration: 200, // Default value, will be updated when teleport starts
+            searching_at_last_position: false,
+            search_started_tick: None,
+            search_duration: 150, // Search for 150 ticks at last known position
         }
     }
 
@@ -53,5 +59,26 @@ impl PursuingPlayer {
     pub fn reset_teleport_wait(&mut self) {
         self.waiting_to_teleport = false;
         self.wait_started_tick = None;
+    }
+
+    pub fn start_searching(&mut self, current_tick: u32) {
+        self.searching_at_last_position = true;
+        self.search_started_tick = Some(current_tick);
+    }
+
+    pub fn should_stop_searching(&self, current_tick: u32) -> bool {
+        if let Some(search_start) = self.search_started_tick {
+            current_tick.saturating_sub(search_start) >= self.search_duration
+        } else {
+            false
+        }
+    }
+
+    pub fn search_elapsed_time(&self, current_tick: u32) -> u32 {
+        if let Some(search_start) = self.search_started_tick {
+            current_tick.saturating_sub(search_start)
+        } else {
+            0
+        }
     }
 }

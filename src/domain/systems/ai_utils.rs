@@ -369,13 +369,15 @@ fn move_toward_target_cross_zone(
     false
 }
 
-/// Move directly toward a target position using simple directional movement
+/// Move toward a target position using A* pathfinding with path caching
 fn move_toward_position(
     entity: Entity,
     entity_pos: &Position,
     target_pos: &Position,
     world: &mut World,
 ) -> bool {
+    tracy_span!("move_toward_position");
+
     let (current_x, current_y, current_z) = entity_pos.world();
     let (target_x, target_y, target_z) = target_pos.world();
 
@@ -384,35 +386,84 @@ fn move_toward_position(
         return false;
     }
 
-    // Calculate direction to target
-    let dx = if target_x > current_x {
-        1
-    } else if target_x < current_x {
-        -1
-    } else {
-        0
+    let current_pos = (current_x, current_y, current_z);
+    let target_pos = (target_x, target_y, target_z);
+
+    // Get cached path if it exists
+    let cached_path = {
+        tracy_span!("get_cached_pursuit_path");
+        if let Some(ai) = world.get::<AiController>(entity) {
+            ai.cached_pursuit_path.clone()
+        } else {
+            None
+        }
     };
 
-    let dy = if target_y > current_y {
-        1
-    } else if target_y < current_y {
-        -1
-    } else {
-        0
-    };
+    // Try to use cached path first
+    if let Some(mut path) = cached_path {
+        tracy_span!("use_cached_pursuit_path");
 
-    // Try to move in calculated direction
-    if dx != 0 || dy != 0 {
-        let new_x = (current_x as i32 + dx) as usize;
-        let new_y = (current_y as i32 + dy) as usize;
+        // Remove positions we've already reached
+        while !path.is_empty() && path[0] == current_pos {
+            path.remove(0);
+        }
 
-        if is_move_valid(world, new_x, new_y, current_z) {
-            let move_action = MoveAction {
-                entity,
-                new_position: (new_x, new_y, current_z),
+        // If we still have a path, try to follow it
+        if !path.is_empty() {
+            let next_step = path[0];
+            if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
+                // Update cached path (remove the step we're taking)
+                path.remove(0);
+                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+                    ai.cached_pursuit_path = if path.is_empty() { None } else { Some(path) };
+                }
+
+                let move_action = MoveAction {
+                    entity,
+                    new_position: next_step,
+                };
+                move_action.apply(world);
+                return true;
+            } else {
+                // Path is blocked, clear cached path and recalculate
+                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+                    ai.cached_pursuit_path = None;
+                }
+            }
+        }
+    }
+
+    // No cached path or cached path is blocked, calculate new path with A*
+    {
+        tracy_span!("astar_pursuit_pathfinding");
+        if let Some(path) = find_path_astar(current_pos, target_pos, world, Some(30.0)) {
+            tracy_span!("cache_new_pursuit_path");
+
+            // Cache the new path (excluding the current position)
+            let path_to_cache = if path.len() > 1 {
+                path[1..].to_vec()
+            } else {
+                vec![]
             };
-            move_action.apply(world);
-            return true;
+
+            if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+                ai.cached_pursuit_path = if path_to_cache.is_empty() {
+                    None
+                } else {
+                    Some(path_to_cache)
+                };
+            }
+
+            // Move to the next step in the path
+            if path.len() > 1 {
+                let next_step = path[1];
+                let move_action = MoveAction {
+                    entity,
+                    new_position: next_step,
+                };
+                move_action.apply(world);
+                return true;
+            }
         }
     }
 
@@ -706,50 +757,6 @@ fn find_nearest_staircase(
     }
 
     nearest_stair.map(|(x, y, _)| (x, y))
-}
-
-fn get_valid_neighbors(pos: (usize, usize, usize), world: &mut World) -> Vec<[usize; 3]> {
-    let (x, y, z) = pos;
-    let mut neighbors = Vec::new();
-
-    // 8-directional movement (4 cardinal + 4 diagonal)
-    let directions = [
-        (-1, -1),
-        (0, -1),
-        (1, -1), // NW, N, NE
-        (-1, 0),
-        (1, 0), // W,     E
-        (-1, 1),
-        (0, 1),
-        (1, 1), // SW, S, SE
-    ];
-
-    for (dx, dy) in directions.iter() {
-        let new_x_i32 = x as i32 + dx;
-        let new_y_i32 = y as i32 + dy;
-
-        // Check bounds
-        if new_x_i32 < 0 || new_y_i32 < 0 {
-            continue;
-        }
-
-        let new_x = new_x_i32 as usize;
-        let new_y = new_y_i32 as usize;
-
-        // Check world bounds
-        let max_x = (MAP_SIZE.0 * ZONE_SIZE.0) - 1;
-        let max_y = (MAP_SIZE.1 * ZONE_SIZE.1) - 1;
-        if new_x > max_x || new_y > max_y {
-            continue;
-        }
-
-        // Check if move is valid (no colliders)
-        if is_move_valid(world, new_x, new_y, z) {
-            neighbors.push([new_x, new_y, z]);
-        }
-    }
-
-    neighbors
 }
 
 pub fn find_path_astar(

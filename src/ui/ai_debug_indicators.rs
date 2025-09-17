@@ -61,19 +61,13 @@ pub fn render_ai_debug_indicators(
             }
 
             let (state_text, state_color) = get_ai_state_display(&ai_controller.state);
-            let is_pursuing = q_pursuing.get(*ai_entity).is_ok();
-            let final_text = if is_pursuing {
-                format!("{} [P]", state_text)
-            } else {
-                state_text
-            };
 
             ai_data.push((
                 *ai_entity,
                 ai_position.x,
                 ai_position.y - 0.5,
                 ai_position.z,
-                final_text,
+                state_text,
                 state_color,
             ));
         }
@@ -113,15 +107,10 @@ pub fn render_ai_debug_indicators(
 
         let (state_text, state_color) = get_ai_state_display(&ai_controller.state);
         let is_pursuing = q_pursuing.get(entity).is_ok();
-        let final_text = if is_pursuing {
-            format!("{} [P]", state_text)
-        } else {
-            state_text
-        };
 
         let indicator_pos = Position::new_f32(position.x, position.y - 0.5, position.z);
 
-        let text_component = Text::new(&final_text)
+        let text_component = Text::new(&state_text)
             .fg1(state_color)
             .outline(Palette::Black)
             .layer(Layer::Overlay);
@@ -138,12 +127,12 @@ pub fn render_ai_debug_indicators(
 
 fn get_ai_state_display(state: &AiState) -> (String, Palette) {
     match state {
-        AiState::Idle => ("IDLE".to_string(), Palette::Green),
-        AiState::Wandering => ("WANDER".to_string(), Palette::Blue),
-        AiState::Pursuing => ("PURSUE".to_string(), Palette::Red),
-        AiState::Fighting => ("FIGHT".to_string(), Palette::DarkRed),
-        AiState::Fleeing => ("FLEE".to_string(), Palette::Yellow),
-        AiState::Returning => ("RETURN".to_string(), Palette::Orange),
-        AiState::Waiting => ("WAIT".to_string(), Palette::Purple),
+        AiState::Idle => ("idle".to_string(), Palette::Green),
+        AiState::Wandering => ("wander".to_string(), Palette::Blue),
+        AiState::Pursuing => ("pursue".to_string(), Palette::Red),
+        AiState::Fighting => ("fight".to_string(), Palette::DarkRed),
+        AiState::Fleeing => ("flee".to_string(), Palette::Yellow),
+        AiState::Returning => ("return".to_string(), Palette::Orange),
+        AiState::Waiting => ("wait".to_string(), Palette::Purple),
     }
 }

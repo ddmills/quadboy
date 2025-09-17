@@ -15,6 +15,8 @@ pub struct AiController {
     pub state: AiState,
     #[serde(skip)]
     pub cached_home_path: Option<Vec<(usize, usize, usize)>>,
+    #[serde(skip)]
+    pub cached_pursuit_path: Option<Vec<(usize, usize, usize)>>,
 }
 
 impl AiController {
@@ -28,6 +30,7 @@ impl AiController {
             current_target: None,
             state: AiState::Idle,
             cached_home_path: None,
+            cached_pursuit_path: None,
         }
     }
 
@@ -53,4 +56,14 @@ pub enum AiState {
     Fleeing,
     Returning,
     Waiting,
+}
+
+impl AiState {
+    /// Returns true if this AI state requires active turn processing
+    pub fn is_active(&self) -> bool {
+        matches!(
+            self,
+            AiState::Pursuing | AiState::Fighting | AiState::Returning
+        )
+    }
 }
