@@ -3,14 +3,16 @@ use macroquad::{input::KeyCode, prelude::trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    DebugMode,
     cfg::ZONE_SIZE,
     common::{Palette, hex},
     domain::{
-        CreatureType, Description, EquipmentSlot, EquipmentSlots, FactionId, FactionMap, Health,
-        IgnoreLighting, Item, Label, Level, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition,
-        Stats, Weapon, WeaponType, Zone, collect_valid_targets, game_loop, handle_item_pickup,
-        init_targeting_resource, player_input, render_player_debug, render_target_crosshair,
-        render_target_info, spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
+        AiController, CreatureType, Description, EquipmentSlot, EquipmentSlots, FactionId,
+        FactionMap, Health, IgnoreLighting, Item, Label, Level, Player, PlayerDebug,
+        PlayerMovedEvent, PlayerPosition, Stats, Weapon, WeaponType, Zone, collect_valid_targets,
+        game_loop, handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
+        render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
+        update_target_cycling,
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableIdRegistry},
     rendering::{
@@ -20,8 +22,9 @@ use crate::{
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
         Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
-        display_entity_names_at_mouse, render_cursor, render_lighting_debug, render_tick_display,
-        spawn_debug_ui_entities, spawn_examine_dialog, update_xp_progress_bars,
+        display_entity_names_at_mouse, render_ai_debug_indicators, render_cursor,
+        render_lighting_debug, render_tick_display, spawn_ai_debug_dialog, spawn_debug_ui_entities,
+        spawn_examine_dialog, update_xp_progress_bars,
     },
 };
 
@@ -60,12 +63,14 @@ impl Plugin for ExploreStatePlugin {
                     render_lighting_debug,
                     render_cursor,
                     display_entity_names_at_mouse,
+                    render_ai_debug_indicators,
                     render_player_map_overlay,
                     update_xp_progress_bars,
                     update_player_hp_bar,
                     update_player_armor_bar,
                     update_player_ammo_bar,
                     handle_examine_input,
+                    handle_debug_input,
                 ),
             )
             .on_update(app, player_input)
@@ -163,7 +168,7 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     // Spawn XP progress bar
     cmds.spawn((
         Text::new("").layer(Layer::Ui),
-        Position::new_f32(30., 1.5, 0.),
+        Position::new_f32(15., 0.5, 0.),
         XPProgressBar::new(30),
         CleanupStateExplore,
     ));
@@ -342,6 +347,17 @@ fn handle_examine_input(
     }
 }
 
+fn handle_debug_input(
+    keys: Res<KeyInput>,
+    mut debug_mode: ResMut<DebugMode>,
+    dialog_state: Res<DialogState>,
+) {
+    // Only handle F3 key if no dialog is currently open
+    if !dialog_state.is_open && keys.is_pressed(macroquad::input::KeyCode::F3) {
+        debug_mode.ai_debug = !debug_mode.ai_debug;
+    }
+}
+
 fn examine_entity_at_mouse(world: &mut World) {
     let (mouse_x, mouse_y, mouse_z, close_examine_dialog_id) = {
         let mouse = world.get_resource::<Mouse>().unwrap();
@@ -396,7 +412,17 @@ fn examine_entity_at_mouse(world: &mut World) {
             q_player.single(world).unwrap()
         };
 
-        spawn_examine_dialog(world, entity, player_entity, close_examine_dialog_id);
+        // Check if debug mode is active and entity has AI controller
+        let debug_mode = world.get_resource::<DebugMode>().unwrap();
+        let has_ai = world.get::<AiController>(entity).is_some();
+
+        if debug_mode.ai_debug && has_ai {
+            // Show AI debug dialog
+            spawn_ai_debug_dialog(world, entity, close_examine_dialog_id);
+        } else {
+            // Show regular examine dialog
+            spawn_examine_dialog(world, entity, player_entity, close_examine_dialog_id);
+        }
 
         if let Some(mut dialog_state) = world.get_resource_mut::<DialogState>() {
             dialog_state.is_open = true;

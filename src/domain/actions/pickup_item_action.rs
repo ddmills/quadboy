@@ -2,7 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        get_base_energy_cost, inventory::InventoryChangedEvent, Collider, Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable, StackableType, Zone
+        Collider, Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable,
+        StackableType, Zone, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
     rendering::Position,

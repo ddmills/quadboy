@@ -1,4 +1,7 @@
 mod activatable;
+mod ai_debug_dialog;
+mod ai_debug_dialog_command;
+mod ai_debug_indicators;
 mod button;
 mod debug;
 mod dialog;
@@ -11,6 +14,9 @@ mod list;
 mod xp_progress_bar;
 
 pub use activatable::*;
+pub use ai_debug_dialog::*;
+pub use ai_debug_dialog_command::*;
+pub use ai_debug_indicators::*;
 pub use button::*;
 pub use debug::*;
 pub use dialog::*;

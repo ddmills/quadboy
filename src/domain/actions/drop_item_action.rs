@@ -3,10 +3,11 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        get_base_energy_cost, inventory::InventoryChangedEvent, Collider, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, UnequipItemAction, Zone
+        Collider, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item,
+        UnequipItemAction, Zone, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
-    rendering::{world_to_zone_idx, world_to_zone_local, Position},
+    rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 
 pub struct DropItemAction {

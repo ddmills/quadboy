@@ -152,12 +152,13 @@ fn process_basic_aggressive(
     }
 
     if let Some(hostile) = find_hostile_in_range(entity, entity_pos, ai.detection_range, world)
-        && move_toward_target(entity, entity_pos, hostile, world) {
-            update_ai_state(world, entity, AiState::Pursuing);
-            update_ai_target(world, entity, Some(hostile));
-            add_pursuing_player_component(world, entity, hostile);
-            return;
-        }
+        && move_toward_target(entity, entity_pos, hostile, world)
+    {
+        update_ai_state(world, entity, AiState::Pursuing);
+        update_ai_target(world, entity, Some(hostile));
+        add_pursuing_player_component(world, entity, hostile);
+        return;
+    }
 
     // Check if already pursuing - continue toward last known position
     if let Some(pursuing) = world.get::<PursuingPlayer>(entity) {
@@ -317,9 +318,9 @@ pub fn manage_pursuit_timeout(world: &mut World) {
     for (entity, pursuing) in q_pursuing.iter(world) {
         let pursuit_duration = pursuing.pursuit_duration(current_tick);
 
-        if pursuit_duration > 1000 {
-            entities_to_remove.push(entity);
-        }
+        // if pursuit_duration > 1000 {
+        //     entities_to_remove.push(entity);
+        // }
     }
 
     for entity in entities_to_remove {

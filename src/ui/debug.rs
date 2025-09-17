@@ -79,7 +79,11 @@ pub fn display_entity_names_at_mouse(
         }
     }
 
-    names.push(if colliders.is_empty() { "EMPTY".to_owned() } else { colliders.len().to_string() });
+    names.push(if colliders.is_empty() {
+        "EMPTY".to_owned()
+    } else {
+        colliders.len().to_string()
+    });
 
     let Ok((mut text, mut text_pos, mut visibility)) = q_hover_text.single_mut() else {
         return;

@@ -3,15 +3,17 @@ use core::f32;
 use crate::{
     cfg::{MAP_SIZE, WORLD_SIZE, ZONE_SIZE},
     common::{
+        Rand,
         algorithm::{
-            astar::{astar, AStarSettings},
+            astar::{AStarSettings, astar},
             distance::Distance,
-        }, Rand
+        },
     },
     domain::{
-        actions::MoveAction, are_hostile, AiController, AttackAction, Collider, Energy, FactionMap, FactionMember, PlayerPosition, StairDown, StairUp, Zone
+        AiController, AttackAction, Collider, Energy, FactionMap, FactionMember, PlayerPosition,
+        StairDown, StairUp, Zone, actions::MoveAction, are_hostile,
     },
-    rendering::{world_to_zone_idx, world_to_zone_local, zone_xyz, Position},
+    rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_xyz},
     tracy_span,
 };
 use bevy_ecs::prelude::*;
@@ -120,19 +122,20 @@ pub fn move_toward_target(
 
     // Try Dijkstra pathfinding first (same-zone movement)
     if let Some(dijkstra_map) = faction_map.get_map(target_faction.faction_id)
-        && let Some((dx, dy)) = dijkstra_map.get_best_direction(local_x, local_y) {
-            let new_x = (x as i32 + dx) as usize;
-            let new_y = (y as i32 + dy) as usize;
+        && let Some((dx, dy)) = dijkstra_map.get_best_direction(local_x, local_y)
+    {
+        let new_x = (x as i32 + dx) as usize;
+        let new_y = (y as i32 + dy) as usize;
 
-            if is_move_valid(world, new_x, new_y, z) {
-                let move_action = MoveAction {
-                    entity,
-                    new_position: (new_x, new_y, z),
-                };
-                move_action.apply(world);
-                return true;
-            }
+        if is_move_valid(world, new_x, new_y, z) {
+            let move_action = MoveAction {
+                entity,
+                new_position: (new_x, new_y, z),
+            };
+            move_action.apply(world);
+            return true;
         }
+    }
 
     // Fallback: Cross-zone movement toward target
     move_toward_target_cross_zone(entity, entity_pos, target_entity, world)
@@ -646,9 +649,9 @@ fn find_open_position_along_edge(
     }
 
     // Return the position closest to the target coordinate
-    valid_positions.into_iter().min_by_key(|&coord| {
-        coord.abs_diff(target_coord)
-    })
+    valid_positions
+        .into_iter()
+        .min_by_key(|&coord| coord.abs_diff(target_coord))
 }
 
 fn find_nearest_staircase(
@@ -758,7 +761,10 @@ pub fn find_path_astar(
     tracy_span!("find_path_astar");
 
     let zone_idx = world_to_zone_idx(from.0, from.1, from.2);
-    let zone = world.query::<&Zone>().iter(world).find(|z| z.idx == zone_idx)?;
+    let zone = world
+        .query::<&Zone>()
+        .iter(world)
+        .find(|z| z.idx == zone_idx)?;
 
     let result = {
         tracy_span!("astar_algorithm");
@@ -807,11 +813,7 @@ pub fn find_path_astar(
                         && new_y_i32 >= 0
                         && new_y_i32 < WORLD_SIZE.1 as i32
                     {
-                        neighbors.push([
-                            new_x_i32 as usize,
-                            new_y_i32 as usize,
-                            z
-                        ]);
+                        neighbors.push([new_x_i32 as usize, new_y_i32 as usize, z]);
                     }
                 }
 

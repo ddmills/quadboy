@@ -3,7 +3,8 @@ use crate::{
         AttributePoints, GameFormulas, Health, Level, Stats,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
-    rendering::{Position, spawn_level_up_celebration}, tracy_span,
+    rendering::{Position, spawn_level_up_celebration},
+    tracy_span,
 };
 use bevy_ecs::prelude::*;
 

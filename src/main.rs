@@ -1,6 +1,11 @@
 use bevy_ecs::prelude::*;
 use common::Palette;
 use engine::{KeyInput, Time, render_fps, update_key_input, update_time};
+
+#[derive(Resource, Default)]
+pub struct DebugMode {
+    pub ai_debug: bool,
+}
 use macroquad::{
     miniquad::conf::{Platform, WebGLVersion},
     prelude::*,
@@ -209,6 +214,7 @@ async fn main() {
         .init_resource::<ParticleGrid>()
         .init_resource::<ParticleGlyphPool>()
         .insert_resource(FactionRelations::new())
+        .init_resource::<DebugMode>()
         .add_systems(
             ScheduleType::PreUpdate,
             (update_time, update_key_input, update_mouse_input),

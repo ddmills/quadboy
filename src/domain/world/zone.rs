@@ -7,13 +7,11 @@ use crate::{
     cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid},
     domain::{
-        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs,
-        Terrain, UnloadZoneCommand, ZoneGenerator,
+        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs, Terrain,
+        UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
-    rendering::{
-        world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz,
-    },
+    rendering::{world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz},
     states::CleanupStatePlay,
 };
 
