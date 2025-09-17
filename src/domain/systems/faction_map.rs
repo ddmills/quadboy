@@ -108,16 +108,19 @@ impl FactionMap {
 
 pub fn update_faction_maps(
     mut faction_map: ResMut<FactionMap>,
-    clock: Res<Clock>,
+    mut clock: ResMut<Clock>,
     player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
     q_colliders: Query<(Entity, &Position), With<Collider>>,
     q_faction_members: Query<(&Position, &FactionMember), With<InActiveZone>>,
 ) {
     tracy_span!("update_faction_maps");
-    if clock.is_frozen() {
+
+    if clock.tick_delta_accum() == 0 {
         return;
     }
+
+    clock.clear_tick_delta_accum();
 
     // Process only the player's current zone for faction mapping
     let player_zone_idx = player_pos.zone_idx();

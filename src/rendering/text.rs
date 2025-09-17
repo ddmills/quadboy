@@ -5,7 +5,7 @@ use crate::{
     domain::IgnoreLighting,
     engine::Time,
     rendering::{GlyphTextureId, Visibility},
-    tracy_plot, tracy_span,
+    tracy_span,
 };
 
 use super::{Glyph, Layer, Position};
@@ -136,9 +136,6 @@ pub fn render_text(
     time: Res<Time>,
 ) {
     tracy_span!("render_text");
-
-    let text_count = q_text.p1().iter().count() as f64;
-    tracy_plot!("Text Entities", text_count);
 
     let tick = (time.fixed_t * 10.).floor() as usize;
 

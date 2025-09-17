@@ -3,11 +3,10 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, UnequipItemAction, Zone,
-        get_base_energy_cost, inventory::InventoryChangedEvent,
+        get_base_energy_cost, inventory::InventoryChangedEvent, Collider, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, UnequipItemAction, Zone
     },
     engine::StableIdRegistry,
-    rendering::{Position, world_to_zone_idx, world_to_zone_local},
+    rendering::{world_to_zone_idx, world_to_zone_local, Position},
 };
 
 pub struct DropItemAction {
@@ -73,11 +72,17 @@ impl Command for DropItemAction {
         );
         let (local_x, local_y) = world_to_zone_local(self.drop_position.0, self.drop_position.1);
 
+        let has_collider = world.get::<Collider>(item_entity).is_some();
         let mut zone_found = false;
         let mut zones = world.query::<&mut Zone>();
         for mut zone in zones.iter_mut(world) {
             if zone.idx == zone_idx {
                 zone.entities.insert(local_x, local_y, item_entity);
+
+                if has_collider {
+                    zone.entities.insert(local_x, local_y, item_entity);
+                }
+
                 zone_found = true;
                 break;
             }

@@ -1001,8 +1001,6 @@ fn refresh_action_dialog_with_timer(
         // Directly mutate the List's items
         list.items = new_items;
         // Manually trigger change detection so setup_lists will update the UI
-        list.set_changed();
-
-        return; // Found and updated, exit early
+        list.set_changed();// Found and updated, exit early
     }
 }

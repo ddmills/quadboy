@@ -38,9 +38,6 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(recalculate_stats_system),
         world.register_system(update_health_system),
         world.register_system(armor_regen_system),
-        world.register_system(update_player_vision),
-        world.register_system(update_entity_visibility_flags),
-        world.register_system(update_lighting_system),
         world.register_system(tick_faction_modifiers),
         world.register_system(turn_scheduler),
         world.register_system(on_entity_destroyed_loot),
@@ -48,7 +45,12 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(ai_turn),
         world.register_system(manage_pursuit_timeout),
     ];
-    let post = vec![world.register_system(update_faction_maps)];
+    let post = vec![
+        world.register_system(update_lighting_system),
+        world.register_system(update_player_vision),
+        world.register_system(update_entity_visibility_flags),
+        world.register_system(update_faction_maps),
+    ];
 
     world.insert_resource(GameSystems { all, post });
 }
@@ -57,16 +59,21 @@ fn exec_game_systems(world: &mut World) {
     tracy_span!("exec_game_systems");
 
     let system_ids = {
+        tracy_span!("exec_game_systems:clone_systems");
         let Some(systems) = world.get_resource::<GameSystems>() else {
             return;
         };
         systems.all.clone()
     };
 
-    for id in system_ids {
-        let _ = world.run_system(id);
+    {
+        tracy_span!("exec_game_systems:iter");
+        for id in system_ids {
+            let _ = world.run_system(id);
+        }
     }
 }
+
 fn exec_game_post_systems(world: &mut World) {
     tracy_span!("exec_game_post_systems");
 
@@ -94,6 +101,7 @@ pub fn game_loop(world: &mut World) {
     const MAX_ITERATIONS: u32 = 100;
 
     loop {
+        tracy_span!("game_loop:iter");
         {
             let Some(player_pos) = world.get_resource::<PlayerPosition>() else {
                 return;
@@ -105,19 +113,12 @@ pub fn game_loop(world: &mut World) {
                 return;
             };
 
-            tracy_plot!("Loaded Zones", zones.active.len() as f64);
-
             if !zones.active.contains(&player_zone_idx) {
                 return;
             };
         }
 
         exec_game_systems(world);
-
-        // Track clock progression
-        if let Some(clock) = world.get_resource::<crate::engine::Clock>() {
-            tracy_plot!("Clock Tick", clock.current_tick() as f64);
-        }
 
         let Some(turn) = world.get_resource::<TurnState>() else {
             return;

@@ -1,20 +1,18 @@
-use std::collections::HashSet;
+use core::f32;
 
 use crate::{
-    cfg::{MAP_SIZE, ZONE_SIZE},
+    cfg::{MAP_SIZE, WORLD_SIZE, ZONE_SIZE},
     common::{
-        Rand,
         algorithm::{
-            astar::{AStarSettings, astar},
+            astar::{astar, AStarSettings},
             distance::Distance,
-        },
+        }, Rand
     },
     domain::{
-        AiController, AttackAction, Collider, Energy, EnergyActionType, FactionMap, FactionMember,
-        PlayerPosition, StairDown, StairUp, Zone, actions::MoveAction, are_hostile,
-        get_base_energy_cost,
+        actions::MoveAction, are_hostile, AiController, AttackAction, Collider, Energy, FactionMap, FactionMember, PlayerPosition, StairDown, StairUp, Zone
     },
-    rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_xyz},
+    rendering::{world_to_zone_idx, world_to_zone_local, zone_xyz, Position},
+    tracy_span,
 };
 use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
@@ -121,8 +119,8 @@ pub fn move_toward_target(
     let (local_x, local_y) = world_to_zone_local(x, y);
 
     // Try Dijkstra pathfinding first (same-zone movement)
-    if let Some(dijkstra_map) = faction_map.get_map(target_faction.faction_id) {
-        if let Some((dx, dy)) = dijkstra_map.get_best_direction(local_x, local_y) {
+    if let Some(dijkstra_map) = faction_map.get_map(target_faction.faction_id)
+        && let Some((dx, dy)) = dijkstra_map.get_best_direction(local_x, local_y) {
             let new_x = (x as i32 + dx) as usize;
             let new_y = (y as i32 + dy) as usize;
 
@@ -135,7 +133,6 @@ pub fn move_toward_target(
                 return true;
             }
         }
-    }
 
     // Fallback: Cross-zone movement toward target
     move_toward_target_cross_zone(entity, entity_pos, target_entity, world)
@@ -182,6 +179,8 @@ pub fn return_to_home(
     home_pos: &Position,
     world: &mut World,
 ) -> bool {
+    tracy_span!("return_to_home");
+
     let (x, y, z) = entity_pos.world();
     let (home_x, home_y, home_z) = home_pos.world();
 
@@ -194,14 +193,19 @@ pub fn return_to_home(
     let target_pos = (home_x, home_y, home_z);
 
     // Get cached path if it exists
-    let cached_path = if let Some(ai) = world.get::<AiController>(entity) {
-        ai.cached_home_path.clone()
-    } else {
-        None
+    let cached_path = {
+        tracy_span!("get_cached_path");
+        if let Some(ai) = world.get::<AiController>(entity) {
+            ai.cached_home_path.clone()
+        } else {
+            None
+        }
     };
 
     // Try to use cached path first
     if let Some(mut path) = cached_path {
+        tracy_span!("use_cached_path");
+
         // Remove positions we've already passed
         while !path.is_empty() && path[0] == current_pos {
             path.remove(0);
@@ -211,6 +215,7 @@ pub fn return_to_home(
         if !path.is_empty() {
             let next_step = path[0];
             if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
+                tracy_span!("cached_path_move");
                 let move_action = MoveAction {
                     entity,
                     new_position: next_step,
@@ -233,31 +238,36 @@ pub fn return_to_home(
     }
 
     // No cached path or cached path is blocked, calculate new path with A*
-    if let Some(path) = find_path_astar(current_pos, target_pos, world, Some(50.0)) {
-        // Cache the new path (excluding the current position)
-        let path_to_cache = if path.len() > 1 {
-            path[1..].to_vec()
-        } else {
-            Vec::new()
-        };
+    {
+        tracy_span!("astar_pathfinding");
+        if let Some(path) = find_path_astar(current_pos, target_pos, world, Some(50.0)) {
+            tracy_span!("cache_new_path");
 
-        if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-            ai.cached_home_path = if path_to_cache.is_empty() {
-                None
+            // Cache the new path (excluding the current position)
+            let path_to_cache = if path.len() > 1 {
+                path[1..].to_vec()
             } else {
-                Some(path_to_cache)
+                vec![]
             };
-        }
 
-        // Move to the next step in the path
-        if path.len() > 1 {
-            let next_step = path[1];
-            let move_action = MoveAction {
-                entity,
-                new_position: next_step,
-            };
-            move_action.apply(world);
-            return true;
+            if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+                ai.cached_home_path = if path_to_cache.is_empty() {
+                    None
+                } else {
+                    Some(path_to_cache)
+                };
+            }
+
+            // Move to the next step in the path
+            if path.len() > 1 {
+                let next_step = path[1];
+                let move_action = MoveAction {
+                    entity,
+                    new_position: next_step,
+                };
+                move_action.apply(world);
+                return true;
+            }
         }
     }
 
@@ -291,6 +301,8 @@ pub fn consume_wait_energy(entity: Entity, world: &mut World) {
 }
 
 fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) -> bool {
+    tracy_span!("is_move_valid");
+
     let max_x = (MAP_SIZE.0 * ZONE_SIZE.0) - 1;
     let max_y = (MAP_SIZE.1 * ZONE_SIZE.1) - 1;
 
@@ -302,6 +314,7 @@ fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) -> boo
     let (local_x, local_y) = world_to_zone_local(new_x, new_y);
 
     let entities_at_pos = {
+        tracy_span!("get_zone_entities");
         let mut zone_query = world.query::<&Zone>();
         let zone = zone_query
             .iter(world)
@@ -315,6 +328,7 @@ fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) -> boo
     };
 
     if let Some(entities) = entities_at_pos {
+        tracy_span!("check_colliders");
         let mut collider_query = world.query::<&Collider>();
         for entity_at_pos in entities {
             if collider_query.get(world, entity_at_pos).is_ok() {
@@ -475,7 +489,7 @@ pub fn teleport_to_zone_edge(
         // Use player's local Y position within the target zone
         let target_y = target_zy * ZONE_SIZE.1 + player_local_y;
         if let Some(open_y) =
-            find_open_position_along_edge(world, edge_x, target_y, target_zz as usize, true)
+            find_open_position_along_edge(world, edge_x, target_y, target_zz, true)
         {
             (edge_x, open_y)
         } else {
@@ -488,7 +502,7 @@ pub fn teleport_to_zone_edge(
         // Use player's local Y position within the target zone
         let target_y = target_zy * ZONE_SIZE.1 + player_local_y;
         if let Some(open_y) =
-            find_open_position_along_edge(world, edge_x, target_y, target_zz as usize, true)
+            find_open_position_along_edge(world, edge_x, target_y, target_zz, true)
         {
             (edge_x, open_y)
         } else {
@@ -501,7 +515,7 @@ pub fn teleport_to_zone_edge(
         // Use player's local X position within the target zone
         let target_x = target_zx * ZONE_SIZE.0 + player_local_x;
         if let Some(open_x) =
-            find_open_position_along_edge(world, edge_y, target_x, target_zz as usize, false)
+            find_open_position_along_edge(world, edge_y, target_x, target_zz, false)
         {
             trace!("using open pos on edge!");
             (open_x, edge_y)
@@ -516,7 +530,7 @@ pub fn teleport_to_zone_edge(
         // Use player's local X position within the target zone
         let target_x = target_zx * ZONE_SIZE.0 + player_local_x;
         if let Some(open_x) =
-            find_open_position_along_edge(world, edge_y, target_x, target_zz as usize, false)
+            find_open_position_along_edge(world, edge_y, target_x, target_zz, false)
         {
             (open_x, edge_y)
         } else {
@@ -633,11 +647,7 @@ fn find_open_position_along_edge(
 
     // Return the position closest to the target coordinate
     valid_positions.into_iter().min_by_key(|&coord| {
-        if coord > target_coord {
-            coord - target_coord
-        } else {
-            target_coord - coord
-        }
+        coord.abs_diff(target_coord)
     })
 }
 
@@ -745,86 +755,75 @@ pub fn find_path_astar(
     world: &mut World,
     max_distance: Option<f32>,
 ) -> Option<Vec<(usize, usize, usize)>> {
-    // Pre-compute valid positions to avoid borrowing issues in closures
-    let mut valid_positions = HashSet::new();
+    tracy_span!("find_path_astar");
 
-    // Compute a reasonable search area based on distance
-    let distance = Distance::chebyshev(
-        [from.0 as i32, from.1 as i32, from.2 as i32],
-        [to.0 as i32, to.1 as i32, to.2 as i32],
-    ) as usize;
-    let search_radius = (distance + 20).min(100); // Add buffer, but cap at reasonable size
+    let zone_idx = world_to_zone_idx(from.0, from.1, from.2);
+    let zone = world.query::<&Zone>().iter(world).find(|z| z.idx == zone_idx)?;
 
-    let min_x = from.0.saturating_sub(search_radius);
-    let max_x = (from.0 + search_radius).min((MAP_SIZE.0 * ZONE_SIZE.0) - 1);
-    let min_y = from.1.saturating_sub(search_radius);
-    let max_y = (from.1 + search_radius).min((MAP_SIZE.1 * ZONE_SIZE.1) - 1);
+    let result = {
+        tracy_span!("astar_algorithm");
+        astar(AStarSettings {
+            start: [from.0, from.1, from.2],
+            is_goal: |[x, y, z]| x == to.0 && y == to.1 && z == to.2,
+            cost: |[_from_x, _from_y, _from_z], [to_x, to_y, _to_z]| {
+                let (local_x, local_y) = world_to_zone_local(to_x, to_y);
+                let Some(v) = zone.colliders.get(local_x, local_y) else {
+                    return f32::INFINITY;
+                };
 
-    for x in min_x..=max_x {
-        for y in min_y..=max_y {
-            if is_move_valid(world, x, y, from.2) {
-                valid_positions.insert((x, y, from.2));
-            }
-        }
-    }
+                if v.is_empty() {
+                    return 1.0;
+                }
 
-    let result = astar(AStarSettings {
-        start: [from.0, from.1, from.2],
-        is_goal: |[x, y, z]| x == to.0 && y == to.1 && z == to.2,
-        cost: |[from_x, from_y, _from_z], [to_x, to_y, _to_z]| {
-            // Calculate cost based on movement type
-            let dx = (to_x as i32 - from_x as i32).abs();
-            let dy = (to_y as i32 - from_y as i32).abs();
-
-            if dx <= 1 && dy <= 1 {
-                1.0
-            } else {
                 f32::INFINITY
-            }
-        },
-        heuristic: |[x, y, z]| {
-            // Chebyshev distance for 8-directional movement
-            Distance::chebyshev(
-                [x as i32, y as i32, z as i32],
-                [to.0 as i32, to.1 as i32, to.2 as i32],
-            )
-        },
-        neighbors: |[x, y, z]| {
-            let mut neighbors = Vec::new();
+            },
+            heuristic: |[x, y, z]| {
+                Distance::chebyshev(
+                    [x as i32, y as i32, z as i32],
+                    [to.0 as i32, to.1 as i32, to.2 as i32],
+                )
+            },
+            neighbors: |[x, y, z]| {
+                let mut neighbors = Vec::new();
 
-            // 8-directional movement
-            let directions = [
-                (-1, -1),
-                (0, -1),
-                (1, -1),
-                (-1, 0),
-                (1, 0),
-                (-1, 1),
-                (0, 1),
-                (1, 1),
-            ];
+                // 8-directional movement
+                let directions = [
+                    (-1, -1),
+                    (0, -1),
+                    (1, -1),
+                    (-1, 0),
+                    (1, 0),
+                    (-1, 1),
+                    (0, 1),
+                    (1, 1),
+                ];
 
-            for (dx, dy) in directions.iter() {
-                let new_x_i32 = x as i32 + dx;
-                let new_y_i32 = y as i32 + dy;
+                for (dx, dy) in directions.iter() {
+                    let new_x_i32 = x as i32 + dx;
+                    let new_y_i32 = y as i32 + dy;
 
-                if new_x_i32 >= 0 && new_y_i32 >= 0 {
-                    let new_x = new_x_i32 as usize;
-                    let new_y = new_y_i32 as usize;
-
-                    if valid_positions.contains(&(new_x, new_y, z)) {
-                        neighbors.push([new_x, new_y, z]);
+                    if new_x_i32 >= 0
+                        && new_x_i32 < WORLD_SIZE.0 as i32
+                        && new_y_i32 >= 0
+                        && new_y_i32 < WORLD_SIZE.1 as i32
+                    {
+                        neighbors.push([
+                            new_x_i32 as usize,
+                            new_y_i32 as usize,
+                            z
+                        ]);
                     }
                 }
-            }
 
-            neighbors
-        },
-        max_depth: 500, // Reasonable depth for pathfinding
-        max_cost: max_distance,
-    });
+                neighbors
+            },
+            max_depth: 1000, // Reasonable depth for pathfinding
+            max_cost: max_distance,
+        })
+    };
 
     if result.is_success {
+        tracy_span!("process_result");
         // A* returns path in reverse order, so reverse it to get from start to goal
         let mut path: Vec<(usize, usize, usize)> =
             result.path.into_iter().map(|[x, y, z]| (x, y, z)).collect();

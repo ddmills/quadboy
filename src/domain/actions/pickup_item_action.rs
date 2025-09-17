@@ -2,8 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable,
-        StackableType, Zone, get_base_energy_cost, inventory::InventoryChangedEvent,
+        get_base_energy_cost, inventory::InventoryChangedEvent, Collider, Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable, StackableType, Zone
     },
     engine::StableIdRegistry,
     rendering::Position,
@@ -113,6 +112,7 @@ impl Command for PickupItemAction {
             for mut zone in q_zones.iter_mut(world) {
                 if zone.idx == zone_idx {
                     zone.entities.remove(&item_entity);
+                    zone.colliders.remove(&item_entity);
                     break;
                 }
             }
@@ -160,6 +160,7 @@ fn remove_item_from_zone(world: &mut World, item_entity: Entity) {
         for mut zone in world.query::<&mut Zone>().iter_mut(world) {
             if zone.idx == zone_idx {
                 zone.entities.remove(&item_entity);
+                zone.colliders.remove(&item_entity);
                 break;
             }
         }

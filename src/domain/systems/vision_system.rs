@@ -19,14 +19,17 @@ pub fn update_player_vision(
     player_pos: Res<PlayerPosition>,
     mut q_zones: Query<&mut Zone>,
     q_vision_blockers: Query<&Position, (With<VisionBlocker>, With<InActiveZone>)>,
-    clock: Res<Clock>,
+    clock: ResMut<Clock>,
     zones: Res<Zones>,
     lighting_data: Res<LightingData>,
 ) {
     tracy_span!("update_player_vision");
-    ("update_player_vision");
 
-    if clock.is_frozen() {
+    // if clock.is_frozen() {
+    //     return;
+    // }
+
+    if clock.tick_delta_accum() == 0 {
         return;
     }
 
@@ -50,7 +53,7 @@ pub fn update_player_vision(
     zone.visible.clear(false);
     let mut vis = vec![];
 
-    let mut blocker_cache: HashMap<(i32, i32), bool> = {
+    let blocker_cache: HashMap<(i32, i32), bool> = {
         tracy_span!("vision_build_blocker_cache");
         let mut blocker_cache: HashMap<(i32, i32), bool> = HashMap::new();
         for blocker_pos in q_vision_blockers.iter() {
@@ -135,11 +138,14 @@ pub fn update_entity_visibility_flags(
     zones: Res<Zones>,
     mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {
-    if clock.is_frozen() {
+    tracy_span!("update_entity_visibility_flags");
+    // if clock.is_frozen() {
+    //     return;
+    // }
+
+    if clock.tick_delta_accum() == 0 {
         return;
     }
-
-    ("update_entity_visibility_flags");
 
     for (entity, position, has_visible, has_explored, has_bitmask) in q_entities.iter_mut() {
         let world_pos = position.world();

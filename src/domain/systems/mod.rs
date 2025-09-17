@@ -29,4 +29,3 @@ pub use lighting_system::*;
 pub use stable_id_system::*;
 pub use targeting::*;
 pub use vision_system::*;
-pub use xp_system::*;

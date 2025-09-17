@@ -11,6 +11,7 @@ use crate::{
     },
     engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
+    tracy_span,
 };
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
@@ -312,6 +313,7 @@ pub fn update_player_position_resource(
     mut e_player_moved: EventReader<PlayerMovedEvent>,
     mut player_pos: ResMut<PlayerPosition>,
 ) {
+    tracy_span!("update_player_position_resource");
     for e in e_player_moved.read() {
         player_pos.x = e.x as f32;
         player_pos.y = e.y as f32;

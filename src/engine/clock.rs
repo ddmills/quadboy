@@ -7,6 +7,7 @@ use crate::common::MacroquadColorable;
 pub struct Clock {
     tick: u32,
     tick_delta: u32,
+    tick_delta_accum: u32,
     force_update: bool,
 }
 
@@ -15,6 +16,7 @@ impl Clock {
         Self {
             tick,
             tick_delta: 0,
+            tick_delta_accum: 0,
             force_update: true,
         }
     }
@@ -26,10 +28,15 @@ impl Clock {
     pub fn increment_tick(&mut self, amount: u32) {
         self.tick += amount;
         self.tick_delta += amount;
+        self.tick_delta_accum += amount;
     }
 
     pub fn tick_delta(&self) -> u32 {
         self.tick_delta
+    }
+
+    pub fn tick_delta_accum(&self) -> u32 {
+        self.tick_delta_accum
     }
 
     pub fn current_tick(&self) -> u32 {
@@ -41,8 +48,13 @@ impl Clock {
         self.force_update = false;
     }
 
+    pub fn clear_tick_delta_accum(&mut self) {
+        self.tick_delta_accum = 0;
+    }
+
     pub fn force_update(&mut self) {
         self.force_update = true;
+        self.tick_delta_accum += 1;
     }
 
     pub fn set_tick(&mut self, value: u32) {

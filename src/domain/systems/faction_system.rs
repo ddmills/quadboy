@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
 
-use crate::domain::{FactionId, FactionMember};
+use crate::{
+    domain::{FactionId, FactionMember},
+    tracy_span,
+};
 
 #[derive(Resource)]
 pub struct FactionRelations {
@@ -86,6 +89,7 @@ pub fn are_hostile(entity_a: Entity, entity_b: Entity, world: &World) -> bool {
 }
 
 pub fn tick_faction_modifiers(mut q_faction_members: Query<&mut FactionMember>) {
+    tracy_span!("tick_faction_modifiers");
     for mut faction_member in q_faction_members.iter_mut() {
         faction_member.tick_modifiers();
     }

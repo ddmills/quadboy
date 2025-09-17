@@ -17,7 +17,6 @@ pub use entity_serializer::*;
 pub use exit::*;
 pub use input::*;
 pub use mouse::*;
-pub use profiling::*;
 pub use save::*;
 pub use stable_id::*;
 pub use time::*;

@@ -2,10 +2,11 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{InActiveZone, Zone, ZoneStatus};
+use crate::domain::{Collider, InActiveZone, Zone, ZoneStatus};
 use crate::rendering::{world_to_zone_idx, world_to_zone_local};
 
 use crate::engine::SerializableComponent;
+use crate::tracy_span;
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent, Debug)]
 pub struct Position {
@@ -66,7 +67,7 @@ pub struct RecordZonePosition;
 pub fn update_entity_pos(
     mut cmds: Commands,
     mut q_moved: Query<
-        (Entity, &mut Position),
+        (Entity, &mut Position, Option<&Collider>),
         (
             Or<(Changed<Position>, Added<Position>)>,
             With<RecordZonePosition>,
@@ -74,7 +75,8 @@ pub fn update_entity_pos(
     >,
     mut q_zones: Query<(Entity, &mut Zone, &ZoneStatus)>,
 ) {
-    for (e, mut pos) in q_moved.iter_mut() {
+    tracy_span!("update_entity_pos");
+    for (e, mut pos, opt_collider) in q_moved.iter_mut() {
         let new_zone_idx = pos.zone_idx();
         let old_zone_idx = pos.prev_zone_idx;
 
@@ -83,6 +85,7 @@ pub fn update_entity_pos(
                 q_zones.iter_mut().find(|(_, x, _)| x.idx == old_zone_idx)
         {
             old_zone.entities.remove(&e);
+            old_zone.colliders.remove(&e);
         }
 
         if let Some((zone_e, mut zone, zone_status)) =
@@ -92,6 +95,12 @@ pub fn update_entity_pos(
 
             zone.entities.remove(&e);
             zone.entities.insert(local_x, local_y, e);
+
+            zone.colliders.remove(&e);
+            if opt_collider.is_some() {
+                zone.colliders.insert(local_x, local_y, e);
+            }
+
             pos.prev_zone_idx = new_zone_idx;
             cmds.entity(e).insert(*zone_status).insert(ChildOf(zone_e));
 

@@ -3,8 +3,7 @@ use crate::{
         AttributePoints, GameFormulas, Health, Level, Stats,
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
-    rendering::{Position, spawn_level_up_celebration},
-    tracy_plot, tracy_span,
+    rendering::{Position, spawn_level_up_celebration}, tracy_span,
 };
 use bevy_ecs::prelude::*;
 
@@ -36,9 +35,6 @@ pub fn award_xp_on_kill(
     q_levels: Query<&Level>,
 ) {
     tracy_span!("award_xp_on_kill");
-
-    let destruction_event_count = e_entity_destroyed.len() as f64;
-    tracy_plot!("Entity Destruction Events", destruction_event_count);
 
     for destroyed_event in e_entity_destroyed.read() {
         // Only process attack-based deaths
@@ -75,9 +71,6 @@ pub fn apply_xp_gain(
     mut q_attribute_points: Query<&mut AttributePoints>,
 ) {
     tracy_span!("apply_xp_gain");
-
-    let xp_event_count = e_xp_gain.len() as f64;
-    tracy_plot!("XP Gain Events", xp_event_count);
 
     for xp_event in e_xp_gain.read() {
         if let Ok(mut level) = q_levels.get_mut(xp_event.recipient_entity) {
@@ -152,7 +145,7 @@ pub fn process_level_up_particles(world: &mut World) {
 
     let mut requests = Vec::new();
     if let Some(mut particle_queue) = world.get_resource_mut::<LevelUpParticleQueue>() {
-        requests.extend(particle_queue.requests.drain(..));
+        requests.append(&mut particle_queue.requests);
     }
 
     for world_pos in requests {

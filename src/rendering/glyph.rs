@@ -275,9 +275,7 @@ pub fn render_glyphs(
     lighting_data: Res<LightingData>,
 ) {
     tracy_span!("render_glyphs");
-
-    let glyph_count = q_glyphs.iter().count() as f64;
-    tracy_plot!("Rendered Glyphs", glyph_count);
+    tracy_plot!("Rendered Glyphs", q_glyphs.iter().count() as f64);
 
     {
         tracy_span!("render_glyphs_clear_layers");

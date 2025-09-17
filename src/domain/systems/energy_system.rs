@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{Energy, InActiveZone, Player, PursuingPlayer, StatType, Stats},
     engine::Clock,
-    tracy_plot, tracy_span,
+    tracy_span,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,13 +35,10 @@ pub fn turn_scheduler(
     q_player: Query<Entity, With<Player>>,
 ) {
     tracy_span!("turn_scheduler");
-    ("turn_scheduler");
 
     // Clear tick delta at the start of each turn scheduling cycle
     clock.clear_tick_delta();
 
-    let energy_entity_count = q_energy.iter().count() as f64;
-    tracy_plot!("Entities with Energy", energy_entity_count);
     let Some((highest_entity, highest_energy)) =
         q_energy.iter().max_by_key(|(_, energy)| energy.value)
     else {
@@ -73,11 +70,6 @@ pub fn turn_scheduler(
     };
 
     turn_state.is_players_turn = highest_entity == player_entity;
-
-    tracy_plot!(
-        "Player Turn",
-        if turn_state.is_players_turn { 1.0 } else { 0.0 }
-    );
 }
 
 pub fn get_base_energy_cost(action: EnergyActionType) -> i32 {

@@ -6,7 +6,7 @@ use crate::{
     domain::PlayerPosition,
     engine::Time,
     rendering::{Glyph, Position, Visibility, zone_local_to_world_f32},
-    tracy_plot, tracy_span,
+    tracy_span,
 };
 
 use super::core::{
@@ -16,9 +16,6 @@ use super::core::{
 
 pub fn update_particles(mut particle_grid: ResMut<ParticleGrid>, q_particles: Query<&Particle>) {
     tracy_span!("update_particles");
-
-    let particle_count = q_particles.iter().count() as f64;
-    tracy_plot!("Active Particles", particle_count);
 
     particle_grid.clear();
 

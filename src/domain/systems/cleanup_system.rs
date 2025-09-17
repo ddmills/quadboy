@@ -1,7 +1,7 @@
 use super::destruction_system::EntityDestroyedEvent;
 use crate::{
     common::Rand,
-    domain::{Destructible, Player},
+    domain::{Destructible, Player, Zone},
     engine::{Audio, Clock},
     states::{CurrentGameState, GameState},
     tracy_span,
@@ -12,6 +12,7 @@ pub fn on_entity_destroyed_cleanup(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
     q_destructible: Query<&Destructible>,
     q_player: Query<&Player>,
+    mut q_zones: Query<&mut Zone>,
     audio_registry: Option<Res<Audio>>,
     mut rand: Option<ResMut<Rand>>,
     mut cmds: Commands,
@@ -26,6 +27,11 @@ pub fn on_entity_destroyed_cleanup(
             game_state.next = GameState::GameOver;
             clock.force_update();
             continue;
+        }
+
+        for mut z in q_zones.iter_mut() {
+            z.entities.remove(&event.entity);
+            z.colliders.remove(&event.entity);
         }
 
         // Play destruction audio if the entity has a destructible component

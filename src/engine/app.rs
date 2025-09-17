@@ -38,31 +38,26 @@ impl App {
     pub fn run(&mut self) -> bool {
         {
             tracy_span!("schedule_pre_update");
-            ("schedule_pre_update");
             self.schedule_pre_update.run(&mut self.world);
         }
 
         {
             tracy_span!("schedule_update");
-            ("schedule_update");
             self.schedule_update.run(&mut self.world);
         }
 
         {
             tracy_span!("schedule_post_update");
-            ("schedule_post_update");
             self.schedule_post_update.run(&mut self.world);
         }
 
         {
             tracy_span!("schedule_frame_final");
-            ("schedule_frame_final");
             self.schedule_frame_final.run(&mut self.world);
         }
 
         {
             tracy_span!("schedule_state_transition");
-            ("schedule_state_transition");
             self.schedule_state_transition.run(&mut self.world);
         }
 

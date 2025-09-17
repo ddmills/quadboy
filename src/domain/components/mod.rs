@@ -28,7 +28,6 @@ pub mod weapon;
 pub mod weapon_family;
 pub mod weapon_type;
 
-pub use ai_behavior::AiBehavior;
 pub use ai_controller::{AiController, AiState, AiTemplate};
 pub use attributes::{AttributePoints, Attributes};
 pub use bitmask::*;
@@ -41,7 +40,7 @@ pub use destructible::{Destructible, MaterialType};
 pub use enemy_type::CreatureType;
 pub use energy::Energy;
 pub use equipment::{EquipmentSlot, EquipmentSlots, EquipmentType, Equippable, Equipped};
-pub use faction::{FactionId, FactionMember, FactionModifier};
+pub use faction::{FactionId, FactionMember};
 pub use health::Health;
 pub use hit_blink::HitBlink;
 pub use in_active_zone::InActiveZone;

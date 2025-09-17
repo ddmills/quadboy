@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::{domain::BumpAttack, engine::Time, rendering::Glyph, tracy_plot, tracy_span};
+use crate::{domain::BumpAttack, engine::Time, rendering::Glyph, tracy_span};
 
 pub fn bump_attack_system(
     mut cmds: Commands,
@@ -8,9 +8,6 @@ pub fn bump_attack_system(
     time: Res<Time>,
 ) {
     tracy_span!("bump_attack_system");
-
-    let bump_attack_count = q_bump_attack.iter().count() as f64;
-    tracy_plot!("Bump Attack Entities", bump_attack_count);
 
     let mut entities_to_remove = Vec::new();
 

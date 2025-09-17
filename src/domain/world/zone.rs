@@ -7,12 +7,12 @@ use crate::{
     cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid},
     domain::{
-        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs, PursuingPlayer,
+        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs,
         Terrain, UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
     rendering::{
-        Position, world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz,
+        world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz,
     },
     states::CleanupStatePlay,
 };
@@ -45,6 +45,7 @@ pub struct Zone {
     pub entities: HashGrid<Entity>,
     pub visible: Grid<bool>,
     pub explored: Grid<bool>,
+    pub colliders: HashGrid<Entity>,
 }
 
 impl Zone {
@@ -55,6 +56,7 @@ impl Zone {
             entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
             visible: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
             explored: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
+            colliders: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
         }
     }
 
@@ -129,9 +131,6 @@ pub fn on_load_zone(mut cmds: Commands, mut e_load_zone: EventReader<LoadZoneEve
     if let Some(evt) = e_load_zone.read().next() {
         cmds.queue(LoadZoneCommand(evt.0));
     }
-    // for LoadZoneEvent(zone_idx) in e_load_zone.read() {
-    //     cmds.queue(LoadZoneCommand(*zone_idx));
-    // }
 }
 
 pub fn on_unload_zone(mut cmds: Commands, mut e_unload_zone: EventReader<UnloadZoneEvent>) {
@@ -142,12 +141,6 @@ pub fn on_unload_zone(mut cmds: Commands, mut e_unload_zone: EventReader<UnloadZ
             despawn: true,
         });
     }
-    // for UnloadZoneEvent(zone_idx) in e_unload_zone.read() {
-    //     cmds.queue(UnloadZoneCommand {
-    //         zone_idx: *zone_idx,
-    //         despawn: true,
-    //     });
-    // }
 }
 
 pub fn on_set_zone_status(
@@ -363,9 +356,6 @@ pub fn load_nearby_zones(
 }
 
 pub fn spawn_zone(world: &mut World, zone_idx: usize) {
-    ("spawn_zone");
-    ("generate_zone");
-
     let data = ZoneGenerator::generate_zone(world, zone_idx);
 
     let zone_entity_id = world
@@ -395,6 +385,7 @@ pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
                 entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
                 visible: Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, false),
                 explored: zone_data.explored,
+                colliders: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
             },
         ))
         .id();

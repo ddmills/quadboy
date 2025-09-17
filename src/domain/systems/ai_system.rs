@@ -1,5 +1,4 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 use crate::{
     common::algorithm::distance::Distance,
@@ -8,20 +7,14 @@ use crate::{
         PursuingPlayer, Stats, TurnState, get_base_energy_cost, get_energy_cost,
     },
     engine::Clock,
-    rendering::{Position, zone_xyz},
-    tracy_plot, tracy_span,
+    rendering::Position,
+    tracy_span,
 };
 
 use super::ai_utils::*;
 
 pub fn ai_turn(world: &mut World) {
     tracy_span!("ai_turn");
-    ("ai_turn");
-
-    // Count AI entities for tracking
-    let mut ai_query = world.query::<&AiController>();
-    let ai_count = ai_query.iter(world).count() as f64;
-    tracy_plot!("AI Entities", ai_count);
 
     let Some(turn_state) = world.get_resource::<TurnState>() else {
         return;
@@ -158,14 +151,13 @@ fn process_basic_aggressive(
         return;
     }
 
-    if let Some(hostile) = find_hostile_in_range(entity, entity_pos, ai.detection_range, world) {
-        if move_toward_target(entity, entity_pos, hostile, world) {
+    if let Some(hostile) = find_hostile_in_range(entity, entity_pos, ai.detection_range, world)
+        && move_toward_target(entity, entity_pos, hostile, world) {
             update_ai_state(world, entity, AiState::Pursuing);
             update_ai_target(world, entity, Some(hostile));
             add_pursuing_player_component(world, entity, hostile);
             return;
         }
-    }
 
     // Check if already pursuing - continue toward last known position
     if let Some(pursuing) = world.get::<PursuingPlayer>(entity) {
@@ -315,6 +307,7 @@ fn remove_pursuing_player_component(world: &mut World, entity: Entity) {
 }
 
 pub fn manage_pursuit_timeout(world: &mut World) {
+    tracy_span!("manage_pursuit_timeout");
     let clock = world.get_resource::<Clock>().unwrap();
     let current_tick = clock.current_tick();
 

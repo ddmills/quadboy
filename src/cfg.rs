@@ -12,6 +12,7 @@ pub const SURFACE_LEVEL_Z: usize = 3;
 pub const ZONE_SIZE: (usize, usize) = (80, 30);
 pub const ZONE_SIZE_F32: (f32, f32) = (ZONE_SIZE.0 as f32, ZONE_SIZE.1 as f32);
 pub const RENDER_DORMANT: bool = false;
+pub const WORLD_SIZE: (usize, usize, usize) = (ZONE_SIZE.0 * MAP_SIZE.0, ZONE_SIZE.1 * MAP_SIZE.1, MAP_SIZE.2);
 
 pub const WINDOW_SIZE: (usize, usize) = (TILE_SIZE.0 * 70 + 12, TILE_SIZE.1 * 30 + 12);
 

@@ -38,11 +38,14 @@ pub fn update_lighting_system(
     q_entities_with_equipment: Query<(&Position, &EquipmentSlots), With<InActiveZone>>,
 ) {
     tracy_span!("update_lighting_system");
-    ("update_lighting_system");
 
-    if clock.is_frozen() {
+    if clock.tick_delta_accum() == 0 {
         return;
     }
+
+    // if clock.is_frozen() {
+    //     return;
+    // }
 
     let player_zone_idx = player_pos.zone_idx();
     let biome_type = overworld.get_zone_type(player_zone_idx);
@@ -95,7 +98,7 @@ pub fn update_lighting_system(
             .collect()
     };
 
-    let mut all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = {
+    let all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = {
         tracy_span!("lighting_collect_fragments");
         let mut all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
 
@@ -133,7 +136,7 @@ pub fn update_lighting_system(
         all_fragments
     };
 
-    let (mut floor_fragments, mut wall_fragments) = {
+    let (floor_fragments, wall_fragments) = {
         tracy_span!("lighting_separate_floors_walls");
         // Phase 2: Separate floors and walls, apply floors immediately
         let mut floor_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
