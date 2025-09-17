@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
-pub struct PursuingPlayer {
+pub struct PursuingTarget {
     pub last_seen_at: (usize, usize, usize),
     pub target_zone: usize,
     pub pursuit_started: u32,
@@ -15,12 +15,12 @@ pub struct PursuingPlayer {
     pub search_duration: u32,
 }
 
-impl PursuingPlayer {
-    pub fn new(player_position: (usize, usize, usize), current_tick: u32) -> Self {
+impl PursuingTarget {
+    pub fn new(target_position: (usize, usize, usize), current_tick: u32) -> Self {
         let target_zone =
-            world_to_zone_idx(player_position.0, player_position.1, player_position.2);
+            world_to_zone_idx(target_position.0, target_position.1, target_position.2);
         Self {
-            last_seen_at: player_position,
+            last_seen_at: target_position,
             target_zone,
             pursuit_started: current_tick,
             waiting_to_teleport: false,
@@ -32,10 +32,10 @@ impl PursuingPlayer {
         }
     }
 
-    pub fn update_last_seen(&mut self, player_position: (usize, usize, usize)) {
-        self.last_seen_at = player_position;
+    pub fn update_last_seen(&mut self, target_position: (usize, usize, usize)) {
+        self.last_seen_at = target_position;
         self.target_zone =
-            world_to_zone_idx(player_position.0, player_position.1, player_position.2);
+            world_to_zone_idx(target_position.0, target_position.1, target_position.2);
     }
 
     pub fn pursuit_duration(&self, current_tick: u32) -> u32 {

@@ -39,7 +39,7 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
                 AiTemplate::BasicAggressive,
                 Position::new(config.pos.0, config.pos.1, config.pos.2),
             )
-            .with_ranges(15.0, 8.0, 12.0),
+            .with_ranges(30.0, 8.0, 12.0),
         )
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();

@@ -182,9 +182,9 @@ impl LootTableRegistry {
             LootTableId::ForestEnemies,
             LootTable::builder()
                 .add(PrefabId::Bandit, 1.0)
-                .add(PrefabId::BrownBear, 0.8)
-                .add(PrefabId::Coyote, 0.6)
-                .add(PrefabId::GiantFirefly, 0.4)
+                .add(PrefabId::BrownBear, 0.2)
+                .add(PrefabId::Coyote, 0.4)
+                .add(PrefabId::GiantFirefly, 1.1)
                 .build(),
         );
 

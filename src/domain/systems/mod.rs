@@ -1,3 +1,4 @@
+pub mod ai_actions;
 pub mod ai_system;
 pub mod ai_utils;
 pub mod armor_regen_system;
@@ -19,6 +20,7 @@ pub mod targeting;
 pub mod vision_system;
 pub mod xp_system;
 
+pub use ai_actions::*;
 pub use ai_system::*;
 pub use energy_system::*;
 pub use faction_map::*;

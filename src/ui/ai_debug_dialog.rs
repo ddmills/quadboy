@@ -3,7 +3,7 @@ use macroquad::input::KeyCode;
 
 use crate::{
     domain::{
-        AiController, Energy, Label, PursuingPlayer, Stats, systems::ai_utils::distance_from_home,
+        AiController, Energy, Label, PursuingTarget, Stats, systems::ai_utils::distance_from_home,
     },
     engine::{AudioKey, Clock},
     rendering::{Glyph, Layer, Position, ScreenSize},
@@ -31,7 +31,7 @@ impl AiDebugDialogBuilder {
         q_labels: &Query<&Label>,
         q_ai_controllers: &Query<&AiController>,
         q_glyphs: &Query<&Glyph>,
-        q_pursuing: &Query<&PursuingPlayer>,
+        q_pursuing: &Query<&PursuingTarget>,
         q_energy: &Query<&Energy>,
         q_stats: &Query<&Stats>,
         q_positions: &Query<&Position>,

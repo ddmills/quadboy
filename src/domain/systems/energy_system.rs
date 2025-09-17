@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, InActiveZone, Player, PursuingPlayer, StatType, Stats},
+    domain::{Energy, InActiveZone, Player, PursuingTarget, StatType, Stats},
     engine::Clock,
     tracy_span,
 };

@@ -20,7 +20,7 @@ pub mod label;
 pub mod level;
 pub mod lighting;
 pub mod loot_drop;
-pub mod pursuing_player;
+pub mod pursuing_target;
 pub mod stairs;
 pub mod stats;
 pub mod vision;
@@ -28,7 +28,7 @@ pub mod weapon;
 pub mod weapon_family;
 pub mod weapon_type;
 
-pub use ai_controller::{AiController, AiState, AiTemplate};
+pub use ai_controller::{AiBehaviorModifiers, AiController, AiState, AiTemplate};
 pub use attributes::{AttributePoints, Attributes};
 pub use bitmask::*;
 pub use bump_attack::BumpAttack;
@@ -52,7 +52,7 @@ pub use label::Label;
 pub use level::Level;
 pub use lighting::{IgnoreLighting, LightBlocker, LightSource, Lightable};
 pub use loot_drop::LootDrop;
-pub use pursuing_player::PursuingPlayer;
+pub use pursuing_target::PursuingTarget;
 pub use stairs::{StairDown, StairUp};
 pub use stats::{ModifierSource, StatModifier, StatModifiers, StatType, Stats};
 pub use vision::{

@@ -46,7 +46,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
                 AiTemplate::BasicAggressive,
                 Position::new(config.pos.0, config.pos.1, config.pos.2),
             )
-            .with_ranges(20.0, 10.0, 15.0),
+            .with_ranges(40.0, 10.0, 15.0),
         )
         .with_component(FactionMember::new(FactionId::Bandits))
         .build();

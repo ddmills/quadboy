@@ -29,7 +29,7 @@ use crate::{
         GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
         InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
         LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry,
-        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, PursuingPlayer,
+        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, PursuingTarget,
         RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
         StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer,
         Vision, VisionBlocker, Weapon, Zones,
@@ -152,7 +152,7 @@ async fn main() {
     reg.register::<StackCount>();
     reg.register::<LightSource>();
     reg.register::<FactionMember>();
-    reg.register::<PursuingPlayer>();
+    reg.register::<PursuingTarget>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

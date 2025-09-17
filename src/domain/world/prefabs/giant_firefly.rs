@@ -2,7 +2,7 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        DefaultMeleeAttack, FactionId, FactionMember, LightSource, LootDrop, LootTableId,
+        FactionId, FactionMember, LightSource, LootDrop, LootTableId,
         components::ai_controller::{AiController, AiTemplate},
     },
     rendering::{GlyphTextureId, Layer, Position},
@@ -27,7 +27,6 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
         .with_health()
         .with_collider()
         .with_hide_when_not_visible()
-        .with_default_melee_attack(DefaultMeleeAttack::electric_touch())
         .with_level(2)
         .with_attributes(crate::domain::Attributes::new(1, 3, 2, 2))
         .with_stats(crate::domain::Stats::new())
@@ -36,10 +35,10 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
         .with_loot_drop(LootDrop::new(LootTableId::GiantFireflyLoot, 0.35))
         .with_component(
             AiController::new(
-                AiTemplate::BasicAggressive,
+                AiTemplate::Timid,
                 Position::new(config.pos.0, config.pos.1, config.pos.2),
             )
-            .with_ranges(18.0, 10.0, 14.0),
+            .with_ranges(30.0, 8.0, 12.0), // Doubled leash range
         )
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();

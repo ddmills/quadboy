@@ -1,16 +1,16 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    common::algorithm::distance::Distance,
     domain::{
-        AiController, AiState, AiTemplate, Energy, EnergyActionType, Health, PlayerPosition,
-        PursuingPlayer, Stats, TurnState, get_base_energy_cost, get_energy_cost,
+        AiController, AiState, AiTemplate, Energy, EnergyActionType, Health, MoveAction,
+        PlayerPosition, PursuingTarget, TurnState, get_base_energy_cost,
     },
     engine::Clock,
     rendering::Position,
     tracy_span,
 };
 
+use super::ai_actions::*;
 use super::ai_utils::*;
 
 pub fn ai_turn(world: &mut World) {
@@ -74,7 +74,7 @@ fn process_ai_template(
                 update_ai_state(world, entity, AiState::Idle);
                 update_ai_target(world, entity, None);
                 clear_cached_path(world, entity);
-                remove_pursuing_player_component(world, entity);
+                remove_pursuing_target_component(world, entity);
                 consume_wait_energy(entity, world);
                 return;
             }
@@ -106,7 +106,7 @@ fn process_ai_template(
                     clear_cached_path(world, entity);
                 }
                 update_ai_state(world, entity, AiState::Returning);
-                remove_pursuing_player_component(world, entity);
+                remove_pursuing_target_component(world, entity);
             }
 
             {
@@ -136,6 +136,15 @@ fn process_ai_template(
             AiTemplate::BasicAggressive => {
                 process_basic_aggressive(world, entity, ai, entity_pos);
             }
+            AiTemplate::Timid => {
+                process_timid(world, entity, ai, entity_pos);
+            }
+            AiTemplate::Scavenger => {
+                process_scavenger(world, entity, ai, entity_pos);
+            }
+            AiTemplate::Ambush { strike_range } => {
+                process_ambush(world, entity, ai, entity_pos, strike_range);
+            }
         }
     }
 }
@@ -146,89 +155,23 @@ fn process_basic_aggressive(
     ai: &AiController,
     entity_pos: &Position,
 ) {
-    if attack_if_adjacent(entity, entity_pos, world) {
-        update_ai_state(world, entity, AiState::Fighting);
+    if try_attack_adjacent(entity, entity_pos, world) {
         return;
     }
 
-    if let Some(hostile) = find_hostile_in_range(entity, entity_pos, ai.detection_range, world)
-        && move_toward_target(entity, entity_pos, hostile, world)
-    {
-        update_ai_state(world, entity, AiState::Pursuing);
-        update_ai_target(world, entity, Some(hostile));
-        add_pursuing_player_component(world, entity, hostile);
-        clear_cached_pursuit_path(world, entity); // Clear cached path when starting new pursuit
-        return;
+    if let Some(hostile) = find_hostile_in_range(entity, entity_pos, ai.detection_range, world) {
+        if try_pursue_target(entity, entity_pos, hostile, world) {
+            add_pursuing_target_component(world, entity, hostile);
+            clear_cached_pursuit_path(world, entity); // Clear cached path when starting new pursuit
+            return;
+        }
     }
 
     // Check if already pursuing - continue toward last known position
-    if let Some(pursuing) = world.get::<PursuingPlayer>(entity) {
+    if let Some(pursuing) = world.get::<PursuingTarget>(entity) {
         let clock = world.get_resource::<Clock>().unwrap();
         let current_tick = clock.current_tick();
         let pursuing_clone = pursuing.clone();
-
-        // Check if waiting to teleport
-        if pursuing_clone.waiting_to_teleport {
-            if pursuing_clone.should_teleport(current_tick) {
-                println!(
-                    "Wait period elapsed for entity {:?}, attempting teleportation",
-                    entity
-                );
-                // Get current player zone for teleportation
-                let player_zone = if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
-                    player_pos.zone_idx()
-                } else {
-                    pursuing_clone.target_zone
-                };
-
-                // Attempt teleportation to player's current zone
-                if teleport_to_zone_edge(entity, entity_pos, player_zone, world) {
-                    if let Some(mut pursuing) = world.get_mut::<PursuingPlayer>(entity) {
-                        pursuing.target_zone = player_zone; // Update target zone
-                        pursuing.reset_teleport_wait();
-                    }
-                    update_ai_state(world, entity, AiState::Pursuing);
-                    return;
-                } else {
-                    println!("Teleportation failed for entity {:?}", entity);
-                }
-            } else {
-                // Still waiting
-                consume_wait_energy(entity, world);
-                update_ai_state(world, entity, AiState::Waiting);
-                return;
-            }
-        }
-
-        // Get current player zone for teleportation target
-        let player_zone = if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
-            player_pos.zone_idx()
-        } else {
-            pursuing_clone.target_zone
-        };
-
-        // Check if entity is in different zone from player - start teleport wait
-        if entity_pos.zone_idx() != player_zone {
-            let wait_duration = calculate_teleport_wait_time(
-                world,
-                entity,
-                entity_pos.world(),
-                pursuing_clone.last_seen_at,
-            );
-
-            // Start teleport wait
-            println!(
-                "Starting teleport wait for entity {:?} - player in different zone, wait time: {}",
-                entity, wait_duration
-            );
-            if let Some(mut pursuing) = world.get_mut::<PursuingPlayer>(entity) {
-                pursuing.target_zone = player_zone; // Update to current player zone
-                pursuing.start_teleport_wait(current_tick, wait_duration);
-            }
-            update_ai_state(world, entity, AiState::Waiting);
-            consume_wait_energy(entity, world);
-            return;
-        }
 
         // Normal pursuit logic
         let last_seen_at = pursuing_clone.last_seen_at;
@@ -236,7 +179,7 @@ fn process_basic_aggressive(
 
         // Check if we've reached the last known position first
         if entity_pos.world() == last_seen_at {
-            if let Some(mut pursuing) = world.get_mut::<PursuingPlayer>(entity) {
+            if let Some(mut pursuing) = world.get_mut::<PursuingTarget>(entity) {
                 if !pursuing.searching_at_last_position {
                     pursuing.start_searching(current_tick);
                     update_ai_state(world, entity, AiState::Pursuing); // Keep pursuing while searching
@@ -246,7 +189,7 @@ fn process_basic_aggressive(
                 // Already searching - check if we should stop
                 if pursuing.should_stop_searching(current_tick) {
                     // Search timeout - go to Returning state to head home
-                    remove_pursuing_player_component(world, entity);
+                    remove_pursuing_target_component(world, entity);
                     clear_cached_pursuit_path(world, entity); // Clear pursuit path when giving up
                     update_ai_state(world, entity, AiState::Returning);
                     return;
@@ -279,36 +222,177 @@ fn process_basic_aggressive(
     }
 
     // If no pursuit component, try normal wandering near home
-    if wander_near_point(
+    if try_wander_near(
         entity,
         entity_pos,
         &ai.home_position,
         ai.wander_range,
         world,
     ) {
-        update_ai_state(world, entity, AiState::Wandering);
         update_ai_target(world, entity, None);
         return;
     }
 
-    update_ai_state(world, entity, AiState::Idle);
+    set_idle_and_wait(entity, world);
     update_ai_target(world, entity, None);
-    consume_wait_energy(entity, world);
 }
 
-fn update_ai_state(world: &mut World, entity: Entity, new_state: AiState) {
-    if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-        ai.state = new_state;
+fn process_timid(world: &mut World, entity: Entity, ai: &AiController, entity_pos: &Position) {
+    // Timid creatures flee from hostiles and never attack
+    if let Some(hostile) = find_hostile_in_range(entity, entity_pos, ai.detection_range, world) {
+        // Get hostile position for fleeing
+        if let Some(hostile_pos) = world.get::<Position>(hostile).cloned() {
+            if try_flee_from(entity, entity_pos, &hostile_pos, world) {
+                update_ai_target(world, entity, Some(hostile));
+                return;
+            } else {
+                // Can't flee, just wait and hope for the best
+                set_idle_and_wait(entity, world);
+                update_ai_target(world, entity, Some(hostile));
+                return;
+            }
+        }
     }
-}
 
-fn update_ai_target(world: &mut World, entity: Entity, new_target: Option<Entity>) {
-    if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-        ai.current_target = new_target;
+    // If no threat, wander peacefully near home
+    if try_wander_near(
+        entity,
+        entity_pos,
+        &ai.home_position,
+        ai.wander_range,
+        world,
+    ) {
+        update_ai_target(world, entity, None);
+        return;
     }
+
+    // Can't wander, just idle
+    set_idle_and_wait(entity, world);
+    update_ai_target(world, entity, None);
 }
 
-fn add_pursuing_player_component(world: &mut World, entity: Entity, target_entity: Entity) {
+fn process_scavenger(world: &mut World, entity: Entity, ai: &AiController, entity_pos: &Position) {
+    // Scavengers attack adjacent wounded targets first
+    if try_attack_adjacent(entity, entity_pos, world) {
+        return;
+    }
+
+    // Look for wounded hostiles to attack aggressively
+    if let Some(wounded_hostile) =
+        find_wounded_hostile_in_range(entity, entity_pos, ai.detection_range, world)
+    {
+        if try_pursue_target(entity, entity_pos, wounded_hostile, world) {
+            add_pursuing_target_component(world, entity, wounded_hostile);
+            clear_cached_pursuit_path(world, entity);
+            return;
+        }
+    }
+
+    // Look for healthy hostiles to follow at a safe distance
+    if let Some(healthy_hostile) =
+        find_hostile_in_range(entity, entity_pos, ai.detection_range, world)
+    {
+        let safe_distance = 5.0; // Tiles to maintain from healthy targets
+
+        if let Some(target_pos) = world.get::<Position>(healthy_hostile).cloned() {
+            let (entity_x, entity_y, entity_z) = entity_pos.world();
+            let (target_x, target_y, _) = target_pos.world();
+
+            let distance = {
+                let dx = entity_x as f32 - target_x as f32;
+                let dy = entity_y as f32 - target_y as f32;
+                (dx * dx + dy * dy).sqrt()
+            };
+
+            // If too close to healthy target, move away
+            if distance < safe_distance {
+                if try_flee_from(entity, entity_pos, &target_pos, world) {
+                    update_ai_target(world, entity, Some(healthy_hostile));
+                    return;
+                }
+            }
+            // If too far, move closer but maintain safe distance
+            else if distance > ai.detection_range * 0.8 {
+                if move_toward_target(entity, entity_pos, healthy_hostile, world) {
+                    update_ai_state(world, entity, AiState::Wandering);
+                    update_ai_target(world, entity, Some(healthy_hostile));
+                    return;
+                }
+            }
+            // At good distance, just watch
+            else {
+                update_ai_state(world, entity, AiState::Wandering);
+                update_ai_target(world, entity, Some(healthy_hostile));
+                consume_wait_energy(entity, world);
+                return;
+            }
+        }
+    }
+
+    // No targets found, wander near home
+    if try_wander_near(
+        entity,
+        entity_pos,
+        &ai.home_position,
+        ai.wander_range,
+        world,
+    ) {
+        update_ai_target(world, entity, None);
+        return;
+    }
+
+    // Can't wander, just idle
+    set_idle_and_wait(entity, world);
+    update_ai_target(world, entity, None);
+}
+
+fn process_ambush(
+    world: &mut World,
+    entity: Entity,
+    ai: &AiController,
+    entity_pos: &Position,
+    strike_range: f32,
+) {
+    // Ambush predators attack adjacent targets first
+    if try_attack_adjacent(entity, entity_pos, world) {
+        return;
+    }
+
+    // Look for hostiles within strike range
+    if let Some(hostile) = find_hostile_in_range(entity, entity_pos, strike_range, world) {
+        // Calculate distance to target
+        if let Some(target_pos) = world.get::<Position>(hostile) {
+            let (entity_x, entity_y, _) = entity_pos.world();
+            let (target_x, target_y, _) = target_pos.world();
+
+            let distance = {
+                let dx = entity_x as f32 - target_x as f32;
+                let dy = entity_y as f32 - target_y as f32;
+                (dx * dx + dy * dy).sqrt()
+            };
+
+            // If target is within strike range - 1, attempt a quick strike
+            if distance <= (strike_range - 1.0).max(1.0) {
+                if try_pursue_target(entity, entity_pos, hostile, world) {
+                    return;
+                }
+            }
+            // If target is exactly at strike range, prepare to strike but don't move
+            else if distance <= strike_range {
+                update_ai_state(world, entity, AiState::Waiting); // Alert/coiled state
+                update_ai_target(world, entity, Some(hostile));
+                consume_wait_energy(entity, world);
+                return;
+            }
+        }
+    }
+
+    // No targets in strike range - return to idle ambush position
+    set_idle_and_wait(entity, world);
+    update_ai_target(world, entity, None);
+}
+
+fn add_pursuing_target_component(world: &mut World, entity: Entity, target_entity: Entity) {
     let clock = world.get_resource::<Clock>().unwrap();
     let current_tick = clock.current_tick();
 
@@ -328,19 +412,19 @@ fn add_pursuing_player_component(world: &mut World, entity: Entity, target_entit
         }
     };
 
-    if let Some(mut pursuing) = world.get_mut::<PursuingPlayer>(entity) {
+    if let Some(mut pursuing) = world.get_mut::<PursuingTarget>(entity) {
         // Update last seen position if already pursuing
         pursuing.update_last_seen(target_pos);
     } else {
         // Create new pursuing component
-        let pursuing = PursuingPlayer::new(target_pos, current_tick);
+        let pursuing = PursuingTarget::new(target_pos, current_tick);
         world.entity_mut(entity).insert(pursuing);
     }
 }
 
-fn remove_pursuing_player_component(world: &mut World, entity: Entity) {
+fn remove_pursuing_target_component(world: &mut World, entity: Entity) {
     clear_cached_pursuit_path(world, entity); // Clear pursuit path when removing pursuit component
-    world.entity_mut(entity).remove::<PursuingPlayer>();
+    world.entity_mut(entity).remove::<PursuingTarget>();
 }
 
 pub fn manage_pursuit_timeout(world: &mut World) {
@@ -350,7 +434,7 @@ pub fn manage_pursuit_timeout(world: &mut World) {
 
     let mut entities_to_remove: Vec<Entity> = Vec::new();
 
-    let mut q_pursuing = world.query::<(Entity, &PursuingPlayer)>();
+    let mut q_pursuing = world.query::<(Entity, &PursuingTarget)>();
     for (entity, pursuing) in q_pursuing.iter(world) {
         let pursuit_duration = pursuing.pursuit_duration(current_tick);
 
@@ -360,32 +444,13 @@ pub fn manage_pursuit_timeout(world: &mut World) {
     }
 
     for entity in entities_to_remove {
-        world.entity_mut(entity).remove::<PursuingPlayer>();
+        world.entity_mut(entity).remove::<PursuingTarget>();
 
         if let Some(mut ai) = world.get_mut::<AiController>(entity) {
             ai.state = AiState::Idle;
             ai.current_target = None;
         }
     }
-}
-
-fn calculate_teleport_wait_time(
-    world: &mut World,
-    entity: Entity,
-    from: (usize, usize, usize),
-    to: (usize, usize, usize),
-) -> u32 {
-    let stats = world.get::<Stats>(entity);
-    let movement_cost = get_energy_cost(EnergyActionType::Move, stats) as u32;
-
-    let distance = Distance::chebyshev(
-        [from.0 as i32, from.1 as i32, from.2 as i32],
-        [to.0 as i32, to.1 as i32, to.2 as i32],
-    )
-    .ceil() as u32;
-
-    let base_wait = movement_cost * distance;
-    base_wait.max(100)
 }
 
 fn clear_cached_path(world: &mut World, entity: Entity) {

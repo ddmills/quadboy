@@ -21,12 +21,12 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_glyph_and_texture(
             33,
-            Palette::Green,
-            Palette::DarkGreen,
+            Palette::DarkYellow,
+            Palette::Yellow,
             Layer::Actors,
             GlyphTextureId::Creatures,
         )
-        .with_label("Rattlesnake")
+        .with_label("{Y-y-X-y repeat|Rattlesnake}")
         .with_description(
             "Coiled malice baking in the sun. The desert's way of keeping honest men honest.",
         )
@@ -43,10 +43,10 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
         .with_creature_type(CreatureType::Rattlesnake)
         .with_component(
             AiController::new(
-                AiTemplate::BasicAggressive,
+                AiTemplate::Ambush { strike_range: 6.0 },
                 Position::new(config.pos.0, config.pos.1, config.pos.2),
             )
-            .with_ranges(16.0, 8.0, 10.0),
+            .with_ranges(12.0, 1.0, 6.0), // Small leash, minimal wander, short detection
         )
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();

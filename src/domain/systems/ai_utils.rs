@@ -1,4 +1,5 @@
 use core::f32;
+use std::collections::HashMap;
 
 use crate::{
     cfg::{MAP_SIZE, WORLD_SIZE, ZONE_SIZE},
@@ -10,8 +11,8 @@ use crate::{
         },
     },
     domain::{
-        AiController, AttackAction, Collider, Energy, FactionMap, FactionMember, PlayerPosition,
-        StairDown, StairUp, Zone, actions::MoveAction, are_hostile,
+        AiController, AttackAction, Collider, Energy, FactionMap, FactionMember, Health, Level,
+        PlayerPosition, StairDown, StairUp, Stats, Zone, actions::MoveAction, are_hostile,
     },
     rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_xyz},
     tracy_span,
@@ -62,6 +63,70 @@ pub fn find_hostile_in_range(
                         let distance = ((dx * dx + dy * dy) as f32).sqrt();
                         if distance <= range {
                             return Some(target_entity);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+pub fn find_wounded_hostile_in_range(
+    entity: Entity,
+    entity_pos: &Position,
+    range: f32,
+    world: &mut World,
+) -> Option<Entity> {
+    let (x, y, z) = entity_pos.world();
+    let zone_idx = world_to_zone_idx(x, y, z);
+
+    let mut zone_query = world.query::<&Zone>();
+    let zone = zone_query.iter(world).find(|zone| zone.idx == zone_idx)?;
+
+    let (local_x, local_y) = world_to_zone_local(x, y);
+    let range_tiles = range as i32;
+
+    for dx in -range_tiles..=range_tiles {
+        for dy in -range_tiles..=range_tiles {
+            let check_x_i32 = local_x as i32 + dx;
+            let check_y_i32 = local_y as i32 + dy;
+
+            // Bounds check for zone coordinates
+            if check_x_i32 < 0
+                || check_x_i32 >= ZONE_SIZE.0 as i32
+                || check_y_i32 < 0
+                || check_y_i32 >= ZONE_SIZE.1 as i32
+            {
+                continue;
+            }
+
+            let check_x = check_x_i32 as usize;
+            let check_y = check_y_i32 as usize;
+
+            if let Some(entities) = zone.entities.get(check_x, check_y) {
+                for &target_entity in entities {
+                    // Don't target self
+                    if entity == target_entity {
+                        continue;
+                    }
+
+                    if are_hostile(entity, target_entity, world) {
+                        // Check if target is wounded (< 50% health)
+                        if let Some(health) = world.get::<Health>(target_entity) {
+                            if let (Some(level), Some(stats)) = (
+                                world.get::<Level>(target_entity),
+                                world.get::<Stats>(target_entity),
+                            ) {
+                                let health_percentage = health.get_percentage(level, stats);
+                                if health_percentage < 0.5 {
+                                    let distance = ((dx * dx + dy * dy) as f32).sqrt();
+                                    if distance <= range {
+                                        return Some(target_entity);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -206,39 +271,39 @@ pub fn return_to_home(
     };
 
     // Try to use cached path first
-    if let Some(mut path) = cached_path {
-        tracy_span!("use_cached_path");
+    // if let Some(mut path) = cached_path {
+    //     tracy_span!("use_cached_path");
 
-        // Remove positions we've already passed
-        while !path.is_empty() && path[0] == current_pos {
-            path.remove(0);
-        }
+    //     // Remove positions we've already passed
+    //     while !path.is_empty() && path[0] == current_pos {
+    //         path.remove(0);
+    //     }
 
-        // Try to move to the next step in the cached path
-        if !path.is_empty() {
-            let next_step = path[0];
-            if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
-                tracy_span!("cached_path_move");
-                let move_action = MoveAction {
-                    entity,
-                    new_position: next_step,
-                };
-                move_action.apply(world);
+    //     // Try to move to the next step in the cached path
+    //     if !path.is_empty() {
+    //         let next_step = path[0];
+    //         if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
+    //             tracy_span!("cached_path_move");
+    //             let move_action = MoveAction {
+    //                 entity,
+    //                 new_position: next_step,
+    //             };
+    //             move_action.apply(world);
 
-                // Update the cached path by removing the step we just took
-                path.remove(0);
-                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-                    ai.cached_home_path = if path.is_empty() { None } else { Some(path) };
-                }
-                return true;
-            } else {
-                // Next step is blocked, clear the cached path and recalculate
-                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-                    ai.cached_home_path = None;
-                }
-            }
-        }
-    }
+    //             // Update the cached path by removing the step we just took
+    //             path.remove(0);
+    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+    //                 ai.cached_home_path = if path.is_empty() { None } else { Some(path) };
+    //             }
+    //             return true;
+    //         } else {
+    //             // Next step is blocked, clear the cached path and recalculate
+    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+    //                 ai.cached_home_path = None;
+    //             }
+    //         }
+    //     }
+    // }
 
     // No cached path or cached path is blocked, calculate new path with A*
     {
@@ -303,7 +368,7 @@ pub fn consume_wait_energy(entity: Entity, world: &mut World) {
     }
 }
 
-fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) -> bool {
+pub fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) -> bool {
     tracy_span!("is_move_valid");
 
     let max_x = (MAP_SIZE.0 * ZONE_SIZE.0) - 1;
@@ -400,38 +465,38 @@ fn move_toward_position(
     };
 
     // Try to use cached path first
-    if let Some(mut path) = cached_path {
-        tracy_span!("use_cached_pursuit_path");
+    // if let Some(mut path) = cached_path {
+    //     tracy_span!("use_cached_pursuit_path");
 
-        // Remove positions we've already reached
-        while !path.is_empty() && path[0] == current_pos {
-            path.remove(0);
-        }
+    //     // Remove positions we've already reached
+    //     while !path.is_empty() && path[0] == current_pos {
+    //         path.remove(0);
+    //     }
 
-        // If we still have a path, try to follow it
-        if !path.is_empty() {
-            let next_step = path[0];
-            if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
-                // Update cached path (remove the step we're taking)
-                path.remove(0);
-                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-                    ai.cached_pursuit_path = if path.is_empty() { None } else { Some(path) };
-                }
+    //     // If we still have a path, try to follow it
+    //     if !path.is_empty() {
+    //         let next_step = path[0];
+    //         if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
+    //             // Update cached path (remove the step we're taking)
+    //             path.remove(0);
+    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+    //                 ai.cached_pursuit_path = if path.is_empty() { None } else { Some(path) };
+    //             }
 
-                let move_action = MoveAction {
-                    entity,
-                    new_position: next_step,
-                };
-                move_action.apply(world);
-                return true;
-            } else {
-                // Path is blocked, clear cached path and recalculate
-                if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-                    ai.cached_pursuit_path = None;
-                }
-            }
-        }
-    }
+    //             let move_action = MoveAction {
+    //                 entity,
+    //                 new_position: next_step,
+    //             };
+    //             move_action.apply(world);
+    //             return true;
+    //         } else {
+    //             // Path is blocked, clear cached path and recalculate
+    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
+    //                 ai.cached_pursuit_path = None;
+    //             }
+    //         }
+    //     }
+    // }
 
     // No cached path or cached path is blocked, calculate new path with A*
     {
@@ -468,16 +533,6 @@ fn move_toward_position(
     }
 
     false
-}
-
-pub fn check_at_zone_boundary(pos: &Position) -> bool {
-    let (local_x, local_y) = pos.zone_local();
-    let at_boundary =
-        local_x <= 1 || local_x >= ZONE_SIZE.0 - 2 || local_y <= 1 || local_y >= ZONE_SIZE.1 - 2;
-    if at_boundary {
-        println!("Entity at zone boundary: local ({}, {})", local_x, local_y);
-    }
-    at_boundary
 }
 
 pub fn teleport_to_zone_edge(
@@ -767,11 +822,12 @@ pub fn find_path_astar(
 ) -> Option<Vec<(usize, usize, usize)>> {
     tracy_span!("find_path_astar");
 
-    let zone_idx = world_to_zone_idx(from.0, from.1, from.2);
-    let zone = world
-        .query::<&Zone>()
-        .iter(world)
-        .find(|z| z.idx == zone_idx)?;
+    // Build a zone cache for efficient lookups during pathfinding
+    let mut zone_cache: HashMap<usize, &Zone> = HashMap::new();
+    let mut zones_query = world.query::<&Zone>();
+    for zone in zones_query.iter(world) {
+        zone_cache.insert(zone.idx, zone);
+    }
 
     let result = {
         tracy_span!("astar_algorithm");
@@ -779,6 +835,11 @@ pub fn find_path_astar(
             start: [from.0, from.1, from.2],
             is_goal: |[x, y, z]| x == to.0 && y == to.1 && z == to.2,
             cost: |[_from_x, _from_y, _from_z], [to_x, to_y, _to_z]| {
+                let zone_idx = world_to_zone_idx(to_x, to_y, _to_z);
+                let Some(zone) = zone_cache.get(&zone_idx) else {
+                    return f32::INFINITY; // Zone not loaded
+                };
+
                 let (local_x, local_y) = world_to_zone_local(to_x, to_y);
                 let Some(v) = zone.colliders.get(local_x, local_y) else {
                     return f32::INFINITY;
