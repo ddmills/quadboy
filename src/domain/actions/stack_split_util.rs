@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Inventory, Item, Prefab, PrefabId, Prefabs, StackCount, Stackable,
+        InInventory, Inventory, Item, Prefab, PrefabId, Prefabs, StackCount, Stackable,
         inventory::InventoryChangedEvent,
     },
     engine::{StableId, StableIdRegistry},
@@ -28,6 +28,7 @@ pub fn split_item_from_stack(
     let stackable = world.get::<Stackable>(item_entity)?.clone();
     let item_weight = world.get::<Item>(item_entity)?.weight;
     let position = world.get::<Position>(inventory_owner).map(|p| p.world());
+    let original_in_inventory = world.get::<InInventory>(item_entity).cloned();
 
     // Decrement the original stack
     {
@@ -50,6 +51,15 @@ pub fn split_item_from_stack(
     // Set the new item's stack count to 1
     if let Some(mut new_stack) = world.get_mut::<StackCount>(new_entity) {
         new_stack.count = 1;
+    }
+
+    // If the original item was in inventory, add InInventory component to the new item
+    // and remove Position (items in inventory shouldn't have positions)
+    if let Some(in_inventory) = original_in_inventory {
+        world
+            .entity_mut(new_entity)
+            .insert(in_inventory)
+            .remove::<Position>();
     }
 
     // Manually assign a StableId immediately since the auto-assign system runs later

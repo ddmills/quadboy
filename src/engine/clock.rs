@@ -11,6 +11,8 @@ pub struct Clock {
     force_update: bool,
 }
 
+pub const TICKS_PER_MINUTE: u32 = 100;
+
 impl Clock {
     pub fn new(tick: u32) -> Self {
         Self {
@@ -83,7 +85,7 @@ impl Clock {
     }
 
     pub fn get_minute(&self) -> u32 {
-        self.tick / 100
+        self.tick / TICKS_PER_MINUTE
     }
 
     pub fn get_hour(&self) -> u32 {

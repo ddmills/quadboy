@@ -61,10 +61,6 @@ pub fn display_entity_names_at_mouse(
         return;
     };
 
-    let Some(colliders) = zone.colliders.get(local_x, local_y) else {
-        return;
-    };
-
     for entity in entities {
         if let Ok((name, stack_count)) = q_names.get(*entity) {
             let mut name = name.get().to_string();
@@ -78,12 +74,6 @@ pub fn display_entity_names_at_mouse(
             names.push(name);
         }
     }
-
-    names.push(if colliders.is_empty() {
-        "EMPTY".to_owned()
-    } else {
-        colliders.len().to_string()
-    });
 
     let Ok((mut text, mut text_pos, mut visibility)) = q_hover_text.single_mut() else {
         return;

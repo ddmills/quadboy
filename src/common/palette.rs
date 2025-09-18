@@ -75,6 +75,8 @@ fn get_seq_color(ch: &str) -> Palette {
         "w" => Palette::White,
         "R" => Palette::Red,
         "r" => Palette::DarkRed,
+        "U" => Palette::Gray,
+        "u" => Palette::DarkGray,
         "G" => Palette::Green,
         "g" => Palette::DarkGreen,
         "B" => Palette::Blue,

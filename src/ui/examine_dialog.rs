@@ -2,7 +2,7 @@ use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
 
 use crate::{
-    domain::{Description, DynamicLabel, Label, get_dynamic_label},
+    domain::{Description, Label},
     engine::AudioKey,
     rendering::{Glyph, Layer, Position, ScreenSize, text_content_length, wrap_text},
     ui::{ActivatableBuilder, Dialog, DialogContent, DialogIcon, DialogText, DialogTextStyle},
@@ -34,13 +34,16 @@ impl ExamineDialogBuilder {
         self,
         cmds: &mut Commands,
         q_labels: &Query<&Label>,
-        q_dynamic_labels: &Query<&DynamicLabel>,
         q_descriptions: &Query<&Description>,
         q_glyphs: &Query<&Glyph>,
         cleanup_component: impl Bundle + Clone,
         screen: &ScreenSize,
     ) -> Entity {
-        let entity_name = get_dynamic_label(self.entity, q_labels, q_dynamic_labels);
+        let entity_name = if let Ok(label) = q_labels.get(self.entity) {
+            label.get().to_string()
+        } else {
+            "Unknown".to_string()
+        };
 
         // Calculate height based on actual text wrapping
         let description_lines = if let Ok(description) = q_descriptions.get(self.entity) {

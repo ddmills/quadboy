@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::engine::SerializableComponent;
+use crate::engine::{SerializableComponent, TICKS_PER_MINUTE};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Fuse {
@@ -30,6 +30,9 @@ impl Fuse {
     }
 
     pub fn get_countdown_display(&self) -> String {
-        format!("({}/100)", self.remaining_ticks.max(0))
+        format!(
+            "{{U|({}m)}}",
+            self.remaining_ticks.max(0) as u32 / TICKS_PER_MINUTE
+        )
     }
 }

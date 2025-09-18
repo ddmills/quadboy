@@ -34,13 +34,4 @@ impl ExplosiveProperties {
     pub fn dynamite() -> Self {
         Self::new(600, 3, 50, 0.3, Some(AudioKey::Explosion1)) // 3 turns, 3 radius, 50 damage, 30% falloff per tile
     }
-
-    pub fn calculate_damage_at_distance(&self, distance: f32) -> i32 {
-        if distance <= 0.0 {
-            return self.base_damage;
-        }
-
-        let damage_multiplier = (1.0 - (distance * self.falloff_rate)).max(0.0);
-        (self.base_damage as f32 * damage_multiplier) as i32
-    }
 }

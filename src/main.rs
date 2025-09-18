@@ -24,23 +24,22 @@ use crate::{
     common::Rand,
     domain::{
         AiController, ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack,
-        Collider, Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible,
-        DynamicLabel, Energy, EquipmentSlots, Equippable, Equipped, ExplosionEvent,
-        ExplosiveProperties, FactionMap, FactionMember, FactionRelations, Fuse, GameSettings,
-        Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
-        InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
-        LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry,
-        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, PursuingTarget,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
-        StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
+        Collider, Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
+        EquipmentSlots, Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap,
+        FactionMember, FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink,
+        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
+        Label, Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
+        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
+        Stackable, StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
         UnopenedContainer, Vision, VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
         systems::destruction_system::EntityDestroyedEvent,
         systems::dynamic_label_system::{
-            ensure_dynamic_labels, mark_dirty_on_equipment_change, mark_dirty_on_fuse_change,
-            mark_dirty_on_light_change, mark_dirty_on_stack_change, update_dynamic_labels,
+            ensure_labels_initialized, mark_dirty_on_equipment_change, mark_dirty_on_fuse_change,
+            mark_dirty_on_light_change, mark_dirty_on_stack_change, update_labels,
         },
         systems::hit_blink_system::hit_blink_system,
         systems::xp_system::{
@@ -115,7 +114,6 @@ async fn main() {
     reg.register::<CleanupStatePlay>();
     reg.register::<CleanupStateExplore>();
     reg.register::<Label>();
-    reg.register::<DynamicLabel>();
     reg.register::<Description>();
     reg.register::<Collider>();
     reg.register::<Consumable>();
@@ -261,16 +259,16 @@ async fn main() {
                 // New unified activation systems
                 unified_keyboard_activation_system,
                 unified_click_system,
-                // Dynamic label systems
-                ensure_dynamic_labels,
+                // Label systems
+                ensure_labels_initialized,
                 (
                     mark_dirty_on_equipment_change,
                     mark_dirty_on_fuse_change,
                     mark_dirty_on_light_change,
                     mark_dirty_on_stack_change,
                 )
-                    .after(ensure_dynamic_labels),
-                update_dynamic_labels.after(ensure_dynamic_labels),
+                    .after(ensure_labels_initialized),
+                update_labels.after(ensure_labels_initialized),
             ),
         )
         .add_systems(

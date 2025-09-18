@@ -4,8 +4,7 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        DynamicLabel, Inventory, Label, Player, TransferItemAction, game_loop, get_dynamic_label,
-        inventory::InventoryChangedEvent,
+        Inventory, Label, Player, TransferItemAction, game_loop, inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, KeyInput, Plugin, StableIdRegistry},
     rendering::{Layer, Position, ScreenSize, Text},
@@ -234,7 +233,6 @@ fn direct_transfer_from_container(
 fn build_player_list_items(
     inventory: &Inventory,
     q_labels: &Query<&Label>,
-    q_dynamic_labels: &Query<&DynamicLabel>,
     id_registry: &StableIdRegistry,
     callbacks: &ContainerCallbacks,
 ) -> Vec<ListItemData> {
@@ -246,9 +244,13 @@ fn build_player_list_items(
                 return ListItemData::new("Unknown", callbacks.select_item);
             };
 
-            let display_text = get_dynamic_label(item_entity, q_labels, q_dynamic_labels);
+            let display_text = if let Ok(label) = q_labels.get(item_entity) {
+                label.get()
+            } else {
+                "Unknown"
+            };
 
-            ListItemData::new(&display_text, callbacks.examine_item)
+            ListItemData::new(display_text, callbacks.examine_item)
                 .with_hotkey(KeyCode::X)
                 .with_context(*item_id)
         })
@@ -258,7 +260,6 @@ fn build_player_list_items(
 fn build_container_list_items(
     inventory: &Inventory,
     q_labels: &Query<&Label>,
-    q_dynamic_labels: &Query<&DynamicLabel>,
     id_registry: &StableIdRegistry,
     callbacks: &ContainerCallbacks,
 ) -> Vec<ListItemData> {
@@ -266,10 +267,14 @@ fn build_container_list_items(
 
     for &item_id in inventory.item_ids.iter() {
         if let Some(item_entity) = id_registry.get_entity(item_id) {
-            let display_text = get_dynamic_label(item_entity, q_labels, q_dynamic_labels);
+            let display_text = if let Ok(label) = q_labels.get(item_entity) {
+                label.get()
+            } else {
+                "Unknown"
+            };
 
             items.push(
-                ListItemData::new(&display_text, callbacks.examine_item)
+                ListItemData::new(display_text, callbacks.examine_item)
                     .with_hotkey(KeyCode::X)
                     .with_context(item_id),
             );
@@ -324,7 +329,6 @@ fn setup_container_screen(
     q_player: Query<Entity, With<Player>>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_dynamic_labels: Query<&DynamicLabel>,
     id_registry: Res<StableIdRegistry>,
     context: Option<Res<ContainerContext>>,
 ) {
@@ -369,13 +373,8 @@ fn setup_container_screen(
         PlayerInventoryWeightText,
     ));
 
-    let player_list_items = build_player_list_items(
-        player_inventory,
-        &q_labels,
-        &q_dynamic_labels,
-        &id_registry,
-        &callbacks,
-    );
+    let player_list_items =
+        build_player_list_items(player_inventory, &q_labels, &id_registry, &callbacks);
 
     let _player_list_entity = cmds
         .spawn((
@@ -386,10 +385,14 @@ fn setup_container_screen(
         ))
         .id();
 
-    let container_label = get_dynamic_label(context.container_entity, &q_labels, &q_dynamic_labels);
+    let container_label = if let Ok(label) = q_labels.get(context.container_entity) {
+        label.get()
+    } else {
+        "Unknown Container"
+    };
 
     cmds.spawn((
-        Text::new(&container_label)
+        Text::new(container_label)
             .fg1(Palette::Yellow)
             .bg(Palette::Black)
             .layer(Layer::Ui),
@@ -410,13 +413,8 @@ fn setup_container_screen(
         ContainerInventoryWeightText,
     ));
 
-    let container_list_items = build_container_list_items(
-        container_inventory,
-        &q_labels,
-        &q_dynamic_labels,
-        &id_registry,
-        &callbacks,
-    );
+    let container_list_items =
+        build_container_list_items(container_inventory, &q_labels, &id_registry, &callbacks);
 
     let start_y = 3.5;
     cmds.spawn((
@@ -453,7 +451,6 @@ fn setup_container_screen(
 fn refresh_container_display(
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_dynamic_labels: Query<&DynamicLabel>,
     mut q_lists: ParamSet<(
         Query<&mut List, With<PlayerInventoryList>>,
         Query<&mut List, With<ContainerInventoryList>>,
@@ -481,24 +478,14 @@ fn refresh_container_display(
     };
 
     if let Ok(mut player_list) = q_lists.p0().single_mut() {
-        let player_list_items = build_player_list_items(
-            player_inventory,
-            &q_labels,
-            &q_dynamic_labels,
-            &id_registry,
-            &callbacks,
-        );
+        let player_list_items =
+            build_player_list_items(player_inventory, &q_labels, &id_registry, &callbacks);
         player_list.items = player_list_items;
     }
 
     if let Ok(mut container_list) = q_lists.p1().single_mut() {
-        let container_list_items = build_container_list_items(
-            container_inventory,
-            &q_labels,
-            &q_dynamic_labels,
-            &id_registry,
-            &callbacks,
-        );
+        let container_list_items =
+            build_container_list_items(container_inventory, &q_labels, &id_registry, &callbacks);
         container_list.items = container_list_items;
     }
     if let Ok(mut text) = q_weight_texts.p0().single_mut() {

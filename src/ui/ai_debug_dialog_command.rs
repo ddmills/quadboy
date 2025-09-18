@@ -4,7 +4,7 @@ use bevy_ecs::{
 };
 
 use crate::{
-    domain::{AiController, DynamicLabel, Energy, Label, PursuingTarget, Stats},
+    domain::{AiController, Energy, Label, PursuingTarget, Stats},
     engine::Clock,
     rendering::{Glyph, Position, ScreenSize},
     states::CleanupStateExplore,
@@ -34,7 +34,6 @@ impl Command for SpawnAiDebugDialogCommand {
             .run_system_once(
                 move |mut cmds: Commands,
                       q_labels: Query<&Label>,
-                      q_dynamic_labels: Query<&DynamicLabel>,
                       q_ai_controllers: Query<&AiController>,
                       q_glyphs: Query<&Glyph>,
                       q_pursuing: Query<&PursuingTarget>,
@@ -46,7 +45,6 @@ impl Command for SpawnAiDebugDialogCommand {
                     AiDebugDialogBuilder::new(entity, close_callback).spawn(
                         &mut cmds,
                         &q_labels,
-                        &q_dynamic_labels,
                         &q_ai_controllers,
                         &q_glyphs,
                         &q_pursuing,
