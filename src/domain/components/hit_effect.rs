@@ -8,9 +8,13 @@ pub enum HitEffect {
     /// Knockback effect with a multiplier (typically Strength / 2)
     /// The multiplier is applied to the attacker's strength to determine knockback distance
     Knockback(f32),
+    /// Poison effect with damage per tick and duration in ticks
+    Poison {
+        damage_per_tick: i32,
+        duration_ticks: u32,
+    },
     // Future effects can be added here:
     // Stun(f32),      // Duration in seconds
-    // Poison(i32),    // Damage per tick
     // Bleed(i32),     // Damage per tick
 }
 

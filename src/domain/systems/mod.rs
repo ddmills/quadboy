@@ -4,6 +4,8 @@ pub mod ai_utils;
 pub mod armor_regen_system;
 pub mod bump_attack_system;
 pub mod cleanup_system;
+pub mod condition_system;
+pub mod death_check_system;
 pub mod destruction_system;
 pub mod dynamic_label_system;
 pub mod energy_system;
@@ -26,6 +28,8 @@ pub mod xp_system;
 
 pub use ai_actions::*;
 pub use ai_system::*;
+pub use condition_system::*;
+pub use death_check_system::*;
 pub use dynamic_label_system::*;
 pub use energy_system::*;
 pub use explosion_system::*;

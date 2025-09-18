@@ -116,6 +116,14 @@ impl StatModifiers {
         }
     }
 
+    pub fn remove_condition_modifiers(&mut self, condition_id: &str) {
+        for modifiers in self.modifiers.values_mut() {
+            modifiers.retain(
+                |m| !matches!(&m.source, ModifierSource::Condition { condition_id: id } if id == condition_id),
+            );
+        }
+    }
+
     pub fn get_total_for_stat(&self, stat_type: StatType) -> i32 {
         self.modifiers
             .get(&stat_type)
@@ -144,10 +152,18 @@ impl StatModifier {
             source: ModifierSource::Intrinsic { name },
         }
     }
+
+    pub fn condition(value: i32, condition_id: String) -> Self {
+        Self {
+            value,
+            source: ModifierSource::Condition { condition_id },
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ModifierSource {
     Equipment { item_id: u64 },
     Intrinsic { name: String },
+    Condition { condition_id: String },
 }

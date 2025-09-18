@@ -11,6 +11,8 @@ use crate::{
         systems::{
             armor_regen_system::armor_regen_system,
             cleanup_system::on_entity_destroyed_cleanup,
+            condition_system::process_conditions,
+            death_check_system::death_check_system,
             explosion_system::explosion_system,
             faction_map::update_faction_maps,
             fuse_system::fuse_system,
@@ -38,6 +40,8 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(update_entity_pos),
         world.register_system(equipment_stat_modifier_system),
         world.register_system(recalculate_stats_system),
+        world.register_system(process_conditions),
+        world.register_system(death_check_system),
         world.register_system(update_health_system),
         world.register_system(armor_regen_system),
         world.register_system(tick_faction_modifiers),

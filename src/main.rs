@@ -23,17 +23,17 @@ use crate::{
     cfg::WINDOW_SIZE,
     common::Rand,
     domain::{
-        AiController, ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack,
-        Collider, Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
-        EquipmentSlots, Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap,
-        FactionMember, FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink,
-        HitEffect, InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored,
-        IsVisible, Item, KnockbackAnimation, Label, Level, LightSource, LightStateChangedEvent,
-        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, NeedsStableId, NewGameResult,
-        Player, PlayerMovedEvent, Prefabs, PursuingTarget, RefreshBitmask, SaveFlag,
-        SaveGameResult, SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp,
-        StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision,
-        VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
+        ActiveConditions, AiController, ApplyVisibilityEffects, AttributePoints, Attributes,
+        Bitmasker, BumpAttack, Collider, Consumable, CreatureType, DefaultMeleeAttack, Description,
+        Destructible, Energy, EquipmentSlots, Equippable, Equipped, ExplosionEvent,
+        ExplosiveProperties, FactionMap, FactionMember, FactionRelations, Fuse, GameSettings,
+        Health, HideWhenNotVisible, HitBlink, HitEffect, InActiveZone, InInventory, Inventory,
+        InventoryAccessible, IsExplored, IsVisible, Item, KnockbackAnimation, Label, Level,
+        LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
+        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
+        Stackable, StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
+        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -120,6 +120,7 @@ async fn main() {
     reg.register::<Collider>();
     reg.register::<Consumable>();
     reg.register::<Energy>();
+    reg.register::<ActiveConditions>();
     reg.register::<StairDown>();
     reg.register::<StairUp>();
     reg.register::<InActiveZone>();

@@ -1,6 +1,6 @@
 use crate::{
     domain::{Level, StatType, Stats},
-    engine::SerializableComponent,
+    engine::{SerializableComponent, StableId},
 };
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,7 @@ pub struct Health {
     pub current_armor: i32,
     pub last_damage_tick: u32,
     pub armor_regen_progress: u32,
+    pub last_damage_source: Option<StableId>,
     // max HP is now computed from Level and Fortitude stat
     // max armor is computed from Armor stat
 }
@@ -23,6 +24,7 @@ impl Health {
             current_armor: 0, // Will be set by armor system
             last_damage_tick: 0,
             armor_regen_progress: 0,
+            last_damage_source: None,
         }
     }
 
@@ -33,6 +35,7 @@ impl Health {
             current_armor,
             last_damage_tick: 0,
             armor_regen_progress: 0,
+            last_damage_source: None,
         }
     }
 
@@ -43,6 +46,7 @@ impl Health {
             current_armor: i32::MAX, // Will be clamped by armor system
             last_damage_tick: 0,
             armor_regen_progress: 0,
+            last_damage_source: None,
         }
     }
 
@@ -53,6 +57,7 @@ impl Health {
             current_armor: 0, // NPCs don't have armor by default
             last_damage_tick: 0,
             armor_regen_progress: 0,
+            last_damage_source: None,
         }
     }
 
@@ -111,9 +116,19 @@ impl Health {
     }
 
     pub fn take_damage(&mut self, damage: i32, current_tick: u32) {
+        self.take_damage_from_source(damage, current_tick, None);
+    }
+
+    pub fn take_damage_from_source(
+        &mut self,
+        damage: i32,
+        current_tick: u32,
+        source: Option<StableId>,
+    ) {
         if damage > 0 {
             self.last_damage_tick = current_tick;
             self.armor_regen_progress = 0;
+            self.last_damage_source = source;
         }
 
         if self.current_armor > 0 {

@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, InActiveZone, Player, PursuingTarget, StatType, Stats},
+    domain::{
+        ActiveConditions, ConditionType, Energy, InActiveZone, Player, PursuingTarget, StatType,
+        Stats,
+    },
     engine::Clock,
     tracy_span,
 };
@@ -91,17 +94,77 @@ pub fn get_base_energy_cost(action: EnergyActionType) -> i32 {
     }
 }
 
-pub fn get_energy_cost(action: EnergyActionType, stats: Option<&Stats>) -> i32 {
-    let base_cost = get_base_energy_cost(action);
+pub fn get_energy_cost(
+    action: EnergyActionType,
+    stats: Option<&Stats>,
+    conditions: Option<&ActiveConditions>,
+) -> i32 {
+    let mut cost = get_base_energy_cost(action);
+
+    // Apply stat-based modifications
     match action {
         EnergyActionType::Move => {
             if let Some(stats) = stats {
                 let speed = stats.get_stat(StatType::Speed);
-                (base_cost - (speed * 2)).max(1) // Ensure minimum cost of 1
-            } else {
-                base_cost
+                cost = (cost - (speed * 2)).max(1); // Ensure minimum cost of 1
             }
         }
-        _ => base_cost, // Other actions use base cost for now
+        _ => {} // Other actions use base cost for stat modifications
     }
+
+    // Apply condition-based multipliers
+    if let Some(conditions) = conditions {
+        let multiplier = get_condition_energy_multiplier(conditions);
+        cost = ((cost as f32) * multiplier).round() as i32;
+        cost = cost.max(1); // Ensure minimum cost of 1
+    }
+
+    cost
+}
+
+fn get_condition_energy_multiplier(conditions: &ActiveConditions) -> f32 {
+    let mut multiplier = 1.0;
+
+    for condition in &conditions.conditions {
+        match &condition.condition_type {
+            ConditionType::Slowed { energy_multiplier } => {
+                multiplier *= energy_multiplier;
+            }
+            ConditionType::Quickened { energy_multiplier } => {
+                multiplier *= energy_multiplier;
+            }
+            ConditionType::Stunned => {
+                // Stunned entities can't act, but this is handled elsewhere
+                // Here we just make actions extremely expensive as a fallback
+                multiplier *= 10.0;
+            }
+            _ => {} // Other conditions don't affect energy costs
+        }
+    }
+
+    multiplier
+}
+
+// Helper function to check if an entity is blocked from acting
+pub fn is_action_blocked_by_conditions(conditions: Option<&ActiveConditions>) -> bool {
+    if let Some(conditions) = conditions {
+        for condition in &conditions.conditions {
+            if condition.condition_type.blocks_actions() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+// Helper function to check if an entity is blocked from moving
+pub fn is_movement_blocked_by_conditions(conditions: Option<&ActiveConditions>) -> bool {
+    if let Some(conditions) = conditions {
+        for condition in &conditions.conditions {
+            if condition.condition_type.blocks_movement() {
+                return true;
+            }
+        }
+    }
+    false
 }

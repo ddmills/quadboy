@@ -3,12 +3,13 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        BumpAttack, CreatureType, DefaultMeleeAttack, Destructible, Energy, EnergyActionType,
-        EquipmentSlot, EquipmentSlots, Health, HitBlink, HitEffect, KnockbackAnimation,
-        MaterialType, Player, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
-        get_base_energy_cost, systems::destruction_system::EntityDestroyedEvent,
+        ActiveConditions, BumpAttack, Condition, ConditionSource, ConditionType, CreatureType,
+        DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
+        Health, HitBlink, HitEffect, KnockbackAnimation, MaterialType, Player, StatType, Stats,
+        Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
+        systems::{apply_condition_to_entity, destruction_system::EntityDestroyedEvent},
     },
-    engine::{Audio, Clock, StableIdRegistry},
+    engine::{Audio, Clock, StableId, StableIdRegistry},
     rendering::{
         Glyph, Position, spawn_bullet_trail_in_world, spawn_directional_blood_mist,
         spawn_material_hit_in_world, world_to_zone_idx, world_to_zone_local,
@@ -407,11 +408,11 @@ impl AttackAction {
         current_tick: u32,
         should_apply_hit_blink: &mut bool,
     ) {
+        let attacker_stable_id = world.get::<StableId>(self.attacker_entity).copied();
         if let Some(mut health) = world.get_mut::<Health>(target_entity) {
             if can_damage.contains(&MaterialType::Flesh) && hit {
-                health.take_damage(rolled_damage, current_tick);
+                health.take_damage_from_source(rolled_damage, current_tick, attacker_stable_id);
                 *should_apply_hit_blink = true;
-                let is_dead = health.is_dead();
 
                 // Apply hit effects to flesh targets
                 self.apply_hit_effects(world, target_entity, hit_effects);
@@ -436,39 +437,6 @@ impl AttackAction {
                     let direction = macroquad::math::Vec2::new(dx, dy);
 
                     spawn_directional_blood_mist(world, self.target_pos, direction, 0.8);
-                }
-
-                if is_dead {
-                    let position_data = world.get::<Position>(target_entity).map(|p| p.world());
-
-                    if let Some(position_coords) = position_data {
-                        // Play creature-specific death audio
-                        if let Some(creature_type) = world.get::<CreatureType>(target_entity)
-                            && let Some(audio) = world.get_resource::<Audio>()
-                        {
-                            audio.play(creature_type.death_audio_key(), 0.5);
-                        }
-
-                        let event = EntityDestroyedEvent::with_attacker(
-                            target_entity,
-                            position_coords,
-                            self.attacker_entity,
-                            MaterialType::Flesh,
-                        );
-                        world.send_event(event);
-
-                        if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
-                            let dx = position_coords.0 as f32 - attacker_pos.x;
-                            let dy = position_coords.1 as f32 - attacker_pos.y;
-                            let direction = macroquad::math::Vec2::new(dx, dy);
-                            spawn_material_hit_in_world(
-                                world,
-                                position_coords,
-                                MaterialType::Flesh,
-                                direction,
-                            );
-                        }
-                    }
                 }
             }
         }
@@ -532,6 +500,17 @@ impl AttackAction {
             match effect {
                 HitEffect::Knockback(strength_multiplier) => {
                     self.apply_knockback_effect(world, target_entity, *strength_multiplier);
+                }
+                HitEffect::Poison {
+                    damage_per_tick,
+                    duration_ticks,
+                } => {
+                    self.apply_poison_effect(
+                        world,
+                        target_entity,
+                        *damage_per_tick,
+                        *duration_ticks,
+                    );
                 }
             }
         }
@@ -704,6 +683,39 @@ impl AttackAction {
                     break;
                 }
             }
+        }
+    }
+
+    fn apply_poison_effect(
+        &self,
+        world: &mut World,
+        target_entity: Entity,
+        damage_per_tick: i32,
+        duration_ticks: u32,
+    ) {
+        // Get the attacker's StableId to use as the condition source
+        let condition_source =
+            if let Some(attacker_stable_id) = world.get::<StableId>(self.attacker_entity) {
+                ConditionSource::entity(*attacker_stable_id)
+            } else {
+                ConditionSource::Unknown
+            };
+
+        // Create the poison condition
+        let poison_condition = Condition::new(
+            ConditionType::Poisoned {
+                damage_per_tick,
+                tick_interval: 100, // Damage every 100 ticks
+            },
+            duration_ticks,
+            1.0, // Intensity (not used for poison currently)
+            condition_source,
+        );
+
+        // Apply the poison condition to the target
+        if let Err(err) = apply_condition_to_entity(target_entity, poison_condition, world) {
+            // Log error if needed, but don't fail the attack
+            eprintln!("Failed to apply poison condition: {}", err);
         }
     }
 }

@@ -1,11 +1,13 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, system::RunSystemOnce};
+use rand;
 
 use crate::{
     domain::{
-        AiController, AiState, AiTemplate, Energy, EnergyActionType, Health, MoveAction,
-        PlayerPosition, PursuingTarget, TurnState, get_base_energy_cost,
+        ActiveConditions, AiController, AiState, AiTemplate, ConditionType, Energy,
+        EnergyActionType, Health, MoveAction, PlayerPosition, PursuingTarget, TurnState,
+        get_base_energy_cost,
     },
-    engine::Clock,
+    engine::{Clock, StableId, StableIdRegistry},
     rendering::Position,
     tracy_span,
 };
@@ -127,6 +129,18 @@ fn process_ai_template(
             }
 
             return;
+        }
+    }
+
+    {
+        tracy_span!("ai_check_conditions");
+        // Check for condition-based behavior overrides
+        let conditions = world.get::<ActiveConditions>(entity).cloned();
+        if let Some(conditions) = conditions {
+            if process_condition_behaviors(world, entity, ai, entity_pos, &conditions) {
+                // Condition behavior took precedence, skip normal AI processing
+                return;
+            }
         }
     }
 
@@ -463,4 +477,245 @@ fn clear_cached_pursuit_path(world: &mut World, entity: Entity) {
     if let Some(mut ai) = world.get_mut::<AiController>(entity) {
         ai.cached_pursuit_path = None;
     }
+}
+
+/// Process condition-based AI behavior overrides
+/// Returns true if a condition behavior was processed (and normal AI should be skipped)
+fn process_condition_behaviors(
+    world: &mut World,
+    entity: Entity,
+    ai: &AiController,
+    entity_pos: &Position,
+    conditions: &ActiveConditions,
+) -> bool {
+    tracy_span!("process_condition_behaviors");
+
+    // Check for highest priority conditions first
+    for condition in &conditions.conditions {
+        match &condition.condition_type {
+            ConditionType::Stunned => {
+                // Stunned entities can't act at all
+                consume_wait_energy(entity, world);
+                return true;
+            }
+
+            ConditionType::Feared {
+                flee_from,
+                min_distance,
+            } => {
+                if let Some(target_entity) = get_entity_by_stable_id(world, *flee_from) {
+                    let target_pos = if let Some(pos) = world.get::<Position>(target_entity) {
+                        pos.clone()
+                    } else {
+                        return false; // Can't find target position
+                    };
+
+                    let distance = calculate_distance(entity_pos, &target_pos);
+
+                    if distance < *min_distance {
+                        // Need to flee - move away from the feared entity
+                        if flee_from_target(world, entity, entity_pos, &target_pos) {
+                            return true; // Successfully fled
+                        } else {
+                            // Can't flee, wait in terror
+                            consume_wait_energy(entity, world);
+                            return true;
+                        }
+                    }
+                }
+                // Fear target not found or far enough away, continue with normal behavior
+            }
+
+            ConditionType::Taunted {
+                move_toward,
+                force_target,
+            } => {
+                if let Some(target_entity) = get_entity_by_stable_id(world, *move_toward) {
+                    let target_pos = if let Some(pos) = world.get::<Position>(target_entity) {
+                        pos.clone()
+                    } else {
+                        return false; // Can't find target position
+                    };
+
+                    // Force the AI to move toward the taunting entity
+                    if *force_target {
+                        // Override normal target selection
+                        update_ai_target(world, entity, Some(target_entity));
+                        update_ai_state(world, entity, AiState::Pursuing);
+                    }
+
+                    // Move toward the taunter
+                    if move_toward_target_pos(world, entity, entity_pos, &target_pos) {
+                        return true; // Successfully moved toward taunter
+                    } else {
+                        // Can't move toward taunter, wait
+                        consume_wait_energy(entity, world);
+                        return true;
+                    }
+                }
+                // Taunt target not found, continue with normal behavior
+            }
+
+            ConditionType::Confused { random_chance } => {
+                // Random chance to act randomly instead of normally
+                if rand::random::<f32>() < *random_chance {
+                    // Take a random action
+                    if perform_random_action(world, entity, entity_pos) {
+                        return true; // Took random action
+                    }
+                }
+                // Not confused this turn or random action failed, continue normally
+            }
+
+            _ => {
+                // Other conditions don't override AI behavior
+            }
+        }
+    }
+
+    false // No condition behavior took precedence
+}
+
+/// Helper function to get an entity by its StableId
+fn get_entity_by_stable_id(world: &World, stable_id: StableId) -> Option<Entity> {
+    if let Some(registry) = world.get_resource::<StableIdRegistry>() {
+        registry.get_entity(stable_id.0)
+    } else {
+        None
+    }
+}
+
+/// Calculate distance between two positions
+fn calculate_distance(pos1: &Position, pos2: &Position) -> f32 {
+    let dx = pos1.x - pos2.x;
+    let dy = pos1.y - pos2.y;
+    let dz = pos1.z - pos2.z;
+    (dx * dx + dy * dy + dz * dz).sqrt()
+}
+
+/// Move away from a target position (for Fear)
+fn flee_from_target(
+    world: &mut World,
+    entity: Entity,
+    entity_pos: &Position,
+    target_pos: &Position,
+) -> bool {
+    tracy_span!("flee_from_target");
+
+    // Calculate direction away from target
+    let dx = entity_pos.x - target_pos.x;
+    let dy = entity_pos.y - target_pos.y;
+
+    // Normalize and pick the strongest direction to flee
+    let flee_x = if dx.abs() > dy.abs() {
+        if dx > 0.0 { 1 } else { -1 }
+    } else {
+        0
+    };
+
+    let flee_y = if dy.abs() > dx.abs() {
+        if dy > 0.0 { 1 } else { -1 }
+    } else {
+        0
+    };
+
+    // Try to move in the flee direction
+    let (current_x, current_y, current_z) = entity_pos.world();
+    let new_x = (current_x as i32 + flee_x).max(0) as usize;
+    let new_y = (current_y as i32 + flee_y).max(0) as usize;
+    let new_z = current_z;
+
+    // Use the simple movement helper
+    simple_move_to_position(world, entity, (new_x, new_y, new_z))
+}
+
+/// Move toward a target position (for Taunt)
+fn move_toward_target_pos(
+    world: &mut World,
+    entity: Entity,
+    entity_pos: &Position,
+    target_pos: &Position,
+) -> bool {
+    tracy_span!("move_toward_target_pos");
+
+    // Calculate direction toward target
+    let dx = target_pos.x - entity_pos.x;
+    let dy = target_pos.y - entity_pos.y;
+
+    // Normalize and pick the strongest direction to move
+    let move_x = if dx.abs() > dy.abs() {
+        if dx > 0.0 { 1 } else { -1 }
+    } else {
+        0
+    };
+
+    let move_y = if dy.abs() > dx.abs() {
+        if dy > 0.0 { 1 } else { -1 }
+    } else {
+        0
+    };
+
+    // Try to move toward the target
+    let (current_x, current_y, current_z) = entity_pos.world();
+    let new_x = (current_x as i32 + move_x).max(0) as usize;
+    let new_y = (current_y as i32 + move_y).max(0) as usize;
+    let new_z = current_z;
+
+    // Use the simple movement helper
+    simple_move_to_position(world, entity, (new_x, new_y, new_z))
+}
+
+/// Perform a random action (for Confusion)
+fn perform_random_action(world: &mut World, entity: Entity, entity_pos: &Position) -> bool {
+    tracy_span!("perform_random_action");
+
+    let actions = [
+        (1, 0),  // East
+        (-1, 0), // West
+        (0, 1),  // South
+        (0, -1), // North
+        (0, 0),  // Wait
+    ];
+
+    let random_index = (rand::random::<f32>() * actions.len() as f32).floor() as usize;
+    let random_action = actions[random_index];
+
+    if random_action == (0, 0) {
+        // Random wait
+        consume_wait_energy(entity, world);
+        true
+    } else {
+        // Random movement
+        let (current_x, current_y, current_z) = entity_pos.world();
+        let new_x = (current_x as i32 + random_action.0).max(0) as usize;
+        let new_y = (current_y as i32 + random_action.1).max(0) as usize;
+        let new_z = current_z;
+
+        simple_move_to_position(world, entity, (new_x, new_y, new_z))
+    }
+}
+
+/// Simple movement helper that uses the existing MoveAction command
+fn simple_move_to_position(
+    world: &mut World,
+    entity: Entity,
+    new_position: (usize, usize, usize),
+) -> bool {
+    tracy_span!("simple_move_to_position");
+
+    // Check if the new position is valid using existing utility
+    if !is_move_valid(world, new_position.0, new_position.1, new_position.2) {
+        return false;
+    }
+
+    // Execute the move using MoveAction
+    let move_cmd = MoveAction {
+        entity,
+        new_position,
+    };
+
+    // Directly execute the MoveAction
+    move_cmd.apply(world);
+
+    true
 }

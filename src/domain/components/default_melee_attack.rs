@@ -72,11 +72,15 @@ impl DefaultMeleeAttack {
     }
 
     pub fn venomous_bite() -> Self {
-        Self::new(
+        Self::with_hit_effects(
             3,
             vec![MaterialType::Flesh],
             "Venomous Bite",
             WeaponFamily::Unarmed,
+            vec![HitEffect::Poison {
+                damage_per_tick: 2,
+                duration_ticks: 1000,
+            }],
         )
     }
 
