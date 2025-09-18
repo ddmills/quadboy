@@ -298,7 +298,7 @@ pub fn explosion_system(
 
                             if health.is_dead() {
                                 if let Ok(pos) = q_positions.get(entity) {
-                                    e_entity_destroyed.send(EntityDestroyedEvent::environmental(
+                                    e_entity_destroyed.write(EntityDestroyedEvent::environmental(
                                         entity,
                                         pos.world(),
                                         None,
@@ -314,7 +314,7 @@ pub fn explosion_system(
 
                                 if destructible.is_destroyed() {
                                     if let Ok(pos) = q_positions.get(entity) {
-                                        e_entity_destroyed.send(
+                                        e_entity_destroyed.write(
                                             EntityDestroyedEvent::environmental(
                                                 entity,
                                                 pos.world(),

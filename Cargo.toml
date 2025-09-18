@@ -20,7 +20,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 bevy_serializable_derive = { version = "=0.1.0", path = "./bevy_serializable_derive" }
 serde_json = "1.0.142"
 web-sys = { version = "0.3.78", features = ["Window", "Storage"] }
-wasm-bindgen = "0.2.101"
+wasm-bindgen = "0.2.103"
 ordered-float = "5.0.0"
 fastnoise-lite = "1.1.1"
 quad-snd = "0.2"

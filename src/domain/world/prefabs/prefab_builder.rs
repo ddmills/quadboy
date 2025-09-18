@@ -210,10 +210,6 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
-    pub fn with_lightable(self) -> Self {
-        self.world.entity_mut(self.entity).insert(Lightable::new());
-        self
-    }
 
     pub fn with_lightable_audio(
         self,

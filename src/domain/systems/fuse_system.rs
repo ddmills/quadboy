@@ -61,11 +61,10 @@ pub fn fuse_system(
     for (entity, position, radius, damage, audio) in to_explode {
         // Send explosion event
         e_explosion
-            .send(ExplosionEvent::new(position, radius, damage, 0.3, audio).with_source(entity));
+            .write(ExplosionEvent::new(position, radius, damage, 0.3, audio).with_source(entity));
 
         // Remove the fuse and blink components and despawn the explosive entity
-        cmds.entity(entity).remove::<Fuse>();
-        cmds.entity(entity).remove::<HitBlink>();
+        cmds.entity(entity).remove::<(Fuse, HitBlink)>();
         cmds.entity(entity).despawn();
     }
 }
