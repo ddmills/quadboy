@@ -5,6 +5,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_campfire(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_needs_stable_id()
         .with_animated_glyph(
             vec![36, 37, 38],
             4.0,

@@ -11,6 +11,7 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_needs_stable_id()
         .with_glyph(
             glyph_char,
             Palette::DarkCyan,

@@ -4,9 +4,9 @@ use crate::{
     common::Rand,
     domain::{
         BumpAttack, CreatureType, DefaultMeleeAttack, Destructible, Energy, EnergyActionType,
-        EquipmentSlot, EquipmentSlots, Health, HitBlink, MaterialType, Player, StatType, Stats,
-        Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
-        systems::destruction_system::EntityDestroyedEvent,
+        EquipmentSlot, EquipmentSlots, Health, HitBlink, HitEffect, KnockbackAnimation,
+        MaterialType, Player, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
+        get_base_energy_cost, systems::destruction_system::EntityDestroyedEvent,
     },
     engine::{Audio, Clock, StableIdRegistry},
     rendering::{
@@ -148,18 +148,22 @@ impl AttackAction {
             }
         }
 
-        let weapon_damage = {
+        let (weapon_damage, hit_effects) = {
             world
                 .get::<DefaultMeleeAttack>(self.attacker_entity)
                 .map(|default_attack| {
                     (
-                        default_attack.damage.to_string(),
-                        default_attack.can_damage.clone(),
+                        Some((
+                            default_attack.damage.to_string(),
+                            default_attack.can_damage.clone(),
+                        )),
+                        default_attack.hit_effects.clone(),
                     )
                 })
+                .unwrap_or((None, Vec::new()))
         };
 
-        self.process_melee_attack(world, weapon_damage);
+        self.process_melee_attack(world, weapon_damage, hit_effects);
     }
 
     fn apply_melee_attack(self, world: &mut World, weapon: &Weapon) {
@@ -181,7 +185,8 @@ impl AttackAction {
         }
 
         let weapon_damage = Some((weapon.damage_dice.clone(), weapon.can_damage.clone()));
-        self.process_melee_attack(world, weapon_damage);
+        let hit_effects = weapon.hit_effects.clone();
+        self.process_melee_attack(world, weapon_damage, hit_effects);
     }
 
     fn apply_ranged_attack(
@@ -274,6 +279,7 @@ impl AttackAction {
                 rolled_damage,
                 hit,
                 &weapon.can_damage,
+                &weapon.hit_effects,
                 current_tick,
                 &mut should_apply_hit_blink,
             );
@@ -301,6 +307,7 @@ impl AttackAction {
         self,
         world: &mut World,
         weapon_damage: Option<(String, Vec<MaterialType>)>,
+        hit_effects: Vec<HitEffect>,
     ) {
         let targets = self.find_melee_targets(world);
 
@@ -332,6 +339,7 @@ impl AttackAction {
                     rolled_damage,
                     hit,
                     can_damage,
+                    &hit_effects,
                     current_tick,
                     &mut should_apply_hit_blink,
                 );
@@ -395,6 +403,7 @@ impl AttackAction {
         rolled_damage: i32,
         hit: bool,
         can_damage: &[MaterialType],
+        hit_effects: &[HitEffect],
         current_tick: u32,
         should_apply_hit_blink: &mut bool,
     ) {
@@ -403,6 +412,9 @@ impl AttackAction {
                 health.take_damage(rolled_damage, current_tick);
                 *should_apply_hit_blink = true;
                 let is_dead = health.is_dead();
+
+                // Apply hit effects to flesh targets
+                self.apply_hit_effects(world, target_entity, hit_effects);
 
                 // Play hit audio for flesh target
                 if let Some(audio_collection) = MaterialType::Flesh.hit_audio_collection() {
@@ -505,6 +517,191 @@ impl AttackAction {
                     let dy = position_coords.1 as f32 - attacker_pos.y;
                     let direction = macroquad::math::Vec2::new(dx, dy);
                     spawn_material_hit_in_world(world, position_coords, material_type, direction);
+                }
+            }
+        }
+    }
+
+    fn apply_hit_effects(
+        &self,
+        world: &mut World,
+        target_entity: Entity,
+        hit_effects: &[HitEffect],
+    ) {
+        for effect in hit_effects {
+            match effect {
+                HitEffect::Knockback(strength_multiplier) => {
+                    self.apply_knockback_effect(world, target_entity, *strength_multiplier);
+                }
+            }
+        }
+    }
+
+    fn apply_knockback_effect(
+        &self,
+        world: &mut World,
+        target_entity: Entity,
+        strength_multiplier: f32,
+    ) {
+        // Get attacker's knockback stat to calculate knockback distance
+        let attacker_knockback = world
+            .get::<Stats>(self.attacker_entity)
+            .map(|stats| stats.get_stat(StatType::Knockback))
+            .unwrap_or(10) as f32; // Default knockback of 10
+
+        // Use Knockback / 2 as requested
+        let knockback_distance = ((attacker_knockback / 2.0) * strength_multiplier) as usize;
+
+        if knockback_distance == 0 {
+            return;
+        }
+
+        // Get target's current position
+        let Some(target_pos) = world.get::<Position>(target_entity) else {
+            return;
+        };
+        let target_world_pos = target_pos.world();
+
+        // Get attacker's position to calculate knockback direction
+        let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) else {
+            return;
+        };
+        let attacker_world_pos = attacker_pos.world();
+
+        // Calculate knockback direction (from attacker to target)
+        let dx = target_world_pos.0 as i32 - attacker_world_pos.0 as i32;
+        let dy = target_world_pos.1 as i32 - attacker_world_pos.1 as i32;
+
+        // Normalize direction
+        let (norm_dx, norm_dy) = if dx == 0 && dy == 0 {
+            (0, 1) // Default to south if same position
+        } else if dx.abs() > dy.abs() {
+            (dx.signum(), 0) // Primary horizontal movement
+        } else {
+            (0, dy.signum()) // Primary vertical movement
+        };
+
+        // Calculate target position (check for colliders along the path)
+        let mut final_x = target_world_pos.0 as i32;
+        let mut final_y = target_world_pos.1 as i32;
+        let final_z = target_world_pos.2;
+
+        // Check each tile along the knockback path for colliders
+        for step in 1..=knockback_distance {
+            let test_x = target_world_pos.0 as i32 + (norm_dx * step as i32);
+            let test_y = target_world_pos.1 as i32 + (norm_dy * step as i32);
+
+            // Ensure coordinates are valid
+            if test_x < 0 || test_y < 0 {
+                break;
+            }
+
+            let test_pos = (test_x as usize, test_y as usize, final_z);
+
+            // Check for colliders at this position
+            if self.has_collider_at_position(world, test_pos) {
+                break; // Stop before the collider
+            }
+
+            // This position is clear, update final position
+            final_x = test_x;
+            final_y = test_y;
+        }
+
+        // Only apply knockback if there's actual movement
+        if final_x as usize != target_world_pos.0 || final_y as usize != target_world_pos.1 {
+            // Apply knockback instantly - update position immediately
+            let Some(mut target_position) = world.get_mut::<Position>(target_entity) else {
+                return;
+            };
+
+            let old_world_pos = target_position.world();
+            let new_world_pos = (final_x as usize, final_y as usize, final_z);
+
+            // Calculate knockback distance for animation
+            let knockback_dx = final_x as f32 - target_world_pos.0 as f32;
+            let knockback_dy = final_y as f32 - target_world_pos.1 as f32;
+
+            // Update position immediately
+            target_position.x = final_x as f32;
+            target_position.y = final_y as f32;
+            target_position.z = final_z as f32;
+
+            // Update zone spatial indexing immediately
+            self.update_zone_position(world, target_entity, old_world_pos, new_world_pos);
+
+            // Add visual animation component if target has a Glyph
+            if world
+                .get::<crate::rendering::Glyph>(target_entity)
+                .is_some()
+            {
+                let animation = KnockbackAnimation::new((knockback_dx, knockback_dy), 0.1); // 100ms animation
+                world.entity_mut(target_entity).insert(animation);
+            }
+        }
+    }
+
+    fn has_collider_at_position(&self, world: &mut World, pos: (usize, usize, usize)) -> bool {
+        let zone_idx = world_to_zone_idx(pos.0, pos.1, pos.2);
+        let local = world_to_zone_local(pos.0, pos.1);
+
+        let mut zones = world.query::<&Zone>();
+        for zone in zones.iter(world) {
+            if zone.idx == zone_idx {
+                if let Some(entities) = zone.entities.get(local.0, local.1) {
+                    for &entity in entities {
+                        if world.get::<crate::domain::Collider>(entity).is_some() {
+                            return true;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        false
+    }
+
+    fn update_zone_position(
+        &self,
+        world: &mut World,
+        entity: Entity,
+        old_pos: (usize, usize, usize),
+        new_pos: (usize, usize, usize),
+    ) {
+        let old_zone_idx = world_to_zone_idx(old_pos.0, old_pos.1, old_pos.2);
+        let new_zone_idx = world_to_zone_idx(new_pos.0, new_pos.1, new_pos.2);
+
+        let mut q_zones = world.query::<&mut Zone>();
+
+        // Remove from old zone
+        for mut zone in q_zones.iter_mut(world) {
+            if zone.idx == old_zone_idx {
+                zone.entities.remove(&entity);
+                break;
+            }
+        }
+
+        // Add to new zone (only if it's a different zone)
+        if old_zone_idx != new_zone_idx {
+            for mut zone in q_zones.iter_mut(world) {
+                if zone.idx == new_zone_idx {
+                    let new_local = world_to_zone_local(new_pos.0, new_pos.1);
+                    zone.entities.insert(new_local.0, new_local.1, entity);
+                    break;
+                }
+            }
+        } else {
+            // Same zone, just update position within zone
+            for mut zone in q_zones.iter_mut(world) {
+                if zone.idx == new_zone_idx {
+                    let old_local = world_to_zone_local(old_pos.0, old_pos.1);
+                    let new_local = world_to_zone_local(new_pos.0, new_pos.1);
+
+                    if old_local != new_local {
+                        zone.entities.remove(&entity);
+                        zone.entities.insert(new_local.0, new_local.1, entity);
+                    }
+                    break;
                 }
             }
         }

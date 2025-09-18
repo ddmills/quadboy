@@ -27,12 +27,13 @@ use crate::{
         Collider, Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
         EquipmentSlots, Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap,
         FactionMember, FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink,
-        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
-        Label, Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
-        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
-        Stackable, StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
-        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
+        HitEffect, InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored,
+        IsVisible, Item, KnockbackAnimation, Label, Level, LightSource, LightStateChangedEvent,
+        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, NeedsStableId, NewGameResult,
+        Player, PlayerMovedEvent, Prefabs, PursuingTarget, RefreshBitmask, SaveFlag,
+        SaveGameResult, SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp,
+        StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision,
+        VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -42,6 +43,7 @@ use crate::{
             mark_dirty_on_light_change, mark_dirty_on_stack_change, update_labels,
         },
         systems::hit_blink_system::hit_blink_system,
+        systems::knockback_animation_system::knockback_animation_system,
         systems::xp_system::{
             LevelUpEvent, LevelUpParticleQueue, XPGainEvent, apply_xp_gain, award_xp_on_kill,
             handle_level_up, process_level_up_particles,
@@ -139,6 +141,7 @@ async fn main() {
     reg.register::<Equipped>();
     reg.register::<Health>();
     reg.register::<HitBlink>();
+    reg.register::<KnockbackAnimation>();
     reg.register::<BumpAttack>();
     reg.register::<Destructible>();
     reg.register::<Weapon>();
@@ -276,6 +279,7 @@ async fn main() {
             (
                 bump_attack_system,
                 hit_blink_system,
+                knockback_animation_system,
                 (award_xp_on_kill, apply_xp_gain, handle_level_up).chain(),
                 process_level_up_particles,
                 update_animated_glyphs,

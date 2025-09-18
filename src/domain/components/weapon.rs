@@ -1,6 +1,7 @@
 use crate::{
     domain::components::{
-        destructible::MaterialType, weapon_family::WeaponFamily, weapon_type::WeaponType,
+        destructible::MaterialType, hit_effect::HitEffect, weapon_family::WeaponFamily,
+        weapon_type::WeaponType,
     },
     engine::{AudioKey, SerializableComponent},
 };
@@ -13,6 +14,7 @@ pub struct Weapon {
     pub can_damage: Vec<MaterialType>,
     pub weapon_family: WeaponFamily,
     pub weapon_type: WeaponType,
+    pub hit_effects: Vec<HitEffect>,
 
     // Optional ranged-specific fields
     pub range: Option<usize>,
@@ -35,6 +37,7 @@ impl Weapon {
             can_damage,
             weapon_family,
             weapon_type: WeaponType::Melee,
+            hit_effects: Vec::new(),
             range: None,
             shoot_audio: None,
             clip_size: None,
@@ -61,6 +64,7 @@ impl Weapon {
             can_damage,
             weapon_family,
             weapon_type: WeaponType::Ranged,
+            hit_effects: Vec::new(),
             range: Some(range),
             shoot_audio: Some(shoot_audio),
             clip_size,
@@ -133,7 +137,7 @@ impl Weapon {
     }
 
     pub fn shotgun() -> Self {
-        Self::new_ranged(
+        let mut shotgun = Self::new_ranged(
             "2d6+1".to_string(),
             8,
             vec![MaterialType::Flesh],
@@ -143,6 +147,8 @@ impl Weapon {
             Some(250),
             Some(AudioKey::ShotgunReload),
             Some(AudioKey::ShotgunEmpty),
-        )
+        );
+        shotgun.hit_effects = vec![HitEffect::Knockback(1.0)];
+        shotgun
     }
 }

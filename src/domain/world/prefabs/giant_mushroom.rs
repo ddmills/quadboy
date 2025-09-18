@@ -15,6 +15,7 @@ pub fn spawn_giant_mushroom(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_needs_stable_id()
         .with_glyph(glyph_char, Palette::White, Palette::Red, Layer::Objects)
         .with_label("{R|G}iant {R|M}ushroom")
         .with_description(

@@ -19,6 +19,7 @@ pub enum StatType {
     Cudgel,     // cudgel weapon proficiency
     Unarmed,    // unarmed combat proficiency
     Dodge,      // dodge/evasion ability
+    Knockback,  // affects knockback distance
 }
 
 impl StatType {
@@ -35,6 +36,7 @@ impl StatType {
             StatType::Cudgel => attributes.strength as i32,
             StatType::Unarmed => attributes.strength as i32,
             StatType::Dodge => attributes.dexterity as i32,
+            StatType::Knockback => attributes.strength as i32,
         }
     }
 
@@ -51,6 +53,7 @@ impl StatType {
             StatType::Cudgel,
             StatType::Unarmed,
             StatType::Dodge,
+            StatType::Knockback,
         ]
     }
 
@@ -67,6 +70,7 @@ impl StatType {
             StatType::Cudgel => "Smashing",
             StatType::Unarmed => "Striking",
             StatType::Dodge => "Evasion",
+            StatType::Knockback => "Impact",
         }
     }
 }

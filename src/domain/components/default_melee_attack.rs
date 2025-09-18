@@ -1,5 +1,7 @@
 use crate::{
-    domain::components::{destructible::MaterialType, weapon_family::WeaponFamily},
+    domain::components::{
+        destructible::MaterialType, hit_effect::HitEffect, weapon_family::WeaponFamily,
+    },
     engine::SerializableComponent,
 };
 use bevy_ecs::prelude::*;
@@ -11,6 +13,7 @@ pub struct DefaultMeleeAttack {
     pub can_damage: Vec<MaterialType>,
     pub attack_name: String,
     pub weapon_family: WeaponFamily,
+    pub hit_effects: Vec<HitEffect>,
 }
 
 impl DefaultMeleeAttack {
@@ -25,11 +28,38 @@ impl DefaultMeleeAttack {
             can_damage,
             attack_name: attack_name.to_string(),
             weapon_family,
+            hit_effects: Vec::new(),
+        }
+    }
+
+    pub fn with_hit_effects(
+        damage: i32,
+        can_damage: Vec<MaterialType>,
+        attack_name: &str,
+        weapon_family: WeaponFamily,
+        hit_effects: Vec<HitEffect>,
+    ) -> Self {
+        Self {
+            damage,
+            can_damage,
+            attack_name: attack_name.to_string(),
+            weapon_family,
+            hit_effects,
         }
     }
 
     pub fn fists() -> Self {
         Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed)
+    }
+
+    pub fn fists_with_knockback() -> Self {
+        Self::with_hit_effects(
+            2,
+            vec![MaterialType::Flesh],
+            "Fists",
+            WeaponFamily::Unarmed,
+            vec![HitEffect::Knockback(0.5)], // Strength / 2
+        )
     }
 
     pub fn claw_swipe() -> Self {

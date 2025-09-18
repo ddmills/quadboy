@@ -12,6 +12,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_needs_stable_id()
         .with_glyph_and_texture(
             38,
             Palette::Yellow,

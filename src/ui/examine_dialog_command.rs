@@ -5,6 +5,7 @@ use bevy_ecs::{
 
 use crate::{
     domain::{Description, FactionMember, Label, get_effective_relationship},
+    engine::StableId,
     rendering::{Glyph, ScreenSize},
     states::CleanupStateExplore,
     ui::examine_dialog::ExamineDialogBuilder,
@@ -56,6 +57,7 @@ impl Command for SpawnExamineDialogCommand {
                       q_labels: Query<&Label>,
                       q_descriptions: Query<&Description>,
                       q_glyphs: Query<&Glyph>,
+                      q_stable_ids: Query<&StableId>,
                       screen: Res<ScreenSize>| {
                     ExamineDialogBuilder::new(entity, close_callback)
                         .with_relationship_text(relationship_text.clone())
@@ -64,6 +66,7 @@ impl Command for SpawnExamineDialogCommand {
                             &q_labels,
                             &q_descriptions,
                             &q_glyphs,
+                            &q_stable_ids,
                             CleanupStateExplore,
                             &screen,
                         )

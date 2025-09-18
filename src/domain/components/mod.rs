@@ -16,6 +16,7 @@ pub mod faction;
 pub mod fuse;
 pub mod health;
 pub mod hit_blink;
+pub mod hit_effect;
 pub mod in_active_zone;
 pub mod inventory;
 pub mod label;
@@ -48,6 +49,7 @@ pub use faction::{FactionId, FactionMember};
 pub use fuse::Fuse;
 pub use health::Health;
 pub use hit_blink::HitBlink;
+pub use hit_effect::{HitEffect, KnockbackAnimation};
 pub use in_active_zone::InActiveZone;
 pub use inventory::{
     InInventory, Inventory, InventoryAccessible, Item, StackCount, Stackable, StackableType,

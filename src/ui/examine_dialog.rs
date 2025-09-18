@@ -3,7 +3,7 @@ use macroquad::input::KeyCode;
 
 use crate::{
     domain::{Description, Label},
-    engine::AudioKey,
+    engine::{AudioKey, StableId},
     rendering::{Glyph, Layer, Position, ScreenSize, text_content_length, wrap_text},
     ui::{ActivatableBuilder, Dialog, DialogContent, DialogIcon, DialogText, DialogTextStyle},
 };
@@ -36,6 +36,7 @@ impl ExamineDialogBuilder {
         q_labels: &Query<&Label>,
         q_descriptions: &Query<&Description>,
         q_glyphs: &Query<&Glyph>,
+        q_stable_ids: &Query<&StableId>,
         cleanup_component: impl Bundle + Clone,
         screen: &ScreenSize,
     ) -> Entity {
@@ -224,6 +225,30 @@ impl ExamineDialogBuilder {
             cleanup_component.clone(),
             ChildOf(dialog_entity),
         ));
+
+        // Add StableId in bottom-right corner if available
+        if let Ok(stable_id) = q_stable_ids.get(self.entity) {
+            let id_text = format!("{{b|{}}}", stable_id.0);
+            let id_visual_length = text_content_length(&id_text);
+
+            cmds.spawn((
+                DialogText {
+                    value: id_text,
+                    style: DialogTextStyle::Normal,
+                },
+                DialogContent {
+                    parent_dialog: dialog_entity,
+                    order: 21,
+                },
+                Position::new_f32(
+                    centered_position.x + self.width - (id_visual_length as f32 * 0.5) - 1.0, // Right edge minus text width
+                    centered_position.y + total_height - 1.0, // Bottom edge
+                    centered_position.z,
+                ),
+                cleanup_component.clone(),
+                ChildOf(dialog_entity),
+            ));
+        }
 
         dialog_entity
     }
