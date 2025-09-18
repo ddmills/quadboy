@@ -48,6 +48,18 @@ impl Clock {
         self.force_update = false;
     }
 
+    pub fn has_tick_delta(&self) -> bool {
+        self.tick_delta > 0 || self.force_update
+    }
+
+    pub fn get_tick_delta(&self) -> u32 {
+        self.tick_delta
+    }
+
+    pub fn get_tick(&self) -> u32 {
+        self.tick
+    }
+
     pub fn clear_tick_delta_accum(&mut self) {
         self.tick_delta_accum = 0;
     }

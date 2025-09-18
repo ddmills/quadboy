@@ -32,6 +32,8 @@ pub enum AudioKey {
     Hiss1,
     Bark1,
     Punch1,
+    Explosion1,
+    IgniteMatch,
 }
 
 impl AudioKey {
@@ -62,6 +64,8 @@ impl AudioKey {
             AudioKey::Hiss1 => include_bytes!("../assets/audio/hiss_1.wav"),
             AudioKey::Bark1 => include_bytes!("../assets/audio/bark_1.wav"),
             AudioKey::Punch1 => include_bytes!("../assets/audio/punch_1.wav"),
+            AudioKey::Explosion1 => include_bytes!("../assets/audio/explosion_1.wav"),
+            AudioKey::IgniteMatch => include_bytes!("../assets/audio/ignite_match.wav"),
         }
     }
 }
@@ -187,6 +191,14 @@ impl Audio {
         sounds.insert(
             AudioKey::Punch1,
             Sound::load(&ctx_guard, AudioKey::Punch1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::Explosion1,
+            Sound::load(&ctx_guard, AudioKey::Explosion1.bytes()),
+        );
+        sounds.insert(
+            AudioKey::IgniteMatch,
+            Sound::load(&ctx_guard, AudioKey::IgniteMatch.bytes()),
         );
 
         let mut collections = HashMap::new();

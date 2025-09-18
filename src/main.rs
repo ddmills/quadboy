@@ -25,14 +25,14 @@ use crate::{
     domain::{
         AiController, ApplyVisibilityEffects, AttributePoints, Attributes, Bitmasker, BumpAttack,
         Collider, Consumable, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
-        EquipmentSlots, Equippable, Equipped, FactionMap, FactionMember, FactionRelations,
-        GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
-        InventoryAccessible, IsExplored, IsVisible, Item, Label, Level, LightSource,
-        LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry,
-        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs, PursuingTarget,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount, Stackable,
-        StairDown, StairUp, StatModifiers, Stats, TurnState, UnloadZoneEvent, UnopenedContainer,
-        Vision, VisionBlocker, Weapon, Zones,
+        EquipmentSlots, Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap,
+        FactionMember, FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink,
+        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
+        Label, Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
+        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
+        Stackable, StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
+        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -54,7 +54,7 @@ use crate::{
         CurrentAppState, CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin,
         GameOverStatePlugin, InventoryStatePlugin, LoadGameStatePlugin, MainMenuStatePlugin,
         NewGameStatePlugin, OverworldStatePlugin, PauseStatePlugin, PlayStatePlugin,
-        SettingsStatePlugin, update_app_states, update_game_states,
+        SettingsStatePlugin, ThrowStatePlugin, update_app_states, update_game_states,
     },
     ui::{
         DialogState, ListContext, UiFocus, clear_mouse_capture_when_not_hovering,
@@ -150,6 +150,9 @@ async fn main() {
     reg.register::<LootDrop>();
     reg.register::<Stackable>();
     reg.register::<StackCount>();
+    reg.register::<Throwable>();
+    reg.register::<ExplosiveProperties>();
+    reg.register::<Fuse>();
     reg.register::<LightSource>();
     reg.register::<FactionMember>();
     reg.register::<PursuingTarget>();
@@ -164,6 +167,7 @@ async fn main() {
         .add_plugin(DebugSpawnStatePlugin)
         .add_plugin(InventoryStatePlugin)
         .add_plugin(ContainerStatePlugin::new())
+        .add_plugin(ThrowStatePlugin)
         .add_plugin(AttributesStatePlugin)
         .add_plugin(OverworldStatePlugin)
         .add_plugin(PauseStatePlugin)
@@ -181,6 +185,7 @@ async fn main() {
         .register_event::<LevelUpEvent>()
         .register_event::<InventoryChangedEvent>()
         .register_event::<LightStateChangedEvent>()
+        .register_event::<ExplosionEvent>()
         .insert_resource(tileset_registry)
         .insert_resource(audio_registry)
         .insert_resource(reg)

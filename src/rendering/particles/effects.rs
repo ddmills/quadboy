@@ -219,6 +219,100 @@ pub fn spawn_material_hit(
 }
 
 // Helper functions for converting world coordinates
+pub fn spawn_throw_trail(
+    world: &mut World,
+    start_pos: Vec2,
+    target_pos: Vec2,
+    throw_speed: f32,
+    item_glyph: char,
+    item_color: u32,
+    rand: &mut Rand,
+) {
+    let direction = (target_pos - start_pos).normalize();
+    let distance = start_pos.distance(target_pos);
+    let travel_time = distance / throw_speed;
+
+    // Main thrown item particle
+    let mut item_particle = Particle {
+        age: 0.0,
+        max_age: travel_time + 0.1,
+        pos: start_pos,
+        initial_pos: start_pos,
+
+        glyph_animation: GlyphAnimation::Static(item_glyph),
+        color_curve: Some(ColorCurve::Constant(item_color)),
+        bg_curve: Some(ColorCurve::EaseOut {
+            values: vec![0x444444, 0x222222, 0x000000],
+        }),
+        alpha_curve: Some(AlphaCurve::Constant(1.0)),
+        velocity_curve: Some(VelocityCurve::Constant(direction * throw_speed)),
+        gravity: Vec2::ZERO,
+
+        current_velocity: direction * throw_speed,
+        current_glyph: item_glyph,
+        current_color: item_color,
+        current_bg_color: 0x444444,
+        current_alpha: 1.0,
+
+        priority: 150,
+        target_pos: Some(target_pos),
+        max_distance: Some(distance + 0.5),
+    };
+
+    // Initialize current values
+    item_particle.update_properties(0.0, rand);
+
+    let item_entity = world.spawn(item_particle).id();
+
+    // Create faint trail spawner
+    let trail_spawner = ParticleSpawner::new(Vec2::ZERO)
+        .glyph_animation(GlyphAnimation::Static(' '))
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0x666666, 0x333333, 0x000000],
+        })
+        .alpha_curve(AlphaCurve::Linear {
+            values: vec![0.3, 0.0],
+        })
+        .velocity_curve(VelocityCurve::Linear {
+            values: vec![Vec2::new(0.0, 0.0), Vec2::new(0.0, 0.5)],
+        })
+        .priority(80)
+        .lifetime_range(0.3..0.8)
+        .burst(1);
+
+    let trail = ParticleTrail::new(150.0, trail_spawner);
+    world.entity_mut(item_entity).insert(trail);
+}
+
+pub fn spawn_throw_trail_in_world(
+    world: &mut World,
+    start_world: (usize, usize, usize),
+    target_world: (usize, usize, usize),
+    throw_speed: f32,
+    item_glyph: char,
+    item_color: u32,
+    rand: &mut Rand,
+) {
+    let start_pos = Vec2::new(
+        world_to_zone_local_f32(start_world.0 as f32, start_world.1 as f32).0,
+        world_to_zone_local_f32(start_world.0 as f32, start_world.1 as f32).1,
+    );
+    let target_pos = Vec2::new(
+        world_to_zone_local_f32(target_world.0 as f32, target_world.1 as f32).0,
+        world_to_zone_local_f32(target_world.0 as f32, target_world.1 as f32).1,
+    );
+
+    spawn_throw_trail(
+        world,
+        start_pos,
+        target_pos,
+        throw_speed,
+        item_glyph,
+        item_color,
+        rand,
+    );
+}
+
 pub fn spawn_bullet_trail_in_world(
     world: &mut World,
     start_world: (usize, usize, usize),
@@ -260,6 +354,180 @@ pub fn spawn_directional_blood_mist(
     let pos = Vec2::new(local_pos.0, local_pos.1);
 
     spawn_blood_spray(world, pos, direction, intensity);
+}
+
+/// Explosion effect for top-down view - radial debris and smoke
+pub fn spawn_explosion_effect(world: &mut World, world_pos: (usize, usize, usize), radius: usize) {
+    let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
+    let pos = Vec2::new(local_pos.0, local_pos.1);
+
+    let radius_f = radius as f32;
+    let scale = (radius_f / 3.0).max(0.5); // Scale effects based on radius (dynamite = radius 3)
+
+    // 1. CENTRAL FLASH - Bright expanding core with intense background glow
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::Sequence {
+            glyphs: vec!['◉', '◎', '○', '◦', ' '],
+            duration_per_glyph: 0.1,
+        })
+        .color_curve(ColorCurve::Linear {
+            values: vec![0xFFFFFF, 0xFFDD00, 0xFF8800],
+        })
+        .bg_curve(ColorCurve::Linear {
+            values: vec![0xFFDD00, 0xFF8800, 0xFF4400, 0x880000],
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![1.0, 0.0],
+        })
+        .priority(220)
+        .lifetime_range(0.3..0.5)
+        .burst(1)
+        .spawn_world(world);
+
+    // 2. SHOCKWAVE RING - Expanding blast wave
+    let shockwave_count = (8.0 * scale) as u32;
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::Sequence {
+            glyphs: vec!['█', '▓', '▒', '░', ' '],
+            duration_per_glyph: 0.08,
+        })
+        .color_curve(ColorCurve::Constant(0x888888))
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0xFFFFFF, 0xFFDD00, 0xFF8800, 0x000000],
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![0.9, 0.0],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![Vec2::ZERO, Vec2::ZERO], // Will be overridden by spawn area
+        })
+        .spawn_area(SpawnArea::Circle {
+            radius: radius_f * 0.8,
+            distribution: Distribution::EdgeOnly,
+        })
+        .priority(210)
+        .lifetime_range(0.4..0.6)
+        .burst(shockwave_count)
+        .spawn_world(world);
+
+    // 3. DEBRIS/SHRAPNEL - Fast fragments flying outward
+    let debris_count = (50.0 * scale) as u32;
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: vec!['*', '·', ',', '`', '\'', '.'],
+            change_rate: Some(20.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![0xFFFFFF, 0xFFDD00, 0xFF8800, 0x888888],
+        })
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0xFF8800, 0xFF4400, 0x880000, 0x000000],
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![1.0, 0.0],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![
+                Vec2::ZERO, // Will be set by spawn area to radial outward
+                Vec2::ZERO, // Slows down over time
+            ],
+        })
+        .spawn_area(SpawnArea::Circle {
+            radius: radius_f * 1.2,
+            distribution: Distribution::Uniform,
+        })
+        .gravity(Vec2::ZERO) // No gravity in top-down view
+        .priority(180)
+        .lifetime_range(0.8..2.0)
+        .burst(debris_count)
+        .spawn_world(world);
+
+    // 4. FIRE/SPARKS - Hot particles spreading outward
+    let fire_count = (35.0 * scale) as u32;
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: vec!['*', '✦', '●', '○', '•'],
+            change_rate: Some(15.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![0xFFDD00, 0xFF8800, 0xFF4400, 0x880000],
+        })
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0xFF8800, 0x880000, 0x440000, 0x000000],
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![0.9, 0.0],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![Vec2::ZERO, Vec2::ZERO], // Radial from spawn area
+        })
+        .spawn_area(SpawnArea::Circle {
+            radius: radius_f * 0.8,
+            distribution: Distribution::Gaussian,
+        })
+        .gravity(Vec2::ZERO)
+        .priority(200)
+        .lifetime_range(0.5..1.5)
+        .burst(fire_count)
+        .spawn_world(world);
+
+    // 5. SMOKE PUFFS - Slower expanding smoke using background colors
+    let smoke_count = (25.0 * scale) as u32;
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: vec![' ', '░', '▒'], // Space character for pure background smoke
+            change_rate: Some(8.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::Constant(0x666666))
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0x888888, 0x666666, 0x444444, 0x000000],
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![0.7, 0.0],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![Vec2::ZERO, Vec2::ZERO], // Very slow expansion
+        })
+        .spawn_area(SpawnArea::Circle {
+            radius: radius_f * 0.6,
+            distribution: Distribution::Gaussian,
+        })
+        .gravity(Vec2::ZERO)
+        .priority(100)
+        .lifetime_range(2.0..4.0)
+        .burst(smoke_count)
+        .spawn_world(world);
+
+    // 6. GROUND SCORCH MARKS - Lingering burn marks
+    let scorch_count = (15.0 * scale) as u32;
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: vec!['#', '%', '&', '@', '▓'],
+            change_rate: Some(2.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![0xFF4400, 0x884400, 0x444444, 0x222222],
+        })
+        .bg_curve(ColorCurve::EaseOut {
+            values: vec![0x880000, 0x442200, 0x221100, 0x000000],
+        })
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![0.8, 0.0],
+        })
+        .velocity_curve(VelocityCurve::Constant(Vec2::ZERO)) // Stationary scorch marks
+        .spawn_area(SpawnArea::Circle {
+            radius: radius_f * 1.0,
+            distribution: Distribution::Uniform,
+        })
+        .gravity(Vec2::ZERO)
+        .priority(80)
+        .lifetime_range(3.0..5.0)
+        .burst(scorch_count)
+        .spawn_world(world);
 }
 
 /// Level up celebration effect - golden sparkles and light burst
@@ -326,7 +594,7 @@ pub fn spawn_level_up_celebration(world: &mut World, world_pos: (usize, usize, u
         })
         .velocity_curve(VelocityCurve::Constant(Vec2::new(0.0, -3.0)))
         .spawn_area(SpawnArea::Circle {
-            radius: 1.5,
+            radius: 1.0,
             distribution: Distribution::Gaussian,
         })
         .priority(180)

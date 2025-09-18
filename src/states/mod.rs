@@ -12,6 +12,7 @@ mod state_overworld;
 mod state_pause;
 mod state_play;
 mod state_settings;
+mod state_throw;
 
 pub use state::*;
 pub use state_attributes::*;
@@ -27,3 +28,4 @@ pub use state_overworld::*;
 pub use state_pause::*;
 pub use state_play::*;
 pub use state_settings::*;
+pub use state_throw::*;

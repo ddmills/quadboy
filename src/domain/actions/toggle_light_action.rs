@@ -1,8 +1,12 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, EnergyActionType, LightSource, Lightable, get_base_energy_cost},
-    engine::StableIdRegistry,
+    common::Palette,
+    domain::{
+        Energy, EnergyActionType, ExplosiveProperties, Fuse, HitBlink, LightSource, Lightable,
+        get_base_energy_cost, split_item_from_stack,
+    },
+    engine::{Audio, Clock, StableIdRegistry},
 };
 
 #[derive(Event)]
@@ -40,25 +44,117 @@ impl Command for ToggleLightAction {
             entity
         };
 
-        // Check if the item has both Lightable and LightSource components
-        let has_components = world.get::<Lightable>(item_entity).is_some()
-            && world.get::<LightSource>(item_entity).is_some();
+        // Track which item actually gets lit (might be different due to stack splitting)
+        let mut final_lit_item_id = self.item_id;
 
-        if !has_components {
-            return;
-        }
+        // Check if this is an explosive item (has ExplosiveProperties)
+        let is_explosive = world.get::<ExplosiveProperties>(item_entity).is_some();
 
-        // Toggle the light source
-        let is_enabled = if let Some(mut light_source) = world.get_mut::<LightSource>(item_entity) {
-            light_source.is_enabled = !light_source.is_enabled;
-            light_source.is_enabled
+        if is_explosive {
+            // Handle explosive lighting/extinguishing
+            let has_fuse = world.get::<Fuse>(item_entity).is_some();
+
+            if has_fuse {
+                // Extinguish the fuse
+                world.entity_mut(item_entity).remove::<Fuse>();
+
+                // Remove blinking effect
+                world.entity_mut(item_entity).remove::<HitBlink>();
+
+                // Update label and play extinguish audio if available
+                if let Some(mut lightable) = world.get_mut::<Lightable>(item_entity) {
+                    lightable.update_label(false);
+
+                    // Play extinguish audio if available
+                    if let Some(extinguish_audio) = lightable.extinguish_audio {
+                        if let Some(audio) = world.get_resource::<Audio>() {
+                            audio.play(extinguish_audio, 0.6);
+                        }
+                    }
+                }
+            } else {
+                // Light the fuse - but first split from stack if needed
+                if let Some(explosive_props) = world.get::<ExplosiveProperties>(item_entity) {
+                    // Extract values before splitting
+                    let fuse_duration = explosive_props.fuse_duration;
+                    let radius = explosive_props.radius;
+                    let base_damage = explosive_props.base_damage;
+
+                    // Split item from stack if it's part of a stack
+                    let actual_item_entity = split_item_from_stack(world, item_entity, self.actor)
+                        .unwrap_or(item_entity);
+
+                    let current_tick = world
+                        .get_resource::<Clock>()
+                        .map(|c| c.get_tick())
+                        .unwrap_or(0);
+
+                    let fuse = Fuse::new(fuse_duration, radius, base_damage, current_tick);
+
+                    world.entity_mut(actual_item_entity).insert(fuse);
+
+                    // Add blinking effect for lit dynamite
+                    let hit_blink = HitBlink::blinking(Palette::White.into(), 2.0);
+                    world.entity_mut(actual_item_entity).insert(hit_blink);
+
+                    // Update label and play light audio if available
+                    if let Some(mut lightable) = world.get_mut::<Lightable>(actual_item_entity) {
+                        lightable.update_label(true);
+
+                        // Play light audio if available
+                        if let Some(light_audio) = lightable.light_audio {
+                            if let Some(audio) = world.get_resource::<Audio>() {
+                                audio.play(light_audio, 0.6);
+                            }
+                        }
+                    }
+
+                    // Update the item_id to point to the lit item for the event
+                    if let Some(stable_id) =
+                        world.get::<crate::engine::StableId>(actual_item_entity)
+                    {
+                        final_lit_item_id = stable_id.0;
+                    }
+                }
+            }
         } else {
-            return;
-        };
+            // Handle normal light source items
+            // Check if the item has both Lightable and LightSource components
+            let has_components = world.get::<Lightable>(item_entity).is_some()
+                && world.get::<LightSource>(item_entity).is_some();
 
-        // Update the lightable component's action label
-        if let Some(mut lightable) = world.get_mut::<Lightable>(item_entity) {
-            lightable.update_label(is_enabled);
+            if !has_components {
+                return;
+            }
+
+            // Toggle the light source
+            let is_enabled =
+                if let Some(mut light_source) = world.get_mut::<LightSource>(item_entity) {
+                    light_source.is_enabled = !light_source.is_enabled;
+                    light_source.is_enabled
+                } else {
+                    return;
+                };
+
+            // Update the lightable component's action label and play audio
+            if let Some(mut lightable) = world.get_mut::<Lightable>(item_entity) {
+                lightable.update_label(is_enabled);
+
+                // Play appropriate audio if available
+                if is_enabled {
+                    if let Some(light_audio) = lightable.light_audio {
+                        if let Some(audio) = world.get_resource::<Audio>() {
+                            audio.play(light_audio, 0.6);
+                        }
+                    }
+                } else {
+                    if let Some(extinguish_audio) = lightable.extinguish_audio {
+                        if let Some(audio) = world.get_resource::<Audio>() {
+                            audio.play(extinguish_audio, 0.6);
+                        }
+                    }
+                }
+            }
         }
 
         if let Some(mut energy) = world.get_mut::<Energy>(self.actor) {
@@ -67,6 +163,6 @@ impl Command for ToggleLightAction {
         }
 
         // Send event to notify that light state has changed
-        world.send_event(LightStateChangedEvent::new(self.item_id));
+        world.send_event(LightStateChangedEvent::new(final_lit_item_id));
     }
 }

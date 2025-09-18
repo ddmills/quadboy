@@ -2,6 +2,7 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{EquipmentSlot, EquipmentType, Equippable, LightSource},
+    engine::AudioKey,
     rendering::Layer,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -20,7 +21,7 @@ pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
             EquipmentType::Tool,
         ))
         .with_light_source(LightSource::lantern())
-        .with_lightable()
+        .with_lightable_audio(AudioKey::IgniteMatch, None)
         .with_needs_stable_id()
         .build();
 }

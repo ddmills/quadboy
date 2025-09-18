@@ -1,4 +1,4 @@
-use crate::engine::SerializableComponent;
+use crate::engine::{AudioKey, SerializableComponent};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -20,13 +20,27 @@ pub struct IgnoreLighting;
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Lightable {
     pub action_label: String,
+    pub light_audio: Option<AudioKey>,
+    pub extinguish_audio: Option<AudioKey>,
 }
 
 impl Lightable {
     pub fn new() -> Self {
         Self {
             action_label: "Extinguish".to_string(),
+            light_audio: None,
+            extinguish_audio: None,
         }
+    }
+
+    pub fn with_light_audio(mut self, audio: AudioKey) -> Self {
+        self.light_audio = Some(audio);
+        self
+    }
+
+    pub fn with_extinguish_audio(mut self, audio: AudioKey) -> Self {
+        self.extinguish_audio = Some(audio);
+        self
     }
 
     pub fn update_label(&mut self, is_lit: bool) {

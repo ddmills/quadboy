@@ -1,22 +1,41 @@
-use bevy_ecs::{prelude::*, schedule::common_conditions::resource_changed, system::SystemId};
-use macroquad::input::{KeyCode, is_key_pressed};
+use bevy_ecs::{
+    prelude::*,
+    schedule::common_conditions::resource_changed,
+    system::{SystemId, SystemParam},
+};
+use macroquad::{
+    input::{KeyCode, is_key_pressed},
+    prelude::trace,
+};
 
 use crate::{
     common::Palette,
     domain::{
         Consumable, DropItemAction, EatAction, EquipItemAction, EquipmentSlot, Equippable,
-        Equipped, Inventory, Item, Label, LightSource, LightStateChangedEvent, Lightable, Player,
-        PlayerPosition, StackCount, ToggleLightAction, UnequipItemAction, Weapon, game_loop,
-        inventory::InventoryChangedEvent,
+        Equipped, ExplosiveProperties, Fuse, Inventory, Item, Label, LightSource,
+        LightStateChangedEvent, Lightable, Player, PlayerPosition, StackCount, Throwable,
+        ToggleLightAction, UnequipItemAction, Weapon, game_loop, inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
-    states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
+    states::{CurrentGameState, GameState, GameStatePlugin, ThrowContext, cleanup_system},
     ui::{
         ActivatableBuilder, Dialog, DialogContent, DialogState, List, ListContext, ListItem,
         ListItemData, UiFocus, center_dialogs_on_screen_change, spawn_examine_dialog,
     },
 };
+
+#[derive(SystemParam)]
+struct ItemQueries<'w, 's> {
+    equippable: Query<'w, 's, &'static Equippable>,
+    equipped: Query<'w, 's, &'static Equipped>,
+    lightable: Query<'w, 's, &'static Lightable>,
+    light_source: Query<'w, 's, &'static LightSource>,
+    consumable: Query<'w, 's, &'static Consumable>,
+    throwable: Query<'w, 's, &'static Throwable>,
+    explosive: Query<'w, 's, &'static ExplosiveProperties>,
+    fuse: Query<'w, 's, &'static Fuse>,
+}
 
 #[derive(Resource)]
 struct InventoryCallbacks {
@@ -25,6 +44,7 @@ struct InventoryCallbacks {
     toggle_equip_item: SystemId,
     toggle_light: SystemId,
     eat_item: SystemId,
+    throw_item: SystemId,
     show_actions: SystemId,
     close_dialog: SystemId,
     open_item_actions: SystemId,
@@ -80,6 +100,8 @@ fn build_inventory_list_items(
     q_labels: &Query<&Label>,
     q_equipped: &Query<&Equipped>,
     q_stack_counts: &Query<&StackCount>,
+    q_fuse: &Query<&Fuse>,
+    q_light_source: &Query<&LightSource>,
     id_registry: &StableIdRegistry,
     callbacks: &InventoryCallbacks,
 ) -> Vec<ListItemData> {
@@ -103,15 +125,35 @@ fn build_inventory_list_items(
                 text
             };
 
+            let text_with_lit = {
+                let is_lit = q_fuse.get(item_entity).is_ok()
+                    || q_light_source
+                        .get(item_entity)
+                        .map(|ls| ls.is_enabled)
+                        .unwrap_or(false);
+
+                if is_lit {
+                    format!("{} {{Y|[Lit]}}", display_text)
+                } else {
+                    display_text
+                }
+            };
+
+            let text_with_fuse = if let Ok(fuse) = q_fuse.get(item_entity) {
+                format!("{} {}", text_with_lit, fuse.get_countdown_display())
+            } else {
+                text_with_lit
+            };
+
             let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
                 let slot_name = equipped
                     .slots
                     .first()
                     .map(|slot| slot.display_name())
                     .unwrap_or("Unknown");
-                format!("{} {{G|[{}]}}", display_text, slot_name)
+                format!("{} {{G|[{}]}}", text_with_fuse, slot_name)
             } else {
-                display_text
+                text_with_fuse
             };
 
             items
@@ -185,6 +227,7 @@ fn setup_inventory_callbacks(world: &mut World) {
     let toggle_equip_item = world.register_system(toggle_equip_selected_item_from_dialog);
     let toggle_light = world.register_system(toggle_light_selected_item_from_dialog);
     let eat_item = world.register_system(eat_selected_item_from_dialog);
+    let throw_item = world.register_system(throw_selected_item_from_dialog);
 
     let callbacks = InventoryCallbacks {
         back_to_explore: world.register_system(back_to_explore),
@@ -192,6 +235,7 @@ fn setup_inventory_callbacks(world: &mut World) {
         toggle_equip_item,
         toggle_light,
         eat_item,
+        throw_item,
         show_actions: world.register_system(handle_item_click),
         close_dialog: world.register_system(close_dialog),
         open_item_actions: world.register_system(handle_item_click),
@@ -212,6 +256,9 @@ fn handle_item_click(
     q_lightable: Query<&Lightable>,
     q_light_source: Query<&LightSource>,
     q_consumable: Query<&Consumable>,
+    q_throwable: Query<&Throwable>,
+    q_explosive: Query<&ExplosiveProperties>,
+    q_fuse: Query<&Fuse>,
     dialog_state: ResMut<DialogState>,
     callbacks: Res<InventoryCallbacks>,
     screen: Res<ScreenSize>,
@@ -227,6 +274,9 @@ fn handle_item_click(
             &q_lightable,
             &q_light_source,
             &q_consumable,
+            &q_throwable,
+            &q_explosive,
+            &q_fuse,
             dialog_state,
             &callbacks,
             &screen,
@@ -242,6 +292,9 @@ fn build_item_action_list(
     q_lightable: &Query<&Lightable>,
     q_light_source: &Query<&LightSource>,
     q_consumable: &Query<&Consumable>,
+    q_throwable: &Query<&Throwable>,
+    q_explosive: &Query<&ExplosiveProperties>,
+    q_fuse: &Query<&Fuse>,
     callbacks: &InventoryCallbacks,
 ) -> Vec<ListItemData> {
     let Some(item_entity) = id_registry.get_entity(item_id) else {
@@ -262,22 +315,42 @@ fn build_item_action_list(
             .push(ListItemData::new(label, callbacks.toggle_equip_item).with_hotkey(KeyCode::E));
     }
 
-    if q_lightable.get(item_entity).is_ok() && q_light_source.get(item_entity).is_ok() {
-        let label = if let Ok(light_source) = q_light_source.get(item_entity) {
-            if light_source.is_enabled {
-                "({Y|L}) Extinguish"
+    // Handle lighting for both normal light sources and explosives
+    if q_lightable.get(item_entity).is_ok() {
+        let is_explosive = q_explosive.get(item_entity).is_ok();
+        let has_light_source = q_light_source.get(item_entity).is_ok();
+
+        if has_light_source || is_explosive {
+            let label = if is_explosive {
+                // For explosives, check if fuse is lit
+                if q_fuse.get(item_entity).is_ok() {
+                    "({Y|L}) Extinguish Fuse"
+                } else {
+                    "({Y|L}) Light Fuse"
+                }
+            } else if let Ok(light_source) = q_light_source.get(item_entity) {
+                // For normal light sources
+                if light_source.is_enabled {
+                    "({Y|L}) Extinguish"
+                } else {
+                    "({Y|L}) Light"
+                }
             } else {
-                "({Y|L}) Light"
-            }
-        } else {
-            "({Y|L}) Toggle Light"
-        };
-        list_items.push(ListItemData::new(label, callbacks.toggle_light).with_hotkey(KeyCode::L));
+                "({Y|L}) Toggle Light"
+            };
+            list_items
+                .push(ListItemData::new(label, callbacks.toggle_light).with_hotkey(KeyCode::L));
+        }
     }
 
     if q_consumable.get(item_entity).is_ok() {
         list_items
             .push(ListItemData::new("({Y|C}) Eat", callbacks.eat_item).with_hotkey(KeyCode::C));
+    }
+
+    if q_throwable.get(item_entity).is_ok() {
+        list_items
+            .push(ListItemData::new("({Y|T}) Throw", callbacks.throw_item).with_hotkey(KeyCode::T));
     }
 
     list_items
@@ -300,6 +373,9 @@ fn spawn_item_actions_dialog(
     q_lightable: &Query<&Lightable>,
     q_light_source: &Query<&LightSource>,
     q_consumable: &Query<&Consumable>,
+    q_throwable: &Query<&Throwable>,
+    q_explosive: &Query<&ExplosiveProperties>,
+    q_fuse: &Query<&Fuse>,
     mut dialog_state: ResMut<DialogState>,
     callbacks: &InventoryCallbacks,
     screen: &ScreenSize,
@@ -321,6 +397,9 @@ fn spawn_item_actions_dialog(
         q_lightable,
         q_light_source,
         q_consumable,
+        q_throwable,
+        q_explosive,
+        q_fuse,
         callbacks,
     );
 
@@ -448,6 +527,7 @@ fn toggle_light_selected_item_from_dialog(
     id_registry: Res<StableIdRegistry>,
     q_lightable: Query<&Lightable>,
     q_light_source: Query<&LightSource>,
+    q_explosive: Query<&ExplosiveProperties>,
     q_action_dialog: Query<&ItemActionDialog>,
 ) {
     if let Ok(action_dialog) = q_action_dialog.single() {
@@ -456,11 +536,16 @@ fn toggle_light_selected_item_from_dialog(
         };
 
         // Check if item can be lit/extinguished
-        if q_lightable.get(item_entity).is_ok() && q_light_source.get(item_entity).is_ok() {
-            cmds.queue(ToggleLightAction::new(
-                action_dialog.item_id,
-                context.player_entity,
-            ));
+        if q_lightable.get(item_entity).is_ok() {
+            let has_light_source = q_light_source.get(item_entity).is_ok();
+            let is_explosive = q_explosive.get(item_entity).is_ok();
+
+            if has_light_source || is_explosive {
+                cmds.queue(ToggleLightAction::new(
+                    action_dialog.item_id,
+                    context.player_entity,
+                ));
+            }
         }
     }
 }
@@ -484,6 +569,46 @@ fn eat_selected_item_from_dialog(
             };
 
             cmds.queue(EatAction::new(action_dialog.item_id, player_id));
+        }
+    }
+}
+
+fn throw_selected_item_from_dialog(
+    mut cmds: Commands,
+    mut game_state: ResMut<CurrentGameState>,
+    context: Res<InventoryContext>,
+    id_registry: Res<StableIdRegistry>,
+    q_throwable: Query<&Throwable>,
+    q_action_dialog: Query<&ItemActionDialog>,
+    q_dialogs: Query<Entity, With<Dialog>>,
+    q_dialog_content: Query<Entity, With<DialogContent>>,
+    mut dialog_state: ResMut<DialogState>,
+) {
+    if let Ok(action_dialog) = q_action_dialog.single() {
+        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+            return;
+        };
+
+        // Check if item is throwable
+        if q_throwable.get(item_entity).is_ok() {
+            // Set up throw context and transition to throw state
+            cmds.insert_resource(ThrowContext {
+                player_entity: context.player_entity,
+                item_id: action_dialog.item_id,
+                throw_range: 0, // Will be calculated in throw state
+            });
+
+            // Close dialog
+            for dialog_entity in q_dialogs.iter() {
+                cmds.entity(dialog_entity).despawn_recursive();
+            }
+            for content_entity in q_dialog_content.iter() {
+                cmds.entity(content_entity).despawn_recursive();
+            }
+            dialog_state.is_open = false;
+
+            // Transition to throw state
+            game_state.next = GameState::Throw;
         }
     }
 }
@@ -561,17 +686,11 @@ impl Plugin for InventoryStatePlugin {
                 app,
                 (setup_inventory_callbacks, setup_inventory_screen).chain(),
             )
-            .on_update(
-                app,
-                (
-                    game_loop,
-                    refresh_inventory_display,
-                    refresh_action_dialog_on_events,
-                    refresh_action_dialog_with_timer,
-                    update_item_detail_panel,
-                )
-                    .chain(),
-            )
+            .on_update(app, game_loop)
+            .on_update(app, refresh_inventory_display)
+            .on_update(app, refresh_action_dialog_on_events)
+            .on_update(app, refresh_action_dialog_with_timer)
+            .on_update(app, update_item_detail_panel)
             .on_update(
                 app,
                 center_dialogs_on_screen_change.run_if(resource_changed::<ScreenSize>),
@@ -600,6 +719,8 @@ fn setup_inventory_screen(
     q_labels: Query<&Label>,
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
+    q_fuse: Query<&Fuse>,
+    q_light_source: Query<&LightSource>,
     id_registry: Res<StableIdRegistry>,
 ) {
     let Ok(player_entity) = q_player.single() else {
@@ -642,41 +763,16 @@ fn setup_inventory_screen(
         InventoryWeightText,
     ));
 
-    let mut list_items = Vec::new();
-
-    for &item_id in inventory.item_ids.iter() {
-        if let Some(item_entity) = id_registry.get_entity(item_id) {
-            let text = if let Ok(label) = q_labels.get(item_entity) {
-                label.get().to_string()
-            } else {
-                "Unknown Item".to_string()
-            };
-
-            let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
-                if stack_count.count > 1 {
-                    format!("{} x{}", text, stack_count.count)
-                } else {
-                    text
-                }
-            } else {
-                text
-            };
-
-            let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
-                let slot_name = equipped
-                    .slots
-                    .first()
-                    .map(|slot| slot.display_name())
-                    .unwrap_or("Unknown");
-                format!("{} {{G|[{}]}}", display_text, slot_name)
-            } else {
-                display_text
-            };
-
-            list_items
-                .push(ListItemData::new(&final_text, callbacks.show_actions).with_context(item_id));
-        }
-    }
+    let list_items = build_inventory_list_items(
+        inventory,
+        &q_labels,
+        &q_equipped,
+        &q_stack_counts,
+        &q_fuse,
+        &q_light_source,
+        &id_registry,
+        &callbacks,
+    );
 
     cmds.spawn((
         List::new(list_items).with_focus_order(1000).height(10),
@@ -881,9 +977,12 @@ fn refresh_inventory_display(
     q_labels: Query<&Label>,
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
+    q_fuse: Query<&Fuse>,
+    q_light_source: Query<&LightSource>,
     id_registry: Res<StableIdRegistry>,
     callbacks: Res<InventoryCallbacks>,
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
+    mut e_light_changed: EventReader<LightStateChangedEvent>,
 ) {
     let Ok(player_inventory) = q_inventory.get(context.player_entity) else {
         return;
@@ -893,7 +992,17 @@ fn refresh_inventory_display(
         return;
     };
 
-    if !e_inventory_changed.is_empty() {
+    let has_inventory_change = !e_inventory_changed.is_empty();
+    let has_light_change = !e_light_changed.is_empty();
+    let mut lit_item_id = None;
+
+    // Check for light state changes to update selection
+    for event in e_light_changed.read() {
+        lit_item_id = Some(event.item_id);
+    }
+
+    // Rebuild list if either inventory or light state changed
+    if has_inventory_change || has_light_change {
         e_inventory_changed.clear();
 
         let list_items = build_inventory_list_items(
@@ -901,6 +1010,8 @@ fn refresh_inventory_display(
             &q_labels,
             &q_equipped,
             &q_stack_counts,
+            &q_fuse,
+            &q_light_source,
             &id_registry,
             &callbacks,
         );
@@ -915,21 +1026,59 @@ fn refresh_inventory_display(
             );
         }
     }
+
+    // If we have a lit item, try to select it in the list
+    if let Some(lit_id) = lit_item_id {
+        if let Some(entity) = id_registry.get_entity(lit_id) {
+            if q_fuse.get(entity).is_ok()
+                || q_light_source
+                    .get(entity)
+                    .map(|ls| ls.is_enabled)
+                    .unwrap_or(false)
+            {
+                // Find this item in the current list
+                for (index, item) in list.items.iter().enumerate() {
+                    if item.context_data == Some(lit_id) {
+                        list.selected_index = index;
+                        list.ensure_item_visible(index);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn refresh_action_dialog_on_events(
     mut refresh_timer: ResMut<ActionDialogRefreshTimer>,
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
     mut e_light_changed: EventReader<LightStateChangedEvent>,
+    mut q_action_dialog: Query<&mut ItemActionDialog>,
 ) {
     // Check if we have any events to process
     let has_inventory_event = !e_inventory_changed.is_empty();
-    let has_light_event = !e_light_changed.is_empty();
+    let mut lit_item_id = None;
+
+    // Check for light state changes and get the lit item ID
+    for event in e_light_changed.read() {
+        lit_item_id = Some(event.item_id);
+    }
+
+    let has_light_event = lit_item_id.is_some();
 
     if has_inventory_event || has_light_event {
-        // Clear the events
+        // Clear the inventory events
         e_inventory_changed.clear();
-        e_light_changed.clear();
+
+        // If we have a lit item and an active action dialog, update the dialog to point to the lit item
+        if let Some(lit_id) = lit_item_id {
+            if let Ok(mut action_dialog) = q_action_dialog.single_mut() {
+                // Only update if the lit item is different from the current dialog item
+                if action_dialog.item_id != lit_id {
+                    action_dialog.item_id = lit_id;
+                }
+            }
+        }
 
         // Set frame counter to wait 2 frames for component changes to be fully applied
         refresh_timer.needs_refresh = true;
@@ -940,11 +1089,7 @@ fn refresh_action_dialog_on_events(
 fn refresh_action_dialog_with_timer(
     mut cmds: Commands,
     mut refresh_timer: ResMut<ActionDialogRefreshTimer>,
-    q_equippable: Query<&Equippable>,
-    q_equipped: Query<&Equipped>,
-    q_lightable: Query<&Lightable>,
-    q_light_source: Query<&LightSource>,
-    q_consumable: Query<&Consumable>,
+    item_queries: ItemQueries,
     mut q_lists: Query<&mut List, With<DialogContent>>,
     id_registry: Res<StableIdRegistry>,
     q_action_dialog: Query<&ItemActionDialog>,
@@ -990,11 +1135,14 @@ fn refresh_action_dialog_with_timer(
         let new_items = build_item_action_list(
             action_dialog.item_id,
             &id_registry,
-            &q_equippable,
-            &q_equipped,
-            &q_lightable,
-            &q_light_source,
-            &q_consumable,
+            &item_queries.equippable,
+            &item_queries.equipped,
+            &item_queries.lightable,
+            &item_queries.light_source,
+            &item_queries.consumable,
+            &item_queries.throwable,
+            &item_queries.explosive,
+            &item_queries.fuse,
             &callbacks,
         );
 

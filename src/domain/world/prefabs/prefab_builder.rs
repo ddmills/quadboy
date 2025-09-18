@@ -6,9 +6,10 @@ use crate::{
         ConsumableEffect, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
         Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label, Level,
         LightBlocker, LightSource, Lightable, LootDrop, MaterialType, NeedsStableId, SaveFlag,
-        StackCount, Stackable, StackableType, StairDown, StairUp, StatModifiers, Stats,
+        StackCount, Stackable, StackableType, StairDown, StairUp, StatModifiers, Stats, Throwable,
         VisionBlocker, Weapon,
     },
+    engine::AudioKey,
     rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
     states::CleanupStatePlay,
 };
@@ -214,6 +215,19 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
+    pub fn with_lightable_audio(
+        self,
+        light_audio: AudioKey,
+        extinguish_audio: Option<AudioKey>,
+    ) -> Self {
+        let mut lightable = Lightable::new().with_light_audio(light_audio);
+        if let Some(extinguish) = extinguish_audio {
+            lightable = lightable.with_extinguish_audio(extinguish);
+        }
+        self.world.entity_mut(self.entity).insert(lightable);
+        self
+    }
+
     pub fn with_level(self, level: u32) -> Self {
         self.world.entity_mut(self.entity).insert(Level::new(level));
         self
@@ -243,6 +257,27 @@ impl<'a> PrefabBuilder<'a> {
         self.world
             .entity_mut(self.entity)
             .insert(Consumable::new(effect, consume_on_use));
+        self
+    }
+
+    pub fn with_throwable(self, base_range: usize) -> Self {
+        self.world
+            .entity_mut(self.entity)
+            .insert(Throwable::new(base_range, '?', 0xFFFFFF));
+        self
+    }
+
+    pub fn with_throwable_char(
+        self,
+        base_range: usize,
+        particle_char: char,
+        throwable_fg1: u32,
+    ) -> Self {
+        self.world.entity_mut(self.entity).insert(Throwable::new(
+            base_range,
+            particle_char,
+            throwable_fg1,
+        ));
         self
     }
 
