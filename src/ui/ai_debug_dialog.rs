@@ -3,7 +3,8 @@ use macroquad::input::KeyCode;
 
 use crate::{
     domain::{
-        AiController, Energy, Label, PursuingTarget, Stats, systems::ai_utils::distance_from_home,
+        AiController, DynamicLabel, Energy, Label, PursuingTarget, Stats, get_dynamic_label,
+        systems::ai_utils::distance_from_home,
     },
     engine::{AudioKey, Clock},
     rendering::{Glyph, Layer, Position, ScreenSize},
@@ -29,6 +30,7 @@ impl AiDebugDialogBuilder {
         self,
         cmds: &mut Commands,
         q_labels: &Query<&Label>,
+        q_dynamic_labels: &Query<&DynamicLabel>,
         q_ai_controllers: &Query<&AiController>,
         q_glyphs: &Query<&Glyph>,
         q_pursuing: &Query<&PursuingTarget>,
@@ -39,11 +41,7 @@ impl AiDebugDialogBuilder {
         cleanup_component: impl Bundle + Clone,
         screen: &ScreenSize,
     ) -> Entity {
-        let entity_name = if let Ok(label) = q_labels.get(self.entity) {
-            label.get().to_string()
-        } else {
-            "Unknown AI".to_string()
-        };
+        let entity_name = get_dynamic_label(self.entity, q_labels, q_dynamic_labels);
 
         let ai_info = if let Ok(ai) = q_ai_controllers.get(self.entity) {
             let mut info_lines = vec![

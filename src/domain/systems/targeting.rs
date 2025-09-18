@@ -4,8 +4,9 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        DefaultMeleeAttack, EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, Level,
-        Player, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
+        DefaultMeleeAttack, DynamicLabel, EquipmentSlot, EquipmentSlots, Health, IgnoreLighting,
+        Label, Level, Player, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
+        get_dynamic_label,
     },
     engine::{KeyInput, Mouse, StableIdRegistry},
     rendering::{
@@ -345,6 +346,7 @@ pub fn render_target_info(
     q_health: Query<&Health>,
     q_dynamic_health: Query<(&Health, &Level, &Stats)>, // For entities with dynamic HP
     q_names: Query<&Label>,
+    q_dynamic_labels: Query<&DynamicLabel>,
     q_player: Query<Entity, With<Player>>,
     q_stats: Query<&Stats>,
     q_equipment: Query<&EquipmentSlots>,
@@ -395,9 +397,7 @@ pub fn render_target_info(
                     && let Ok(health) = q_health.get(*entity)
                 {
                     target_health = Some(health);
-                    if let Ok(label) = q_names.get(*entity) {
-                        target_name = Some(label.get());
-                    }
+                    target_name = Some(get_dynamic_label(*entity, &q_names, &q_dynamic_labels));
                     break;
                 }
             }
@@ -442,7 +442,7 @@ pub fn render_target_info(
 
                 text.value = format!(
                     "{} (HP:{}/{}{}{})",
-                    name, health.current, max_hp, armor_display, hit_chance_display
+                    &name, health.current, max_hp, armor_display, hit_chance_display
                 );
                 text_pos.x = pos.0.floor() + 1.;
                 text_pos.y = pos.1.floor();

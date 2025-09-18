@@ -4,7 +4,7 @@ use bevy_ecs::{
 };
 
 use crate::{
-    domain::{Description, FactionMember, Label, get_effective_relationship},
+    domain::{Description, DynamicLabel, FactionMember, Label, get_effective_relationship},
     rendering::{Glyph, ScreenSize},
     states::CleanupStateExplore,
     ui::examine_dialog::ExamineDialogBuilder,
@@ -54,6 +54,7 @@ impl Command for SpawnExamineDialogCommand {
             .run_system_once(
                 move |mut cmds: Commands,
                       q_labels: Query<&Label>,
+                      q_dynamic_labels: Query<&DynamicLabel>,
                       q_descriptions: Query<&Description>,
                       q_glyphs: Query<&Glyph>,
                       screen: Res<ScreenSize>| {
@@ -62,6 +63,7 @@ impl Command for SpawnExamineDialogCommand {
                         .spawn(
                             &mut cmds,
                             &q_labels,
+                            &q_dynamic_labels,
                             &q_descriptions,
                             &q_glyphs,
                             CleanupStateExplore,

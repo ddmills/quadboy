@@ -210,7 +210,6 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
-
     pub fn with_lightable_audio(
         self,
         light_audio: AudioKey,

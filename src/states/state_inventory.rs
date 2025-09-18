@@ -11,10 +11,11 @@ use macroquad::{
 use crate::{
     common::Palette,
     domain::{
-        Consumable, DropItemAction, EatAction, EquipItemAction, EquipmentSlot, Equippable,
-        Equipped, ExplosiveProperties, Fuse, Inventory, Item, Label, LightSource,
+        Consumable, DropItemAction, DynamicLabel, EatAction, EquipItemAction, EquipmentSlot,
+        Equippable, Equipped, ExplosiveProperties, Fuse, Inventory, Item, Label, LightSource,
         LightStateChangedEvent, Lightable, Player, PlayerPosition, StackCount, Throwable,
-        ToggleLightAction, UnequipItemAction, Weapon, game_loop, inventory::InventoryChangedEvent,
+        ToggleLightAction, UnequipItemAction, Weapon, game_loop, get_dynamic_label,
+        inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
@@ -98,10 +99,7 @@ fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
 fn build_inventory_list_items(
     inventory: &Inventory,
     q_labels: &Query<&Label>,
-    q_equipped: &Query<&Equipped>,
-    q_stack_counts: &Query<&StackCount>,
-    q_fuse: &Query<&Fuse>,
-    q_light_source: &Query<&LightSource>,
+    q_dynamic_labels: &Query<&DynamicLabel>,
     id_registry: &StableIdRegistry,
     callbacks: &InventoryCallbacks,
 ) -> Vec<ListItemData> {
@@ -109,55 +107,11 @@ fn build_inventory_list_items(
 
     for &item_id in inventory.item_ids.iter() {
         if let Some(item_entity) = id_registry.get_entity(item_id) {
-            let text = if let Ok(label) = q_labels.get(item_entity) {
-                label.get().to_string()
-            } else {
-                "Unknown Item".to_string()
-            };
+            let display_text = get_dynamic_label(item_entity, q_labels, q_dynamic_labels);
 
-            let display_text = if let Ok(stack_count) = q_stack_counts.get(item_entity) {
-                if stack_count.count > 1 {
-                    format!("{} x{}", text, stack_count.count)
-                } else {
-                    text
-                }
-            } else {
-                text
-            };
-
-            let text_with_lit = {
-                let is_lit = q_fuse.get(item_entity).is_ok()
-                    || q_light_source
-                        .get(item_entity)
-                        .map(|ls| ls.is_enabled)
-                        .unwrap_or(false);
-
-                if is_lit {
-                    format!("{} {{Y|[Lit]}}", display_text)
-                } else {
-                    display_text
-                }
-            };
-
-            let text_with_fuse = if let Ok(fuse) = q_fuse.get(item_entity) {
-                format!("{} {}", text_with_lit, fuse.get_countdown_display())
-            } else {
-                text_with_lit
-            };
-
-            let final_text = if let Ok(equipped) = q_equipped.get(item_entity) {
-                let slot_name = equipped
-                    .slots
-                    .first()
-                    .map(|slot| slot.display_name())
-                    .unwrap_or("Unknown");
-                format!("{} {{G|[{}]}}", text_with_fuse, slot_name)
-            } else {
-                text_with_fuse
-            };
-
-            items
-                .push(ListItemData::new(&final_text, callbacks.show_actions).with_context(item_id));
+            items.push(
+                ListItemData::new(&display_text, callbacks.show_actions).with_context(item_id),
+            );
         }
     }
 
@@ -169,6 +123,7 @@ fn setup_equip_slot_screen(
     ctx: Res<InventoryContext>,
     registry: Res<StableIdRegistry>,
     q_item: Query<&Label>,
+    q_dynamic_labels: Query<&DynamicLabel>,
 ) {
     let Some(item_id) = ctx.selected_item_id else {
         return;
@@ -178,12 +133,10 @@ fn setup_equip_slot_screen(
         return;
     };
 
-    let Ok(label) = q_item.get(item_entity) else {
-        return;
-    };
+    let item_label = get_dynamic_label(item_entity, &q_item, &q_dynamic_labels);
 
     cmds.spawn((
-        Text::new(&format!("Equip {} to:", label.get()))
+        Text::new(&format!("Equip {} to:", item_label))
             .fg1(Palette::White)
             .layer(Layer::Ui),
         Position::new_f32(2., 2., 0.),
@@ -717,10 +670,7 @@ fn setup_inventory_screen(
     q_player: Query<Entity, With<Player>>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_equipped: Query<&Equipped>,
-    q_stack_counts: Query<&StackCount>,
-    q_fuse: Query<&Fuse>,
-    q_light_source: Query<&LightSource>,
+    q_dynamic_labels: Query<&DynamicLabel>,
     id_registry: Res<StableIdRegistry>,
 ) {
     let Ok(player_entity) = q_player.single() else {
@@ -766,10 +716,7 @@ fn setup_inventory_screen(
     let list_items = build_inventory_list_items(
         inventory,
         &q_labels,
-        &q_equipped,
-        &q_stack_counts,
-        &q_fuse,
-        &q_light_source,
+        &q_dynamic_labels,
         &id_registry,
         &callbacks,
     );
@@ -867,6 +814,7 @@ fn update_item_detail_panel(
     q_list_items: Query<&ListItem>,
     q_lists: Query<&List>,
     q_labels: Query<&Label>,
+    q_dynamic_labels: Query<&DynamicLabel>,
     q_items: Query<&Item>,
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
@@ -920,9 +868,7 @@ fn update_item_detail_panel(
 
     // Update name
     for mut detail_text in q_detail_name.iter_mut() {
-        if let Ok(label) = q_labels.get(item_entity) {
-            detail_text.value = label.get().to_string();
-        }
+        detail_text.value = get_dynamic_label(item_entity, &q_labels, &q_dynamic_labels);
     }
 
     // Update properties
@@ -975,10 +921,7 @@ fn refresh_inventory_display(
     context: Res<InventoryContext>,
     q_inventory: Query<&Inventory>,
     q_labels: Query<&Label>,
-    q_equipped: Query<&Equipped>,
-    q_stack_counts: Query<&StackCount>,
-    q_fuse: Query<&Fuse>,
-    q_light_source: Query<&LightSource>,
+    q_dynamic_labels: Query<&DynamicLabel>,
     id_registry: Res<StableIdRegistry>,
     callbacks: Res<InventoryCallbacks>,
     mut e_inventory_changed: EventReader<InventoryChangedEvent>,
@@ -1008,10 +951,7 @@ fn refresh_inventory_display(
         let list_items = build_inventory_list_items(
             player_inventory,
             &q_labels,
-            &q_equipped,
-            &q_stack_counts,
-            &q_fuse,
-            &q_light_source,
+            &q_dynamic_labels,
             &id_registry,
             &callbacks,
         );
@@ -1029,21 +969,12 @@ fn refresh_inventory_display(
 
     // If we have a lit item, try to select it in the list
     if let Some(lit_id) = lit_item_id {
-        if let Some(entity) = id_registry.get_entity(lit_id) {
-            if q_fuse.get(entity).is_ok()
-                || q_light_source
-                    .get(entity)
-                    .map(|ls| ls.is_enabled)
-                    .unwrap_or(false)
-            {
-                // Find this item in the current list
-                for (index, item) in list.items.iter().enumerate() {
-                    if item.context_data == Some(lit_id) {
-                        list.selected_index = index;
-                        list.ensure_item_visible(index);
-                        break;
-                    }
-                }
+        // Find this item in the current list
+        for (index, item) in list.items.iter().enumerate() {
+            if item.context_data == Some(lit_id) {
+                list.selected_index = index;
+                list.ensure_item_visible(index);
+                break;
             }
         }
     }
