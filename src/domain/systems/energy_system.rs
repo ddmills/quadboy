@@ -88,7 +88,7 @@ pub fn get_base_energy_cost(action: EnergyActionType) -> i32 {
         EnergyActionType::ToggleLight => 25,
         EnergyActionType::Shoot => 150,
         EnergyActionType::Attack => 150,
-        EnergyActionType::Reload => 100,
+        EnergyActionType::Reload => 50,
         EnergyActionType::Eat => 50,
         EnergyActionType::Throw => 150,
     }
@@ -107,6 +107,12 @@ pub fn get_energy_cost(
             if let Some(stats) = stats {
                 let speed = stats.get_stat(StatType::Speed);
                 cost = (cost - (speed * 2)).max(1); // Ensure minimum cost of 1
+            }
+        }
+        EnergyActionType::Reload => {
+            if let Some(stats) = stats {
+                let reload_speed = stats.get_stat(StatType::ReloadSpeed);
+                cost = (cost - (reload_speed * 2)).max(1); // Ensure minimum cost of 1
             }
         }
         _ => {} // Other actions use base cost for stat modifications

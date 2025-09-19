@@ -65,6 +65,7 @@ pub enum SpawnValue {
     Float(f32),
     Bool(bool),
     LootTableId(LootTableId),
+    ItemRarity(crate::domain::ItemRarity),
 }
 
 impl Prefab {

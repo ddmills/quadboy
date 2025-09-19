@@ -49,6 +49,7 @@ struct AttributesUIEntities {
     cudgel_display: Entity,
     unarmed_display: Entity,
     dodge_display: Entity,
+    reload_speed_display: Entity,
 }
 
 pub struct AttributesStatePlugin;
@@ -365,6 +366,17 @@ fn update_attributes_display(
             dodge_total, dodge_base, dodge_modifiers
         );
     }
+
+    let reload_speed_base = StatType::ReloadSpeed.get_base_value(attributes);
+    let reload_speed_modifiers = stat_modifiers.get_total_for_stat(StatType::ReloadSpeed);
+    let reload_speed_total = stats.get_stat(StatType::ReloadSpeed);
+
+    if let Ok(mut text) = q_text.get_mut(ui_entities.reload_speed_display) {
+        text.value = format!(
+            "Reload Speed: {}  (Dexterity: {} + Modifiers: {:+})",
+            reload_speed_total, reload_speed_base, reload_speed_modifiers
+        );
+    }
 }
 
 fn remove_attributes_callbacks(mut cmds: Commands) {
@@ -647,6 +659,26 @@ fn setup_attributes_screen(
         ))
         .id();
 
+    y_pos += 0.5;
+
+    // Reload Speed
+    let reload_speed_base = StatType::ReloadSpeed.get_base_value(attributes);
+    let reload_speed_modifiers = stat_modifiers.get_total_for_stat(StatType::ReloadSpeed);
+    let reload_speed_total = stats.get_stat(StatType::ReloadSpeed);
+
+    let reload_speed_display = cmds
+        .spawn((
+            Text::new(&format!(
+                "Reload Speed: {}  (Dexterity: {} + Modifiers: {:+})",
+                reload_speed_total, reload_speed_base, reload_speed_modifiers
+            ))
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     y_pos += 1.0;
 
     // Weapon Proficiencies Section
@@ -826,5 +858,6 @@ fn setup_attributes_screen(
         cudgel_display,
         unarmed_display,
         dodge_display,
+        reload_speed_display,
     });
 }

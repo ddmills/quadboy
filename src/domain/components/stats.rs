@@ -8,18 +8,19 @@ use super::Attributes;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StatType {
-    Fortitude,  // affects max HP
-    Speed,      // affects movement energy cost
-    Armor,      // no base attribute
-    ArmorRegen, // affects armor regeneration rate
-    Rifle,      // rifle weapon proficiency
-    Shotgun,    // shotgun weapon proficiency
-    Pistol,     // pistol weapon proficiency
-    Blade,      // blade weapon proficiency
-    Cudgel,     // cudgel weapon proficiency
-    Unarmed,    // unarmed combat proficiency
-    Dodge,      // dodge/evasion ability
-    Knockback,  // affects knockback distance
+    Fortitude,   // affects max HP
+    Speed,       // affects movement energy cost
+    Armor,       // no base attribute
+    ArmorRegen,  // affects armor regeneration rate
+    Rifle,       // rifle weapon proficiency
+    Shotgun,     // shotgun weapon proficiency
+    Pistol,      // pistol weapon proficiency
+    Blade,       // blade weapon proficiency
+    Cudgel,      // cudgel weapon proficiency
+    Unarmed,     // unarmed combat proficiency
+    Dodge,       // dodge/evasion ability
+    Knockback,   // affects knockback distance
+    ReloadSpeed, // affects reload energy cost
 }
 
 impl StatType {
@@ -37,6 +38,7 @@ impl StatType {
             StatType::Unarmed => attributes.strength as i32,
             StatType::Dodge => attributes.dexterity as i32,
             StatType::Knockback => attributes.strength as i32,
+            StatType::ReloadSpeed => attributes.dexterity as i32,
         }
     }
 
@@ -54,6 +56,7 @@ impl StatType {
             StatType::Unarmed,
             StatType::Dodge,
             StatType::Knockback,
+            StatType::ReloadSpeed,
         ]
     }
 
@@ -71,6 +74,7 @@ impl StatType {
             StatType::Unarmed => "Striking",
             StatType::Dodge => "Evasion",
             StatType::Knockback => "Impact",
+            StatType::ReloadSpeed => "Reloading",
         }
     }
 }

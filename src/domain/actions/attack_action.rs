@@ -497,20 +497,78 @@ impl AttackAction {
         hit_effects: &[HitEffect],
     ) {
         for effect in hit_effects {
-            match effect {
-                HitEffect::Knockback(strength_multiplier) => {
-                    self.apply_knockback_effect(world, target_entity, *strength_multiplier);
-                }
-                HitEffect::Poison {
-                    damage_per_tick,
-                    duration_ticks,
-                } => {
-                    self.apply_poison_effect(
-                        world,
-                        target_entity,
-                        *damage_per_tick,
-                        *duration_ticks,
-                    );
+            // Roll for chance and apply effect if successful
+            let mut should_apply = false;
+            world.resource_scope(|_world, mut rand: Mut<Rand>| {
+                let roll = rand.random();
+                should_apply = match effect {
+                    HitEffect::Knockback { chance, .. } => roll <= *chance,
+                    HitEffect::Poison { chance, .. } => roll <= *chance,
+                    HitEffect::Bleeding { chance, .. } => roll <= *chance,
+                    HitEffect::Burning { chance, .. } => roll <= *chance,
+                    HitEffect::Stun { chance, .. } => roll <= *chance,
+                    HitEffect::Slow { chance, .. } => roll <= *chance,
+                };
+            });
+
+            if should_apply {
+                match effect {
+                    HitEffect::Knockback { strength, .. } => {
+                        self.apply_knockback_effect(world, target_entity, *strength);
+                    }
+                    HitEffect::Poison {
+                        damage_per_tick,
+                        duration_ticks,
+                        ..
+                    } => {
+                        self.apply_poison_effect(
+                            world,
+                            target_entity,
+                            *damage_per_tick,
+                            *duration_ticks,
+                        );
+                    }
+                    HitEffect::Bleeding {
+                        damage_per_tick,
+                        duration_ticks,
+                        can_stack,
+                        ..
+                    } => {
+                        self.apply_bleeding_effect(
+                            world,
+                            target_entity,
+                            *damage_per_tick,
+                            *duration_ticks,
+                            *can_stack,
+                        );
+                    }
+                    HitEffect::Burning {
+                        damage_per_tick,
+                        duration_ticks,
+                        ..
+                    } => {
+                        self.apply_burning_effect(
+                            world,
+                            target_entity,
+                            *damage_per_tick,
+                            *duration_ticks,
+                        );
+                    }
+                    HitEffect::Stun { duration_ticks, .. } => {
+                        self.apply_stun_effect(world, target_entity, *duration_ticks);
+                    }
+                    HitEffect::Slow {
+                        speed_reduction,
+                        duration_ticks,
+                        ..
+                    } => {
+                        self.apply_slow_effect(
+                            world,
+                            target_entity,
+                            *speed_reduction,
+                            *duration_ticks,
+                        );
+                    }
                 }
             }
         }
@@ -717,5 +775,116 @@ impl AttackAction {
             // Log error if needed, but don't fail the attack
             eprintln!("Failed to apply poison condition: {}", err);
         }
+    }
+
+    fn apply_bleeding_effect(
+        &self,
+        world: &mut World,
+        target_entity: Entity,
+        damage_per_tick: i32,
+        duration_ticks: u32,
+        can_stack: bool,
+    ) {
+        // Get the attacker's StableId to use as the condition source
+        let condition_source =
+            if let Some(attacker_stable_id) = world.get::<StableId>(self.attacker_entity) {
+                ConditionSource::entity(*attacker_stable_id)
+            } else {
+                ConditionSource::Unknown
+            };
+
+        // Create the bleeding condition
+        let bleeding_condition = Condition::new(
+            ConditionType::Bleeding {
+                damage_per_tick,
+                can_stack,
+            },
+            duration_ticks,
+            1.0, // intensity
+            condition_source,
+        );
+
+        // Apply the bleeding condition to the target
+        let _ = apply_condition_to_entity(target_entity, bleeding_condition, world);
+    }
+
+    fn apply_burning_effect(
+        &self,
+        world: &mut World,
+        target_entity: Entity,
+        damage_per_tick: i32,
+        duration_ticks: u32,
+    ) {
+        // Get the attacker's StableId to use as the condition source
+        let condition_source =
+            if let Some(attacker_stable_id) = world.get::<StableId>(self.attacker_entity) {
+                ConditionSource::entity(*attacker_stable_id)
+            } else {
+                ConditionSource::Unknown
+            };
+
+        // Create the burning condition
+        let burning_condition = Condition::new(
+            ConditionType::Burning {
+                damage_per_tick,
+                spread_chance: 0.0, // No spreading for weapon-applied burning
+            },
+            duration_ticks,
+            1.0, // intensity
+            condition_source,
+        );
+
+        // Apply the burning condition to the target
+        let _ = apply_condition_to_entity(target_entity, burning_condition, world);
+    }
+
+    fn apply_stun_effect(&self, world: &mut World, target_entity: Entity, duration_ticks: u32) {
+        // Get the attacker's StableId to use as the condition source
+        let condition_source =
+            if let Some(attacker_stable_id) = world.get::<StableId>(self.attacker_entity) {
+                ConditionSource::entity(*attacker_stable_id)
+            } else {
+                ConditionSource::Unknown
+            };
+
+        // Create the stun condition
+        let stun_condition = Condition::new(
+            ConditionType::Stunned,
+            duration_ticks,
+            1.0, // intensity
+            condition_source,
+        );
+
+        // Apply the stun condition to the target
+        let _ = apply_condition_to_entity(target_entity, stun_condition, world);
+    }
+
+    fn apply_slow_effect(
+        &self,
+        world: &mut World,
+        target_entity: Entity,
+        speed_reduction: f32,
+        duration_ticks: u32,
+    ) {
+        // Get the attacker's StableId to use as the condition source
+        let condition_source =
+            if let Some(attacker_stable_id) = world.get::<StableId>(self.attacker_entity) {
+                ConditionSource::entity(*attacker_stable_id)
+            } else {
+                ConditionSource::Unknown
+            };
+
+        // Create the slow condition
+        let slow_condition = Condition::new(
+            ConditionType::Slowed {
+                energy_multiplier: 1.0 + speed_reduction, // Convert reduction to multiplier
+            },
+            duration_ticks,
+            1.0, // intensity
+            condition_source,
+        );
+
+        // Apply the slow condition to the target
+        let _ = apply_condition_to_entity(target_entity, slow_condition, world);
     }
 }

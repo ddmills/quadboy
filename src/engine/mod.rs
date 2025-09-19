@@ -11,7 +11,7 @@ mod stable_id;
 mod time;
 
 pub use app::*;
-pub use audio::*;
+pub use audio::{Audio, AudioCollection, AudioKey, process_delayed_audio};
 pub use clock::*;
 pub use entity_serializer::*;
 pub use exit::*;

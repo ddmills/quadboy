@@ -31,6 +31,7 @@ pub mod throwable;
 pub mod vision;
 pub mod weapon;
 pub mod weapon_family;
+pub mod weapon_modifiers;
 pub mod weapon_type;
 
 pub use ai_controller::{AiBehaviorModifiers, AiController, AiState, AiTemplate};
@@ -70,4 +71,9 @@ pub use vision::{
 };
 pub use weapon::Weapon;
 pub use weapon_family::WeaponFamily;
+pub use weapon_modifiers::{
+    ItemRarity, WeaponApplicationType, WeaponModifier, WeaponModifierType, get_gun_prefixes,
+    get_gun_suffixes, get_melee_prefixes, get_melee_suffixes, pick_legendary_name,
+    pick_random_prefix, pick_random_suffix,
+};
 pub use weapon_type::WeaponType;

@@ -1,73 +1,79 @@
 use crate::common::Rand;
+use crate::engine::Time;
 use bevy_ecs::prelude::*;
 use quad_snd::{AudioContext, PlaySoundParams, Sound};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum AudioKey {
-    Mining1,
-    Mining2,
-    Mining3,
-    RockBreak,
-    Vegetation,
-    Woodcut1,
-    Woodcut2,
-    Button1,
-    ButtonBack1,
-    RevolverShoot1,
-    RifleShoot1,
-    ShotgunShoot1,
-    RevolverReload,
-    RifleReload,
-    ShotgunReload,
-    RevolverEmpty,
-    RifleEmpty,
-    ShotgunEmpty,
-    Pain1,
-    Pain2,
-    Growl1,
-    Growl2,
-    Hiss1,
-    Bark1,
-    Punch1,
-    Explosion1,
-    IgniteMatch,
+struct DelayedAudioEntry {
+    key: AudioKey,
+    volume: f32,
+    remaining_delay: f32,
 }
 
-impl AudioKey {
-    pub fn bytes(&self) -> &'static [u8] {
-        match self {
-            AudioKey::Mining1 => include_bytes!("../assets/audio/mining_1.wav"),
-            AudioKey::Mining2 => include_bytes!("../assets/audio/mining_2.wav"),
-            AudioKey::Mining3 => include_bytes!("../assets/audio/mining_3.wav"),
-            AudioKey::RockBreak => include_bytes!("../assets/audio/rock_break.wav"),
-            AudioKey::Vegetation => include_bytes!("../assets/audio/vegetation.wav"),
-            AudioKey::Woodcut1 => include_bytes!("../assets/audio/woodcut_1.wav"),
-            AudioKey::Woodcut2 => include_bytes!("../assets/audio/woodcut_2.wav"),
-            AudioKey::Button1 => include_bytes!("../assets/audio/button_1.wav"),
-            AudioKey::ButtonBack1 => include_bytes!("../assets/audio/button_back_1.wav"),
-            AudioKey::RevolverShoot1 => include_bytes!("../assets/audio/revolver_shoot_1.wav"),
-            AudioKey::RifleShoot1 => include_bytes!("../assets/audio/rifle_shoot_1.wav"),
-            AudioKey::ShotgunShoot1 => include_bytes!("../assets/audio/shotgun_shoot_1.wav"),
-            AudioKey::RevolverReload => include_bytes!("../assets/audio/revolver_reload.wav"),
-            AudioKey::RifleReload => include_bytes!("../assets/audio/rifle_reload.wav"),
-            AudioKey::ShotgunReload => include_bytes!("../assets/audio/shotgun_reload.wav"),
-            AudioKey::RevolverEmpty => include_bytes!("../assets/audio/revolver_empty.wav"),
-            AudioKey::RifleEmpty => include_bytes!("../assets/audio/rifle_empty.wav"),
-            AudioKey::ShotgunEmpty => include_bytes!("../assets/audio/shotgun_empty.wav"),
-            AudioKey::Pain1 => include_bytes!("../assets/audio/pain_1.wav"),
-            AudioKey::Pain2 => include_bytes!("../assets/audio/pain_2.wav"),
-            AudioKey::Growl1 => include_bytes!("../assets/audio/growl_1.wav"),
-            AudioKey::Growl2 => include_bytes!("../assets/audio/growl_2.wav"),
-            AudioKey::Hiss1 => include_bytes!("../assets/audio/hiss_1.wav"),
-            AudioKey::Bark1 => include_bytes!("../assets/audio/bark_1.wav"),
-            AudioKey::Punch1 => include_bytes!("../assets/audio/punch_1.wav"),
-            AudioKey::Explosion1 => include_bytes!("../assets/audio/explosion_1.wav"),
-            AudioKey::IgniteMatch => include_bytes!("../assets/audio/ignite_match.wav"),
+macro_rules! define_audio {
+    ($(
+        $variant:ident => $file:literal
+    ),* $(,)?) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        pub enum AudioKey {
+            $(
+                $variant,
+            )*
         }
-    }
+
+        impl AudioKey {
+            pub fn bytes(&self) -> &'static [u8] {
+                match self {
+                    $(
+                        AudioKey::$variant => include_bytes!(concat!("../assets/audio/", $file)),
+                    )*
+                }
+            }
+
+            pub fn all() -> &'static [AudioKey] {
+                &[
+                    $(
+                        AudioKey::$variant,
+                    )*
+                ]
+            }
+        }
+    };
+}
+
+define_audio! {
+    Mining1 => "mining_1.wav",
+    Mining2 => "mining_2.wav",
+    Mining3 => "mining_3.wav",
+    RockBreak => "rock_break.wav",
+    Vegetation => "vegetation.wav",
+    Woodcut1 => "woodcut_1.wav",
+    Woodcut2 => "woodcut_2.wav",
+    Button1 => "button_1.wav",
+    ButtonBack1 => "button_back_1.wav",
+    RifleEmpty => "rifle_empty.wav",
+    RifleShoot2 => "rifle_shoot_1.wav",
+    RifleReload => "revolver_reload.wav",
+    RifleReloadComplete => "rifle_reload.wav",
+    RevolverEmpty => "revolver_empty.wav",
+    RevolverShoot1 => "revolver_shoot_1.wav",
+    RevolverReload => "revolver_reload.wav",
+    RevolverReloadComplete => "revolver_cylinder_spin_1.wav",
+    ShotgunEmpty => "shotgun_empty.wav",
+    ShotgunShoot1 => "shotgun_shoot_1.wav",
+    ShotgunReload => "shotgun_reload_bullet_1.wav",
+    ShotgunReloadComplete => "shotgun_reload.wav",
+    Pain1 => "pain_1.wav",
+    Pain2 => "pain_2.wav",
+    Growl1 => "growl_1.wav",
+    Growl2 => "growl_2.wav",
+    Hiss1 => "hiss_1.wav",
+    Bark1 => "bark_1.wav",
+    Punch1 => "punch_1.wav",
+    Explosion1 => "explosion_1.wav",
+    IgniteMatch => "ignite_match.wav",
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -84,6 +90,7 @@ pub struct Audio {
     pub ctx: Arc<Mutex<AudioContext>>,
     pub sounds: HashMap<AudioKey, Sound>,
     pub collections: HashMap<AudioCollection, Vec<AudioKey>>,
+    delayed_queue: Vec<DelayedAudioEntry>,
 }
 
 impl Audio {
@@ -92,114 +99,9 @@ impl Audio {
         let ctx_guard = ctx.lock().unwrap();
 
         let mut sounds = HashMap::new();
-        sounds.insert(
-            AudioKey::Mining1,
-            Sound::load(&ctx_guard, AudioKey::Mining1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Mining2,
-            Sound::load(&ctx_guard, AudioKey::Mining2.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Mining3,
-            Sound::load(&ctx_guard, AudioKey::Mining3.bytes()),
-        );
-        sounds.insert(
-            AudioKey::RockBreak,
-            Sound::load(&ctx_guard, AudioKey::RockBreak.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Vegetation,
-            Sound::load(&ctx_guard, AudioKey::Vegetation.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Woodcut1,
-            Sound::load(&ctx_guard, AudioKey::Woodcut1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Woodcut2,
-            Sound::load(&ctx_guard, AudioKey::Woodcut2.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Button1,
-            Sound::load(&ctx_guard, AudioKey::Button1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::ButtonBack1,
-            Sound::load(&ctx_guard, AudioKey::ButtonBack1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::RevolverShoot1,
-            Sound::load(&ctx_guard, AudioKey::RevolverShoot1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::RifleShoot1,
-            Sound::load(&ctx_guard, AudioKey::RifleShoot1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::ShotgunShoot1,
-            Sound::load(&ctx_guard, AudioKey::ShotgunShoot1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::RevolverReload,
-            Sound::load(&ctx_guard, AudioKey::RevolverReload.bytes()),
-        );
-        sounds.insert(
-            AudioKey::RifleReload,
-            Sound::load(&ctx_guard, AudioKey::RifleReload.bytes()),
-        );
-        sounds.insert(
-            AudioKey::ShotgunReload,
-            Sound::load(&ctx_guard, AudioKey::ShotgunReload.bytes()),
-        );
-        sounds.insert(
-            AudioKey::RevolverEmpty,
-            Sound::load(&ctx_guard, AudioKey::RevolverEmpty.bytes()),
-        );
-        sounds.insert(
-            AudioKey::RifleEmpty,
-            Sound::load(&ctx_guard, AudioKey::RifleEmpty.bytes()),
-        );
-        sounds.insert(
-            AudioKey::ShotgunEmpty,
-            Sound::load(&ctx_guard, AudioKey::ShotgunEmpty.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Pain1,
-            Sound::load(&ctx_guard, AudioKey::Pain1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Pain2,
-            Sound::load(&ctx_guard, AudioKey::Pain2.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Growl1,
-            Sound::load(&ctx_guard, AudioKey::Growl1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Growl2,
-            Sound::load(&ctx_guard, AudioKey::Growl2.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Hiss1,
-            Sound::load(&ctx_guard, AudioKey::Hiss1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Bark1,
-            Sound::load(&ctx_guard, AudioKey::Bark1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Punch1,
-            Sound::load(&ctx_guard, AudioKey::Punch1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::Explosion1,
-            Sound::load(&ctx_guard, AudioKey::Explosion1.bytes()),
-        );
-        sounds.insert(
-            AudioKey::IgniteMatch,
-            Sound::load(&ctx_guard, AudioKey::IgniteMatch.bytes()),
-        );
+        for &audio_key in AudioKey::all() {
+            sounds.insert(audio_key, Sound::load(&ctx_guard, audio_key.bytes()));
+        }
 
         let mut collections = HashMap::new();
         collections.insert(
@@ -221,6 +123,7 @@ impl Audio {
             ctx: Arc::clone(&ctx),
             sounds,
             collections,
+            delayed_queue: Vec::new(),
         }
     }
 
@@ -253,5 +156,34 @@ impl Audio {
             let key = keys[index];
             self.play(key, volume);
         }
+    }
+
+    pub fn play_delayed(&mut self, key: AudioKey, volume: f32, delay: f32) {
+        self.delayed_queue.push(DelayedAudioEntry {
+            key,
+            volume,
+            remaining_delay: delay,
+        });
+    }
+}
+
+pub fn process_delayed_audio(mut audio: ResMut<Audio>, time: Res<Time>) {
+    let dt = time.dt;
+    let mut to_play = Vec::new();
+
+    // Process queue, decrement delays
+    audio.delayed_queue.retain_mut(|entry| {
+        entry.remaining_delay -= dt;
+        if entry.remaining_delay <= 0.0 {
+            to_play.push((entry.key, entry.volume));
+            false // Remove from queue
+        } else {
+            true // Keep in queue
+        }
+    });
+
+    // Play sounds that are ready
+    for (key, volume) in to_play {
+        audio.play(key, volume);
     }
 }

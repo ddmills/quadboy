@@ -1,4 +1,4 @@
-use super::{Prefab, PrefabBuilder};
+use super::{Prefab, PrefabBuilder, generate_weapon_from_prefab};
 use crate::{
     common::Palette,
     domain::{Equippable, Weapon},
@@ -7,16 +7,25 @@ use crate::{
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_pickaxe(entity: Entity, world: &mut World, config: Prefab) {
+    // Generate weapon with potential rarity modifiers
+    let generated_weapon = generate_weapon_from_prefab(
+        &config,
+        Weapon::pickaxe(),
+        "Pickaxe",
+        "Iron head on hickory shaft. Every strike echoes with desperate hope and broken backs.",
+    );
+
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
         .with_glyph(23, Palette::Brown, Palette::Gray, Layer::Objects)
-        .with_label("Pickaxe")
-        .with_description(
-            "Iron head on hickory shaft. Every strike echoes with desperate hope and broken backs.",
-        )
+        .with_label(&generated_weapon.name)
+        .with_description(&generated_weapon.description)
         .with_item(2.0)
         .with_equippable(Equippable::tool())
-        .with_weapon(Weapon::pickaxe())
+        .with_weapon(generated_weapon.weapon)
         .with_needs_stable_id()
         .build();
+
+    // Add the rarity component
+    world.entity_mut(entity).insert(generated_weapon.rarity);
 }

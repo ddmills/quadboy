@@ -14,6 +14,7 @@ pub enum GlyphTextureId {
     Cowboy,
     BodyFont,
     Creatures,
+    Bitmasks,
 }
 
 impl GlyphTextureId {
@@ -23,6 +24,7 @@ impl GlyphTextureId {
             Self::Cowboy => 0,
             Self::BodyFont => 1,
             Self::Creatures => 2,
+            Self::Bitmasks => 3,
         }
     }
 
@@ -32,6 +34,7 @@ impl GlyphTextureId {
             Self::Cowboy => TILE_SIZE_F32.0,
             Self::BodyFont => BODY_FONT_SIZE_F32.0,
             Self::Creatures => TILE_SIZE_F32.0,
+            Self::Bitmasks => TILE_SIZE_F32.0,
         }
     }
 
@@ -41,6 +44,7 @@ impl GlyphTextureId {
             Self::Cowboy => TILE_SIZE_F32.1,
             Self::BodyFont => BODY_FONT_SIZE_F32.1,
             Self::Creatures => TILE_SIZE_F32.1,
+            Self::Bitmasks => TILE_SIZE_F32.1,
         }
     }
 }
@@ -121,14 +125,18 @@ impl FromWorld for Layers {
         let texture_glyph = textures.glyph_texture.raw_miniquad_id();
         let texture_body_text = textures.font_body_texture.raw_miniquad_id();
         let texture_creatures = textures.creatures_texture.raw_miniquad_id();
+        let texture_bitmasks = textures.bitmasks_texture.raw_miniquad_id();
 
         let all = Layer::get_all()
             .into_iter()
             .map(|layer| {
                 GlyphBatch::new(
-                    texture_glyph,
-                    texture_body_text,
-                    texture_creatures,
+                    [
+                        texture_glyph,
+                        texture_body_text,
+                        texture_creatures,
+                        texture_bitmasks,
+                    ],
                     layer.get_target_type(),
                     4000,
                 )

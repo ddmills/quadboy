@@ -12,9 +12,10 @@ use crate::{
     common::Palette,
     domain::{
         Consumable, DropItemAction, EatAction, EquipItemAction, EquipmentSlot, Equippable,
-        Equipped, ExplosiveProperties, Fuse, Inventory, Item, Label, LightSource,
-        LightStateChangedEvent, Lightable, Player, PlayerPosition, StackCount, Throwable,
-        ToggleLightAction, UnequipItemAction, Weapon, game_loop, inventory::InventoryChangedEvent,
+        Equipped, ExplosiveProperties, Fuse, HitEffect, Inventory, Item, ItemRarity, Label,
+        LightSource, LightStateChangedEvent, Lightable, Player, PlayerPosition, StackCount,
+        Throwable, ToggleLightAction, UnequipItemAction, Weapon, WeaponType, game_loop,
+        inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableIdRegistry},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
@@ -72,6 +73,18 @@ pub struct ItemDetailName;
 
 #[derive(Component)]
 pub struct ItemDetailProperties;
+
+#[derive(Component)]
+pub struct ItemDetailRarity;
+
+#[derive(Component)]
+pub struct ItemDetailDamageSection;
+
+#[derive(Component)]
+pub struct ItemDetailEffects;
+
+#[derive(Component)]
+pub struct ItemDetailSpecial;
 
 #[derive(Component)]
 pub struct ItemActionDialog {
@@ -760,12 +773,116 @@ fn setup_inventory_screen(
         ItemDetailName,
     ));
 
-    // Item properties
+    // Item rarity
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 4.0, 0.),
+        Position::new_f32(detail_x + 5.0, detail_y + 1.0, 0.),
+        CleanupStateInventory,
+        ItemDetailRarity,
+    ));
+
+    // Basic properties section header
+    cmds.spawn((
+        Text::new("Basic Stats:")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 2.0, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Basic properties divider
+    cmds.spawn((
+        Text::new("-----------")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 2.5, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Basic properties content
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 3.0, 0.),
         CleanupStateInventory,
         ItemDetailProperties,
+    ));
+
+    // Weapon damage section header
+    cmds.spawn((
+        Text::new("Weapon Stats:")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 4.5, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Weapon damage section divider
+    cmds.spawn((
+        Text::new("-----------")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 5.0, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Weapon damage section content
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 5.5, 0.),
+        CleanupStateInventory,
+        ItemDetailDamageSection,
+    ));
+
+    // Hit effects section header
+    cmds.spawn((
+        Text::new("On-Hit Effects:")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 7.0, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Hit effects section divider
+    cmds.spawn((
+        Text::new("-----------")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 7.5, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Hit effects content
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 8.0, 0.),
+        CleanupStateInventory,
+        ItemDetailEffects,
+    ));
+
+    // Special properties section header
+    cmds.spawn((
+        Text::new("Special Properties:")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 9.5, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Special properties section divider
+    cmds.spawn((
+        Text::new("-----------")
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 10.0, 0.),
+        CleanupStateInventory,
+    ));
+
+    // Special properties content
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(detail_x + 1.0, detail_y + 10.5, 0.),
+        CleanupStateInventory,
+        ItemDetailSpecial,
     ));
 
     let help_y = 3.5 + (inventory.count() as f32 * 0.5) + 1.0;
@@ -816,9 +933,16 @@ fn update_item_detail_panel(
     q_equipped: Query<&Equipped>,
     q_stack_counts: Query<&StackCount>,
     q_weapons: Query<&Weapon>,
+    q_rarities: Query<&ItemRarity>,
     mut glyph_queries: ParamSet<(Query<&Glyph>, Query<&mut Glyph, With<ItemDetailIcon>>)>,
-    mut q_detail_name: Query<&mut Text, (With<ItemDetailName>, Without<ItemDetailProperties>)>,
-    mut q_detail_props: Query<&mut Text, With<ItemDetailProperties>>,
+    mut detail_text_queries: ParamSet<(
+        Query<&mut Text, (With<ItemDetailName>, Without<ItemDetailProperties>)>,
+        Query<&mut Text, With<ItemDetailProperties>>,
+        Query<&mut Text, With<ItemDetailRarity>>,
+        Query<&mut Text, With<ItemDetailDamageSection>>,
+        Query<&mut Text, With<ItemDetailEffects>>,
+        Query<&mut Text, With<ItemDetailSpecial>>,
+    )>,
 ) {
     // Get the focused list item
     let Some(focused_entity) = ui_focus.focused_element else {
@@ -864,7 +988,7 @@ fn update_item_detail_panel(
     }
 
     // Update name
-    for mut detail_text in q_detail_name.iter_mut() {
+    for mut detail_text in detail_text_queries.p0().iter_mut() {
         detail_text.value = if let Ok(label) = q_labels.get(item_entity) {
             label.get().to_string()
         } else {
@@ -872,8 +996,25 @@ fn update_item_detail_panel(
         };
     }
 
-    // Update properties
-    for mut detail_text in q_detail_props.iter_mut() {
+    // Update rarity
+    for mut detail_text in detail_text_queries.p2().iter_mut() {
+        if let Ok(rarity) = q_rarities.get(item_entity) {
+            let (color, display_name) = match rarity {
+                ItemRarity::Common => (Palette::White as u32, "Standard Issue"),
+                ItemRarity::Uncommon => (Palette::Green as u32, "Trail-Worn"),
+                ItemRarity::Rare => (Palette::Blue as u32, "Frontier Special"),
+                ItemRarity::Epic => (Palette::Purple as u32, "Legendary Outlaw's"),
+                ItemRarity::Legendary => (Palette::Orange as u32, "Famous Gunslinger's"),
+            };
+            detail_text.value = display_name.to_string();
+            detail_text.fg1 = Some(color);
+        } else {
+            detail_text.value = "".to_string();
+        }
+    }
+
+    // Update basic properties
+    for mut detail_text in detail_text_queries.p1().iter_mut() {
         let mut props = Vec::new();
 
         // Weight
@@ -899,20 +1040,156 @@ fn update_item_detail_panel(
             props.push(format!("Equipped: {}", slots));
         }
 
-        // Weapon stats
+        detail_text.value = props.join("\n");
+    }
+
+    // Update weapon damage section
+    for mut detail_text in detail_text_queries.p3().iter_mut() {
         if let Ok(weapon) = q_weapons.get(item_entity) {
-            props.push(format!("Damage: {}", weapon.damage_dice));
+            let mut damage_props = Vec::new();
+
+            damage_props.push(format!("Damage: {}", weapon.damage_dice));
+
             if let Some(range) = weapon.range {
-                props.push(format!("Range: {}", range));
+                damage_props.push(format!("Range: {}", range));
             }
+
             if let Some(ammo) = weapon.current_ammo
                 && let Some(clip) = weapon.clip_size
             {
-                props.push(format!("Ammo: {}/{}", ammo, clip));
+                damage_props.push(format!("Ammo: {}/{}", ammo, clip));
             }
-        }
 
-        detail_text.value = props.join("\n");
+            damage_props.push(format!(
+                "Type: {}",
+                if weapon.weapon_type == WeaponType::Melee {
+                    "Melee"
+                } else {
+                    "Ranged"
+                }
+            ));
+
+            detail_text.value = damage_props.join("\n");
+        } else {
+            detail_text.value = "Not a weapon".to_string();
+        }
+    }
+
+    // Update hit effects section
+    for mut detail_text in detail_text_queries.p4().iter_mut() {
+        if let Ok(weapon) = q_weapons.get(item_entity)
+            && !weapon.hit_effects.is_empty()
+        {
+            let mut effects = Vec::new();
+
+            for effect in &weapon.hit_effects {
+                let effect_text = match effect {
+                    HitEffect::Poison {
+                        damage_per_tick,
+                        duration_ticks,
+                        chance,
+                    } => {
+                        format!(
+                            "• {:.0}% Poison ({} dmg/tick, {} ticks)",
+                            chance * 100.0,
+                            damage_per_tick,
+                            duration_ticks
+                        )
+                    }
+                    HitEffect::Bleeding {
+                        damage_per_tick,
+                        duration_ticks,
+                        chance,
+                        can_stack,
+                    } => {
+                        let stack_text = if *can_stack { ", stacks" } else { "" };
+                        format!(
+                            "• {:.0}% Bleeding ({} dmg/tick, {} ticks{})",
+                            chance * 100.0,
+                            damage_per_tick,
+                            duration_ticks,
+                            stack_text
+                        )
+                    }
+                    HitEffect::Burning {
+                        damage_per_tick,
+                        duration_ticks,
+                        chance,
+                    } => {
+                        format!(
+                            "• {:.0}% Burning ({} dmg/tick, {} ticks)",
+                            chance * 100.0,
+                            damage_per_tick,
+                            duration_ticks
+                        )
+                    }
+                    HitEffect::Knockback { strength, chance } => {
+                        format!(
+                            "• {:.0}% Knockback ({:.1}x strength)",
+                            chance * 100.0,
+                            strength
+                        )
+                    }
+                    HitEffect::Stun {
+                        duration_ticks,
+                        chance,
+                    } => {
+                        format!("• {:.0}% Stun ({} ticks)", chance * 100.0, duration_ticks)
+                    }
+                    HitEffect::Slow {
+                        speed_reduction,
+                        duration_ticks,
+                        chance,
+                    } => {
+                        format!(
+                            "• {:.0}% Slow ({:.0}% speed, {} ticks)",
+                            chance * 100.0,
+                            speed_reduction * 100.0,
+                            duration_ticks
+                        )
+                    }
+                };
+                effects.push(effect_text);
+            }
+
+            detail_text.value = effects.join("\n");
+        } else {
+            detail_text.value = "None".to_string();
+        }
+    }
+
+    // Update special properties section
+    for mut detail_text in detail_text_queries.p5().iter_mut() {
+        if let Ok(weapon) = q_weapons.get(item_entity) {
+            let mut special_props = Vec::new();
+
+            if !weapon.can_damage.is_empty() {
+                let materials = weapon
+                    .can_damage
+                    .iter()
+                    .map(|m| format!("{:?}", m))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                special_props.push(format!("Can damage: {}", materials));
+            }
+
+            special_props.push(format!("Family: {:?}", weapon.weapon_family));
+
+            if weapon.base_reload_cost.is_some() {
+                special_props.push(format!(
+                    "Reload cost: {} energy",
+                    weapon.base_reload_cost.unwrap()
+                ));
+            }
+
+            detail_text.value = if special_props.is_empty() {
+                "None".to_string()
+            } else {
+                special_props.join("\n")
+            };
+        } else {
+            detail_text.value = "".to_string();
+        }
     }
 }
 

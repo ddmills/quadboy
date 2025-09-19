@@ -46,6 +46,11 @@ impl ExamineDialogBuilder {
             "Unknown".to_string()
         };
 
+        // Wrap the entity name for long titles
+        let available_width = ((self.width as usize).saturating_sub(2)) * 2; // Account for 0.5-width text chars
+        let title_lines = wrap_text(&entity_name, available_width.max(20));
+        let title_height = title_lines.len() as f32 * 0.5; // 0.5 units per line
+
         // Calculate height based on actual text wrapping
         let description_lines = if let Ok(description) = q_descriptions.get(self.entity) {
             let available_width = ((self.width as usize).saturating_sub(2)) * 2; // Account for 0.5-width text chars
@@ -72,8 +77,23 @@ impl ExamineDialogBuilder {
             0.0
         };
 
-        let total_height =
-            (4.0 + relationship_height + description_gap + description_height + 2.0).ceil(); // Icon + name + relationship + gap + description + button, rounded up
+        let gap_after_title = 0.5;
+        let gap_before_button = if !description_lines.is_empty() || self.relationship_text.is_some()
+        {
+            0.5
+        } else {
+            0.5
+        };
+
+        let total_height = (2.0
+            + title_height
+            + gap_after_title
+            + relationship_height
+            + description_gap
+            + description_height
+            + gap_before_button
+            + 2.0)
+            .ceil(); // Icon + title + gap + relationship + gap + description + gap + button, rounded up
 
         // Calculate centered position before creating dialog and children
         let center_x = ((screen.tile_w as f32 - self.width) / 2.0).round();
@@ -118,32 +138,37 @@ impl ExamineDialogBuilder {
         content_y += 2.0; // Space for glyph
         order += 1;
 
-        // Add centered entity name
-        cmds.spawn((
-            DialogText {
-                value: entity_name.clone(),
-                style: DialogTextStyle::Title,
-            },
-            DialogContent {
-                parent_dialog: dialog_entity,
-                order,
-            },
-            Position::new_f32(
-                centered_position.x + (self.width / 2.0)
-                    - (text_content_length(&entity_name) as f32 * 0.25),
-                centered_position.y + content_y,
-                centered_position.z,
-            ),
-            cleanup_component.clone(),
-            ChildOf(dialog_entity),
-        ));
+        // Add centered entity name (wrapped if necessary)
+        for (i, line) in title_lines.iter().enumerate() {
+            let line_visual_length = text_content_length(line);
+            let centered_x =
+                centered_position.x + (self.width / 2.0) - (line_visual_length as f32 * 0.25); // 0.25 = 0.5 width / 2 for centering
 
-        order += 1;
+            cmds.spawn((
+                DialogText {
+                    value: line.clone(),
+                    style: DialogTextStyle::Title,
+                },
+                DialogContent {
+                    parent_dialog: dialog_entity,
+                    order: order + i,
+                },
+                Position::new_f32(
+                    centered_x,
+                    centered_position.y + content_y + (i as f32 * 0.5), // 0.5 units per line
+                    centered_position.z,
+                ),
+                cleanup_component.clone(),
+                ChildOf(dialog_entity),
+            ));
+        }
+
+        content_y += title_height; // Add space for all title lines
+        content_y += 0.5; // Gap after title
+        order += title_lines.len();
 
         // Add relationship text directly under the name if provided
         if let Some(relationship_text) = &self.relationship_text {
-            content_y += 0.5; // Space for name
-
             let relationship_visual_length = text_content_length(relationship_text);
             let relationship_x = centered_position.x + (self.width / 2.0)
                 - (relationship_visual_length as f32 * 0.25);
@@ -173,8 +198,6 @@ impl ExamineDialogBuilder {
             if !description_lines.is_empty() {
                 content_y += 0.5; // Extra gap before description
             }
-        } else {
-            content_y += 1.0; // Space for name
         }
 
         // Add description if available

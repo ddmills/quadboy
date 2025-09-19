@@ -24,6 +24,7 @@ pub mod stable_id_system;
 pub mod stats_system;
 pub mod targeting;
 pub mod vision_system;
+pub mod weapon_generation;
 pub mod xp_system;
 
 pub use ai_actions::*;
@@ -43,3 +44,4 @@ pub use lighting_system::*;
 pub use stable_id_system::*;
 pub use targeting::*;
 pub use vision_system::*;
+pub use weapon_generation::*;

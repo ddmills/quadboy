@@ -2,8 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, Weapon, WeaponType,
-        get_base_energy_cost,
+        Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, StatType, Stats, Weapon,
+        WeaponType, get_energy_cost,
     },
     engine::{Audio, StableIdRegistry},
 };
@@ -32,7 +32,7 @@ impl Command for ReloadAction {
             return;
         };
 
-        let (clip_size, reload_audio, energy_cost) = {
+        let (clip_size, current_ammo, reload_audio, reload_complete_audio, energy_cost) = {
             let Some(weapon) = world.get::<Weapon>(weapon_entity) else {
                 return;
             };
@@ -46,25 +46,49 @@ impl Command for ReloadAction {
                 return;
             };
 
-            if weapon.current_ammo == Some(clip_size) {
+            let current_ammo = weapon.current_ammo.unwrap_or(0);
+
+            // Can't reload if already at max capacity
+            if current_ammo >= clip_size {
                 return;
             }
 
-            let energy_cost = weapon
-                .base_reload_cost
-                .unwrap_or_else(|| get_base_energy_cost(EnergyActionType::Reload));
+            // Calculate energy cost using reload speed stat
+            let base_cost = weapon.base_reload_cost.unwrap_or_else(|| 50); // New lower base cost
 
-            (clip_size, weapon.reload_audio, energy_cost)
+            let stats = world.get::<Stats>(self.entity);
+            let energy_cost = if let Some(stats) = stats {
+                let reload_speed = stats.get_stat(StatType::ReloadSpeed);
+                (base_cost - (reload_speed * 2)).max(1)
+            } else {
+                base_cost
+            };
+
+            (
+                clip_size,
+                current_ammo,
+                weapon.reload_audio,
+                weapon.reload_complete_audio,
+                energy_cost,
+            )
         };
 
+        // Reload one bullet at a time
+        let new_ammo = current_ammo + 1;
         if let Some(mut weapon) = world.get_mut::<Weapon>(weapon_entity) {
-            weapon.current_ammo = Some(clip_size);
+            weapon.current_ammo = Some(new_ammo);
         }
 
-        if let Some(reload_audio) = reload_audio
-            && let Some(audio) = world.get_resource::<Audio>()
-        {
-            audio.play(reload_audio, 0.3);
+        if let Some(mut audio) = world.get_resource_mut::<Audio>() {
+            if let Some(reload_audio_key) = reload_audio {
+                audio.play(reload_audio_key, 0.4);
+            }
+
+            if let Some(reload_complete_audio_key) = reload_complete_audio
+                && new_ammo >= clip_size
+            {
+                audio.play_delayed(reload_complete_audio_key, 0.5, 0.4);
+            }
         }
 
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {

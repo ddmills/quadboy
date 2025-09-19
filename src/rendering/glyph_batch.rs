@@ -66,9 +66,7 @@ impl GlyphBatch {
     }
 
     pub fn new(
-        texture_id_1: TextureId,
-        texture_id_2: TextureId,
-        texture_id_3: TextureId,
+        textures_ids: [TextureId; 4],
         target_type: RenderTargetType,
         max_size: usize,
     ) -> GlyphBatch {
@@ -111,6 +109,7 @@ impl GlyphBatch {
                         "tex_1".to_string(),
                         "tex_2".to_string(),
                         "tex_3".to_string(),
+                        "tex_4".to_string(),
                     ],
                     uniforms: UniformBlockLayout {
                         uniforms: vec![
@@ -183,7 +182,7 @@ impl GlyphBatch {
                 BufferUsage::Immutable,
                 BufferSource::slice(&quad_indices),
             ),
-            images: vec![texture_id_1, texture_id_2, texture_id_3],
+            images: textures_ids.to_vec(),
         };
 
         GlyphBatch {

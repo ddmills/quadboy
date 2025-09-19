@@ -58,7 +58,10 @@ impl DefaultMeleeAttack {
             vec![MaterialType::Flesh],
             "Fists",
             WeaponFamily::Unarmed,
-            vec![HitEffect::Knockback(0.5)], // Strength / 2
+            vec![HitEffect::Knockback {
+                strength: 0.5,
+                chance: 1.0,
+            }], // Always knockback at half strength
         )
     }
 
@@ -80,6 +83,7 @@ impl DefaultMeleeAttack {
             vec![HitEffect::Poison {
                 damage_per_tick: 2,
                 duration_ticks: 1000,
+                chance: 1.0, // Always apply poison
             }],
         )
     }

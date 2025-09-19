@@ -1,16 +1,25 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::input::{KeyCode, MouseButton, is_key_pressed, is_mouse_button_pressed};
+use macroquad::{
+    input::{KeyCode, MouseButton, is_key_pressed, is_mouse_button_pressed},
+    prelude::trace,
+};
 
 use crate::{
     cfg::ZONE_SIZE,
     common::Palette,
-    domain::{Attributes, Player, PlayerPosition, ThrowItemAction, Throwable, Zone, game_loop},
+    domain::{
+        Attributes, BitmaskGlyph, BitmaskStyle, IgnoreLighting, Player, PlayerPosition,
+        RefreshBitmask, ThrowItemAction, Throwable, Zone, game_loop,
+    },
     engine::{App, Mouse, Plugin, StableIdRegistry},
-    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
+    rendering::{
+        Glyph, GlyphTextureId, Layer, Position, RecordZonePosition, Text, Visibility,
+        world_to_zone_idx, world_to_zone_local,
+    },
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
 };
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct ThrowContext {
     pub player_entity: Entity,
     pub item_id: u64,
@@ -49,6 +58,9 @@ fn setup_throw_state(
     q_throwable: Query<&Throwable>,
     registry: Res<StableIdRegistry>,
     context: Option<Res<ThrowContext>>,
+    player_pos: Res<PlayerPosition>,
+    q_zones: Query<&Zone>,
+    mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {
     let Some(context) = context else {
         eprintln!("ThrowContext not found - returning to inventory");
@@ -75,12 +87,15 @@ fn setup_throw_state(
     // Calculate throw range: base range + strength
     let throw_range = throwable.calculate_throw_range(attributes.strength);
 
-    // Update context with calculated range
-    cmds.insert_resource(ThrowContext {
+    // Create updated context with calculated range
+    let updated_context = ThrowContext {
         player_entity,
         item_id: context.item_id,
         throw_range,
-    });
+    };
+
+    // Update context resource
+    cmds.insert_resource(updated_context.clone());
 
     // Spawn UI elements
     cmds.spawn((
@@ -107,6 +122,109 @@ fn setup_throw_state(
         ThrowCursor,
         CleanupStateThrow,
     ));
+
+    // Spawn throw range indicators
+    spawn_throw_range_indicators_impl(
+        &mut cmds,
+        &updated_context,
+        &player_pos,
+        &q_zones,
+        &mut e_refresh_bitmask,
+    );
+}
+
+fn spawn_throw_range_indicators_impl(
+    cmds: &mut Commands,
+    context: &ThrowContext,
+    player_pos: &PlayerPosition,
+    q_zones: &Query<&Zone>,
+    e_refresh_bitmask: &mut EventWriter<RefreshBitmask>,
+) {
+    let player_world = player_pos.world();
+    let player_zone_idx = world_to_zone_idx(player_world.0, player_world.1, player_world.2);
+
+    // Find player's zone
+    let Some(_zone) = q_zones.iter().find(|z| z.idx == player_zone_idx) else {
+        return;
+    };
+
+    let (player_local_x, player_local_y) = world_to_zone_local(player_world.0, player_world.1);
+
+    // Create range indicators in a circle around the player
+    let range = context.throw_range as i32;
+    for dx in -range..=range {
+        for dy in -range..=range {
+            let distance = ((dx * dx + dy * dy) as f32).sqrt();
+            if distance <= context.throw_range as f32 && distance > 0.0 {
+                let target_local_x = player_local_x as i32 + dx;
+                let target_local_y = player_local_y as i32 + dy;
+
+                // Check bounds
+                if target_local_x >= 0
+                    && target_local_x < ZONE_SIZE.0 as i32
+                    && target_local_y >= 0
+                    && target_local_y < ZONE_SIZE.1 as i32
+                {
+                    let target_world_x = player_world.0 as i32 + dx;
+                    let target_world_y = player_world.1 as i32 + dy;
+                    let entity = cmds
+                        .spawn((
+                            Glyph::idx(0)
+                                .fg1(Palette::White)
+                                .fg2(Palette::White)
+                                .texture(GlyphTextureId::Bitmasks)
+                                .layer(Layer::Overlay),
+                            BitmaskGlyph::new(BitmaskStyle::Outline),
+                            RecordZonePosition,
+                            IgnoreLighting,
+                            Position::new_world((
+                                target_world_x as usize,
+                                target_world_y as usize,
+                                player_world.2,
+                            )),
+                            Visibility::Visible,
+                            ThrowRangeIndicator,
+                            CleanupStateThrow,
+                        ))
+                        .id();
+
+                    // Send refresh event for this entity
+                    e_refresh_bitmask.write(RefreshBitmask(entity));
+                }
+            }
+        }
+    }
+
+    // Refresh neighboring bitmask entities to ensure proper outline connections
+    let throw_range = context.throw_range;
+    for dx in -range..=range {
+        for dy in -range..=range {
+            let distance = ((dx * dx + dy * dy) as f32).sqrt();
+            if distance <= throw_range as f32 && distance > 0.0 {
+                let target_local_x = player_local_x as i32 + dx;
+                let target_local_y = player_local_y as i32 + dy;
+
+                if target_local_x >= 0
+                    && target_local_x < ZONE_SIZE.0 as i32
+                    && target_local_y >= 0
+                    && target_local_y < ZONE_SIZE.1 as i32
+                {
+                    let target_world_x = player_world.0 as i32 + dx;
+                    let target_world_y = player_world.1 as i32 + dy;
+                    let position = (
+                        target_world_x as usize,
+                        target_world_y as usize,
+                        player_world.2,
+                    );
+
+                    let neighbors = Zone::get_neighbors(position, &q_zones);
+                    for neighbor in neighbors.iter().flatten() {
+                        e_refresh_bitmask.write(RefreshBitmask(*neighbor));
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn handle_throw_input(
@@ -177,75 +295,6 @@ fn handle_throw_input(
     }
 }
 
-fn render_throw_range_indicators(
-    mut cmds: Commands,
-    context: Res<ThrowContext>,
-    player_pos: Res<PlayerPosition>,
-    q_zones: Query<&Zone>,
-    q_indicators: Query<Entity, With<ThrowRangeIndicator>>,
-) {
-    // Remove old indicators
-    for indicator in q_indicators.iter() {
-        cmds.entity(indicator).despawn();
-    }
-
-    let player_world = player_pos.world();
-    let player_zone_idx = world_to_zone_idx(player_world.0, player_world.1, player_world.2);
-
-    // Find player's zone
-    let Some(zone) = q_zones.iter().find(|z| z.idx == player_zone_idx) else {
-        return;
-    };
-
-    let (player_local_x, player_local_y) = world_to_zone_local(player_world.0, player_world.1);
-
-    // Create range indicators in a circle around the player
-    let range = context.throw_range as i32;
-    for dx in -range..=range {
-        for dy in -range..=range {
-            let distance = ((dx * dx + dy * dy) as f32).sqrt();
-            if distance <= context.throw_range as f32 && distance > 0.0 {
-                let target_local_x = player_local_x as i32 + dx;
-                let target_local_y = player_local_y as i32 + dy;
-
-                // Check bounds
-                if target_local_x >= 0
-                    && target_local_x < ZONE_SIZE.0 as i32
-                    && target_local_y >= 0
-                    && target_local_y < ZONE_SIZE.1 as i32
-                {
-                    let target_world_x = player_world.0 as i32 + dx;
-                    let target_world_y = player_world.1 as i32 + dy;
-
-                    // Check if position is visible
-                    if *zone
-                        .visible
-                        .get(target_local_x as usize, target_local_y as usize)
-                        .unwrap_or(&false)
-                    {
-                        // Only show indicators on the border of the range
-                        let is_border = distance >= (context.throw_range as f32 - 1.0);
-                        if is_border {
-                            cmds.spawn((
-                                Glyph::new(46, Palette::DarkYellow, Palette::Black)
-                                    .layer(Layer::Overlay),
-                                Position::new_world((
-                                    target_world_x as usize,
-                                    target_world_y as usize,
-                                    player_world.2,
-                                )),
-                                Visibility::Visible,
-                                ThrowRangeIndicator,
-                                CleanupStateThrow,
-                            ));
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 fn remove_throw_callbacks(mut cmds: Commands) {
     cmds.remove_resource::<ThrowCallbacks>();
     cmds.remove_resource::<ThrowContext>();
@@ -257,10 +306,7 @@ impl Plugin for ThrowStatePlugin {
     fn build(&self, app: &mut App) {
         GameStatePlugin::new(GameState::Throw)
             .on_enter(app, (setup_throw_callbacks, setup_throw_state).chain())
-            .on_update(
-                app,
-                (game_loop, handle_throw_input, render_throw_range_indicators).chain(),
-            )
+            .on_update(app, (game_loop, handle_throw_input).chain())
             .on_leave(
                 app,
                 (cleanup_system::<CleanupStateThrow>, remove_throw_callbacks).chain(),

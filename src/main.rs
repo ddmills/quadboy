@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 use common::Palette;
-use engine::{KeyInput, Time, render_fps, update_key_input, update_time};
+use engine::{KeyInput, Time, process_delayed_audio, render_fps, update_key_input, update_time};
 
 #[derive(Resource, Default)]
 pub struct DebugMode {
@@ -28,8 +28,8 @@ use crate::{
         Destructible, Energy, EquipmentSlots, Equippable, Equipped, ExplosionEvent,
         ExplosiveProperties, FactionMap, FactionMember, FactionRelations, Fuse, GameSettings,
         Health, HideWhenNotVisible, HitBlink, HitEffect, InActiveZone, InInventory, Inventory,
-        InventoryAccessible, IsExplored, IsVisible, Item, KnockbackAnimation, Label, Level,
-        LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
+        InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity, KnockbackAnimation, Label,
+        Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
         LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
         PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
         Stackable, StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
@@ -146,6 +146,7 @@ async fn main() {
     reg.register::<BumpAttack>();
     reg.register::<Destructible>();
     reg.register::<Weapon>();
+    reg.register::<ItemRarity>();
     reg.register::<DefaultMeleeAttack>();
     reg.register::<CreatureType>();
     reg.register::<AiController>();
@@ -230,7 +231,12 @@ async fn main() {
         .init_resource::<DebugMode>()
         .add_systems(
             ScheduleType::PreUpdate,
-            (update_time, update_key_input, update_mouse_input),
+            (
+                update_time,
+                update_key_input,
+                update_mouse_input,
+                process_delayed_audio,
+            ),
         )
         .add_systems(
             ScheduleType::Update,

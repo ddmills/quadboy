@@ -11,7 +11,7 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
         .with_base_components()
         .with_needs_stable_id()
         .with_glyph(68, Palette::Gray, Palette::Gray, Layer::Objects)
-        .with_bitmask(BitmaskStyle::Wall)
+        .with_bitmask(BitmaskStyle::Rocks)
         .with_label("Boulder")
         .with_description(
             "Wind-carved monument to father time. Each crack a chronicle of forgotten years.",

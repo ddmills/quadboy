@@ -7,15 +7,34 @@ use serde::{Deserialize, Serialize};
 pub enum HitEffect {
     /// Knockback effect with a multiplier (typically Strength / 2)
     /// The multiplier is applied to the attacker's strength to determine knockback distance
-    Knockback(f32),
+    Knockback { strength: f32, chance: f32 },
     /// Poison effect with damage per tick and duration in ticks
     Poison {
         damage_per_tick: i32,
         duration_ticks: u32,
+        chance: f32,
     },
-    // Future effects can be added here:
-    // Stun(f32),      // Duration in seconds
-    // Bleed(i32),     // Damage per tick
+    /// Bleeding effect with damage per tick and duration in ticks
+    Bleeding {
+        damage_per_tick: i32,
+        duration_ticks: u32,
+        chance: f32,
+        can_stack: bool,
+    },
+    /// Burning effect with damage per tick and duration in ticks
+    Burning {
+        damage_per_tick: i32,
+        duration_ticks: u32,
+        chance: f32,
+    },
+    /// Stun effect that prevents actions for a duration
+    Stun { duration_ticks: u32, chance: f32 },
+    /// Slow effect that increases action costs
+    Slow {
+        speed_reduction: f32,
+        duration_ticks: u32,
+        chance: f32,
+    },
 }
 
 /// Component for animating the visual knockback effect

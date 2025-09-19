@@ -8,7 +8,7 @@ use crate::{
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+#[derive(Debug, Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Weapon {
     pub damage_dice: String,
     pub can_damage: Vec<MaterialType>,
@@ -23,6 +23,7 @@ pub struct Weapon {
     pub current_ammo: Option<usize>,
     pub base_reload_cost: Option<i32>,
     pub reload_audio: Option<AudioKey>,
+    pub reload_complete_audio: Option<AudioKey>,
     pub no_ammo_audio: Option<AudioKey>,
 }
 
@@ -44,6 +45,7 @@ impl Weapon {
             current_ammo: None,
             base_reload_cost: None,
             reload_audio: None,
+            reload_complete_audio: None,
             no_ammo_audio: None,
         }
     }
@@ -57,6 +59,7 @@ impl Weapon {
         clip_size: Option<usize>,
         base_reload_cost: Option<i32>,
         reload_audio: Option<AudioKey>,
+        reload_complete_audio: Option<AudioKey>,
         no_ammo_audio: Option<AudioKey>,
     ) -> Self {
         Self {
@@ -71,6 +74,7 @@ impl Weapon {
             current_ammo: clip_size,
             base_reload_cost,
             reload_audio,
+            reload_complete_audio,
             no_ammo_audio,
         }
     }
@@ -118,6 +122,7 @@ impl Weapon {
             Some(6),
             Some(150),
             Some(AudioKey::RevolverReload),
+            Some(AudioKey::RevolverReloadComplete),
             Some(AudioKey::RevolverEmpty),
         )
     }
@@ -127,11 +132,12 @@ impl Weapon {
             "1d10+3".to_string(),
             16,
             vec![MaterialType::Flesh],
-            AudioKey::RifleShoot1,
+            AudioKey::RifleShoot2,
             WeaponFamily::Rifle,
-            Some(8),
-            Some(200),
+            Some(4),
+            Some(50),
             Some(AudioKey::RifleReload),
+            Some(AudioKey::RifleReloadComplete),
             Some(AudioKey::RifleEmpty),
         )
     }
@@ -146,9 +152,13 @@ impl Weapon {
             Some(2),
             Some(250),
             Some(AudioKey::ShotgunReload),
+            Some(AudioKey::ShotgunReloadComplete),
             Some(AudioKey::ShotgunEmpty),
         );
-        shotgun.hit_effects = vec![HitEffect::Knockback(1.0)];
+        shotgun.hit_effects = vec![HitEffect::Knockback {
+            strength: 1.0,
+            chance: 1.0,
+        }];
         shotgun
     }
 }
