@@ -144,6 +144,7 @@ pub struct ScreenSize {
 }
 
 pub fn update_screen_size(mut screen: ResMut<ScreenSize>) {
+    crate::tracy_span!("update_screen_size");
     let size = get_screen_size_texels();
 
     if size.x != screen.width || size.y != screen.height {

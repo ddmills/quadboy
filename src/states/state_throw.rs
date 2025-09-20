@@ -6,7 +6,7 @@ use macroquad::{
 
 use crate::{
     cfg::ZONE_SIZE,
-    common::Palette,
+    common::{Palette, algorithm::bresenham::bresenham_circle},
     domain::{
         Attributes, BitmaskGlyph, BitmaskStyle, IgnoreLighting, Player, PlayerPosition,
         RefreshBitmask, ThrowItemAction, Throwable, Zone, game_loop,
@@ -150,78 +150,79 @@ fn spawn_throw_range_indicators_impl(
 
     let (player_local_x, player_local_y) = world_to_zone_local(player_world.0, player_world.1);
 
-    // Create range indicators in a circle around the player
+    // Create range indicators using a filled Bresenham circle
     let range = context.throw_range as i32;
-    for dx in -range..=range {
-        for dy in -range..=range {
-            let distance = ((dx * dx + dy * dy) as f32).sqrt();
-            if distance <= context.throw_range as f32 && distance > 0.0 {
-                let target_local_x = player_local_x as i32 + dx;
-                let target_local_y = player_local_y as i32 + dy;
+    let circle_points = bresenham_circle(range, true); // filled circle
 
-                // Check bounds
-                if target_local_x >= 0
-                    && target_local_x < ZONE_SIZE.0 as i32
-                    && target_local_y >= 0
-                    && target_local_y < ZONE_SIZE.1 as i32
-                {
-                    let target_world_x = player_world.0 as i32 + dx;
-                    let target_world_y = player_world.1 as i32 + dy;
-                    let entity = cmds
-                        .spawn((
-                            Glyph::idx(0)
-                                .fg1(Palette::White)
-                                .fg2(Palette::White)
-                                .texture(GlyphTextureId::Bitmasks)
-                                .layer(Layer::Overlay),
-                            BitmaskGlyph::new(BitmaskStyle::Outline),
-                            RecordZonePosition,
-                            IgnoreLighting,
-                            Position::new_world((
-                                target_world_x as usize,
-                                target_world_y as usize,
-                                player_world.2,
-                            )),
-                            Visibility::Visible,
-                            ThrowRangeIndicator,
-                            CleanupStateThrow,
-                        ))
-                        .id();
+    for (dx, dy) in &circle_points {
+        // Skip the center point (player position)
+        if *dx == 0 && *dy == 0 {
+            continue;
+        }
 
-                    // Send refresh event for this entity
-                    e_refresh_bitmask.write(RefreshBitmask(entity));
-                }
-            }
+        let target_local_x = player_local_x as i32 + dx;
+        let target_local_y = player_local_y as i32 + dy;
+
+        // Check bounds
+        if target_local_x >= 0
+            && target_local_x < ZONE_SIZE.0 as i32
+            && target_local_y >= 0
+            && target_local_y < ZONE_SIZE.1 as i32
+        {
+            let target_world_x = player_world.0 as i32 + dx;
+            let target_world_y = player_world.1 as i32 + dy;
+            let entity = cmds
+                .spawn((
+                    Glyph::idx(0)
+                        .fg1(Palette::White)
+                        .fg2(Palette::White)
+                        .texture(GlyphTextureId::Bitmasks)
+                        .layer(Layer::Overlay),
+                    BitmaskGlyph::new(BitmaskStyle::Outline),
+                    RecordZonePosition,
+                    IgnoreLighting,
+                    Position::new_world((
+                        target_world_x as usize,
+                        target_world_y as usize,
+                        player_world.2,
+                    )),
+                    Visibility::Visible,
+                    ThrowRangeIndicator,
+                    CleanupStateThrow,
+                ))
+                .id();
+
+            // Send refresh event for this entity
+            e_refresh_bitmask.write(RefreshBitmask(entity));
         }
     }
 
     // Refresh neighboring bitmask entities to ensure proper outline connections
-    let throw_range = context.throw_range;
-    for dx in -range..=range {
-        for dy in -range..=range {
-            let distance = ((dx * dx + dy * dy) as f32).sqrt();
-            if distance <= throw_range as f32 && distance > 0.0 {
-                let target_local_x = player_local_x as i32 + dx;
-                let target_local_y = player_local_y as i32 + dy;
+    for (dx, dy) in &circle_points {
+        // Skip the center point
+        if *dx == 0 && *dy == 0 {
+            continue;
+        }
 
-                if target_local_x >= 0
-                    && target_local_x < ZONE_SIZE.0 as i32
-                    && target_local_y >= 0
-                    && target_local_y < ZONE_SIZE.1 as i32
-                {
-                    let target_world_x = player_world.0 as i32 + dx;
-                    let target_world_y = player_world.1 as i32 + dy;
-                    let position = (
-                        target_world_x as usize,
-                        target_world_y as usize,
-                        player_world.2,
-                    );
+        let target_local_x = player_local_x as i32 + dx;
+        let target_local_y = player_local_y as i32 + dy;
 
-                    let neighbors = Zone::get_neighbors(position, &q_zones);
-                    for neighbor in neighbors.iter().flatten() {
-                        e_refresh_bitmask.write(RefreshBitmask(*neighbor));
-                    }
-                }
+        if target_local_x >= 0
+            && target_local_x < ZONE_SIZE.0 as i32
+            && target_local_y >= 0
+            && target_local_y < ZONE_SIZE.1 as i32
+        {
+            let target_world_x = player_world.0 as i32 + dx;
+            let target_world_y = player_world.1 as i32 + dy;
+            let position = (
+                target_world_x as usize,
+                target_world_y as usize,
+                player_world.2,
+            );
+
+            let neighbors = Zone::get_neighbors(position, &q_zones);
+            for neighbor in neighbors.iter().flatten() {
+                e_refresh_bitmask.write(RefreshBitmask(*neighbor));
             }
         }
     }

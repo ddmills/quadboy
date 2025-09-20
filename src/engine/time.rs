@@ -75,6 +75,7 @@ pub fn update_time(mut time: ResMut<Time>) {
 pub struct FpsDisplay;
 
 pub fn render_fps(time: Res<Time>, mut q_fps: Query<&mut Text, With<FpsDisplay>>) {
+    crate::tracy_span!("render_fps");
     let smoothed = time.get_smooth_avg().to_string();
 
     for mut text in q_fps.iter_mut() {

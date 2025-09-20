@@ -52,6 +52,7 @@ pub fn update_mouse(
     layout: Res<UiLayout>,
     settings: Res<GameSettings>,
 ) {
+    crate::tracy_span!("update_mouse");
     let target_size = (
         (screen.tile_w * TILE_SIZE.0) as u32,
         (screen.tile_h * TILE_SIZE.1) as u32,

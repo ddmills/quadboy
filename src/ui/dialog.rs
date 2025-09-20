@@ -85,6 +85,7 @@ pub fn setup_dialogs(
     mut q_dialogs: Query<(Entity, &Dialog, &Position), Changed<Dialog>>,
     mut dialog_state: ResMut<DialogState>,
 ) {
+    crate::tracy_span!("setup_dialogs");
     for (dialog_entity, dialog, dialog_pos) in q_dialogs.iter_mut() {
         dialog_state.is_open = true;
 
@@ -261,6 +262,7 @@ pub fn render_dialog_content(
     q_properties: Query<(Entity, &DialogProperty, &Position), (With<DialogContent>, Without<Text>)>,
     q_dividers: Query<(Entity, &DialogDivider, &Position), (With<DialogContent>, Without<Glyph>)>,
 ) {
+    crate::tracy_span!("render_dialog_content");
     // Render DialogText components as Text
     for (entity, dialog_text, _pos) in q_text.iter() {
         let color = match dialog_text.style {

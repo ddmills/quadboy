@@ -43,6 +43,7 @@ pub fn ui_interaction_system(
     dialog_state: Res<DialogState>,
     ui_focus: Res<UiFocus>,
 ) {
+    crate::tracy_span!("ui_interaction_system");
     for (entity, position, interactable, current_interaction) in q_interactions.iter() {
         let mouse_ui = mouse.ui;
         let pos = (position.x, position.y);
@@ -83,6 +84,7 @@ pub fn clear_mouse_capture_when_not_hovering(
     q_interactions: Query<&Interaction, With<Interactable>>,
     mut mouse: ResMut<Mouse>,
 ) {
+    crate::tracy_span!("clear_mouse_capture_when_not_hovering");
     // Only clear capture if mouse has moved (to avoid clearing on the same frame as the click)
     if !mouse.has_moved {
         return;

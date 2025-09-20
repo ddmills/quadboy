@@ -89,6 +89,7 @@ pub fn setup_buttons(
         (Changed<Activatable>, With<Activatable>),
     >,
 ) {
+    crate::tracy_span!("setup_buttons");
     for (entity, activatable, text_opt, callback_opt, hotkey_opt, interaction_opt) in
         q_buttons.iter_mut()
     {

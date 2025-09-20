@@ -64,6 +64,7 @@ pub fn sync_focus_to_interaction(
     mut q_interactions: Query<&mut Interaction>,
     ui_focus: Res<UiFocus>,
 ) {
+    crate::tracy_span!("sync_focus_to_interaction");
     let Some(focused_entity) = ui_focus.focused_element else {
         return;
     };
@@ -89,6 +90,7 @@ pub fn tab_navigation(
     q_list_items: Query<&ListItem>,
     mut q_lists: Query<&mut List>,
 ) {
+    crate::tracy_span!("tab_navigation");
     let now = time.fixed_t;
     let rate = settings.input_delay;
     let delay = settings.input_initial_delay;
@@ -205,6 +207,7 @@ pub fn update_focus_from_mouse(
     q_interactions: Query<&Interaction>,
     mouse: Res<Mouse>,
 ) {
+    crate::tracy_span!("update_focus_from_mouse");
     // Only update focus if mouse has moved
     if !mouse.has_moved {
         return;

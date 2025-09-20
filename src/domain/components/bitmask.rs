@@ -90,7 +90,7 @@ impl Bitmasker {
         match calc {
             BitmaskCalculator::Basic => {
                 // 2nd bit is tile below
-                let below = !(mask >> 2).is_multiple_of(2);
+                let below = !(mask >> 6).is_multiple_of(2);
 
                 if below { 0 } else { 1 }
             }
@@ -157,6 +157,7 @@ pub fn on_bitmask_spawn(
     q_zones: Query<&Zone>,
     mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {
+    crate::tracy_span!("on_bitmask_spawn");
     for (e, p) in q_bitmasks_new.iter() {
         e_refresh_bitmask.write(RefreshBitmask(e));
 
@@ -178,6 +179,7 @@ pub fn on_refresh_bitmask(
     mut q_glyphs: Query<&mut Glyph>,
     bitmasker: Res<Bitmasker>,
 ) {
+    crate::tracy_span!("on_refresh_bitmask");
     for RefreshBitmask(entity) in ev_refresh_bitmask.read() {
         let Ok((bitmask, position)) = q_bitmasks.get(*entity) else {
             continue;
