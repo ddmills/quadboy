@@ -1,13 +1,14 @@
 use crate::{
     common::Palette,
-    domain::{IgnoreLighting, IsExplored, Label, PlayerPosition, StackCount, Zone},
-    engine::{Clock, Mouse},
+    domain::{ColliderFlags, IgnoreLighting, IsExplored, Label, PlayerPosition, StackCount, Zone},
+    engine::{Clock, KeyInput, Mouse},
     rendering::{
         Glyph, Layer, LightingData, Position, Text, Visibility, world_to_zone_idx,
-        world_to_zone_local,
+        world_to_zone_local, world_to_zone_local_f32,
     },
 };
 use bevy_ecs::prelude::*;
+use macroquad::input::KeyCode;
 
 #[derive(Component)]
 pub struct CursorGlyph;
@@ -23,6 +24,9 @@ pub struct LightingDebugText;
 
 #[derive(Component)]
 pub struct LightingDebugAmbient;
+
+#[derive(Component)]
+pub struct ColliderDebugText;
 
 pub fn render_cursor(
     mouse: Res<Mouse>,
@@ -171,6 +175,61 @@ pub fn render_lighting_debug(
     }
 }
 
+pub fn debug_collider_flags(
+    mut cmds: Commands,
+    mouse: Res<Mouse>,
+    keys: Res<KeyInput>,
+    mut q_debut_text: Query<(Entity, &mut Text, &Visibility), With<ColliderDebugText>>,
+    q_zones: Query<&Zone>,
+    player_pos: Res<PlayerPosition>,
+) {
+    let Ok((entity, mut text, vis)) = q_debut_text.single_mut() else {
+        return;
+    };
+
+    let is_vis = *vis == Visibility::Visible;
+
+    if keys.is_pressed(KeyCode::F4) {
+        if *vis == Visibility::Visible {
+            cmds.entity(entity).insert(Visibility::Hidden);
+            return;
+        } else {
+            cmds.entity(entity).insert(Visibility::Visible);
+        }
+    }
+
+    if !is_vis {
+        return;
+    }
+
+    let zone_idx = player_pos.zone_idx();
+    let Some(zone) = q_zones.iter().find(|x| x.idx == zone_idx) else {
+        return;
+    };
+
+    let local = world_to_zone_local(mouse.world.0 as usize, mouse.world.1 as usize);
+
+    // let Some(colliders) = zone.colliders.get_flags.get(local.0, local.1) else {
+    //     return;
+    // };
+
+    let flags = zone.colliders.get_flags(local.0, local.1);
+
+    let mut flag_list = vec![];
+
+    if !flags.contains(ColliderFlags::BLOCKS_WALK) {
+        flag_list.push("WALK".to_owned());
+    }
+    if !flags.contains(ColliderFlags::BLOCKS_FLY) {
+        flag_list.push("FLY".to_owned());
+    }
+    if !flags.contains(ColliderFlags::BLOCKS_SWIM) {
+        flag_list.push("SWIM".to_owned());
+    }
+
+    text.value = format!("FLAGS: {}", flag_list.join(" "));
+}
+
 pub fn spawn_debug_ui_entities(cmds: &mut Commands, cleanup_marker: impl Component + Clone) {
     // Spawn cursor glyph
     cmds.spawn((
@@ -210,6 +269,15 @@ pub fn spawn_debug_ui_entities(cmds: &mut Commands, cleanup_marker: impl Compone
         Text::new("Light: R:0.0 G:0.0 B:0.0 I:0.0").bg(Palette::Black),
         Position::new_f32(0., 1.0, 0.),
         LightingDebugText,
+        Visibility::Hidden,
+        cleanup_marker.clone(),
+    ));
+
+    // Spawn collider flag debug text
+    cmds.spawn((
+        Text::new("FLAGS").bg(Palette::Black),
+        Position::new_f32(0., 14.0, 0.),
+        ColliderDebugText,
         Visibility::Hidden,
         cleanup_marker.clone(),
     ));

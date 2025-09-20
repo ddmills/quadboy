@@ -921,6 +921,7 @@ version = "0.1.0"
 dependencies = [
  "bevy_ecs",
  "bevy_serializable_derive",
+ "bitflags 2.9.2",
  "fastnoise-lite",
  "getrandom",
  "macroquad",

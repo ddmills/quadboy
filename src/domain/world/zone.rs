@@ -7,8 +7,8 @@ use crate::{
     cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid},
     domain::{
-        InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs, Terrain,
-        UnloadZoneCommand, ZoneGenerator,
+        ColliderCache, InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs,
+        Terrain, UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
     rendering::{world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz},
@@ -43,7 +43,7 @@ pub struct Zone {
     pub entities: HashGrid<Entity>,
     pub visible: Grid<bool>,
     pub explored: Grid<bool>,
-    pub colliders: HashGrid<Entity>,
+    pub colliders: ColliderCache,
 }
 
 impl Zone {
@@ -54,7 +54,7 @@ impl Zone {
             entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
             visible: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
             explored: Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |_, _| false),
-            colliders: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
+            colliders: ColliderCache::new(),
         }
     }
 
@@ -383,7 +383,7 @@ pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
                 entities: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
                 visible: Grid::init(ZONE_SIZE.0, ZONE_SIZE.1, false),
                 explored: zone_data.explored,
-                colliders: HashGrid::init(ZONE_SIZE.0, ZONE_SIZE.1),
+                colliders: ColliderCache::new(),
             },
         ))
         .id();

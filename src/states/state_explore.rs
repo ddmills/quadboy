@@ -22,9 +22,9 @@ use crate::{
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
         Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
-        display_entity_names_at_mouse, render_ai_debug_indicators, render_cursor,
-        render_lighting_debug, render_tick_display, spawn_ai_debug_dialog, spawn_debug_ui_entities,
-        spawn_examine_dialog, update_xp_progress_bars,
+        debug_collider_flags, display_entity_names_at_mouse, render_ai_debug_indicators,
+        render_cursor, render_lighting_debug, render_tick_display, spawn_ai_debug_dialog,
+        spawn_debug_ui_entities, spawn_examine_dialog, update_xp_progress_bars,
     },
 };
 
@@ -64,7 +64,7 @@ impl Plugin for ExploreStatePlugin {
                     render_cursor,
                     display_entity_names_at_mouse,
                     render_ai_debug_indicators,
-                    render_player_map_overlay,
+                    debug_player_map_overlay,
                     update_xp_progress_bars,
                     update_player_hp_bar,
                     update_player_armor_bar,
@@ -73,6 +73,7 @@ impl Plugin for ExploreStatePlugin {
                     handle_debug_input,
                 ),
             )
+            .on_update(app, debug_collider_flags)
             .on_update(app, player_input)
             .on_update(app, (handle_item_pickup, game_loop))
             .on_update(
@@ -477,7 +478,7 @@ fn close_examine_dialog(
     dialog_state.is_open = false;
 }
 
-fn render_player_map_overlay(
+fn debug_player_map_overlay(
     mut cmds: Commands,
     keys: Res<KeyInput>,
     faction_map: Res<FactionMap>,
@@ -489,7 +490,7 @@ fn render_player_map_overlay(
     mut last_player_pos: Local<Option<(usize, usize, usize)>>,
 ) {
     // Toggle overlay on J key press
-    if keys.is_pressed(KeyCode::J) {
+    if keys.is_pressed(KeyCode::F2) {
         *overlay_enabled = !*overlay_enabled;
     }
 

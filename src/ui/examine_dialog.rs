@@ -251,7 +251,8 @@ impl ExamineDialogBuilder {
 
         // Add StableId in bottom-right corner if available
         if let Ok(stable_id) = q_stable_ids.get(self.entity) {
-            let id_text = format!("{{b|{}}}", stable_id.0);
+            let idx = self.entity.index();
+            let id_text = format!("{{b|{} - {}}}", stable_id.0, idx);
             let id_visual_length = text_content_length(&id_text);
 
             cmds.spawn((

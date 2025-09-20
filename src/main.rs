@@ -30,10 +30,11 @@ use crate::{
         Health, HideWhenNotVisible, HitBlink, HitEffect, InActiveZone, InInventory, Inventory,
         InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity, KnockbackAnimation, Label,
         Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
-        LootTableRegistry, NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
-        PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, StackCount,
-        Stackable, StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
-        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
+        LootTableRegistry, MovementCapabilities, NeedsStableId, NewGameResult, Player,
+        PlayerMovedEvent, Prefabs, PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult,
+        SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, StatModifiers, Stats,
+        Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon,
+        Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -118,6 +119,7 @@ async fn main() {
     reg.register::<Label>();
     reg.register::<Description>();
     reg.register::<Collider>();
+    reg.register::<MovementCapabilities>();
     reg.register::<Consumable>();
     reg.register::<Energy>();
     reg.register::<ActiveConditions>();

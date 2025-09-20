@@ -11,8 +11,9 @@ use crate::{
         },
     },
     domain::{
-        AiController, AttackAction, Collider, Energy, FactionMap, FactionMember, Health, Level,
-        PlayerPosition, StairDown, StairUp, Stats, Zone, actions::MoveAction, are_hostile,
+        AiController, AttackAction, Collider, ColliderFlags, Energy, FactionMap, FactionMember,
+        Health, Level, MovementCapabilities, MovementFlags, PlayerPosition, StairDown, StairUp,
+        Stats, Zone, actions::MoveAction, are_hostile,
     },
     rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_xyz},
     tracy_span,
@@ -185,25 +186,31 @@ pub fn move_toward_target(
 
     let (local_x, local_y) = world_to_zone_local(x, y);
 
-    // Try Dijkstra pathfinding first (same-zone movement)
-    if let Some(dijkstra_map) = faction_map.get_map(target_faction.faction_id)
-        && let Some((dx, dy)) = dijkstra_map.get_best_direction(local_x, local_y)
-    {
-        let new_x = (x as i32 + dx) as usize;
-        let new_y = (y as i32 + dy) as usize;
+    let Some(target_pos) = world.get::<Position>(target_entity) else {
+        return false;
+    };
 
-        if is_move_valid(world, new_x, new_y, z) {
-            let move_action = MoveAction {
-                entity,
-                new_position: (new_x, new_y, z),
-            };
-            move_action.apply(world);
-            return true;
-        }
-    }
+    move_toward_position(entity, entity_pos.world(), target_pos.world(), world)
+
+    // Try Dijkstra pathfinding first (same-zone movement)
+    // if let Some(dijkstra_map) = faction_map.get_map(target_faction.faction_id)
+    //     && let Some((dx, dy)) = dijkstra_map.get_best_direction(local_x, local_y)
+    // {
+    //     let new_x = (x as i32 + dx) as usize;
+    //     let new_y = (y as i32 + dy) as usize;
+
+    //     if is_move_valid(world, new_x, new_y, z) {
+    //         let move_action = MoveAction {
+    //             entity,
+    //             new_position: (new_x, new_y, z),
+    //         };
+    //         move_action.apply(world);
+    //         return true;
+    //     }
+    // }
 
     // Fallback: Cross-zone movement toward target
-    move_toward_target_cross_zone(entity, entity_pos, target_entity, world)
+    // move_toward_target_cross_zone(entity, entity_pos, target_entity, world)
 }
 
 pub fn wander_near_point(
@@ -228,7 +235,9 @@ pub fn wander_near_point(
             + (new_y as f32 - center_y as f32).powi(2))
         .sqrt();
 
-        if distance_to_center <= range && is_move_valid(world, new_x, new_y, z) {
+        if distance_to_center <= range
+            && is_move_valid_for_entity(world, Some(entity), new_x, new_y, z)
+        {
             let move_action = MoveAction {
                 entity,
                 new_position: (new_x, new_y, z),
@@ -257,91 +266,7 @@ pub fn return_to_home(
         return true;
     }
 
-    let current_pos = (x, y, z);
-    let target_pos = (home_x, home_y, home_z);
-
-    // Get cached path if it exists
-    let cached_path = {
-        tracy_span!("get_cached_path");
-        if let Some(ai) = world.get::<AiController>(entity) {
-            ai.cached_home_path.clone()
-        } else {
-            None
-        }
-    };
-
-    // Try to use cached path first
-    // if let Some(mut path) = cached_path {
-    //     tracy_span!("use_cached_path");
-
-    //     // Remove positions we've already passed
-    //     while !path.is_empty() && path[0] == current_pos {
-    //         path.remove(0);
-    //     }
-
-    //     // Try to move to the next step in the cached path
-    //     if !path.is_empty() {
-    //         let next_step = path[0];
-    //         if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
-    //             tracy_span!("cached_path_move");
-    //             let move_action = MoveAction {
-    //                 entity,
-    //                 new_position: next_step,
-    //             };
-    //             move_action.apply(world);
-
-    //             // Update the cached path by removing the step we just took
-    //             path.remove(0);
-    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-    //                 ai.cached_home_path = if path.is_empty() { None } else { Some(path) };
-    //             }
-    //             return true;
-    //         } else {
-    //             // Next step is blocked, clear the cached path and recalculate
-    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-    //                 ai.cached_home_path = None;
-    //             }
-    //         }
-    //     }
-    // }
-
-    // No cached path or cached path is blocked, calculate new path with A*
-    {
-        tracy_span!("astar_pathfinding");
-        if let Some(path) = find_path_astar(current_pos, target_pos, world, Some(50.0)) {
-            tracy_span!("cache_new_path");
-
-            // Cache the new path (excluding the current position)
-            let path_to_cache = if path.len() > 1 {
-                path[1..].to_vec()
-            } else {
-                vec![]
-            };
-
-            if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-                ai.cached_home_path = if path_to_cache.is_empty() {
-                    None
-                } else {
-                    Some(path_to_cache)
-                };
-            }
-
-            // Move to the next step in the path
-            if path.len() > 1 {
-                let next_step = path[1];
-                let move_action = MoveAction {
-                    entity,
-                    new_position: next_step,
-                };
-                move_action.apply(world);
-                return true;
-            }
-        }
-    }
-
-    trace!("STUCK");
-    // If A* also fails, we're truly stuck
-    false
+    move_toward_position(entity, entity_pos.world(), home_pos.world(), world)
 }
 
 pub fn move_toward_last_known_position(
@@ -350,7 +275,7 @@ pub fn move_toward_last_known_position(
     last_known_pos: &Position,
     world: &mut World,
 ) -> bool {
-    move_toward_position(entity, entity_pos, last_known_pos, world)
+    move_toward_position(entity, entity_pos.world(), last_known_pos.world(), world)
 }
 
 pub fn distance_from_home(entity_pos: &Position, home_pos: &Position) -> f32 {
@@ -369,7 +294,17 @@ pub fn consume_wait_energy(entity: Entity, world: &mut World) {
 }
 
 pub fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) -> bool {
-    tracy_span!("is_move_valid");
+    is_move_valid_for_entity(world, None, new_x, new_y, z)
+}
+
+pub fn is_move_valid_for_entity(
+    world: &mut World,
+    moving_entity: Option<Entity>,
+    new_x: usize,
+    new_y: usize,
+    z: usize,
+) -> bool {
+    tracy_span!("is_move_valid_for_entity");
 
     let max_x = (MAP_SIZE.0 * ZONE_SIZE.0) - 1;
     let max_y = (MAP_SIZE.1 * ZONE_SIZE.1) - 1;
@@ -395,12 +330,45 @@ pub fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) ->
         }
     };
 
-    if let Some(entities) = entities_at_pos {
-        tracy_span!("check_colliders");
-        let mut collider_query = world.query::<&Collider>();
-        for entity_at_pos in entities {
-            if collider_query.get(world, entity_at_pos).is_ok() {
-                return false;
+    // Use cached flags for much faster collision checking
+    {
+        tracy_span!("check_cached_colliders");
+
+        let mut zone_query = world.query::<&Zone>();
+        if let Some(zone) = zone_query
+            .iter(world)
+            .find(|zone| zone.idx == dest_zone_idx)
+        {
+            let cached_flags = zone.colliders.get_flags(local_x, local_y);
+
+            if !cached_flags.is_empty() {
+                // Get movement capabilities of the moving entity
+                let movement_flags = if let Some(entity) = moving_entity {
+                    world.get::<MovementCapabilities>(entity).map(|mc| mc.flags)
+                } else {
+                    None
+                };
+
+                // Check if movement is blocked based on capabilities
+                let blocked = match movement_flags {
+                    Some(flags) => {
+                        // Check each movement type against corresponding blocks
+                        (flags.contains(MovementFlags::CAN_WALK)
+                            && cached_flags.contains(ColliderFlags::BLOCKS_WALK))
+                            || (flags.contains(MovementFlags::CAN_FLY)
+                                && cached_flags.contains(ColliderFlags::BLOCKS_FLY))
+                            || (flags.contains(MovementFlags::CAN_SWIM)
+                                && cached_flags.contains(ColliderFlags::BLOCKS_SWIM))
+                    }
+                    None => {
+                        // Default to walking movement if no capabilities specified
+                        cached_flags.contains(ColliderFlags::BLOCKS_WALK)
+                    }
+                };
+
+                if blocked {
+                    return false;
+                }
             }
         }
     }
@@ -409,100 +377,75 @@ pub fn is_move_valid(world: &mut World, new_x: usize, new_y: usize, z: usize) ->
 }
 
 /// Cross-zone pathfinding: move toward target even if in different zone
-fn move_toward_target_cross_zone(
-    entity: Entity,
-    entity_pos: &Position,
-    target_entity: Entity,
-    world: &mut World,
-) -> bool {
-    // Try to get target position directly first
-    if let Some(target_pos) = world.get::<Position>(target_entity) {
-        let target_pos = target_pos.clone();
-        return move_toward_position(entity, entity_pos, &target_pos, world);
-    }
+// fn move_toward_target_cross_zone(
+//     entity: Entity,
+//     entity_pos: &Position,
+//     target_entity: Entity,
+//     world: &mut World,
+// ) -> bool {
+//     // Try to get target position directly first
+//     if let Some(target_pos) = world.get::<Position>(target_entity) {
+//         let target_pos = target_pos.clone();
+//         return move_toward_position(entity, entity_pos, &target_pos, world);
+//     }
 
-    // Fallback: Move toward player's last known position
-    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
-        let target_pos = Position::new(
-            player_pos.x as usize,
-            player_pos.y as usize,
-            player_pos.z as usize,
-        );
-        return move_toward_position(entity, entity_pos, &target_pos, world);
-    }
+//     // Fallback: Move toward player's last known position
+//     if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+//         let target_pos = Position::new(
+//             player_pos.x as usize,
+//             player_pos.y as usize,
+//             player_pos.z as usize,
+//         );
+//         return move_toward_position(entity, entity_pos, &target_pos, world);
+//     }
 
-    false
-}
+//     false
+// }
 
 /// Move toward a target position using A* pathfinding with path caching
 fn move_toward_position(
     entity: Entity,
-    entity_pos: &Position,
-    target_pos: &Position,
+    entity_pos: (usize, usize, usize),
+    target_pos: (usize, usize, usize),
     world: &mut World,
 ) -> bool {
     tracy_span!("move_toward_position");
 
-    let (current_x, current_y, current_z) = entity_pos.world();
-    let (target_x, target_y, target_z) = target_pos.world();
+    let (current_x, current_y, current_z) = entity_pos;
+    let (target_x, target_y, target_z) = target_pos;
+
+    // Check if cross-zone pursuit
+    let current_zone = world_to_zone_idx(current_x, current_y, current_z);
+    let target_zone = world_to_zone_idx(target_x, target_y, target_z);
+    if current_zone != target_zone {
+        println!(
+            "[A*] Cross-zone pursuit: AI in zone {}, target in zone {}",
+            current_zone, target_zone
+        );
+    }
 
     // Only move on same Z level for now
     if current_z != target_z {
+        println!("[A*] Different Z levels - aborting move_toward_position");
         return false;
     }
 
-    let current_pos = (current_x, current_y, current_z);
-    let target_pos = (target_x, target_y, target_z);
-
-    // Get cached path if it exists
-    let cached_path = {
-        tracy_span!("get_cached_pursuit_path");
-        if let Some(ai) = world.get::<AiController>(entity) {
-            ai.cached_pursuit_path.clone()
-        } else {
-            None
-        }
-    };
-
-    // Try to use cached path first
-    // if let Some(mut path) = cached_path {
-    //     tracy_span!("use_cached_pursuit_path");
-
-    //     // Remove positions we've already reached
-    //     while !path.is_empty() && path[0] == current_pos {
-    //         path.remove(0);
-    //     }
-
-    //     // If we still have a path, try to follow it
-    //     if !path.is_empty() {
-    //         let next_step = path[0];
-    //         if is_move_valid(world, next_step.0, next_step.1, next_step.2) {
-    //             // Update cached path (remove the step we're taking)
-    //             path.remove(0);
-    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-    //                 ai.cached_pursuit_path = if path.is_empty() { None } else { Some(path) };
-    //             }
-
-    //             let move_action = MoveAction {
-    //                 entity,
-    //                 new_position: next_step,
-    //             };
-    //             move_action.apply(world);
-    //             return true;
-    //         } else {
-    //             // Path is blocked, clear cached path and recalculate
-    //             if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-    //                 ai.cached_pursuit_path = None;
-    //             }
-    //         }
-    //     }
-    // }
-
-    // No cached path or cached path is blocked, calculate new path with A*
     {
+        let max_find_distance = 400.0;
         tracy_span!("astar_pursuit_pathfinding");
-        if let Some(path) = find_path_astar(current_pos, target_pos, world, Some(30.0)) {
+        println!(
+            "[A*] Calling A* pathfinding with {} tile limit",
+            max_find_distance
+        );
+        if let Some(path) = find_path_astar_for_entity(
+            entity_pos,
+            target_pos,
+            world,
+            Some(entity),
+            Some(max_find_distance),
+        ) {
             tracy_span!("cache_new_pursuit_path");
+            println!("[A*] Path found! Length: {} steps", path.len());
 
             // Cache the new path (excluding the current position)
             let path_to_cache = if path.len() > 1 {
@@ -522,6 +465,10 @@ fn move_toward_position(
             // Move to the next step in the path
             if path.len() > 1 {
                 let next_step = path[1];
+                println!(
+                    "[A*] Moving to next step: ({}, {}, {})",
+                    next_step.0, next_step.1, next_step.2
+                );
                 let move_action = MoveAction {
                     entity,
                     new_position: next_step,
@@ -529,9 +476,15 @@ fn move_toward_position(
                 move_action.apply(world);
                 return true;
             }
+        } else {
+            println!(
+                "[A*] Pathfinding FAILED - no path found within {} tiles",
+                max_find_distance
+            );
         }
     }
 
+    println!("[A*] Move toward position failed");
     false
 }
 
@@ -820,39 +773,90 @@ pub fn find_path_astar(
     world: &mut World,
     max_distance: Option<f32>,
 ) -> Option<Vec<(usize, usize, usize)>> {
+    find_path_astar_for_entity(from, to, world, None, max_distance)
+}
+
+pub fn find_path_astar_for_entity(
+    from: (usize, usize, usize),
+    to: (usize, usize, usize),
+    world: &mut World,
+    moving_entity: Option<Entity>,
+    max_distance: Option<f32>,
+) -> Option<Vec<(usize, usize, usize)>> {
     tracy_span!("find_path_astar");
 
-    // Build a zone cache for efficient lookups during pathfinding
-    let mut zone_cache: HashMap<usize, &Zone> = HashMap::new();
-    let mut zones_query = world.query::<&Zone>();
-    for zone in zones_query.iter(world) {
-        zone_cache.insert(zone.idx, zone);
-    }
+    println!(
+        "[A*] Starting pathfind from ({}, {}, {}) to ({}, {}, {}). Max distance limit: {:?}",
+        from.0, from.1, from.2, to.0, to.1, to.2, max_distance
+    );
+
+    // Get movement capabilities of the entity
+    let movement_flags = if let Some(entity) = moving_entity {
+        world.get::<MovementCapabilities>(entity).map(|mc| mc.flags)
+    } else {
+        None
+    };
+
+    let zone_cache = {
+        tracy_span!("find_path_astar:zone_cache");
+        // Build a zone cache for efficient lookups during pathfinding
+        let mut zone_cache: HashMap<usize, &Zone> = HashMap::new();
+        let mut zones_query = world.query::<&Zone>();
+        for zone in zones_query.iter(world) {
+            zone_cache.insert(zone.idx, zone);
+        }
+        println!("[A*] Zone cache built with {} zones", zone_cache.len());
+        zone_cache
+    };
 
     let result = {
-        tracy_span!("astar_algorithm");
+        tracy_span!("find_path_astar:astar");
         astar(AStarSettings {
             start: [from.0, from.1, from.2],
             is_goal: |[x, y, z]| x == to.0 && y == to.1 && z == to.2,
             cost: |[_from_x, _from_y, _from_z], [to_x, to_y, _to_z]| {
                 let zone_idx = world_to_zone_idx(to_x, to_y, _to_z);
                 let Some(zone) = zone_cache.get(&zone_idx) else {
+                    println!(
+                        "[A*] Zone {} not in cache for position ({}, {})",
+                        zone_idx, to_x, to_y
+                    );
                     return f32::INFINITY; // Zone not loaded
                 };
 
                 let (local_x, local_y) = world_to_zone_local(to_x, to_y);
-                let Some(v) = zone.colliders.get(local_x, local_y) else {
-                    return f32::INFINITY;
-                };
+                let cached_flags = zone.colliders.get_flags(local_x, local_y);
 
-                if v.is_empty() {
+                if cached_flags.is_empty() {
+                    // No collision flags - movement is allowed
                     return 1.0;
                 }
 
-                f32::INFINITY
+                // Use cached flags for intelligent pathfinding
+                match movement_flags {
+                    Some(flags) => {
+                        // Check if movement is blocked based on capabilities
+                        let blocked = (flags.contains(MovementFlags::CAN_WALK)
+                            && cached_flags.contains(ColliderFlags::BLOCKS_WALK))
+                            || (flags.contains(MovementFlags::CAN_FLY)
+                                && cached_flags.contains(ColliderFlags::BLOCKS_FLY))
+                            || (flags.contains(MovementFlags::CAN_SWIM)
+                                && cached_flags.contains(ColliderFlags::BLOCKS_SWIM));
+
+                        if blocked { f32::INFINITY } else { 1.0 }
+                    }
+                    None => {
+                        // Default to walking movement if no capabilities specified
+                        if cached_flags.contains(ColliderFlags::BLOCKS_WALK) {
+                            f32::INFINITY
+                        } else {
+                            1.0
+                        }
+                    }
+                }
             },
             heuristic: |[x, y, z]| {
-                Distance::chebyshev(
+                Distance::euclidean_sq(
                     [x as i32, y as i32, z as i32],
                     [to.0 as i32, to.1 as i32, to.2 as i32],
                 )
@@ -893,13 +897,15 @@ pub fn find_path_astar(
     };
 
     if result.is_success {
-        tracy_span!("process_result");
+        tracy_span!("find_path_astar:process_result");
         // A* returns path in reverse order, so reverse it to get from start to goal
         let mut path: Vec<(usize, usize, usize)> =
             result.path.into_iter().map(|[x, y, z]| (x, y, z)).collect();
         path.reverse();
+        println!("[A*] Success! Path found with {} steps", path.len());
         Some(path)
     } else {
+        println!("[A*] Failed - no valid path found");
         None
     }
 }

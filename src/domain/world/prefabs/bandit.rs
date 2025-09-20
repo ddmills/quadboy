@@ -50,5 +50,6 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
             .with_ranges(40.0, 10.0, 15.0),
         )
         .with_component(FactionMember::new(FactionId::Bandits))
+        .with_movement_capabilities(crate::domain::MovementFlags::TERRESTRIAL)
         .build();
 }

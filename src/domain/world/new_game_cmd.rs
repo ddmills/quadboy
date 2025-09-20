@@ -8,8 +8,8 @@ use crate::{
     domain::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Collider, DefaultMeleeAttack, Energy,
         EquipmentSlots, FactionId, FactionMember, GameSaveData, Health, Inventory, Label, Level,
-        LoadZoneCommand, Overworld, Player, PlayerPosition, PlayerSaveData, StatModifiers, Stats,
-        TerrainNoise, Vision, Zones,
+        LoadZoneCommand, MovementCapabilities, Overworld, Player, PlayerPosition, PlayerSaveData,
+        StatModifiers, Stats, TerrainNoise, Vision, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
@@ -58,14 +58,15 @@ impl NewGameCommand {
                 EquipmentSlots::humanoid(),
                 Vision::new(60),
                 ApplyVisibilityEffects,
-                Collider,
+                Collider::solid(),
+                MovementCapabilities::terrestrial(),
                 Energy::new(-10),
-                Label::new("{Y|Cowboy}"),
-                DefaultMeleeAttack::fists(),
-                Level::new(2),
-                RecordZonePosition,
-                CleanupStatePlay,
             ))
+            .insert(Label::new("{Y|Cowboy}"))
+            .insert(DefaultMeleeAttack::fists())
+            .insert(Level::new(2))
+            .insert(RecordZonePosition)
+            .insert(CleanupStatePlay)
             .insert(FactionMember::new(FactionId::Player))
             .insert(Attributes::new(0, 0, 0, 0))
             .insert(AttributePoints::new(1)) // Level 1 = 5 + 1 = 6 points

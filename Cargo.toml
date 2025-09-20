@@ -25,6 +25,7 @@ ordered-float = "5.0.0"
 fastnoise-lite = "1.1.1"
 quad-snd = "0.2"
 tracy-client = { version = "0.17", optional = true, default-features = false, features = ["enable"] }
+bitflags = { version = "2.6.0", features = ["serde"] }
 
 [patch.crates-io]
 macroquad = { git = "https://github.com/not-fl3/macroquad" }

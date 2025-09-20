@@ -9,7 +9,7 @@ use crate::{
         PursuingTarget, TurnState, get_base_energy_cost,
     },
     engine::{Clock, StableId, StableIdRegistry},
-    rendering::Position,
+    rendering::{Position, world_to_zone_idx},
     tracy_span,
 };
 
@@ -239,6 +239,32 @@ fn process_basic_aggressive(
         let last_seen_at = pursuing_clone.last_seen_at;
         let last_seen_pos = Position::new(last_seen_at.0, last_seen_at.1, last_seen_at.2);
 
+        // Debug logging for pursuit
+        println!(
+            "[AI] Entity {} pursuing target last seen at ({}, {}, {}), current pos: ({}, {}, {})",
+            entity.index(),
+            last_seen_at.0,
+            last_seen_at.1,
+            last_seen_at.2,
+            entity_pos.world().0,
+            entity_pos.world().1,
+            entity_pos.world().2
+        );
+
+        // Check if in different zones
+        let current_zone = world_to_zone_idx(
+            entity_pos.world().0,
+            entity_pos.world().1,
+            entity_pos.world().2,
+        );
+        let target_zone = world_to_zone_idx(last_seen_at.0, last_seen_at.1, last_seen_at.2);
+        if current_zone != target_zone {
+            println!(
+                "[AI] Cross-zone pursuit: AI in zone {}, target in zone {}",
+                current_zone, target_zone
+            );
+        }
+
         // Check if we've reached the last known position first
         if entity_pos.world() == last_seen_at {
             if let Some(mut pursuing) = world.get_mut::<PursuingTarget>(entity) {
@@ -271,10 +297,13 @@ fn process_basic_aggressive(
             }
         } else {
             // Not at last known position - try to move toward it
+            println!("[AI] Attempting to move toward last known position");
             if move_toward_last_known_position(entity, entity_pos, &last_seen_pos, world) {
+                println!("[AI] Successfully moved toward target");
                 update_ai_state(world, entity, AiState::Pursuing);
                 return;
             } else {
+                println!("[AI] FAILED to move toward last known position - waiting");
                 // Can't move toward last known position (blocked) - wait but keep pursuing
                 consume_wait_energy(entity, world);
                 update_ai_state(world, entity, AiState::Pursuing);
@@ -337,6 +366,36 @@ fn process_scavenger(world: &mut World, entity: Entity, ai: &AiController, entit
     // Scavengers attack adjacent wounded targets first
     if try_attack_adjacent(entity, entity_pos, world) {
         return;
+    }
+
+    // Retaliate against recent attackers
+    if let Some(health) = world.get::<Health>(entity) {
+        if let Some(attacker_stable_id) = health.last_damage_source {
+            if let Some(registry) = world.get_resource::<StableIdRegistry>() {
+                if let Some(attacker_entity) = registry.get_entity(attacker_stable_id.0) {
+                    // Check if the attacker is still alive and in range
+                    if let Some(attacker_pos) = world.get::<Position>(attacker_entity) {
+                        let (entity_x, entity_y, entity_z) = entity_pos.world();
+                        let (attacker_x, attacker_y, attacker_z) = attacker_pos.world();
+
+                        // Calculate distance to attacker
+                        let dx = entity_x as f32 - attacker_x as f32;
+                        let dy = entity_y as f32 - attacker_y as f32;
+                        let dz = entity_z as f32 - attacker_z as f32;
+                        let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+
+                        // If attacker is within detection range, pursue them aggressively
+                        if distance <= ai.detection_range {
+                            if try_pursue_target(entity, entity_pos, attacker_entity, world) {
+                                add_pursuing_target_component(world, entity, attacker_entity);
+                                clear_cached_pursuit_path(world, entity);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Look for wounded hostiles to attack aggressively
@@ -752,7 +811,13 @@ fn simple_move_to_position(
     tracy_span!("simple_move_to_position");
 
     // Check if the new position is valid using existing utility
-    if !is_move_valid(world, new_position.0, new_position.1, new_position.2) {
+    if !is_move_valid_for_entity(
+        world,
+        Some(entity),
+        new_position.0,
+        new_position.1,
+        new_position.2,
+    ) {
         return false;
     }
 

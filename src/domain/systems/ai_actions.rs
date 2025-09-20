@@ -152,7 +152,7 @@ fn try_move_in_direction(
     let new_y = (current_y as i32 + direction.1) as usize;
 
     // Try the preferred direction first
-    if is_move_valid(world, new_x, new_y, current_z) {
+    if is_move_valid_for_entity(world, Some(entity), new_x, new_y, current_z) {
         let move_action = MoveAction {
             entity,
             new_position: (new_x, new_y, current_z),
@@ -173,7 +173,7 @@ fn try_move_in_direction(
         let alt_x = (current_x as i32 + dx) as usize;
         let alt_y = (current_y as i32 + dy) as usize;
 
-        if is_move_valid(world, alt_x, alt_y, current_z) {
+        if is_move_valid_for_entity(world, Some(entity), alt_x, alt_y, current_z) {
             let move_action = MoveAction {
                 entity,
                 new_position: (alt_x, alt_y, current_z),

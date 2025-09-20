@@ -47,5 +47,6 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
         .with_component(AiController::new(AiTemplate::BasicAggressive, Position::new(config.pos.0, config.pos.1, config.pos.2))
             .with_ranges(80.0, 15.0, 25.0))
         .with_component(FactionMember::new(FactionId::Wildlife))
+        .with_movement_capabilities(crate::domain::MovementFlags::TERRESTRIAL)
         .build();
 }

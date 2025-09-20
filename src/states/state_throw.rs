@@ -174,8 +174,8 @@ fn spawn_throw_range_indicators_impl(
             let entity = cmds
                 .spawn((
                     Glyph::idx(0)
-                        .fg1(Palette::White)
-                        .fg2(Palette::White)
+                        .fg1(Palette::Gray)
+                        .alpha(0.8)
                         .texture(GlyphTextureId::Bitmasks)
                         .layer(Layer::Overlay),
                     BitmaskGlyph::new(BitmaskStyle::Outline),

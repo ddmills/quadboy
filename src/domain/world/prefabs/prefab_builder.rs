@@ -95,7 +95,21 @@ impl<'a> PrefabBuilder<'a> {
     }
 
     pub fn with_collider(self) -> Self {
-        self.world.entity_mut(self.entity).insert(Collider);
+        self.world.entity_mut(self.entity).insert(Collider::solid());
+        self
+    }
+
+    pub fn with_collider_flags(self, flags: crate::domain::ColliderFlags) -> Self {
+        self.world
+            .entity_mut(self.entity)
+            .insert(Collider::new(flags));
+        self
+    }
+
+    pub fn with_movement_capabilities(self, flags: crate::domain::MovementFlags) -> Self {
+        self.world
+            .entity_mut(self.entity)
+            .insert(crate::domain::MovementCapabilities::new(flags));
         self
     }
 
