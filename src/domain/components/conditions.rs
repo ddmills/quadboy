@@ -108,6 +108,11 @@ pub enum ConditionType {
         heal_per_tick: i32,
         tick_interval: u32,
     },
+    ReturningHome {
+        health_regen_per_tick: i32,
+        armor_regen_multiplier: f32,
+        tick_interval: u32,
+    },
 
     // Movement and action modifiers
     Slowed {
@@ -163,6 +168,7 @@ impl ConditionType {
             ConditionType::Bleeding { .. } => 800,
             ConditionType::Burning { .. } => 600,
             ConditionType::Regenerating { .. } => 1200,
+            ConditionType::ReturningHome { .. } => 1200,
             ConditionType::Slowed { .. } => 500,
             ConditionType::Quickened { .. } => 400,
             ConditionType::Stunned => 200,
@@ -186,6 +192,7 @@ impl ConditionType {
             ConditionType::Bleeding { can_stack, .. } => *can_stack,
             ConditionType::Burning { .. } => false,
             ConditionType::Regenerating { .. } => false,
+            ConditionType::ReturningHome { .. } => false,
             ConditionType::Slowed { .. } => false,
             ConditionType::Quickened { .. } => false,
             ConditionType::Stunned => false,

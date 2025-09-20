@@ -101,6 +101,34 @@ pub fn process_conditions(
                     }
                 }
 
+                ConditionType::ReturningHome {
+                    health_regen_per_tick,
+                    armor_regen_multiplier,
+                    tick_interval,
+                } => {
+                    condition.accumulated_effect += tick_delta as f32;
+                    if condition.accumulated_effect >= *tick_interval as f32 {
+                        let heal_cycles =
+                            (condition.accumulated_effect / *tick_interval as f32) as i32;
+                        let total_heal = heal_cycles * health_regen_per_tick;
+                        health.heal(total_heal, level, stats);
+
+                        // Reset armor damage tick to enable immediate armor regen
+                        health.last_damage_tick = 0;
+
+                        condition.accumulated_effect -=
+                            (heal_cycles as f32) * (*tick_interval as f32);
+                    }
+
+                    // Apply armor regen multiplier as a stat modifier
+                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
+                    let armor_regen_bonus = (*armor_regen_multiplier * 10.0) as i32; // Convert multiplier to bonus
+                    stat_modifiers_to_add.push((
+                        StatType::ArmorRegen,
+                        StatModifier::condition(armor_regen_bonus, condition_id),
+                    ));
+                }
+
                 ConditionType::Strengthened { damage_bonus } => {
                     let condition_id = format!("{:?}_{}", condition.condition_type, index);
                     let damage_bonus_i32 = *damage_bonus as i32;

@@ -1,9 +1,10 @@
 use bevy_ecs::{prelude::*, system::RunSystemOnce};
+use macroquad::prelude::trace;
 use rand;
 
 use crate::{
     domain::{
-        ActiveConditions, AiController, AiState, AiTemplate, ConditionType, Energy,
+        ActiveConditions, AiController, AiState, AiTemplate, Condition, ConditionSource, ConditionType, Energy,
         EnergyActionType, Health, MoveAction, PlayerPosition, PursuingTarget, TurnState,
         get_base_energy_cost,
     },
@@ -14,6 +15,7 @@ use crate::{
 
 use super::ai_actions::*;
 use super::ai_utils::*;
+use super::condition_system::apply_condition_to_entity;
 
 pub fn ai_turn(world: &mut World) {
     tracy_span!("ai_turn");
@@ -67,6 +69,45 @@ fn process_ai_template(
         tracy_span!("ai_check_returning_state");
         // If AI is returning home, continue returning until home is reached
         if ai.state == AiState::Returning {
+            // Apply or refresh ReturningHome condition while returning
+            {
+                tracy_span!("ai_apply_returning_home_condition");
+                let returning_condition = ConditionType::ReturningHome {
+                    health_regen_per_tick: 2,
+                    armor_regen_multiplier: 3.0,
+                    tick_interval: 25,
+                };
+
+                // Check if condition needs to be applied or refreshed
+                let needs_condition = if let Some(conditions) = world.get::<ActiveConditions>(entity) {
+                    // Check if we need to apply or refresh the condition
+                    let existing_condition = conditions.conditions.iter().find(|c| {
+                        matches!(&c.condition_type, ConditionType::ReturningHome { .. })
+                    });
+
+                    match existing_condition {
+                        None => true, // No condition exists, need to apply
+                        Some(condition) => {
+                            // Refresh if condition has less than 200 ticks remaining
+                            condition.duration_remaining < 200
+                        }
+                    }
+                } else {
+                    true
+                };
+
+                if needs_condition {
+                    let condition = Condition::new(
+                        returning_condition.clone(),
+                        returning_condition.get_base_duration_ticks(),  // Use base duration from conditions.rs
+                        1.0,
+                        ConditionSource::environment(),
+                    );
+
+                    let _ = apply_condition_to_entity(entity, condition, world);
+                }
+            }
+
             // Check if we've reached home
             let (entity_x, entity_y, entity_z) = entity_pos.world();
             let (home_x, home_y, home_z) = ai.home_position.world();
@@ -77,6 +118,17 @@ fn process_ai_template(
                 update_ai_target(world, entity, None);
                 clear_cached_path(world, entity);
                 remove_pursuing_target_component(world, entity);
+
+                // Extend the ReturningHome condition for 250 ticks for recovery at home
+                if let Some(mut conditions) = world.get_mut::<ActiveConditions>(entity) {
+                    for condition in &mut conditions.conditions {
+                        if matches!(&condition.condition_type, ConditionType::ReturningHome { .. }) {
+                            condition.duration_remaining = 250; // 250 ticks of recovery time at home
+                            break;
+                        }
+                    }
+                }
+
                 consume_wait_energy(entity, world);
                 return;
             }
@@ -111,13 +163,6 @@ fn process_ai_template(
                 remove_pursuing_target_component(world, entity);
             }
 
-            {
-                tracy_span!("ai_enable_armor_regen");
-                // Enable armor regeneration while returning home
-                if let Some(mut health) = world.get_mut::<Health>(entity) {
-                    health.last_damage_tick = 0; // Reset to enable immediate armor regen
-                }
-            }
 
             {
                 tracy_span!("ai_return_to_home");
