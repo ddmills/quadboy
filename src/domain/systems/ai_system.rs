@@ -4,9 +4,9 @@ use rand;
 
 use crate::{
     domain::{
-        ActiveConditions, AiController, AiState, AiTemplate, Condition, ConditionSource, ConditionType, Energy,
-        EnergyActionType, Health, MoveAction, PlayerPosition, PursuingTarget, TurnState,
-        get_base_energy_cost,
+        ActiveConditions, AiController, AiState, AiTemplate, Condition, ConditionSource,
+        ConditionType, Energy, EnergyActionType, Health, MoveAction, PlayerPosition,
+        PursuingTarget, TurnState, get_base_energy_cost,
     },
     engine::{Clock, StableId, StableIdRegistry},
     rendering::Position,
@@ -79,27 +79,28 @@ fn process_ai_template(
                 };
 
                 // Check if condition needs to be applied or refreshed
-                let needs_condition = if let Some(conditions) = world.get::<ActiveConditions>(entity) {
-                    // Check if we need to apply or refresh the condition
-                    let existing_condition = conditions.conditions.iter().find(|c| {
-                        matches!(&c.condition_type, ConditionType::ReturningHome { .. })
-                    });
+                let needs_condition =
+                    if let Some(conditions) = world.get::<ActiveConditions>(entity) {
+                        // Check if we need to apply or refresh the condition
+                        let existing_condition = conditions.conditions.iter().find(|c| {
+                            matches!(&c.condition_type, ConditionType::ReturningHome { .. })
+                        });
 
-                    match existing_condition {
-                        None => true, // No condition exists, need to apply
-                        Some(condition) => {
-                            // Refresh if condition has less than 200 ticks remaining
-                            condition.duration_remaining < 200
+                        match existing_condition {
+                            None => true, // No condition exists, need to apply
+                            Some(condition) => {
+                                // Refresh if condition has less than 200 ticks remaining
+                                condition.duration_remaining < 200
+                            }
                         }
-                    }
-                } else {
-                    true
-                };
+                    } else {
+                        true
+                    };
 
                 if needs_condition {
                     let condition = Condition::new(
                         returning_condition.clone(),
-                        returning_condition.get_base_duration_ticks(),  // Use base duration from conditions.rs
+                        returning_condition.get_base_duration_ticks(), // Use base duration from conditions.rs
                         1.0,
                         ConditionSource::environment(),
                     );
@@ -122,7 +123,10 @@ fn process_ai_template(
                 // Extend the ReturningHome condition for 250 ticks for recovery at home
                 if let Some(mut conditions) = world.get_mut::<ActiveConditions>(entity) {
                     for condition in &mut conditions.conditions {
-                        if matches!(&condition.condition_type, ConditionType::ReturningHome { .. }) {
+                        if matches!(
+                            &condition.condition_type,
+                            ConditionType::ReturningHome { .. }
+                        ) {
                             condition.duration_remaining = 250; // 250 ticks of recovery time at home
                             break;
                         }
@@ -162,7 +166,6 @@ fn process_ai_template(
                 update_ai_state(world, entity, AiState::Returning);
                 remove_pursuing_target_component(world, entity);
             }
-
 
             {
                 tracy_span!("ai_return_to_home");
