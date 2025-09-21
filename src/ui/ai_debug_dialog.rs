@@ -2,9 +2,7 @@ use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
 
 use crate::{
-    domain::{
-        AiController, Energy, Label, PursuingTarget, Stats, systems::ai_utils::distance_from_home,
-    },
+    domain::{AiController, Energy, Label, PursuingTarget, Stats},
     engine::{AudioKey, Clock},
     rendering::{Glyph, Layer, Position, ScreenSize},
     ui::{ActivatableBuilder, Dialog, DialogContent, DialogText, DialogTextStyle},
@@ -51,7 +49,7 @@ impl AiDebugDialogBuilder {
                 format!("Template: {:?}", ai.template),
                 format!(
                     "Home: ({}, {}, {})",
-                    ai.home_position.x, ai.home_position.y, ai.home_position.z
+                    ai.home_position.0, ai.home_position.1, ai.home_position.2
                 ),
                 format!("Leash Range: {:.1}", ai.leash_range),
                 format!("Wander Range: {:.1}", ai.wander_range),
@@ -62,13 +60,11 @@ impl AiDebugDialogBuilder {
             if let Ok(pos) = q_positions.get(self.entity) {
                 let (x, y, z) = pos.world();
                 info_lines.push(format!("Current: ({}, {}, {})", x, y, z));
-                let home_distance = distance_from_home(pos, &ai.home_position);
-                info_lines.push(format!("Distance from Home: {:.1}", home_distance));
             }
 
             // Add target info
-            if let Some(target) = ai.current_target {
-                info_lines.push(format!("Target: Entity({:?})", target));
+            if let Some(target_stable_id) = ai.current_target_id {
+                info_lines.push(format!("Target: StableId({:?})", target_stable_id));
             } else {
                 info_lines.push("Target: None".to_string());
             }

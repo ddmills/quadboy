@@ -42,13 +42,7 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(stat_modifiers)
         .with_loot_drop(LootDrop::new(LootTableId::RattlesnakeLoot, 0.4))
         .with_creature_type(CreatureType::Rattlesnake)
-        .with_component(
-            AiController::new(
-                AiTemplate::Ambush { strike_range: 6.0 },
-                Position::new(config.pos.0, config.pos.1, config.pos.2),
-            )
-            .with_ranges(12.0, 1.0, 6.0), // Small leash, minimal wander, short detection
-        )
+        .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();
 }

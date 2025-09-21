@@ -210,7 +210,7 @@ fn get_ai_state_display_simple(
     // Check if AI can see its target (player for now)
     if let Some(player_pos) = player_position {
         // For pursuing state, check if they can see the player
-        if matches!(state, AiState::Pursuing) || ai_controller.current_target.is_some() {
+        if matches!(state, AiState::Pursuing) || ai_controller.current_target_id.is_some() {
             if has_line_of_sight_simple(ai_pos, player_pos, vision_blockers) {
                 visibility_indicator = "(v)";
             }

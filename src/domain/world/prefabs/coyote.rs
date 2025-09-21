@@ -34,8 +34,7 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_loot_drop(LootDrop::new(LootTableId::CoyoteLoot, 0.3))
         .with_creature_type(CreatureType::Coyote)
-        .with_component(AiController::new(AiTemplate::Scavenger, Position::new(config.pos.0, config.pos.1, config.pos.2))
-            .with_ranges(50.0, 12.0, 18.0))
+        .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
         .with_movement_capabilities(crate::domain::MovementFlags::TERRESTRIAL)
         .build();

@@ -7,7 +7,7 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        PlayerPosition, TurnState, Zones, ai_turn, manage_pursuit_timeout,
+        PlayerPosition, TurnState, Zones, ai_turn,
         systems::{
             armor_regen_system::armor_regen_system,
             cleanup_system::on_entity_destroyed_cleanup,
@@ -51,7 +51,6 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(on_entity_destroyed_loot),
         world.register_system(on_entity_destroyed_cleanup),
         world.register_system(ai_turn),
-        world.register_system(manage_pursuit_timeout),
     ];
     let post = vec![
         world.register_system(update_lighting_system),

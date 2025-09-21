@@ -410,10 +410,10 @@ fn close_dialog(
     mut dialog_state: ResMut<DialogState>,
 ) {
     for dialog_entity in q_dialogs.iter() {
-        cmds.entity(dialog_entity).despawn_recursive();
+        cmds.entity(dialog_entity).despawn();
     }
     for content_entity in q_dialog_content.iter() {
-        cmds.entity(content_entity).despawn_recursive();
+        cmds.entity(content_entity).despawn();
     }
     dialog_state.is_open = false;
 }
@@ -437,10 +437,10 @@ fn drop_selected_item_from_dialog(
 
         // Close dialog
         for dialog_entity in q_dialogs.iter() {
-            cmds.entity(dialog_entity).despawn_recursive();
+            cmds.entity(dialog_entity).despawn();
         }
         for content_entity in q_dialog_content.iter() {
-            cmds.entity(content_entity).despawn_recursive();
+            cmds.entity(content_entity).despawn();
         }
         dialog_state.is_open = false;
     }
@@ -571,10 +571,10 @@ fn throw_selected_item_from_dialog(
 
             // Close dialog
             for dialog_entity in q_dialogs.iter() {
-                cmds.entity(dialog_entity).despawn_recursive();
+                cmds.entity(dialog_entity).despawn();
             }
             for content_entity in q_dialog_content.iter() {
-                cmds.entity(content_entity).despawn_recursive();
+                cmds.entity(content_entity).despawn();
             }
             dialog_state.is_open = false;
 
@@ -1323,10 +1323,10 @@ fn refresh_action_dialog_with_timer(
     if id_registry.get_entity(action_dialog.item_id).is_none() {
         // Item no longer exists, close the dialog
         for dialog_entity in q_dialogs.iter() {
-            cmds.entity(dialog_entity).despawn_recursive();
+            cmds.entity(dialog_entity).despawn();
         }
         for content_entity in q_dialog_content.iter() {
-            cmds.entity(content_entity).despawn_recursive();
+            cmds.entity(content_entity).despawn();
         }
         dialog_state.is_open = false;
         return;

@@ -34,13 +34,7 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
         .with_stat_modifiers(crate::domain::StatModifiers::new())
         .with_light_source(LightSource::new(0.6, 0xC4D434, 3).with_flicker(0.5))
         .with_loot_drop(LootDrop::new(LootTableId::GiantFireflyLoot, 0.35))
-        .with_component(
-            AiController::new(
-                AiTemplate::Timid,
-                Position::new(config.pos.0, config.pos.1, config.pos.2),
-            )
-            .with_ranges(30.0, 8.0, 12.0), // Doubled leash range
-        )
+        .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
         .build();
 }

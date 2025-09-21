@@ -1,187 +1,132 @@
+use std::collections::HashMap;
+
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
-    domain::{AiController, AiState, Energy, EnergyActionType, MoveAction, get_base_energy_cost},
+    common::algorithm::{
+        astar::{AStarSettings, astar},
+        distance::Distance,
+    },
+    domain::{AiContext, AttackAction, MoveAction, Zone},
     rendering::Position,
-    tracy_span,
 };
 
-use super::ai_utils::*;
-
-/// Try to attack any adjacent hostile entities
-pub fn try_attack_adjacent(entity: Entity, entity_pos: &Position, world: &mut World) -> bool {
-    tracy_span!("try_attack_adjacent");
-    attack_if_adjacent(entity, entity_pos, world)
-}
-
-/// Try to pursue a specific target entity
-pub fn try_pursue_target(
-    entity: Entity,
-    entity_pos: &Position,
-    target: Entity,
-    world: &mut World,
-) -> bool {
-    tracy_span!("try_pursue_target");
-    if move_toward_target(entity, entity_pos, target, world) {
-        update_ai_state(world, entity, AiState::Pursuing);
-        update_ai_target(world, entity, Some(target));
-        true
-    } else {
-        false
-    }
-}
-
-/// Try to flee from a threat position
-pub fn try_flee_from(
-    entity: Entity,
-    entity_pos: &Position,
-    threat_pos: &Position,
-    world: &mut World,
-) -> bool {
-    tracy_span!("try_flee_from");
-    let flee_direction = calculate_flee_direction(entity_pos, threat_pos);
-    if try_move_in_direction(entity, entity_pos, flee_direction, world) {
-        update_ai_state(world, entity, AiState::Fleeing);
-        true
-    } else {
-        false
-    }
-}
-
-/// Try to wander near a specific position
-pub fn try_wander_near(
-    entity: Entity,
-    entity_pos: &Position,
-    target_pos: &Position,
-    range: f32,
-    world: &mut World,
-) -> bool {
-    tracy_span!("try_wander_near");
-    if wander_near_point(entity, entity_pos, target_pos, range, world) {
-        update_ai_state(world, entity, AiState::Wandering);
-        true
-    } else {
-        false
-    }
-}
-
-/// Try to return to home position
-pub fn try_return_home(
-    entity: Entity,
-    entity_pos: &Position,
-    ai: &AiController,
-    world: &mut World,
-) -> bool {
-    tracy_span!("try_return_home");
-    if return_to_home(entity, entity_pos, &ai.home_position, world) {
-        update_ai_state(world, entity, AiState::Returning);
-        true
-    } else {
-        false
-    }
-}
-
-/// Set AI to idle state and consume wait energy
-pub fn set_idle_and_wait(entity: Entity, world: &mut World) {
-    tracy_span!("set_idle_and_wait");
-    update_ai_state(world, entity, AiState::Idle);
-    update_ai_target(world, entity, None);
-    consume_wait_energy(entity, world);
-}
-
-/// Set AI to fighting state
-pub fn set_fighting_state(entity: Entity, target: Option<Entity>, world: &mut World) {
-    tracy_span!("set_fighting_state");
-    update_ai_state(world, entity, AiState::Fighting);
-    update_ai_target(world, entity, target);
-}
-
-// Helper functions that need to be accessible from ai_actions
-pub fn update_ai_state(world: &mut World, entity: Entity, new_state: AiState) {
-    if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-        ai.state = new_state;
-    }
-}
-
-pub fn update_ai_target(world: &mut World, entity: Entity, new_target: Option<Entity>) {
-    if let Some(mut ai) = world.get_mut::<AiController>(entity) {
-        ai.current_target = new_target;
-    }
-}
-
-fn calculate_flee_direction(entity_pos: &Position, threat_pos: &Position) -> (i32, i32) {
-    let (entity_x, entity_y, _) = entity_pos.world();
-    let (threat_x, threat_y, _) = threat_pos.world();
-
-    // Calculate direction away from threat
-    let dx = entity_x as i32 - threat_x as i32;
-    let dy = entity_y as i32 - threat_y as i32;
-
-    // Normalize to unit direction (prefer cardinal directions)
-    let flee_x = if dx > 0 {
-        1
-    } else if dx < 0 {
-        -1
-    } else {
-        0
-    };
-    let flee_y = if dy > 0 {
-        1
-    } else if dy < 0 {
-        -1
-    } else {
-        0
+pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
+    let Some(nearest) = context.nearest_hostile() else {
+        return false;
     };
 
-    // If we're exactly on the same position, pick a random direction
-    if flee_x == 0 && flee_y == 0 {
-        return (1, 0); // Default to east
+    // what is 'entity' attack range?
+    if nearest.distance >= 1.5 {
+        return false;
     }
 
-    (flee_x, flee_y)
+    let attack = AttackAction {
+        attacker_entity: entity,
+        target_pos: nearest.pos,
+        is_bump_attack: true,
+    };
+
+    attack.apply(world);
+    true
 }
 
-fn try_move_in_direction(
-    entity: Entity,
-    entity_pos: &Position,
-    direction: (i32, i32),
+pub fn ai_try_move_toward_nearest(
     world: &mut World,
+    entity: Entity,
+    context: &mut AiContext,
 ) -> bool {
-    let (current_x, current_y, current_z) = entity_pos.world();
-    let new_x = (current_x as i32 + direction.0) as usize;
-    let new_y = (current_y as i32 + direction.1) as usize;
+    let Some(nearest) = context.nearest_hostile() else {
+        return false;
+    };
 
-    // Try the preferred direction first
-    if is_move_valid_for_entity(world, Some(entity), new_x, new_y, current_z) {
-        let move_action = MoveAction {
-            entity,
-            new_position: (new_x, new_y, current_z),
+    let Some(target_pos) = world.get::<Position>(nearest.entity) else {
+        return false;
+    };
+
+    ai_try_move_toward(world, entity, target_pos.world())
+}
+
+pub fn ai_try_move_toward(
+    world: &mut World,
+    entity: Entity,
+    target_pos: (usize, usize, usize),
+) -> bool {
+    let mut zone_cache = HashMap::new();
+
+    let (start_x, start_y, start_z) = {
+        let Some(position) = world.get::<Position>(entity) else {
+            return false;
         };
-        move_action.apply(world);
-        return true;
+
+        let pos_world = position.world();
+
+        (pos_world.0 as i32, pos_world.1 as i32, pos_world.2 as i32)
+    };
+
+    let (target_x, target_y, target_z) = (
+        target_pos.0 as i32,
+        target_pos.1 as i32,
+        target_pos.2 as i32,
+    );
+
+    // check if on different Z levels!
+    if start_z != target_z {
+        trace!("TARGET POSITION ON SEPARATE Z LEVEL");
+        return false;
     }
 
-    // Try alternative directions if blocked
-    let alternatives = [
-        (direction.0, 0),            // Just X component
-        (0, direction.1),            // Just Y component
-        (-direction.0, direction.1), // Opposite X
-        (direction.0, -direction.1), // Opposite Y
+    for zone in world.query::<&Zone>().iter(world) {
+        zone_cache.insert(zone.idx, zone);
+    }
+
+    let deltas = [
+        (-1, -1),
+        (0, -1),
+        (0, 1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
     ];
 
-    for (dx, dy) in alternatives {
-        let alt_x = (current_x as i32 + dx) as usize;
-        let alt_y = (current_y as i32 + dy) as usize;
+    let mut result = astar(AStarSettings {
+        start: (start_x, start_y),
+        is_goal: |(x, y)| x == target_x && y == target_y,
+        cost: |(from_x, from_y), (to_x, to_y)| {
+            Distance::diagonal([from_x, from_y, target_z], [to_x, to_y, target_z])
+        },
+        heuristic: |(to_x, to_y)| {
+            Distance::diagonal([start_x, start_y, start_z], [to_x, to_y, target_z])
+        },
+        neighbors: |(x, y)| deltas.iter().map(|(dx, dy)| (x + dx, y + dy)).collect(),
+        max_depth: 500,
+        max_cost: Some(100.),
+    });
 
-        if is_move_valid_for_entity(world, Some(entity), alt_x, alt_y, current_z) {
-            let move_action = MoveAction {
-                entity,
-                new_position: (alt_x, alt_y, current_z),
-            };
-            move_action.apply(world);
-            return true;
-        }
+    // last element is the starting position
+    result.path.pop();
+
+    if !result.is_success || result.path.is_empty() {
+        trace!("A* FAILED");
+        return false;
     }
 
-    false // Couldn't move in any direction
+    let Some(move_to_target) = result.path.last() else {
+        return false;
+    };
+
+    let action = MoveAction {
+        entity,
+        new_position: (
+            move_to_target.0 as usize,
+            move_to_target.1 as usize,
+            start_z as usize,
+        ),
+    };
+
+    action.apply(world);
+    true
 }
