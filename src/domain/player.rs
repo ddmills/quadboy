@@ -59,6 +59,13 @@ pub struct PlayerMovedEvent {
     pub z: usize,
 }
 
+#[derive(Event)]
+pub struct RecalculateColliderFlagsEvent {
+    pub zone_idx: usize,
+    pub x: usize,
+    pub y: usize,
+}
+
 pub fn player_input(
     mut cmds: Commands,
     q_player: Query<(Entity, &Position, Option<&EquipmentSlots>), With<Player>>,
@@ -280,13 +287,16 @@ pub fn player_input(
                     || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
 
                 if can_move_vertically {
-                    if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
+                    if has_actor_at((new_x, new_y, new_z), &q_zone) {
                         // Bump attack - try to attack what we bumped into
                         cmds.queue(AttackAction {
                             attacker_entity: player_entity,
                             target_pos: (new_x, new_y, new_z),
                             is_bump_attack: true,
                         });
+                        movement_timer.0 = now;
+                    } else if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
+                        // Blocked by non-actor collider, can't move
                         movement_timer.0 = now;
                     } else {
                         // Normal movement
@@ -376,6 +386,19 @@ fn has_collider_at(
     Zone::get_at(world_pos, q_zones)
         .iter()
         .any(|e| colliders.contains(*e))
+}
+
+fn has_actor_at(world_pos: (usize, usize, usize), q_zones: &Query<&Zone>) -> bool {
+    let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+    let local = world_to_zone_local(world_pos.0, world_pos.1);
+
+    for zone in q_zones.iter() {
+        if zone.idx == zone_idx {
+            let flags = zone.colliders.get_flags(local.0, local.1);
+            return flags.contains(crate::domain::ColliderFlags::IS_ACTOR);
+        }
+    }
+    false
 }
 
 fn is_on_stair_down(

@@ -133,8 +133,7 @@ impl Command for AttackAction {
 
 impl AttackAction {
     fn apply_default_melee_attack(self, world: &mut World) {
-        if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity)
-        {
+        if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity) {
             let dx = self.target_pos.0 as f32 - attacker_pos.x;
             let dy = self.target_pos.1 as f32 - attacker_pos.y;
 
@@ -709,7 +708,7 @@ impl AttackAction {
         // Remove from old zone
         for mut zone in q_zones.iter_mut(world) {
             if zone.idx == old_zone_idx {
-                zone.entities.remove(&entity);
+                let _ = zone.entities.remove(&entity);
                 break;
             }
         }
@@ -731,7 +730,7 @@ impl AttackAction {
                     let new_local = world_to_zone_local(new_pos.0, new_pos.1);
 
                     if old_local != new_local {
-                        zone.entities.remove(&entity);
+                        let _ = zone.entities.remove(&entity);
                         zone.entities.insert(new_local.0, new_local.1, entity);
                     }
                     break;

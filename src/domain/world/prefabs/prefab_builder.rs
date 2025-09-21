@@ -113,6 +113,13 @@ impl<'a> PrefabBuilder<'a> {
         self
     }
 
+    pub fn with_actor_collider(self) -> Self {
+        self.world
+            .entity_mut(self.entity)
+            .insert(Collider::new(crate::domain::ColliderFlags::IS_ACTOR));
+        self
+    }
+
     pub fn with_vision_blocker(self) -> Self {
         self.world.entity_mut(self.entity).insert(VisionBlocker);
         self

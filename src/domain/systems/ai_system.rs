@@ -3,8 +3,10 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        ai_try_attacking_nearby, ai_try_move_toward_target, ai_try_select_target, detect_actors, get_base_energy_cost, Actor, Energy, EnergyActionType, TurnState
-    }, tracy_span
+        Actor, Energy, EnergyActionType, TurnState, ai_try_attacking_nearby,
+        ai_try_move_toward_target, ai_try_select_target, detect_actors, get_base_energy_cost,
+    },
+    tracy_span,
 };
 
 pub struct AiContext {

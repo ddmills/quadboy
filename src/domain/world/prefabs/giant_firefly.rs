@@ -2,7 +2,9 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        components::ai_controller::{AiController, AiTemplate}, Attributes, DefaultMeleeAttack, FactionId, FactionMember, LightSource, LootDrop, LootTableId, StatModifiers
+        Attributes, DefaultMeleeAttack, FactionId, FactionMember, LightSource, LootDrop,
+        LootTableId, StatModifiers,
+        components::ai_controller::{AiController, AiTemplate},
     },
     rendering::{GlyphTextureId, Layer},
 };
@@ -25,6 +27,7 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) {
         )
         .with_energy(-110)
         .with_health()
+        .with_actor_collider()
         .with_default_melee_attack(DefaultMeleeAttack::bite())
         .with_hide_when_not_visible()
         .with_level(2)

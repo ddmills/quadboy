@@ -16,7 +16,8 @@ pub fn smooth_movement_system(
             smooth_movement.duration_remaining -= time.dt;
 
             // Calculate animation progress (0.0 = start, 1.0 = end)
-            let progress = 1.0 - (smooth_movement.duration_remaining / smooth_movement.total_duration);
+            let progress =
+                1.0 - (smooth_movement.duration_remaining / smooth_movement.total_duration);
 
             // Use smoothstep for smooth interpolation
             let t_smooth = progress * progress * (3.0 - 2.0 * progress);

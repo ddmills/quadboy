@@ -7,7 +7,7 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        PlayerPosition, TurnState, Zones, ai_turn,
+        PlayerPosition, TurnState, Zones, ai_turn, recalculate_collider_flags_system,
         systems::{
             armor_regen_system::armor_regen_system,
             cleanup_system::on_entity_destroyed_cleanup,
@@ -38,6 +38,7 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(apply_deferred),
         world.register_system(update_player_position_resource),
         world.register_system(update_entity_pos),
+        world.register_system(recalculate_collider_flags_system),
         world.register_system(equipment_stat_modifier_system),
         world.register_system(recalculate_stats_system),
         world.register_system(process_conditions),

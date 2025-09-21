@@ -30,8 +30,8 @@ pub fn on_entity_destroyed_cleanup(
         }
 
         for mut z in q_zones.iter_mut() {
-            z.entities.remove(&event.entity);
-            z.colliders.remove(&event.entity);
+            let _ = z.entities.remove(&event.entity);
+            let _ = z.colliders.remove(&event.entity);
         }
 
         // Play destruction audio if the entity has a destructible component

@@ -31,14 +31,14 @@ use crate::{
         InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity, KnockbackAnimation, Label,
         Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
         LootTableRegistry, MovementCapabilities, NeedsStableId, NewGameResult, Player,
-        PlayerMovedEvent, Prefabs, PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult,
-        SetZoneStatusEvent, SmoothMovement, StackCount, Stackable, StairDown, StairUp, StatModifiers, Stats,
-        Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon,
-        Zones, explosion_system, fuse_system,
+        PlayerMovedEvent, Prefabs, PursuingTarget, RecalculateColliderFlagsEvent, RefreshBitmask,
+        SaveFlag, SaveGameResult, SetZoneStatusEvent, SmoothMovement, StackCount, Stackable,
+        StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
+        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
-        systems::smooth_movement_system::smooth_movement_system,
+        systems::collider_recalc_system::recalculate_collider_flags_system,
         systems::destruction_system::EntityDestroyedEvent,
         systems::dynamic_label_system::{
             ensure_labels_initialized, mark_dirty_on_equipment_change, mark_dirty_on_fuse_change,
@@ -46,6 +46,7 @@ use crate::{
         },
         systems::hit_blink_system::hit_blink_system,
         systems::knockback_animation_system::knockback_animation_system,
+        systems::smooth_movement_system::smooth_movement_system,
         systems::xp_system::{
             LevelUpEvent, LevelUpParticleQueue, XPGainEvent, apply_xp_gain, award_xp_on_kill,
             handle_level_up, process_level_up_particles,
@@ -193,6 +194,7 @@ async fn main() {
         .register_event::<PlayerMovedEvent>()
         .register_event::<SaveGameResult>()
         .register_event::<RefreshBitmask>()
+        .register_event::<RecalculateColliderFlagsEvent>()
         .register_event::<EntityDestroyedEvent>()
         .register_event::<XPGainEvent>()
         .register_event::<LevelUpEvent>()

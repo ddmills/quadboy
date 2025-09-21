@@ -28,14 +28,8 @@ impl ColliderCache {
         }
     }
 
-    pub fn remove(&mut self, entity: &Entity) {
-        self.entities.remove(entity);
-    }
-
-    pub fn remove_and_recalculate(&mut self, entity: &Entity, x: usize, y: usize, world: &World) {
-        if self.entities.remove(entity) {
-            self.recalculate_flags_at(x, y, world);
-        }
+    pub fn remove(&mut self, entity: &Entity) -> Option<(usize, usize)> {
+        self.entities.remove(entity)
     }
 
     pub fn get_entities(&self, x: usize, y: usize) -> Option<&Vec<Entity>> {
@@ -67,12 +61,33 @@ impl ColliderCache {
         self.entities.iter()
     }
 
-    fn recalculate_flags_at(&mut self, x: usize, y: usize, world: &World) {
+    pub fn recalculate_flags_at(&mut self, x: usize, y: usize, world: &World) {
         let mut combined_flags = ColliderFlags::empty();
 
         if let Some(entities) = self.entities.get(x, y) {
             for &entity in entities {
                 if let Some(collider) = world.get::<crate::domain::Collider>(entity) {
+                    combined_flags = combined_flags | collider.flags;
+                }
+            }
+        }
+
+        if let Some(flags) = self.flags.get_mut(x, y) {
+            *flags = combined_flags;
+        }
+    }
+
+    pub fn recalculate_flags_at_with_query(
+        &mut self,
+        x: usize,
+        y: usize,
+        q_colliders: &Query<&crate::domain::Collider>,
+    ) {
+        let mut combined_flags = ColliderFlags::empty();
+
+        if let Some(entities) = self.entities.get(x, y) {
+            for &entity in entities {
+                if let Ok(collider) = q_colliders.get(entity) {
                     combined_flags = combined_flags | collider.flags;
                 }
             }

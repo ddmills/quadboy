@@ -208,11 +208,6 @@ pub fn debug_collider_flags(
     };
 
     let local = world_to_zone_local(mouse.world.0 as usize, mouse.world.1 as usize);
-
-    // let Some(colliders) = zone.colliders.get_flags.get(local.0, local.1) else {
-    //     return;
-    // };
-
     let flags = zone.colliders.get_flags(local.0, local.1);
 
     let mut flag_list = vec![];
@@ -225,6 +220,9 @@ pub fn debug_collider_flags(
     }
     if !flags.contains(ColliderFlags::BLOCKS_SWIM) {
         flag_list.push("SWIM".to_owned());
+    }
+    if flags.contains(ColliderFlags::IS_ACTOR) {
+        flag_list.push("{C|IS_ACTOR}".to_owned());
     }
 
     text.value = format!("FLAGS: {}", flag_list.join(" "));

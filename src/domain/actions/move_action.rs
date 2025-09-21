@@ -2,8 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        ActiveConditions, Energy, EnergyActionType, GameSettings, Player, PlayerMovedEvent, SmoothMovement, Stats,
-        get_energy_cost,
+        ActiveConditions, Energy, EnergyActionType, GameSettings, Player, PlayerMovedEvent,
+        SmoothMovement, Stats, get_energy_cost,
     },
     rendering::{Glyph, Position},
 };

@@ -4,10 +4,14 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
 
 use crate::{
-    cfg::WORLD_SIZE, common::algorithm::{
-        astar::{astar, AStarSettings},
+    cfg::WORLD_SIZE,
+    common::algorithm::{
+        astar::{AStarSettings, astar},
         distance::Distance,
-    }, domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, Zone}, engine::{StableId, StableIdRegistry}, rendering::{world_to_zone_idx, world_to_zone_local, zone_idx, Position}
+    },
+    domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, Zone},
+    engine::{StableId, StableIdRegistry},
+    rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_idx},
 };
 
 pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
@@ -16,7 +20,7 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
     };
 
     // what is 'entity' attack range?
-    if nearest.distance > 1.5 {
+    if nearest.distance > 1.75 {
         return false;
     }
 
@@ -30,11 +34,7 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
     true
 }
 
-pub fn ai_try_select_target(
-    world: &mut World,
-    entity: Entity,
-    context: &mut AiContext,
-) -> bool {
+pub fn ai_try_select_target(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
     let Some(nearest) = context.nearest_hostile() else {
         return false;
     };
@@ -84,7 +84,10 @@ pub fn ai_try_move_toward(
         return false;
     }
 
-    let movement_flags = world.get::<MovementCapabilities>(entity).unwrap_or(&MovementCapabilities::terrestrial()).flags;
+    let movement_flags = world
+        .get::<MovementCapabilities>(entity)
+        .unwrap_or(&MovementCapabilities::terrestrial())
+        .flags;
 
     for zone in world.query::<&Zone>().iter(world) {
         zone_cache.insert(zone.idx, zone);
@@ -105,13 +108,20 @@ pub fn ai_try_move_toward(
         start: (start_x, start_y),
         is_goal: |(x, y)| x == target_x && y == target_y,
         cost: |(from_x, from_y), (to_x, to_y)| {
-            if to_x < 0 || to_y < 0 || to_x as usize >= WORLD_SIZE.0 || to_y as usize >= WORLD_SIZE.1 {
+            if to_x < 0
+                || to_y < 0
+                || to_x as usize >= WORLD_SIZE.0
+                || to_y as usize >= WORLD_SIZE.1
+            {
                 return f32::INFINITY;
             }
 
             let to_zone_idx = world_to_zone_idx(to_x as usize, to_y as usize, target_z as usize);
             let Some(zone) = zone_cache.get(&to_zone_idx) else {
-                trace!("zone not in cache {},{},{} = {}", to_x, to_y, target_z, to_zone_idx);
+                trace!(
+                    "zone not in cache {},{},{} = {}",
+                    to_x, to_y, target_z, to_zone_idx
+                );
                 return f32::INFINITY;
             };
 

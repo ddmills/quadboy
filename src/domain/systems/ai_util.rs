@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    common::algorithm::distance::Distance, domain::{get_effective_relationship, AiController, FactionMember, Zone}, engine::{StableId, StableIdRegistry}, rendering::{world_to_zone_idx, world_to_zone_local, Position}
+    common::algorithm::distance::Distance,
+    domain::{AiController, FactionMember, Zone, get_effective_relationship},
+    engine::{StableId, StableIdRegistry},
+    rendering::{Position, world_to_zone_idx, world_to_zone_local},
 };
 
 #[derive(Clone, Copy)]

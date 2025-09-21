@@ -58,7 +58,9 @@ impl NewGameCommand {
                 EquipmentSlots::humanoid(),
                 Vision::new(60),
                 ApplyVisibilityEffects,
-                Collider::solid(),
+                Collider::new(
+                    crate::domain::ColliderFlags::SOLID | crate::domain::ColliderFlags::IS_ACTOR,
+                ),
                 MovementCapabilities::terrestrial(),
                 Energy::new(-10),
             ))

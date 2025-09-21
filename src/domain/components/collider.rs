@@ -11,6 +11,7 @@ bitflags! {
         const BLOCKS_SWIM       = 0b00000100;  // Blocks swimming movement
         const BLOCKS_SIGHT      = 0b00100000;  // Blocks line of sight
         const BLOCKS_PROJECTILE = 0b01000000;  // Blocks projectiles
+        const IS_ACTOR          = 0b10000000;  // Is an actor (can be attacked)
 
         // Common combinations
         const SOLID = Self::BLOCKS_WALK.bits() | Self::BLOCKS_SWIM.bits();

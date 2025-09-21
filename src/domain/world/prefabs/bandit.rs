@@ -33,6 +33,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         )
         .with_energy(-100)
         .with_health()
+        .with_actor_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::fists())
         .with_level(4)

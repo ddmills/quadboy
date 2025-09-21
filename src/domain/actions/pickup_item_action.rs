@@ -112,8 +112,8 @@ impl Command for PickupItemAction {
 
             for mut zone in q_zones.iter_mut(world) {
                 if zone.idx == zone_idx {
-                    zone.entities.remove(&item_entity);
-                    zone.colliders.remove(&item_entity);
+                    let _ = zone.entities.remove(&item_entity);
+                    let _ = zone.colliders.remove(&item_entity);
                     break;
                 }
             }
@@ -160,8 +160,8 @@ fn remove_item_from_zone(world: &mut World, item_entity: Entity) {
 
         for mut zone in world.query::<&mut Zone>().iter_mut(world) {
             if zone.idx == zone_idx {
-                zone.entities.remove(&item_entity);
-                zone.colliders.remove(&item_entity);
+                let _ = zone.entities.remove(&item_entity);
+                let _ = zone.colliders.remove(&item_entity);
                 break;
             }
         }

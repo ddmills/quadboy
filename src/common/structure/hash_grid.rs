@@ -70,7 +70,7 @@ where {
     }
 
     pub fn insert_at(&mut self, idx: usize, value: T) {
-        self.remove(&value);
+        let _ = self.remove(&value);
         let Some(v) = self.grid.get_at_mut(idx) else {
             return;
         };
@@ -84,22 +84,25 @@ where {
         self.hash.contains_key(value)
     }
 
-    pub fn remove(&mut self, value: &T) -> bool {
+    pub fn remove(&mut self, value: &T) -> Option<(usize, usize)> {
         let Some(idx) = self.hash.remove(value) else {
-            return false;
+            return None;
         };
 
         let Some(cell) = self.grid.get_at_mut(idx) else {
-            return false;
+            return None;
         };
 
         let Some(vec_idx) = cell.iter().position(|v| v == value) else {
-            return false;
+            return None;
         };
 
         cell.swap_remove(vec_idx);
 
-        true
+        // Convert index back to (x, y) coordinates
+        let x = idx / self.height;
+        let y = idx % self.height;
+        Some((x, y))
     }
 
     #[inline]
