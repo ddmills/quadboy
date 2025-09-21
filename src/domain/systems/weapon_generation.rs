@@ -1,8 +1,8 @@
 use crate::{
     common::Rand,
     domain::{
-        HitEffect, ItemRarity, MaterialType, Weapon, WeaponModifier, WeaponModifierType,
-        WeaponType, pick_legendary_name, pick_random_prefix, pick_random_suffix,
+        HitEffect, ItemRarity, Weapon, WeaponModifier, WeaponModifierType, pick_legendary_name,
+        pick_random_prefix, pick_random_suffix,
     },
 };
 
@@ -112,11 +112,12 @@ impl GeneratedWeapon {
                     self.modifiers.push(prefix);
                     has_prefix = true;
                 }
-            } else if !add_prefix && !has_suffix {
-                if let Some(suffix) = pick_random_suffix(self.weapon.weapon_type, rand) {
-                    self.modifiers.push(suffix);
-                    has_suffix = true;
-                }
+            } else if !add_prefix
+                && !has_suffix
+                && let Some(suffix) = pick_random_suffix(self.weapon.weapon_type, rand)
+            {
+                self.modifiers.push(suffix);
+                has_suffix = true;
             }
         }
     }
@@ -177,14 +178,14 @@ impl GeneratedWeapon {
             if let Ok(bonus) = bonus_str.parse::<i32>() {
                 return Some((base, bonus));
             }
-        } else if let Some(minus_pos) = dice_string.rfind('-') {
-            if minus_pos > 0 {
-                // Make sure it's not a negative die count
-                let base = dice_string[..minus_pos].to_string();
-                let bonus_str = &dice_string[minus_pos..]; // Include the minus sign
-                if let Ok(bonus) = bonus_str.parse::<i32>() {
-                    return Some((base, bonus));
-                }
+        } else if let Some(minus_pos) = dice_string.rfind('-')
+            && minus_pos > 0
+        {
+            // Make sure it's not a negative die count
+            let base = dice_string[..minus_pos].to_string();
+            let bonus_str = &dice_string[minus_pos..]; // Include the minus sign
+            if let Ok(bonus) = bonus_str.parse::<i32>() {
+                return Some((base, bonus));
             }
         }
 

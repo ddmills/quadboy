@@ -14,7 +14,6 @@ mod list;
 mod xp_progress_bar;
 
 pub use activatable::*;
-pub use ai_debug_dialog::*;
 pub use ai_debug_dialog_command::*;
 pub use ai_debug_indicators::*;
 pub use button::*;

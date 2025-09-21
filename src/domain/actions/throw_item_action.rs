@@ -7,7 +7,7 @@ use crate::{
         PrefabId, Prefabs, StackCount, Stackable, Throwable, UnequipItemAction, Zone,
         get_base_energy_cost, inventory::InventoryChangedEvent,
     },
-    engine::{StableId, StableIdRegistry},
+    engine::StableIdRegistry,
     rendering::{Position, spawn_throw_trail_in_world, world_to_zone_idx, world_to_zone_local},
 };
 

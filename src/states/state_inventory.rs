@@ -3,10 +3,7 @@ use bevy_ecs::{
     schedule::common_conditions::resource_changed,
     system::{SystemId, SystemParam},
 };
-use macroquad::{
-    input::{KeyCode, is_key_pressed},
-    prelude::trace,
-};
+use macroquad::input::{KeyCode, is_key_pressed};
 
 use crate::{
     common::Palette,
@@ -1274,12 +1271,12 @@ fn refresh_action_dialog_on_events(
         e_inventory_changed.clear();
 
         // If we have a lit item and an active action dialog, update the dialog to point to the lit item
-        if let Some(lit_id) = lit_item_id {
-            if let Ok(mut action_dialog) = q_action_dialog.single_mut() {
-                // Only update if the lit item is different from the current dialog item
-                if action_dialog.item_id != lit_id {
-                    action_dialog.item_id = lit_id;
-                }
+        if let Some(lit_id) = lit_item_id
+            && let Ok(mut action_dialog) = q_action_dialog.single_mut()
+        {
+            // Only update if the lit item is different from the current dialog item
+            if action_dialog.item_id != lit_id {
+                action_dialog.item_id = lit_id;
             }
         }
 

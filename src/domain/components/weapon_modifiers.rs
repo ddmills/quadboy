@@ -1,6 +1,6 @@
 use crate::{
     common::Rand,
-    domain::{HitEffect, MaterialType, WeaponFamily, WeaponType},
+    domain::{HitEffect, MaterialType, WeaponType},
     engine::SerializableComponent,
 };
 use bevy_ecs::prelude::*;

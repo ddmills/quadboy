@@ -3,10 +3,10 @@ use bevy_ecs::prelude::*;
 use crate::{
     common::Rand,
     domain::{
-        ActiveConditions, BumpAttack, Condition, ConditionSource, ConditionType, CreatureType,
-        DefaultMeleeAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
-        Health, HitBlink, HitEffect, KnockbackAnimation, MaterialType, Player, StatType, Stats,
-        Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
+        BumpAttack, Condition, ConditionSource, ConditionType, DefaultMeleeAttack, Destructible,
+        Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, Health, HitBlink, HitEffect,
+        KnockbackAnimation, MaterialType, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
+        get_base_energy_cost,
         systems::{apply_condition_to_entity, destruction_system::EntityDestroyedEvent},
     },
     engine::{Audio, Clock, StableId, StableIdRegistry},

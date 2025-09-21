@@ -4,7 +4,7 @@ use crate::{
     engine::{Clock, KeyInput, Mouse},
     rendering::{
         Glyph, Layer, LightingData, Position, Text, Visibility, world_to_zone_idx,
-        world_to_zone_local, world_to_zone_local_f32,
+        world_to_zone_local,
     },
 };
 use bevy_ecs::prelude::*;

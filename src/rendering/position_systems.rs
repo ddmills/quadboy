@@ -128,13 +128,12 @@ pub fn update_dynamic_entity_pos(world: &mut World) {
         let old_zone_idx = pos.prev_zone_idx();
 
         // Remove from old zone if moving between zones
-        if new_zone_idx != old_zone_idx {
-            if let Some(&old_zone_entity) = zones_cache.get(&old_zone_idx) {
-                if let Some(mut old_zone) = world.entity_mut(old_zone_entity).get_mut::<Zone>() {
-                    let _ = old_zone.entities.remove(&entity);
-                    let _ = old_zone.colliders.remove(&entity);
-                }
-            }
+        if new_zone_idx != old_zone_idx
+            && let Some(&old_zone_entity) = zones_cache.get(&old_zone_idx)
+            && let Some(mut old_zone) = world.entity_mut(old_zone_entity).get_mut::<Zone>()
+        {
+            let _ = old_zone.entities.remove(&entity);
+            let _ = old_zone.colliders.remove(&entity);
         }
 
         // Add to new zone
@@ -155,14 +154,14 @@ pub fn update_dynamic_entity_pos(world: &mut World) {
                 zone.entities.insert(local_x, local_y, entity);
 
                 // If moving within the same zone, fire event for old position
-                if new_zone_idx == old_zone_idx {
-                    if let Some((old_x, old_y)) = old_collider_pos {
-                        recalc_events.push(RecalculateColliderFlagsEvent {
-                            zone_idx: new_zone_idx,
-                            x: old_x,
-                            y: old_y,
-                        });
-                    }
+                if new_zone_idx == old_zone_idx
+                    && let Some((old_x, old_y)) = old_collider_pos
+                {
+                    recalc_events.push(RecalculateColliderFlagsEvent {
+                        zone_idx: new_zone_idx,
+                        x: old_x,
+                        y: old_y,
+                    });
                 }
 
                 // If we have collision flags, insert at new position

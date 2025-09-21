@@ -66,10 +66,10 @@ impl Command for ToggleLightAction {
                     lightable.update_label(false);
 
                     // Play extinguish audio if available
-                    if let Some(extinguish_audio) = lightable.extinguish_audio {
-                        if let Some(audio) = world.get_resource::<Audio>() {
-                            audio.play(extinguish_audio, 0.6);
-                        }
+                    if let Some(extinguish_audio) = lightable.extinguish_audio
+                        && let Some(audio) = world.get_resource::<Audio>()
+                    {
+                        audio.play(extinguish_audio, 0.6);
                     }
                 }
             } else {
@@ -102,10 +102,10 @@ impl Command for ToggleLightAction {
                         lightable.update_label(true);
 
                         // Play light audio if available
-                        if let Some(light_audio) = lightable.light_audio {
-                            if let Some(audio) = world.get_resource::<Audio>() {
-                                audio.play(light_audio, 0.6);
-                            }
+                        if let Some(light_audio) = lightable.light_audio
+                            && let Some(audio) = world.get_resource::<Audio>()
+                        {
+                            audio.play(light_audio, 0.6);
                         }
                     }
 
@@ -142,17 +142,15 @@ impl Command for ToggleLightAction {
 
                 // Play appropriate audio if available
                 if is_enabled {
-                    if let Some(light_audio) = lightable.light_audio {
-                        if let Some(audio) = world.get_resource::<Audio>() {
-                            audio.play(light_audio, 0.6);
-                        }
+                    if let Some(light_audio) = lightable.light_audio
+                        && let Some(audio) = world.get_resource::<Audio>()
+                    {
+                        audio.play(light_audio, 0.6);
                     }
-                } else {
-                    if let Some(extinguish_audio) = lightable.extinguish_audio {
-                        if let Some(audio) = world.get_resource::<Audio>() {
-                            audio.play(extinguish_audio, 0.6);
-                        }
-                    }
+                } else if let Some(extinguish_audio) = lightable.extinguish_audio
+                    && let Some(audio) = world.get_resource::<Audio>()
+                {
+                    audio.play(extinguish_audio, 0.6);
                 }
             }
         }

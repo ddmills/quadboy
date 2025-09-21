@@ -3,14 +3,11 @@ use macroquad::math::Vec2;
 
 use crate::{
     cfg::ZONE_SIZE,
-    domain::{
-        Destructible, Health, MaterialType, Zone,
-        systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
-    },
+    domain::{Destructible, Health, Zone, systems::destruction_system::EntityDestroyedEvent},
     engine::{Audio, AudioKey, Clock},
     rendering::{
         AlphaCurve, ColorCurve, Distribution, GlyphAnimation, ParticleSpawner, Position, SpawnArea,
-        VelocityCurve, world_to_zone_idx, world_to_zone_local, world_to_zone_local_f32,
+        world_to_zone_idx, world_to_zone_local, world_to_zone_local_f32,
     },
 };
 
@@ -296,33 +293,31 @@ pub fn explosion_system(
                         if let Ok(mut health) = q_health.get_mut(entity) {
                             health.take_damage(damage, clock.get_tick());
 
-                            if health.is_dead() {
-                                if let Ok(pos) = q_positions.get(entity) {
-                                    e_entity_destroyed.write(EntityDestroyedEvent::environmental(
-                                        entity,
-                                        pos.world(),
-                                        None,
-                                    ));
-                                }
+                            if health.is_dead()
+                                && let Ok(pos) = q_positions.get(entity)
+                            {
+                                e_entity_destroyed.write(EntityDestroyedEvent::environmental(
+                                    entity,
+                                    pos.world(),
+                                    None,
+                                ));
                             }
                         }
 
                         // Apply damage to destructible objects if explosion destroys terrain
-                        if explosion.destroys_terrain {
-                            if let Ok(mut destructible) = q_destructible.get_mut(entity) {
-                                destructible.take_damage(damage);
+                        if explosion.destroys_terrain
+                            && let Ok(mut destructible) = q_destructible.get_mut(entity)
+                        {
+                            destructible.take_damage(damage);
 
-                                if destructible.is_destroyed() {
-                                    if let Ok(pos) = q_positions.get(entity) {
-                                        e_entity_destroyed.write(
-                                            EntityDestroyedEvent::environmental(
-                                                entity,
-                                                pos.world(),
-                                                Some(destructible.material_type),
-                                            ),
-                                        );
-                                    }
-                                }
+                            if destructible.is_destroyed()
+                                && let Ok(pos) = q_positions.get(entity)
+                            {
+                                e_entity_destroyed.write(EntityDestroyedEvent::environmental(
+                                    entity,
+                                    pos.world(),
+                                    Some(destructible.material_type),
+                                ));
                             }
                         }
                     }

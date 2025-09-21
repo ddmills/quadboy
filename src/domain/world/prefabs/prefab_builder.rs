@@ -316,20 +316,20 @@ impl<'a> PrefabBuilder<'a> {
 
     pub fn build(self) -> Entity {
         // Send event for static entities to trigger zone placement
-        if self.world.entity(self.entity).contains::<StaticEntity>() {
-            if let (Some(position), collider_flags) = (
+        if self.world.entity(self.entity).contains::<StaticEntity>()
+            && let (Some(position), collider_flags) = (
                 self.world.entity(self.entity).get::<Position>().cloned(),
                 self.world
                     .entity(self.entity)
                     .get::<Collider>()
                     .map(|c| c.flags),
-            ) {
-                self.world.send_event(StaticEntitySpawnedEvent {
-                    entity: self.entity,
-                    position,
-                    collider_flags,
-                });
-            }
+            )
+        {
+            self.world.send_event(StaticEntitySpawnedEvent {
+                entity: self.entity,
+                position,
+                collider_flags,
+            });
         }
 
         self.entity

@@ -5,7 +5,7 @@ use crate::{
     DebugMode,
     common::Palette,
     domain::{AiController, AiState, Player, PlayerPosition, PursuingTarget, VisionBlocker, Zone},
-    rendering::{Layer, Position, Text, Visibility, world_to_zone_idx, world_to_zone_local},
+    rendering::{Layer, Position, Text, Visibility},
     states::CleanupStateExplore,
 };
 
@@ -210,10 +210,10 @@ fn get_ai_state_display_simple(
     // Check if AI can see its target (player for now)
     if let Some(player_pos) = player_position {
         // For pursuing state, check if they can see the player
-        if matches!(state, AiState::Pursuing) || ai_controller.current_target_id.is_some() {
-            if has_line_of_sight_simple(ai_pos, player_pos, vision_blockers) {
-                visibility_indicator = "(v)";
-            }
+        if (matches!(state, AiState::Pursuing) || ai_controller.current_target_id.is_some())
+            && has_line_of_sight_simple(ai_pos, player_pos, vision_blockers)
+        {
+            visibility_indicator = "(v)";
         }
     }
 

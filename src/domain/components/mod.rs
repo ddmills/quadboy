@@ -37,7 +37,7 @@ pub mod weapon_modifiers;
 pub mod weapon_type;
 pub mod zone_tracking;
 
-pub use ai_controller::{AiController, AiState, AiTemplate};
+pub use ai_controller::{AiController, AiState};
 pub use attributes::{AttributePoints, Attributes};
 pub use bitmask::*;
 pub use bump_attack::BumpAttack;
@@ -77,9 +77,8 @@ pub use vision::{
 pub use weapon::Weapon;
 pub use weapon_family::WeaponFamily;
 pub use weapon_modifiers::{
-    ItemRarity, WeaponApplicationType, WeaponModifier, WeaponModifierType, get_gun_prefixes,
-    get_gun_suffixes, get_melee_prefixes, get_melee_suffixes, pick_legendary_name,
-    pick_random_prefix, pick_random_suffix,
+    ItemRarity, WeaponModifier, WeaponModifierType, pick_legendary_name, pick_random_prefix,
+    pick_random_suffix,
 };
 pub use weapon_type::WeaponType;
 pub use zone_tracking::{DynamicEntity, StaticEntity};

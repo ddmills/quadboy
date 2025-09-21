@@ -1,10 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{
-        Energy, EnergyActionType, EquipmentSlot, EquipmentSlots, StatType, Stats, Weapon,
-        WeaponType, get_energy_cost,
-    },
+    domain::{Energy, EquipmentSlot, EquipmentSlots, StatType, Stats, Weapon, WeaponType},
     engine::{Audio, StableIdRegistry},
 };
 
@@ -54,7 +51,7 @@ impl Command for ReloadAction {
             }
 
             // Calculate energy cost using reload speed stat
-            let base_cost = weapon.base_reload_cost.unwrap_or_else(|| 50); // New lower base cost
+            let base_cost = weapon.base_reload_cost.unwrap_or(50); // New lower base cost
 
             let stats = world.get::<Stats>(self.entity);
             let energy_cost = if let Some(stats) = stats {

@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 use crate::{
-    cfg::CARDINALS_OFFSET,
     domain::{DynamicEntity, StaticEntity, Zone},
     rendering::{Glyph, Position},
 };

@@ -1,8 +1,5 @@
 use bevy_ecs::{prelude::*, system::SystemId};
-use macroquad::{
-    input::{KeyCode, MouseButton, is_key_pressed, is_mouse_button_pressed},
-    prelude::trace,
-};
+use macroquad::input::{KeyCode, MouseButton, is_key_pressed, is_mouse_button_pressed};
 
 use crate::{
     cfg::ZONE_SIZE,
@@ -220,7 +217,7 @@ fn spawn_throw_range_indicators_impl(
                 player_world.2,
             );
 
-            let neighbors = Zone::get_neighbors(position, &q_zones);
+            let neighbors = Zone::get_neighbors(position, q_zones);
             for neighbor in neighbors.iter().flatten() {
                 e_refresh_bitmask.write(RefreshBitmask(*neighbor));
             }

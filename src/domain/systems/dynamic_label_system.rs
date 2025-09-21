@@ -27,24 +27,24 @@ pub fn update_labels(
             }
 
             // Check fuse component
-            if let Ok(fuse) = q_fuse.get(entity) {
-                if fuse.remaining_ticks > 0 {
-                    modifiers.push((50, format!("{{Y|[Lit]}} {}", fuse.get_countdown_display())));
-                }
+            if let Ok(fuse) = q_fuse.get(entity)
+                && fuse.remaining_ticks > 0
+            {
+                modifiers.push((50, format!("{{Y|[Lit]}} {}", fuse.get_countdown_display())));
             }
 
             // Check light source component
-            if let Ok(light) = q_light_source.get(entity) {
-                if light.is_enabled {
-                    modifiers.push((75, "{Y|[Lit]}".to_string()));
-                }
+            if let Ok(light) = q_light_source.get(entity)
+                && light.is_enabled
+            {
+                modifiers.push((75, "{Y|[Lit]}".to_string()));
             }
 
             // Check stack count component
-            if let Ok(stack) = q_stack_count.get(entity) {
-                if stack.count > 1 {
-                    modifiers.push((200, format!("x{}", stack.count)));
-                }
+            if let Ok(stack) = q_stack_count.get(entity)
+                && stack.count > 1
+            {
+                modifiers.push((200, format!("x{}", stack.count)));
             }
 
             // Sort by priority and append
@@ -133,24 +133,24 @@ pub fn ensure_labels_initialized(
         }
 
         // Check fuse component
-        if let Ok(fuse) = q_fuse.get(entity) {
-            if fuse.remaining_ticks > 0 {
-                modifiers.push((50, format!("[Lit] {}", fuse.get_countdown_display())));
-            }
+        if let Ok(fuse) = q_fuse.get(entity)
+            && fuse.remaining_ticks > 0
+        {
+            modifiers.push((50, format!("[Lit] {}", fuse.get_countdown_display())));
         }
 
         // Check light source component
-        if let Ok(light) = q_light_source.get(entity) {
-            if light.is_enabled {
-                modifiers.push((75, "[Lit]".to_string()));
-            }
+        if let Ok(light) = q_light_source.get(entity)
+            && light.is_enabled
+        {
+            modifiers.push((75, "[Lit]".to_string()));
         }
 
         // Check stack count component
-        if let Ok(stack) = q_stack_count.get(entity) {
-            if stack.count > 1 {
-                modifiers.push((200, format!("x{}", stack.count)));
-            }
+        if let Ok(stack) = q_stack_count.get(entity)
+            && stack.count > 1
+        {
+            modifiers.push((200, format!("x{}", stack.count)));
         }
 
         // Sort by priority and append

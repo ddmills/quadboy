@@ -1,10 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{
-        ActiveConditions, ConditionType, Energy, InActiveZone, Player, PursuingTarget, StatType,
-        Stats,
-    },
+    domain::{ActiveConditions, ConditionType, Energy, Player, StatType, Stats},
     engine::Clock,
     tracy_span,
 };

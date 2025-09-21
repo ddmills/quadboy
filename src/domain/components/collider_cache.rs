@@ -24,7 +24,7 @@ impl ColliderCache {
         self.entities.insert(x, y, entity);
 
         if let Some(current_flags) = self.flags.get_mut(x, y) {
-            *current_flags = *current_flags | entity_flags;
+            *current_flags |= entity_flags;
         }
     }
 
@@ -67,7 +67,7 @@ impl ColliderCache {
         if let Some(entities) = self.entities.get(x, y) {
             for &entity in entities {
                 if let Some(collider) = world.get::<crate::domain::Collider>(entity) {
-                    combined_flags = combined_flags | collider.flags;
+                    combined_flags |= collider.flags;
                 }
             }
         }
@@ -88,7 +88,7 @@ impl ColliderCache {
         if let Some(entities) = self.entities.get(x, y) {
             for &entity in entities {
                 if let Ok(collider) = q_colliders.get(entity) {
-                    combined_flags = combined_flags | collider.flags;
+                    combined_flags |= collider.flags;
                 }
             }
         }
