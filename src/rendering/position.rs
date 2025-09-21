@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Collider, InActiveZone, RecalculateColliderFlagsEvent, Zone, ZoneStatus};
+use crate::domain::{Collider, ColliderFlags, InActiveZone, RecalculateColliderFlagsEvent, Zone, ZoneStatus};
 use crate::rendering::{world_to_zone_idx, world_to_zone_local};
 
 use crate::engine::SerializableComponent;
@@ -68,9 +68,9 @@ pub fn update_entity_pos(world: &mut World) {
     tracy_span!("update_entity_pos");
 
     // Collect entities that need position updates
-    let entities_to_update: Vec<(Entity, Position, Option<crate::domain::ColliderFlags>)> = {
+    let entities_to_update: Vec<(Entity, Position, Option<ColliderFlags>)> = {
         let mut q_moved = world
-            .query_filtered::<(Entity, &Position, Option<&crate::domain::Collider>), (
+            .query_filtered::<(Entity, &Position, Option<&Collider>), (
                 Or<(Changed<Position>, Added<Position>)>,
                 With<RecordZonePosition>,
             )>();
