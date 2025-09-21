@@ -27,6 +27,13 @@ fn resolve_hit_miss(
     target_entity: Entity,
     world: &mut World,
 ) -> (bool, bool) {
+    // Check if target is a static destructible object (has Destructible but no Health)
+    // Static objects like walls, trees, boulders should always be hit
+    if world.get::<Destructible>(target_entity).is_some()
+        && world.get::<Health>(target_entity).is_none() {
+        return (true, false); // hit=true, critical=false
+    }
+
     let target_dodge = world
         .get::<Stats>(target_entity)
         .map(|stats| stats.get_stat(StatType::Dodge))

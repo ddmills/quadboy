@@ -3,8 +3,7 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        Actor, Energy, EnergyActionType, TurnState, ai_try_attacking_nearby,
-        ai_try_move_toward_target, ai_try_select_target, detect_actors, get_base_energy_cost,
+        ai_try_attacking_nearby, ai_try_move_toward_target, ai_try_select_target, detect_actors, get_actor, get_base_energy_cost, Actor, AiController, Energy, EnergyActionType, TurnState
     },
     tracy_span,
 };
@@ -45,6 +44,10 @@ pub fn ai_turn(world: &mut World) {
     }
 
     if ai_try_select_target(world, current_entity, &mut context) {
+        if let Some(mut ai_controller) = world.get_mut::<AiController>(current_entity) {
+            ai_controller.current_target_id = context.target.map(|x| x.stable_id);
+        };
+
         if ai_try_move_toward_target(world, current_entity, &mut context) {
             return;
         }
@@ -60,8 +63,17 @@ pub fn ai_turn(world: &mut World) {
 }
 
 pub fn build_ai_context(world: &mut World, entity: Entity) -> AiContext {
+    let detected = detect_actors(world, entity);
+    let ai_controller = world.get::<AiController>(entity).unwrap();
+
+    let target = if let Some(target_id) = ai_controller.current_target_id {
+        get_actor(world, entity, target_id)
+    } else {
+        None
+    };
+
     AiContext {
-        detected: detect_actors(world, entity),
-        target: None,
+        detected,
+        target,
     }
 }

@@ -287,16 +287,13 @@ pub fn player_input(
                     || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
 
                 if can_move_vertically {
-                    if has_actor_at((new_x, new_y, new_z), &q_zone) {
-                        // Bump attack - try to attack what we bumped into
+                    if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
+                        // Bump attack - try to attack what we bumped into (actors, trees, walls, etc.)
                         cmds.queue(AttackAction {
                             attacker_entity: player_entity,
                             target_pos: (new_x, new_y, new_z),
                             is_bump_attack: true,
                         });
-                        movement_timer.0 = now;
-                    } else if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
-                        // Blocked by non-actor collider, can't move
                         movement_timer.0 = now;
                     } else {
                         // Normal movement

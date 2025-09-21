@@ -126,3 +126,28 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<Actor> {
 
     targets
 }
+
+pub fn get_actor(world: &mut World, source: Entity, stable_id: StableId) -> Option<Actor>
+{
+    let id_registry = world.resource::<StableIdRegistry>();
+    let target_entity = id_registry.get_entity(stable_id.0)?;
+    let pos = world.get::<Position>(target_entity)?.world();
+    let source_pos = world.get::<Position>(source)?.world();
+    let relationship = get_effective_relationship(source, target_entity, world);
+    let distance = Distance::diagonal(
+        [
+            source_pos.0 as i32,
+            source_pos.1 as i32,
+            source_pos.2 as i32,
+        ],
+        [pos.0 as i32, pos.1 as i32, pos.2 as i32],
+    );
+
+    Some(Actor {
+        entity: target_entity,
+        stable_id,
+        pos,
+        distance,
+        relationship,
+    })
+}

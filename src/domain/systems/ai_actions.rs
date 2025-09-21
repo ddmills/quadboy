@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process::id};
+use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
@@ -6,13 +6,114 @@ use macroquad::prelude::trace;
 use crate::{
     cfg::WORLD_SIZE,
     common::algorithm::{
-        astar::{AStarSettings, astar},
+        astar::{astar, AStarSettings},
         distance::Distance,
     },
-    domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, Zone},
-    engine::{StableId, StableIdRegistry},
-    rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_idx},
+    domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, StairDown, StairUp, Zone},
+    rendering::{world_to_zone_idx, world_to_zone_local, zone_local_to_world, zone_xyz, Position},
 };
+
+pub fn ai_try_use_stair(world: &mut World, entity: Entity, going_down: bool) -> bool {
+    let Some(position) = world.get::<Position>(entity) else {
+        return false;
+    };
+
+    let pos_world = position.world();
+    let entity_zone_idx = world_to_zone_idx(pos_world.0, pos_world.1, pos_world.2);
+    let entity_local = world_to_zone_local(pos_world.0, pos_world.1);
+
+    let mut zone_cache: HashMap<usize, &Zone> = HashMap::new();
+    for zone in world.query::<&Zone>().iter(world) {
+        zone_cache.insert(zone.idx, zone);
+    }
+
+    let Some(current_zone) = zone_cache.get(&entity_zone_idx) else {
+        return false;
+    };
+
+    let Some(entities_at_pos) = current_zone.entities.get(entity_local.0, entity_local.1) else {
+        return false;
+    };
+
+    for &stair_entity in entities_at_pos.iter() {
+        let has_correct_stair = if going_down {
+            world.get::<StairDown>(stair_entity).is_some()
+        } else {
+            world.get::<StairUp>(stair_entity).is_some()
+        };
+
+        if has_correct_stair {
+            let new_z = if going_down {
+                pos_world.2 + 1
+            } else {
+                pos_world.2.saturating_sub(1)
+            };
+
+            let action = MoveAction {
+                entity,
+                new_position: (pos_world.0, pos_world.1, new_z),
+            };
+            action.apply(world);
+            return true;
+        }
+    }
+
+    false
+}
+
+pub fn ai_try_navigate_to_stair(world: &mut World, entity: Entity, current_z: i32, target_z: i32) -> bool {
+    let Some(position) = world.get::<Position>(entity) else {
+        return false;
+    };
+
+    let pos_world = position.world();
+    let going_down = current_z < target_z;
+    let mut nearest_stair_pos: Option<(i32, i32)> = None;
+    let mut nearest_distance = f32::INFINITY;
+
+    for zone in world.query::<&Zone>().iter(world) {
+        let (_, _, zone_z) = zone_xyz(zone.idx);
+        if zone_z != current_z as usize {
+            continue;
+        }
+
+        for y in 0..zone.entities.height() {
+            for x in 0..zone.entities.width() {
+                let Some(entities) = zone.entities.get(x, y) else {
+                    continue;
+                };
+
+                for &stair_entity in entities.iter() {
+                    let should_target = if going_down {
+                        world.get::<StairDown>(stair_entity).is_some()
+                    } else {
+                        world.get::<StairUp>(stair_entity).is_some()
+                    };
+
+                    if should_target {
+                        let (world_x, world_y, world_z) = zone_local_to_world(zone.idx, x, y);
+
+                        let distance = Distance::diagonal(
+                            [pos_world.0 as i32, pos_world.1 as i32, current_z],
+                            [world_x as i32, world_y as i32, world_z as i32]
+                        );
+
+                        if distance < nearest_distance {
+                            nearest_distance = distance;
+                            nearest_stair_pos = Some((world_x as i32, world_y as i32));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some((stair_x, stair_y)) = nearest_stair_pos {
+        return ai_try_move_toward(world, entity, (stair_x as usize, stair_y as usize, current_z as usize));
+    }
+
+    false
+}
 
 pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
     let Some(nearest) = context.nearest_hostile() else {
@@ -35,6 +136,11 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
 }
 
 pub fn ai_try_select_target(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
+    if let Some(t) = context.target {
+        context.target = Some(t);
+        return true;
+    }
+
     let Some(nearest) = context.nearest_hostile() else {
         return false;
     };
@@ -60,7 +166,7 @@ pub fn ai_try_move_toward(
     entity: Entity,
     target_pos: (usize, usize, usize),
 ) -> bool {
-    let mut zone_cache = HashMap::new();
+    let mut zone_cache: HashMap<usize, &Zone> = HashMap::new();
 
     let (start_x, start_y, start_z) = {
         let Some(position) = world.get::<Position>(entity) else {
@@ -80,8 +186,15 @@ pub fn ai_try_move_toward(
 
     // check if on different Z levels!
     if start_z != target_z {
-        trace!("TARGET POSITION ON SEPARATE Z LEVEL");
-        return false;
+        let going_down = start_z < target_z;
+
+        // First try to use a stair we're already on
+        if ai_try_use_stair(world, entity, going_down) {
+            return true;
+        }
+
+        // If that failed, try to navigate to the nearest appropriate stair
+        return ai_try_navigate_to_stair(world, entity, start_z, target_z);
     }
 
     let movement_flags = world
