@@ -1,11 +1,11 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
+use quadboy_macros::profiled_system;
 
 use crate::{
     domain::{
         ai_try_attacking_nearby, ai_try_move_toward_target, ai_try_select_target, detect_actors, get_actor, get_base_energy_cost, Actor, AiController, Energy, EnergyActionType, TurnState
     },
-    tracy_span,
 };
 
 pub struct AiContext {
@@ -22,8 +22,8 @@ impl AiContext {
     }
 }
 
+#[profiled_system]
 pub fn ai_turn(world: &mut World) {
-    tracy_span!("ai_turn");
 
     let Some(turn_state) = world.get_resource::<TurnState>() else {
         return;

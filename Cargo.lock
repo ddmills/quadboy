@@ -211,15 +211,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_serializable_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "bevy_tasks"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -920,7 +911,6 @@ name = "quadboy"
 version = "0.1.0"
 dependencies = [
  "bevy_ecs",
- "bevy_serializable_derive",
  "bitflags 2.9.2",
  "fastnoise-lite",
  "getrandom",
@@ -928,12 +918,22 @@ dependencies = [
  "macroquad-profiler",
  "ordered-float",
  "quad-snd",
+ "quadboy_macros",
  "rand",
  "serde",
  "serde_json",
  "tracy-client",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "quadboy_macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

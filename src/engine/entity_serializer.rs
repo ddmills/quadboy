@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
-pub use bevy_serializable_derive::SerializableComponent;
+pub use quadboy_macros::SerializableComponent;
 
 pub trait SerializableComponent:
     Component + Clone + Serialize + for<'de> Deserialize<'de> + 'static

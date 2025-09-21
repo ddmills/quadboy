@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
 use crate::{
     domain::{
@@ -7,15 +8,14 @@ use crate::{
     },
     engine::StableIdRegistry,
     rendering::Position,
-    tracy_span,
 };
 
+#[profiled_system]
 pub fn death_check_system(
     q_entities: Query<(Entity, &Health, &Position, Option<&Player>)>,
     mut e_entity_destroyed: EventWriter<EntityDestroyedEvent>,
     stable_id_registry: Res<StableIdRegistry>,
 ) {
-    tracy_span!("death_check_system");
 
     for (entity, health, position, player_component) in q_entities.iter() {
         if health.is_dead() {

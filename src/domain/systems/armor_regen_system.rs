@@ -1,12 +1,12 @@
 use crate::{
     domain::{Health, StatType, Stats},
     engine::Clock,
-    tracy_span,
 };
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
+#[profiled_system]
 pub fn armor_regen_system(mut q_health: Query<(&mut Health, &Stats)>, clock: Res<Clock>) {
-    tracy_span!("armor_regen_system");
     let current_tick = clock.current_tick();
 
     for (mut health, stats) in q_health.iter_mut() {
