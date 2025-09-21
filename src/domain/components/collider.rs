@@ -34,6 +34,23 @@ bitflags! {
     }
 }
 
+impl MovementFlags {
+    pub fn is_blocked_by(self, collider_flags: ColliderFlags) -> bool {
+        // Check if we have any way to move through this tile
+        let can_walk_through = self.contains(MovementFlags::CAN_WALK)
+            && !collider_flags.contains(ColliderFlags::BLOCKS_WALK);
+
+        let can_fly_through = self.contains(MovementFlags::CAN_FLY)
+            && !collider_flags.contains(ColliderFlags::BLOCKS_FLY);
+
+        let can_swim_through = self.contains(MovementFlags::CAN_SWIM)
+            && !collider_flags.contains(ColliderFlags::BLOCKS_SWIM);
+
+        // We're blocked only if we have NO way through
+        !(can_walk_through || can_fly_through || can_swim_through)
+    }
+}
+
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Collider {
     pub flags: ColliderFlags,

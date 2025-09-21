@@ -32,12 +32,13 @@ use crate::{
         Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
         LootTableRegistry, MovementCapabilities, NeedsStableId, NewGameResult, Player,
         PlayerMovedEvent, Prefabs, PursuingTarget, RefreshBitmask, SaveFlag, SaveGameResult,
-        SetZoneStatusEvent, StackCount, Stackable, StairDown, StairUp, StatModifiers, Stats,
+        SetZoneStatusEvent, SmoothMovement, StackCount, Stackable, StairDown, StairUp, StatModifiers, Stats,
         Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon,
         Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
+        systems::smooth_movement_system::smooth_movement_system,
         systems::destruction_system::EntityDestroyedEvent,
         systems::dynamic_label_system::{
             ensure_labels_initialized, mark_dirty_on_equipment_change, mark_dirty_on_fuse_change,
@@ -146,6 +147,7 @@ async fn main() {
     reg.register::<HitBlink>();
     reg.register::<KnockbackAnimation>();
     reg.register::<BumpAttack>();
+    reg.register::<SmoothMovement>();
     reg.register::<Destructible>();
     reg.register::<Weapon>();
     reg.register::<ItemRarity>();
@@ -287,6 +289,7 @@ async fn main() {
             ScheduleType::PostUpdate,
             (
                 bump_attack_system,
+                smooth_movement_system,
                 hit_blink_system,
                 knockback_animation_system,
                 (award_xp_on_kill, apply_xp_gain, handle_level_up).chain(),

@@ -3,18 +3,17 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        DetectedActors, Energy, EnergyActionType, TurnState, ai_try_attacking_nearby,
-        ai_try_move_toward_nearest, detect_actors, get_base_energy_cost,
-    },
-    tracy_span,
+        ai_try_attacking_nearby, ai_try_move_toward_target, ai_try_select_target, detect_actors, get_base_energy_cost, Actor, Energy, EnergyActionType, TurnState
+    }, tracy_span
 };
 
 pub struct AiContext {
-    pub detected: Vec<DetectedActors>,
+    pub detected: Vec<Actor>,
+    pub target: Option<Actor>,
 }
 
 impl AiContext {
-    pub fn nearest_hostile(&self) -> Option<&DetectedActors> {
+    pub fn nearest_hostile(&self) -> Option<&Actor> {
         self.detected
             .iter()
             .filter(|x| x.relationship < 0)
@@ -39,13 +38,17 @@ pub fn ai_turn(world: &mut World) {
 
     let mut context = build_ai_context(world, current_entity);
 
-    // Try to attack anything next to you
     if ai_try_attacking_nearby(world, current_entity, &mut context) {
         return;
     }
 
-    if ai_try_move_toward_nearest(world, current_entity, &mut context) {
-        return;
+    if ai_try_select_target(world, current_entity, &mut context) {
+        if ai_try_move_toward_target(world, current_entity, &mut context) {
+            return;
+        }
+
+        // we have a target, but we can't move toward it!
+        trace!("AI: Can't reach target!");
     }
 
     if let Some(mut energy) = world.get_mut::<Energy>(current_entity) {
@@ -57,5 +60,6 @@ pub fn ai_turn(world: &mut World) {
 pub fn build_ai_context(world: &mut World, entity: Entity) -> AiContext {
     AiContext {
         detected: detect_actors(world, entity),
+        target: None,
     }
 }

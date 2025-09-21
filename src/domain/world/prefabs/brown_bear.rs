@@ -35,7 +35,6 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) {
         .with_description("Eight hundred pounds of primal rage and hunger. The old gods still walk these mountains.")
         .with_energy(-150)
         .with_health()
-        .with_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::claw_swipe())
         .with_level(4)

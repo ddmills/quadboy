@@ -1,19 +1,19 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    common::algorithm::distance::Distance,
-    domain::{AiController, FactionMember, Zone, get_effective_relationship},
-    rendering::{Position, world_to_zone_idx, world_to_zone_local},
+    common::algorithm::distance::Distance, domain::{get_effective_relationship, AiController, FactionMember, Zone}, engine::{StableId, StableIdRegistry}, rendering::{world_to_zone_idx, world_to_zone_local, Position}
 };
 
-pub struct DetectedActors {
+#[derive(Clone, Copy)]
+pub struct Actor {
     pub entity: Entity,
+    pub stable_id: StableId,
     pub pos: (usize, usize, usize),
     pub distance: f32,
     pub relationship: i8,
 }
 
-pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<DetectedActors> {
+pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<Actor> {
     // Get the AI entity's faction and position
     let (_our_faction_id, position_world, detection_range) = {
         let Some(ai_controller) = world.get::<AiController>(entity) else {
@@ -35,7 +35,7 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<DetectedActors> {
         )
     };
 
-    let mut enemies = Vec::new();
+    let mut targets = vec![];
 
     // Get the zone index for our position
     let our_zone_idx = world_to_zone_idx(position_world.0, position_world.1, position_world.2);
@@ -50,12 +50,14 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<DetectedActors> {
     };
 
     let Some(zone_entity) = zone_entity else {
-        return enemies;
+        return targets;
     };
 
     let Some(zone) = world.get::<Zone>(zone_entity) else {
-        return enemies;
+        return targets;
     };
+
+    let id_registry = world.resource::<StableIdRegistry>();
 
     // Search in a square area around our position within detection range
     let (center_x, center_y, center_z) = position_world;
@@ -103,8 +105,13 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<DetectedActors> {
                         [check_pos.0 as i32, check_pos.1 as i32, check_pos.2 as i32],
                     );
 
-                    enemies.push(DetectedActors {
+                    let Some(stable_id) = id_registry.get_id(candidate_entity) else {
+                        continue;
+                    };
+
+                    targets.push(Actor {
                         entity: candidate_entity,
+                        stable_id: StableId(stable_id),
                         pos: check_pos,
                         distance,
                         relationship,
@@ -114,5 +121,5 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<DetectedActors> {
         }
     }
 
-    enemies
+    targets
 }

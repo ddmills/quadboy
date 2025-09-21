@@ -25,7 +25,6 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
         .with_description("Mangy and lean, forever watching from the ridge line. They know death when they smell it.")
         .with_energy(-130)
         .with_health()
-        .with_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::bite())
         .with_level(2)

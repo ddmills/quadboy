@@ -1,15 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, process::id};
 
 use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
 
 use crate::{
-    common::algorithm::{
-        astar::{AStarSettings, astar},
+    cfg::WORLD_SIZE, common::algorithm::{
+        astar::{astar, AStarSettings},
         distance::Distance,
-    },
-    domain::{AiContext, AttackAction, MoveAction, Zone},
-    rendering::Position,
+    }, domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, Zone}, engine::{StableId, StableIdRegistry}, rendering::{world_to_zone_idx, world_to_zone_local, zone_idx, Position}
 };
 
 pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
@@ -18,7 +16,7 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
     };
 
     // what is 'entity' attack range?
-    if nearest.distance >= 1.5 {
+    if nearest.distance > 1.5 {
         return false;
     }
 
@@ -32,7 +30,7 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
     true
 }
 
-pub fn ai_try_move_toward_nearest(
+pub fn ai_try_select_target(
     world: &mut World,
     entity: Entity,
     context: &mut AiContext,
@@ -41,11 +39,20 @@ pub fn ai_try_move_toward_nearest(
         return false;
     };
 
-    let Some(target_pos) = world.get::<Position>(nearest.entity) else {
+    context.target = Some(*nearest);
+    true
+}
+
+pub fn ai_try_move_toward_target(
+    world: &mut World,
+    entity: Entity,
+    context: &mut AiContext,
+) -> bool {
+    let Some(target) = context.target else {
         return false;
     };
 
-    ai_try_move_toward(world, entity, target_pos.world())
+    ai_try_move_toward(world, entity, target.pos)
 }
 
 pub fn ai_try_move_toward(
@@ -77,6 +84,8 @@ pub fn ai_try_move_toward(
         return false;
     }
 
+    let movement_flags = world.get::<MovementCapabilities>(entity).unwrap_or(&MovementCapabilities::terrestrial()).flags;
+
     for zone in world.query::<&Zone>().iter(world) {
         zone_cache.insert(zone.idx, zone);
     }
@@ -84,7 +93,7 @@ pub fn ai_try_move_toward(
     let deltas = [
         (-1, -1),
         (0, -1),
-        (0, 1),
+        (1, -1),
         (-1, 0),
         (1, 0),
         (-1, 1),
@@ -96,6 +105,27 @@ pub fn ai_try_move_toward(
         start: (start_x, start_y),
         is_goal: |(x, y)| x == target_x && y == target_y,
         cost: |(from_x, from_y), (to_x, to_y)| {
+            if to_x < 0 || to_y < 0 || to_x as usize >= WORLD_SIZE.0 || to_y as usize >= WORLD_SIZE.1 {
+                return f32::INFINITY;
+            }
+
+            let to_zone_idx = world_to_zone_idx(to_x as usize, to_y as usize, target_z as usize);
+            let Some(zone) = zone_cache.get(&to_zone_idx) else {
+                trace!("zone not in cache {},{},{} = {}", to_x, to_y, target_z, to_zone_idx);
+                return f32::INFINITY;
+            };
+
+            // Convert to local zone coordinates
+            let local = world_to_zone_local(to_x as usize, to_y as usize);
+
+            // Get cached collider flags at target position
+            let collider_flags = zone.colliders.get_flags(local.0, local.1);
+
+            // Check if movement is blocked
+            if movement_flags.is_blocked_by(collider_flags) {
+                return f32::INFINITY;
+            }
+
             Distance::diagonal([from_x, from_y, target_z], [to_x, to_y, target_z])
         },
         heuristic: |(to_x, to_y)| {

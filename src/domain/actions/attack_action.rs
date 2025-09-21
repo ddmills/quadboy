@@ -133,9 +133,7 @@ impl Command for AttackAction {
 
 impl AttackAction {
     fn apply_default_melee_attack(self, world: &mut World) {
-        // Apply bump attack effect if attacker is a player (for unarmed/default melee)
-        if world.get::<Player>(self.attacker_entity).is_some()
-            && let Some(attacker_pos) = world.get::<Position>(self.attacker_entity)
+        if let Some(attacker_pos) = world.get::<Position>(self.attacker_entity)
         {
             let dx = self.target_pos.0 as f32 - attacker_pos.x;
             let dy = self.target_pos.1 as f32 - attacker_pos.y;
@@ -168,9 +166,7 @@ impl AttackAction {
     }
 
     fn apply_melee_attack(self, world: &mut World, weapon: &Weapon) {
-        // Apply bump attack effect if attacker is a player using a melee weapon
         if weapon.weapon_type == WeaponType::Melee
-            && world.get::<Player>(self.attacker_entity).is_some()
             && let Some(attacker_pos) = world.get::<Position>(self.attacker_entity)
         {
             let dx = self.target_pos.0 as f32 - attacker_pos.x;

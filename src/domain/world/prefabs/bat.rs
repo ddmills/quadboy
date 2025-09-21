@@ -26,7 +26,6 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
         )
         .with_energy(-80)
         .with_health()
-        .with_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::wing_buffet())
         .with_level(1)

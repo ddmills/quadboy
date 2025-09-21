@@ -19,6 +19,7 @@ pub struct GameSettings {
     pub crt_flicker: bool,
     pub crt_vignette: bool,
     pub crt_chromatic_ab: bool,
+    pub smooth_movement: bool,
 }
 
 impl Default for GameSettings {
@@ -36,6 +37,7 @@ impl Default for GameSettings {
             crt_flicker: false,
             crt_vignette: true,
             crt_chromatic_ab: true,
+            smooth_movement: true,
         }
     }
 }

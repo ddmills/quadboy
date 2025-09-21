@@ -33,7 +33,6 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
         )
         .with_energy(-120)
         .with_health()
-        .with_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::venomous_bite())
         .with_level(3)

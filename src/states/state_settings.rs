@@ -18,6 +18,7 @@ struct SettingsCallbacks {
     toggle_vignette: SystemId,
     toggle_chromatic_ab: SystemId,
     toggle_camera_mode: SystemId,
+    toggle_smooth_movement: SystemId,
     toggle_saves: SystemId,
     back_to_menu: SystemId,
 }
@@ -31,6 +32,7 @@ struct SettingsUIEntities {
     vignette: Entity,
     chromatic_ab: Entity,
     camera_mode: Entity,
+    smooth_movement: Entity,
     saves_enabled: Entity,
     save_name: Entity,
     input_rate: Entity,
@@ -67,6 +69,7 @@ fn setup_callbacks(world: &mut World) {
         toggle_vignette: world.register_system(toggle_vignette),
         toggle_chromatic_ab: world.register_system(toggle_chromatic_ab),
         toggle_camera_mode: world.register_system(toggle_camera_mode),
+        toggle_smooth_movement: world.register_system(toggle_smooth_movement),
         toggle_saves: world.register_system(toggle_saves),
         back_to_menu: world.register_system(back_to_menu),
     };
@@ -110,6 +113,10 @@ fn toggle_camera_mode(mut settings: ResMut<GameSettings>) {
 
 fn toggle_saves(mut settings: ResMut<GameSettings>) {
     settings.enable_saves = !settings.enable_saves;
+}
+
+fn toggle_smooth_movement(mut settings: ResMut<GameSettings>) {
+    settings.smooth_movement = !settings.smooth_movement;
 }
 
 fn back_to_menu(mut app_state: ResMut<CurrentAppState>) {
@@ -216,6 +223,17 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
         ))
         .id();
 
+    let smooth_movement = cmds
+        .spawn((
+            Position::new_f32(6., 9.5, 0.),
+            ActivatableBuilder::new("", callbacks.toggle_smooth_movement)
+                .with_hotkey(KeyCode::Key8)
+                .with_focus_order(2100)
+                .as_button(Layer::Ui),
+            CleanupSettings,
+        ))
+        .id();
+
     // Save Settings Section
     cmds.spawn((
         Text::new("{Y|SAVE SETTINGS}"),
@@ -227,7 +245,7 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
         .spawn((
             Position::new_f32(6., 11., 0.),
             ActivatableBuilder::new("", callbacks.toggle_saves)
-                .with_hotkey(KeyCode::Key8)
+                .with_hotkey(KeyCode::Key9)
                 .with_focus_order(3000)
                 .as_button(Layer::Ui),
             CleanupSettings,
@@ -285,6 +303,7 @@ fn render_settings_menu(mut cmds: Commands, callbacks: Res<SettingsCallbacks>) {
         vignette,
         chromatic_ab,
         camera_mode,
+        smooth_movement,
         saves_enabled,
         save_name,
         input_rate,
@@ -384,10 +403,22 @@ fn update_settings_display(
         });
     }
 
+    // Update smooth movement
+    if let Ok(mut button) = q_button.get_mut(ui_entities.smooth_movement) {
+        button.set_label(format!(
+            "({{Y|8}}) Smooth Movement: {}",
+            if settings.smooth_movement {
+                "{G|ON}"
+            } else {
+                "{R|OFF}"
+            }
+        ));
+    }
+
     // Update saves enabled
     if let Ok(mut button) = q_button.get_mut(ui_entities.saves_enabled) {
         button.set_label(format!(
-            "({{Y|8}}) Saves Enabled: {}",
+            "({{Y|9}}) Saves Enabled: {}",
             if settings.enable_saves {
                 "{G|ON}"
             } else {
@@ -397,7 +428,7 @@ fn update_settings_display(
     }
 
     if let Ok(mut text) = q_text.get_mut(ui_entities.save_name) {
-        text.value = format!("({{Y|9}}) Save Name: {{G|{}}}", settings.save_name);
+        text.value = format!("({{Y|0}}) Save Name: {{G|{}}}", settings.save_name);
     }
 
     if let Ok(mut text) = q_text.get_mut(ui_entities.input_rate) {
