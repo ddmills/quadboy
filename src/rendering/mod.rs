@@ -7,6 +7,7 @@ mod glyph_batch;
 mod lighting_data;
 mod particles;
 mod position;
+pub mod position_systems;
 mod projection;
 mod render_layer;
 mod render_target;

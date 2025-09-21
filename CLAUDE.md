@@ -99,7 +99,7 @@ When creating new components that need to be saved/loaded:
 
 Important serializable components:
 - Player, Position, Energy, Glyph, Label, Collider
-- RecordZonePosition (marks entities that track their zone)
+- StaticEntity (entities that never move), DynamicEntity (entities that can move)
 - CleanupStatePlay/CleanupStateExplore (cleanup markers)
 
 ## Turn-Based Energy System

@@ -6,13 +6,13 @@ use crate::{
     cfg::SURFACE_LEVEL_Z,
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, AttributePoints, Attributes, Collider, DefaultMeleeAttack, Energy,
-        EquipmentSlots, FactionId, FactionMember, GameSaveData, Health, Inventory, Label, Level,
-        LoadZoneCommand, MovementCapabilities, Overworld, Player, PlayerPosition, PlayerSaveData,
-        StatModifiers, Stats, TerrainNoise, Vision, Zones,
+        ApplyVisibilityEffects, AttributePoints, Attributes, Collider, DefaultMeleeAttack,
+        DynamicEntity, Energy, EquipmentSlots, FactionId, FactionMember, GameSaveData, Health,
+        Inventory, Label, Level, LoadZoneCommand, MovementCapabilities, Overworld, Player,
+        PlayerPosition, PlayerSaveData, StatModifiers, Stats, TerrainNoise, Vision, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
-    rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
+    rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position},
     states::{CleanupStatePlay, CurrentGameState, GameState},
 };
 
@@ -67,7 +67,7 @@ impl NewGameCommand {
             .insert(Label::new("{Y|Cowboy}"))
             .insert(DefaultMeleeAttack::fists())
             .insert(Level::new(2))
-            .insert(RecordZonePosition)
+            .insert(DynamicEntity) // Player can move
             .insert(CleanupStatePlay)
             .insert(FactionMember::new(FactionId::Player))
             .insert(Attributes::new(0, 0, 0, 0))

@@ -10,6 +10,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(22, Palette::Gray, Palette::Yellow, Layer::Objects)
         .with_label("Lantern")
         .with_description(

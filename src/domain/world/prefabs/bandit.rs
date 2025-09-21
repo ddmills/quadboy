@@ -6,7 +6,7 @@ use crate::{
         StatModifier, StatModifiers, StatType,
         components::ai_controller::{AiController, AiTemplate},
     },
-    rendering::{GlyphTextureId, Layer, Position},
+    rendering::{GlyphTextureId, Layer},
 };
 use bevy_ecs::{entity::Entity, world::World};
 

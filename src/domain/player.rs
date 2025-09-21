@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cfg::{MAP_SIZE, ZONE_SIZE},
     domain::{
-        AttackAction, Collider, Energy, EquipmentSlots, GameSettings, Inventory,
+        AttackAction, Collider, ColliderFlags, Energy, EquipmentSlots, GameSettings, Inventory,
         InventoryAccessible, IsExplored, MoveAction, OpenContainerAction, ReloadAction, StairDown,
         StairUp, ToggleLightAction, TurnState, WaitAction, Zone,
     },
@@ -64,6 +64,13 @@ pub struct RecalculateColliderFlagsEvent {
     pub zone_idx: usize,
     pub x: usize,
     pub y: usize,
+}
+
+#[derive(Event)]
+pub struct StaticEntitySpawnedEvent {
+    pub entity: Entity,
+    pub position: Position,
+    pub collider_flags: Option<ColliderFlags>,
 }
 
 pub fn player_input(

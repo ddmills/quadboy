@@ -3,14 +3,15 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, Attributes, BitmaskGlyph, BitmaskStyle, Collider, Consumable,
-        ConsumableEffect, CreatureType, DefaultMeleeAttack, Description, Destructible, Energy,
-        Equippable, Health, HideWhenNotVisible, Inventory, InventoryAccessible, Item, Label, Level,
-        LightBlocker, LightSource, Lightable, LootDrop, MaterialType, NeedsStableId, SaveFlag,
-        StackCount, Stackable, StackableType, StairDown, StairUp, StatModifiers, Stats, Throwable,
+        ConsumableEffect, CreatureType, DefaultMeleeAttack, Description, Destructible,
+        DynamicEntity, Energy, Equippable, Health, HideWhenNotVisible, Inventory,
+        InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable, LootDrop,
+        MaterialType, NeedsStableId, SaveFlag, StackCount, Stackable, StackableType, StairDown,
+        StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent, Stats, Throwable,
         VisionBlocker, Weapon,
     },
     engine::AudioKey,
-    rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position, RecordZonePosition},
+    rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position},
     states::CleanupStatePlay,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -33,11 +34,22 @@ impl<'a> PrefabBuilder<'a> {
     pub fn with_base_components(self) -> Self {
         self.world.entity_mut(self.entity).insert((
             self.position.clone(),
-            RecordZonePosition,
             ApplyVisibilityEffects,
             SaveFlag,
             CleanupStatePlay,
         ));
+        self
+    }
+
+    /// Mark entity as static - never moves after placement
+    pub fn with_static_tracking(self) -> Self {
+        self.world.entity_mut(self.entity).insert(StaticEntity);
+        self
+    }
+
+    /// Mark entity as dynamic - can move and needs zone cache updates
+    pub fn with_dynamic_tracking(self) -> Self {
+        self.world.entity_mut(self.entity).insert(DynamicEntity);
         self
     }
 
@@ -147,7 +159,7 @@ impl<'a> PrefabBuilder<'a> {
     pub fn with_energy(self, energy: i32) -> Self {
         self.world
             .entity_mut(self.entity)
-            .insert(Energy::new(energy));
+            .insert((Energy::new(energy), DynamicEntity)); // Auto-add DynamicEntity for creatures
         self
     }
 
@@ -303,6 +315,23 @@ impl<'a> PrefabBuilder<'a> {
     }
 
     pub fn build(self) -> Entity {
+        // Send event for static entities to trigger zone placement
+        if self.world.entity(self.entity).contains::<StaticEntity>() {
+            if let (Some(position), collider_flags) = (
+                self.world.entity(self.entity).get::<Position>().cloned(),
+                self.world
+                    .entity(self.entity)
+                    .get::<Collider>()
+                    .map(|c| c.flags),
+            ) {
+                self.world.send_event(StaticEntitySpawnedEvent {
+                    entity: self.entity,
+                    position,
+                    collider_flags,
+                });
+            }
+        }
+
         self.entity
     }
 }

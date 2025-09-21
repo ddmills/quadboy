@@ -9,6 +9,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_bedroll(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(54, Palette::Purple, Palette::Gray, Layer::Objects)
         .with_label("Bedroll")
         .with_description("Canvas and wool, stained with trail dust and darker things. Dreams come harder on the ground.")

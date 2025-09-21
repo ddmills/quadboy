@@ -9,6 +9,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(41, Palette::Red, Palette::Green, Layer::Objects)
         .with_label("{R|Apple}")
         .with_description(

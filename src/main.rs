@@ -25,7 +25,7 @@ use crate::{
     domain::{
         ActiveConditions, AiController, ApplyVisibilityEffects, AttributePoints, Attributes,
         Bitmasker, BumpAttack, Collider, Consumable, CreatureType, DefaultMeleeAttack, Description,
-        Destructible, Energy, EquipmentSlots, Equippable, Equipped, ExplosionEvent,
+        Destructible, DynamicEntity, Energy, EquipmentSlots, Equippable, Equipped, ExplosionEvent,
         ExplosiveProperties, FactionMap, FactionMember, FactionRelations, Fuse, GameSettings,
         Health, HideWhenNotVisible, HitBlink, HitEffect, InActiveZone, InInventory, Inventory,
         InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity, KnockbackAnimation, Label,
@@ -33,8 +33,9 @@ use crate::{
         LootTableRegistry, MovementCapabilities, NeedsStableId, NewGameResult, Player,
         PlayerMovedEvent, Prefabs, PursuingTarget, RecalculateColliderFlagsEvent, RefreshBitmask,
         SaveFlag, SaveGameResult, SetZoneStatusEvent, SmoothMovement, StackCount, Stackable,
-        StairDown, StairUp, StatModifiers, Stats, Throwable, TurnState, UnloadZoneEvent,
-        UnopenedContainer, Vision, VisionBlocker, Weapon, Zones, explosion_system, fuse_system,
+        StairDown, StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent, Stats,
+        Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon,
+        Zones, explosion_system, fuse_system,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -57,7 +58,7 @@ use crate::{
         SerializableComponentRegistry, StableId, StableIdRegistry, update_mouse,
         update_mouse_input,
     },
-    rendering::{CrtShader, Glyph, RecordZonePosition, TilesetRegistry},
+    rendering::{CrtShader, Glyph, TilesetRegistry},
     states::{
         AttributesStatePlugin, CleanupStateExplore, CleanupStatePlay, ContainerStatePlugin,
         CurrentAppState, CurrentGameState, DebugSpawnStatePlugin, ExploreStatePlugin,
@@ -112,7 +113,8 @@ async fn main() {
 
     let mut reg = SerializableComponentRegistry::new();
     reg.register::<Position>();
-    reg.register::<RecordZonePosition>();
+    reg.register::<StaticEntity>();
+    reg.register::<DynamicEntity>();
     reg.register::<Glyph>();
     reg.register::<AnimatedGlyph>();
     reg.register::<SaveFlag>();
@@ -195,6 +197,7 @@ async fn main() {
         .register_event::<SaveGameResult>()
         .register_event::<RefreshBitmask>()
         .register_event::<RecalculateColliderFlagsEvent>()
+        .register_event::<StaticEntitySpawnedEvent>()
         .register_event::<EntityDestroyedEvent>()
         .register_event::<XPGainEvent>()
         .register_event::<LevelUpEvent>()

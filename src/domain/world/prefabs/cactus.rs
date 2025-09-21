@@ -12,6 +12,7 @@ pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Cacti never move
         .with_needs_stable_id()
         .with_glyph(glyph_idx, Palette::Green, Palette::Purple, Layer::Objects)
         .with_label("Cactus")

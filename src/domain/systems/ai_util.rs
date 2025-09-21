@@ -127,8 +127,7 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<Actor> {
     targets
 }
 
-pub fn get_actor(world: &mut World, source: Entity, stable_id: StableId) -> Option<Actor>
-{
+pub fn get_actor(world: &mut World, source: Entity, stable_id: StableId) -> Option<Actor> {
     let id_registry = world.resource::<StableIdRegistry>();
     let target_entity = id_registry.get_entity(stable_id.0)?;
     let pos = world.get::<Position>(target_entity)?.world();

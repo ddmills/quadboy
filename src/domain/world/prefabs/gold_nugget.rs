@@ -5,6 +5,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_gold_nugget(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(28, Palette::Yellow, Palette::White, Layer::Objects)
         .with_label("{Y-Y-Y-Y-Y-Y-Y-Y-Y-Y-Y-W scrollf|Gold Nugget}")
         .with_description(

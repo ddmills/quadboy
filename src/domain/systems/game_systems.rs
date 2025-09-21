@@ -23,7 +23,7 @@ use crate::{
         tick_faction_modifiers, turn_scheduler, update_entity_visibility_flags,
         update_lighting_system, update_player_position_resource, update_player_vision,
     },
-    rendering::update_entity_pos,
+    rendering::position_systems::{place_static_entities, update_dynamic_entity_pos},
     tracy_plot, tracy_span,
 };
 
@@ -37,7 +37,8 @@ pub fn register_game_systems(world: &mut World) {
     let all = vec![
         world.register_system(apply_deferred),
         world.register_system(update_player_position_resource),
-        world.register_system(update_entity_pos),
+        world.register_system(place_static_entities),
+        world.register_system(update_dynamic_entity_pos),
         world.register_system(recalculate_collider_flags_system),
         world.register_system(equipment_stat_modifier_system),
         world.register_system(recalculate_stats_system),
@@ -106,7 +107,7 @@ pub fn apply_deferred(world: &mut World) {
 pub fn game_loop(world: &mut World) {
     tracy_span!("game_loop");
     let mut iterations = 0;
-    const MAX_ITERATIONS: u32 = 100;
+    const MAX_ITERATIONS: u32 = 200;
 
     loop {
         tracy_span!("game_loop:iter");

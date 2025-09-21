@@ -35,6 +35,7 @@ pub mod weapon;
 pub mod weapon_family;
 pub mod weapon_modifiers;
 pub mod weapon_type;
+pub mod zone_tracking;
 
 pub use ai_controller::{AiController, AiState, AiTemplate};
 pub use attributes::{AttributePoints, Attributes};
@@ -81,3 +82,4 @@ pub use weapon_modifiers::{
     pick_random_prefix, pick_random_suffix,
 };
 pub use weapon_type::WeaponType;
+pub use zone_tracking::{DynamicEntity, StaticEntity};

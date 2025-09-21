@@ -6,11 +6,11 @@ use macroquad::prelude::trace;
 use crate::{
     cfg::WORLD_SIZE,
     common::algorithm::{
-        astar::{astar, AStarSettings},
+        astar::{AStarSettings, astar},
         distance::Distance,
     },
     domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, StairDown, StairUp, Zone},
-    rendering::{world_to_zone_idx, world_to_zone_local, zone_local_to_world, zone_xyz, Position},
+    rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_local_to_world, zone_xyz},
 };
 
 pub fn ai_try_use_stair(world: &mut World, entity: Entity, going_down: bool) -> bool {
@@ -61,7 +61,12 @@ pub fn ai_try_use_stair(world: &mut World, entity: Entity, going_down: bool) -> 
     false
 }
 
-pub fn ai_try_navigate_to_stair(world: &mut World, entity: Entity, current_z: i32, target_z: i32) -> bool {
+pub fn ai_try_navigate_to_stair(
+    world: &mut World,
+    entity: Entity,
+    current_z: i32,
+    target_z: i32,
+) -> bool {
     let Some(position) = world.get::<Position>(entity) else {
         return false;
     };
@@ -95,7 +100,7 @@ pub fn ai_try_navigate_to_stair(world: &mut World, entity: Entity, current_z: i3
 
                         let distance = Distance::diagonal(
                             [pos_world.0 as i32, pos_world.1 as i32, current_z],
-                            [world_x as i32, world_y as i32, world_z as i32]
+                            [world_x as i32, world_y as i32, world_z as i32],
                         );
 
                         if distance < nearest_distance {
@@ -109,7 +114,11 @@ pub fn ai_try_navigate_to_stair(world: &mut World, entity: Entity, current_z: i3
     }
 
     if let Some((stair_x, stair_y)) = nearest_stair_pos {
-        return ai_try_move_toward(world, entity, (stair_x as usize, stair_y as usize, current_z as usize));
+        return ai_try_move_toward(
+            world,
+            entity,
+            (stair_x as usize, stair_y as usize, current_z as usize),
+        );
     }
 
     false

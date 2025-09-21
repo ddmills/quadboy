@@ -1,9 +1,7 @@
 use bevy_ecs::prelude::*;
 use quadboy_macros::profiled_system;
 
-use crate::{
-    domain::{Health, Level, StatType, Stats},
-};
+use crate::domain::{Health, Level, StatType, Stats};
 
 /// Update health and armor for entities that have Level and Stats components
 /// This system clamps current HP and armor to new maximums when Level or Stats change

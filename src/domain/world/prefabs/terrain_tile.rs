@@ -1,7 +1,9 @@
 use super::{Prefab, PrefabId};
 use crate::{
-    domain::{ApplyVisibilityEffects, TerrainNoise, ZoneStatus},
-    rendering::{Glyph, Layer, Position, RecordZonePosition},
+    domain::{
+        ApplyVisibilityEffects, StaticEntity, StaticEntitySpawnedEvent, TerrainNoise, ZoneStatus,
+    },
+    rendering::{Glyph, Layer, Position},
     states::CleanupStatePlay,
 };
 use bevy_ecs::{entity::Entity, world::World};
@@ -20,13 +22,22 @@ pub fn spawn_terrain_tile(entity: Entity, world: &mut World, config: Prefab) {
 
     let style = terrain_noise.style(terrain, (x, y));
 
+    let position = Position::new_world(config.pos);
+
     world.entity_mut(entity).insert((
-        Position::new_world(config.pos),
+        position.clone(),
         terrain,
         Glyph::new_from_style(style).layer(Layer::Terrain),
         ApplyVisibilityEffects,
         ZoneStatus::Dormant,
-        RecordZonePosition,
+        StaticEntity, // Terrain tiles never move
         CleanupStatePlay,
     ));
+
+    // Send event for static entity placement
+    world.send_event(StaticEntitySpawnedEvent {
+        entity,
+        position,
+        collider_flags: None, // Terrain tiles don't have colliders
+    });
 }

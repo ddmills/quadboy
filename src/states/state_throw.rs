@@ -8,13 +8,13 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{Palette, algorithm::bresenham::bresenham_circle},
     domain::{
-        Attributes, BitmaskGlyph, BitmaskStyle, IgnoreLighting, Player, PlayerPosition,
-        RefreshBitmask, ThrowItemAction, Throwable, Zone, game_loop,
+        Attributes, BitmaskGlyph, BitmaskStyle, DynamicEntity, IgnoreLighting, Player,
+        PlayerPosition, RefreshBitmask, ThrowItemAction, Throwable, Zone, game_loop,
     },
     engine::{App, Mouse, Plugin, StableIdRegistry},
     rendering::{
-        Glyph, GlyphTextureId, Layer, Position, RecordZonePosition, Text, Visibility,
-        world_to_zone_idx, world_to_zone_local,
+        Glyph, GlyphTextureId, Layer, Position, Text, Visibility, world_to_zone_idx,
+        world_to_zone_local,
     },
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
 };
@@ -179,7 +179,7 @@ fn spawn_throw_range_indicators_impl(
                         .texture(GlyphTextureId::Bitmasks)
                         .layer(Layer::Overlay),
                     BitmaskGlyph::new(BitmaskStyle::Outline),
-                    RecordZonePosition,
+                    DynamicEntity, // Temporary UI entity that can be moved/updated
                     IgnoreLighting,
                     Position::new_world((
                         target_world_x as usize,

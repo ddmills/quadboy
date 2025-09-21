@@ -5,8 +5,8 @@ use macroquad::prelude::trace;
 
 use crate::{
     cfg::CARDINALS_OFFSET,
-    domain::Zone,
-    rendering::{Glyph, Position, RecordZonePosition},
+    domain::{DynamicEntity, StaticEntity, Zone},
+    rendering::{Glyph, Position},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -153,7 +153,13 @@ impl BitmaskGlyph {
 }
 
 pub fn on_bitmask_spawn(
-    q_bitmasks_new: Query<(Entity, &Position), (Added<BitmaskGlyph>, With<RecordZonePosition>)>,
+    q_bitmasks_new: Query<
+        (Entity, &Position),
+        (
+            Added<BitmaskGlyph>,
+            Or<(With<StaticEntity>, With<DynamicEntity>)>,
+        ),
+    >,
     q_zones: Query<&Zone>,
     mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {

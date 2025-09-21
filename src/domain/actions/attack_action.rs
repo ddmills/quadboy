@@ -30,7 +30,8 @@ fn resolve_hit_miss(
     // Check if target is a static destructible object (has Destructible but no Health)
     // Static objects like walls, trees, boulders should always be hit
     if world.get::<Destructible>(target_entity).is_some()
-        && world.get::<Health>(target_entity).is_none() {
+        && world.get::<Health>(target_entity).is_none()
+    {
         return (true, false); // hit=true, critical=false
     }
 

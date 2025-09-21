@@ -5,6 +5,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_chest(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Chests never move
         .with_glyph(125, Palette::Brown, Palette::Yellow, Layer::Objects)
         .with_label("Chest")
         .with_description("Iron bands and old wood that remembers better days. Lock's been shot off more than once.")
