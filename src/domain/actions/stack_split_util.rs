@@ -64,9 +64,7 @@ pub fn split_item_from_stack(
 
     // Manually assign a StableId immediately since the auto-assign system runs later
     let stable_id = {
-        let Some(mut registry) = world.get_resource_mut::<StableIdRegistry>() else {
-            return None;
-        };
+        let mut registry = world.get_resource_mut::<StableIdRegistry>()?;
         let id = registry.generate_id();
         registry.register(new_entity, id);
         world.entity_mut(new_entity).insert(StableId::new(id));

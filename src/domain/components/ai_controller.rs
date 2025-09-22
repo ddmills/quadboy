@@ -26,6 +26,7 @@ impl AiController {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_ranges(mut self, leash: usize, wander: usize, detection: usize) -> Self {
         self.leash_range = leash;
         self.wander_range = wander;

@@ -160,6 +160,7 @@ impl DijkstraMap {
         self.calculate(goals, |_, _, _, _| 1.0);
     }
 
+    #[allow(dead_code)]
     pub fn get_best_direction(&self, x: usize, y: usize) -> Option<(i32, i32)> {
         let current_cost = self.get_cost(x, y)?;
 
@@ -192,6 +193,7 @@ impl DijkstraMap {
         best_direction
     }
 
+    #[allow(dead_code)]
     pub fn get_neighbors_by_cost(&self, x: usize, y: usize) -> Vec<((usize, usize), f32)> {
         let mut neighbors = Vec::new();
 
@@ -217,6 +219,7 @@ impl DijkstraMap {
         neighbors
     }
 
+    #[allow(dead_code)]
     pub fn get_opposite_direction(&self, x: usize, y: usize) -> Option<(i32, i32)> {
         let current_cost = self.get_cost(x, y)?;
 
@@ -249,6 +252,7 @@ impl DijkstraMap {
         worst_direction
     }
 
+    #[allow(dead_code)]
     pub fn get_perpendicular_direction(&self, x: usize, y: usize) -> Option<(i32, i32)> {
         let current_cost = self.get_cost(x, y)?;
 
@@ -301,6 +305,7 @@ impl DijkstraMap {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_weighted_random_direction(
         &self,
         x: usize,
@@ -364,23 +369,28 @@ impl DijkstraMap {
         directions.last().map(|(direction, _)| *direction)
     }
 
+    #[allow(dead_code)]
     pub fn is_dirty(&self) -> bool {
         self.dirty
     }
 
+    #[allow(dead_code)]
     pub fn mark_dirty(&mut self) {
         self.dirty = true;
     }
 
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.costs.clear(f32::INFINITY);
         self.dirty = true;
     }
 
+    #[allow(dead_code)]
     pub fn iter_costs(&self) -> impl Iterator<Item = (usize, usize, f32)> + '_ {
         self.costs.iter_xy().map(|(x, y, &cost)| (x, y, cost))
     }
 
+    #[allow(dead_code)]
     pub fn find_path_to_goal(
         &self,
         start: (usize, usize),

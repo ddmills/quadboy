@@ -85,17 +85,11 @@ where {
     }
 
     pub fn remove(&mut self, value: &T) -> Option<(usize, usize)> {
-        let Some(idx) = self.hash.remove(value) else {
-            return None;
-        };
+        let idx = self.hash.remove(value)?;
 
-        let Some(cell) = self.grid.get_at_mut(idx) else {
-            return None;
-        };
+        let cell = self.grid.get_at_mut(idx)?;
 
-        let Some(vec_idx) = cell.iter().position(|v| v == value) else {
-            return None;
-        };
+        let vec_idx = cell.iter().position(|v| v == value)?;
 
         cell.swap_remove(vec_idx);
 

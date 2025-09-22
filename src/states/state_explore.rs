@@ -484,7 +484,7 @@ fn debug_player_map_overlay(
     faction_map: Res<FactionMap>,
     player_pos: Res<PlayerPosition>,
     q_zones: Query<&Zone>,
-    q_overlay: Query<Entity, With<FactionMapOverlay>>,
+    _q_overlay: Query<Entity, With<FactionMapOverlay>>,
     mut overlay_entities: Local<Vec<Entity>>,
     mut overlay_enabled: Local<bool>,
     mut last_player_pos: Local<Option<(usize, usize, usize)>>,

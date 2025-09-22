@@ -152,7 +152,7 @@ impl Health {
     }
 
     /// For entities with Level/Stats, use this to check if dead
-    pub fn is_dead_dynamic(&self, level: &Level, stats: &Stats) -> bool {
+    pub fn is_dead_dynamic(&self, _level: &Level, _stats: &Stats) -> bool {
         self.current <= 0
     }
 

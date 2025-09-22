@@ -124,7 +124,7 @@ pub fn render_ai_debug_indicators(
             &vision_blockers,
             &player_position,
         );
-        let is_pursuing = q_pursuing.get(entity).is_ok();
+        let _is_pursuing = q_pursuing.get(entity).is_ok();
 
         let indicator_pos = Position::new_f32(position.x, position.y - 0.5, position.z);
 

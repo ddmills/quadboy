@@ -117,8 +117,8 @@ pub fn get_edge_continuity(
             let length = rand.range_n(min_length, max_length);
             let end = (start + length as usize).min(edge_length);
 
-            for i in start..end {
-                edge_constraints[i] = ZoneConstraintType::Rock;
+            for constraint in edge_constraints.iter_mut().take(end).skip(start) {
+                *constraint = ZoneConstraintType::Rock;
             }
         }
 
@@ -158,9 +158,9 @@ pub fn get_edge_continuity(
                 let length = rand.range_n(foliage_min_length, foliage_max_length + 1) as usize;
                 let end = (start + length).min(edge_length);
 
-                for i in start..end {
-                    if edge_constraints[i] == ZoneConstraintType::None {
-                        edge_constraints[i] = ZoneConstraintType::Foliage;
+                for constraint in edge_constraints.iter_mut().take(end).skip(start) {
+                    if *constraint == ZoneConstraintType::None {
+                        *constraint = ZoneConstraintType::Foliage;
                     }
                 }
             }

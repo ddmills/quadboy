@@ -16,7 +16,7 @@ pub fn death_check_system(
     mut e_entity_destroyed: EventWriter<EntityDestroyedEvent>,
     stable_id_registry: Res<StableIdRegistry>,
 ) {
-    for (entity, health, position, player_component) in q_entities.iter() {
+    for (entity, health, position, _player_component) in q_entities.iter() {
         if health.is_dead() {
             let position_coords = position.world();
 

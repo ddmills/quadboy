@@ -266,7 +266,7 @@ fn update_attributes_display(
         );
     }
 
-    let armor_base = StatType::Armor.get_base_value(attributes);
+    let _armor_base = StatType::Armor.get_base_value(attributes);
     let armor_modifiers = stat_modifiers.get_total_for_stat(StatType::Armor);
     let armor_total = stats.get_stat(StatType::Armor);
 
@@ -622,7 +622,7 @@ fn setup_attributes_screen(
     y_pos += 0.5;
 
     // Armor
-    let armor_base = StatType::Armor.get_base_value(attributes);
+    let _armor_base = StatType::Armor.get_base_value(attributes);
     let armor_modifiers = stat_modifiers.get_total_for_stat(StatType::Armor);
     let armor_total = stats.get_stat(StatType::Armor);
 

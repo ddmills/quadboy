@@ -144,7 +144,7 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
     true
 }
 
-pub fn ai_try_select_target(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
+pub fn ai_try_select_target(_world: &mut World, _entity: Entity, context: &mut AiContext) -> bool {
     if let Some(t) = context.target {
         context.target = Some(t);
         return true;

@@ -22,7 +22,7 @@ pub fn process_conditions(
     let current_tick = clock.current_tick();
     let tick_delta = clock.tick_delta();
 
-    for (entity, mut conditions, mut health, mut stat_modifiers, level, stats) in
+    for (_entity, mut conditions, mut health, mut stat_modifiers, level, stats) in
         q_entities.iter_mut()
     {
         let mut conditions_to_remove = Vec::new();

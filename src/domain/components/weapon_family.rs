@@ -13,7 +13,7 @@ pub enum WeaponFamily {
 }
 
 impl WeaponFamily {
-    pub fn to_stat_type(&self) -> StatType {
+    pub fn to_stat_type(self) -> StatType {
         match self {
             WeaponFamily::Rifle => StatType::Rifle,
             WeaponFamily::Shotgun => StatType::Shotgun,
