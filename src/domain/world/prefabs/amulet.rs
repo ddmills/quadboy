@@ -21,6 +21,7 @@ pub fn spawn_amulet(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(42, Palette::Yellow, Palette::Purple, Layer::Objects)
         .with_label(&label)
         .with_description(

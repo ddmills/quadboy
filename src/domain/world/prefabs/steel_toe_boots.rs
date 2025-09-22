@@ -19,6 +19,7 @@ pub fn spawn_steel_toe_boots(entity: Entity, world: &mut World, config: Prefab) 
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(70, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("{W-Y-W-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C scrollf|Steel-toe} Boots")
         .with_description(

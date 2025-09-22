@@ -31,11 +31,10 @@ use crate::{
         InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity, KnockbackAnimation, Label,
         Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
         LootTableRegistry, MovementCapabilities, NeedsStableId, NewGameResult, Player,
-        PlayerMovedEvent, Prefabs, PursuingTarget, RecalculateColliderFlagsEvent, RefreshBitmask,
-        SaveFlag, SaveGameResult, SetZoneStatusEvent, SmoothMovement, StackCount, Stackable,
-        StairDown, StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent, Stats,
-        Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon,
-        Zones,
+        PlayerMovedEvent, Prefabs, RecalculateColliderFlagsEvent, RefreshBitmask, SaveFlag,
+        SaveGameResult, SetZoneStatusEvent, SmoothMovement, StackCount, Stackable, StairDown,
+        StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent, Stats, Throwable,
+        TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -170,7 +169,6 @@ async fn main() {
     reg.register::<Fuse>();
     reg.register::<LightSource>();
     reg.register::<FactionMember>();
-    reg.register::<PursuingTarget>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

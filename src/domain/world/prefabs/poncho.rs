@@ -15,6 +15,7 @@ pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(69, Palette::Yellow, Palette::Brown, Layer::Objects)
         .with_label("Poncho")
         .with_description("Faded patterns from another land. Rain runs off like tears on stone.")

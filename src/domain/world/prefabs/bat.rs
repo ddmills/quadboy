@@ -12,6 +12,7 @@ use bevy_ecs::{entity::Entity, world::World};
 pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_dynamic_tracking() // Bats can move
         .with_needs_stable_id()
         .with_glyph_and_texture(
             34,

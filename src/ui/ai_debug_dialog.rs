@@ -2,9 +2,9 @@ use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
 
 use crate::{
-    domain::{AiController, Energy, Label, PursuingTarget, Stats},
+    domain::{AiController, Energy, Label},
     engine::{AudioKey, Clock},
-    rendering::{Glyph, Layer, Position, ScreenSize},
+    rendering::{Layer, Position, ScreenSize},
     ui::{ActivatableBuilder, Dialog, DialogContent, DialogText, DialogTextStyle},
 };
 
@@ -28,10 +28,7 @@ impl AiDebugDialogBuilder {
         cmds: &mut Commands,
         q_labels: &Query<&Label>,
         q_ai_controllers: &Query<&AiController>,
-        _q_glyphs: &Query<&Glyph>,
-        q_pursuing: &Query<&PursuingTarget>,
         q_energy: &Query<&Energy>,
-        _q_stats: &Query<&Stats>,
         q_positions: &Query<&Position>,
         clock: &Clock,
         cleanup_component: impl Bundle + Clone,
@@ -72,43 +69,6 @@ impl AiDebugDialogBuilder {
             // Add energy info
             if let Ok(energy) = q_energy.get(self.entity) {
                 info_lines.push(format!("Energy: {}", energy.value));
-            }
-
-            // Add pursuing info if present
-            if let Ok(pursuing) = q_pursuing.get(self.entity) {
-                info_lines.push("--- Pursuing Info ---".to_string());
-                info_lines.push(format!(
-                    "Last Seen: ({}, {}, {})",
-                    pursuing.last_seen_at.0, pursuing.last_seen_at.1, pursuing.last_seen_at.2
-                ));
-                info_lines.push(format!("Target Zone: {}", pursuing.target_zone));
-                let pursuit_duration = pursuing.pursuit_duration(clock.current_tick());
-                info_lines.push(format!("Pursuit Duration: {} ticks", pursuit_duration));
-
-                if pursuing.waiting_to_teleport {
-                    info_lines.push("Status: Waiting to teleport".to_string());
-                    if let Some(wait_start) = pursuing.wait_started_tick {
-                        let wait_elapsed = clock.current_tick().saturating_sub(wait_start);
-                        let wait_remaining =
-                            pursuing.teleport_wait_duration.saturating_sub(wait_elapsed);
-                        info_lines.push(format!(
-                            "Teleport Wait: {} / {} ticks",
-                            wait_elapsed, pursuing.teleport_wait_duration
-                        ));
-                        info_lines.push(format!("Time Remaining: {} ticks", wait_remaining));
-                    }
-                } else if pursuing.searching_at_last_position {
-                    info_lines.push("Status: Searching at last known position".to_string());
-                    let search_elapsed = pursuing.search_elapsed_time(clock.current_tick());
-                    let search_remaining = pursuing.search_duration.saturating_sub(search_elapsed);
-                    info_lines.push(format!(
-                        "Search Time: {} / {} ticks",
-                        search_elapsed, pursuing.search_duration
-                    ));
-                    info_lines.push(format!("Search Remaining: {} ticks", search_remaining));
-                } else {
-                    info_lines.push("Status: Actively pursuing".to_string());
-                }
             }
 
             info_lines

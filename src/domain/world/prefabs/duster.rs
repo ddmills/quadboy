@@ -15,6 +15,7 @@ pub fn spawn_duster(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(52, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("Duster")
         .with_description(

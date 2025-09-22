@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use crate::{
     DebugMode,
     common::Palette,
-    domain::{AiController, AiState, Player, PlayerPosition, PursuingTarget, VisionBlocker, Zone},
+    domain::{AiController, AiState, Player, PlayerPosition, VisionBlocker, Zone},
     rendering::{Layer, Position, Text, Visibility},
     states::CleanupStateExplore,
 };
@@ -25,7 +25,6 @@ pub fn render_ai_debug_indicators(
         Query<&Position, With<VisionBlocker>>,
         Query<&Position, With<Player>>,
     )>,
-    q_pursuing: Query<&PursuingTarget>,
     q_existing_indicators: Query<Entity, With<AiDebugIndicator>>,
     mut cmds: Commands,
 ) {
@@ -124,7 +123,6 @@ pub fn render_ai_debug_indicators(
             &vision_blockers,
             &player_position,
         );
-        let _is_pursuing = q_pursuing.get(entity).is_ok();
 
         let indicator_pos = Position::new_f32(position.x, position.y - 0.5, position.z);
 

@@ -17,6 +17,7 @@ pub fn spawn_lever_action_rifle(entity: Entity, world: &mut World, config: Prefa
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(203, Palette::Gray, Palette::Brown, Layer::Objects)
         .with_label(&generated_weapon.name)
         .with_description(&generated_weapon.description)

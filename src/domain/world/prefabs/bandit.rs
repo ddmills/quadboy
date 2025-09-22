@@ -19,6 +19,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_dynamic_tracking() // Bandits can move
         .with_needs_stable_id()
         .with_glyph_and_texture(
             11,

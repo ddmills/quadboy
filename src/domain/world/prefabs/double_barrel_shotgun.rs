@@ -21,6 +21,7 @@ pub fn spawn_double_barrel_shotgun(entity: Entity, world: &mut World, config: Pr
         .with_label(&generated_weapon.name)
         .with_description(&generated_weapon.description)
         .with_item(3.5)
+        .with_static_tracking()
         .with_equippable(Equippable::new(
             vec![EquipmentSlot::BothHands],
             EquipmentType::Weapon,

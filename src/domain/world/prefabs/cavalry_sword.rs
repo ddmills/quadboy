@@ -17,6 +17,7 @@ pub fn spawn_cavalry_sword(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(20, Palette::Yellow, Palette::Gray, Layer::Objects)
         .with_label(&generated_weapon.name)
         .with_description(&generated_weapon.description)

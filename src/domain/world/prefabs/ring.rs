@@ -21,6 +21,7 @@ pub fn spawn_ring(entity: Entity, world: &mut World, config: Prefab) {
 
     PrefabBuilder::new(entity, world, &config)
         .with_base_components()
+        .with_static_tracking() // Items on ground don't move
         .with_glyph(43, Palette::Yellow, Palette::Red, Layer::Objects)
         .with_label(&label)
         .with_description(
