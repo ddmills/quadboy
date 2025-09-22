@@ -335,6 +335,7 @@ impl ConstraintHandler {
         let prefab_id = match ozone.biome_type {
             crate::domain::BiomeType::Forest => PrefabId::PineTree,
             crate::domain::BiomeType::Desert => PrefabId::Cactus,
+            crate::domain::BiomeType::DustyPlains => PrefabId::Cactus,
             crate::domain::BiomeType::Cavern => PrefabId::GiantMushroom,
             crate::domain::BiomeType::Mountain => PrefabId::PineTree,
             _ => return,

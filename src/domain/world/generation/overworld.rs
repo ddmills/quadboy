@@ -177,8 +177,10 @@ impl Overworld {
 
         let noise = self.perlin.get(x as f32, y as f32);
 
-        if noise < 0.33 {
+        if noise < 0.25 {
             return BiomeType::Desert;
+        } else if noise < 0.45 {
+            return BiomeType::DustyPlains;
         } else if noise > 0.75 {
             return BiomeType::Mountain;
         }

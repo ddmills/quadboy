@@ -113,6 +113,7 @@ fn render_overworld_map(
                 BiomeType::OpenAir => (16, Palette::Blue),
                 BiomeType::Forest => (1, Palette::Green),
                 BiomeType::Desert => (33, Palette::Yellow),
+                BiomeType::DustyPlains => (1, Palette::DarkYellow),
                 BiomeType::Cavern => (129, Palette::Gray),
                 BiomeType::Mountain => (30, Palette::White),
             };

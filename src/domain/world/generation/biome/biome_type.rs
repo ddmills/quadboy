@@ -17,6 +17,7 @@ pub enum BiomeType {
     OpenAir,
     Forest,
     Desert,
+    DustyPlains,
     Cavern,
     Mountain,
 }
@@ -25,8 +26,9 @@ impl BiomeType {
     pub fn get_ambient_color(&self) -> u32 {
         match self {
             BiomeType::OpenAir => 0xFFFFFF,
-            BiomeType::Forest => 0x1A201D,
+            BiomeType::Forest => 0x212924,
             BiomeType::Desert => 0x1D1A19,
+            BiomeType::DustyPlains => 0x2A2518,
             BiomeType::Cavern => 0x15151B,
             BiomeType::Mountain => 0x151718,
         }
@@ -37,6 +39,7 @@ impl BiomeType {
             BiomeType::OpenAir => 1.0,
             BiomeType::Forest => 0.9,
             BiomeType::Desert => 1.0,
+            BiomeType::DustyPlains => 0.95,
             BiomeType::Cavern => 0.4,
             BiomeType::Mountain => 0.85,
         }
@@ -44,7 +47,7 @@ impl BiomeType {
 
     pub fn uses_daylight_cycle(&self) -> bool {
         match self {
-            BiomeType::OpenAir | BiomeType::Forest | BiomeType::Desert | BiomeType::Mountain => {
+            BiomeType::OpenAir | BiomeType::Forest | BiomeType::Desert | BiomeType::DustyPlains | BiomeType::Mountain => {
                 true
             }
             BiomeType::Cavern => false,
@@ -60,6 +63,7 @@ impl BiomeType {
                 BiomeType::OpenAir => Terrain::OpenAir,
                 BiomeType::Forest => Terrain::Dirt,
                 BiomeType::Desert => Terrain::Dirt,
+                BiomeType::DustyPlains => Terrain::Dirt,
                 BiomeType::Cavern => Terrain::Dirt,
                 BiomeType::Mountain => Terrain::Dirt,
             }
@@ -75,6 +79,7 @@ impl BiomeType {
                 BiomeType::OpenAir => Terrain::OpenAir,
                 BiomeType::Forest => Terrain::Grass,
                 BiomeType::Desert => Terrain::Sand,
+                BiomeType::DustyPlains => Terrain::DyingGrass,
                 BiomeType::Cavern => Terrain::Sand,
                 BiomeType::Mountain => Terrain::Grass,
             }
@@ -88,6 +93,7 @@ impl Display for BiomeType {
             BiomeType::OpenAir => write!(f, "OpenAir"),
             BiomeType::Forest => write!(f, "Forest"),
             BiomeType::Desert => write!(f, "Desert"),
+            BiomeType::DustyPlains => write!(f, "DustyPlains"),
             BiomeType::Cavern => write!(f, "Cavern"),
             BiomeType::Mountain => write!(f, "Mountain"),
         }

@@ -9,16 +9,18 @@ pub enum Terrain {
     OpenAir = 1,
     #[default]
     Grass = 2,
-    Dirt = 3,
-    River = 4,
-    Sand = 5,
-    Shallows = 6,
+    DyingGrass = 3,
+    Dirt = 4,
+    River = 5,
+    Sand = 6,
+    Shallows = 7,
 }
 
 impl Terrain {
     pub fn tiles(&self) -> Vec<usize> {
         match self {
             Terrain::Grass => vec![0, 1, 2],
+            Terrain::DyingGrass => vec![16, 17, 0, 1, 2],
             Terrain::Dirt => vec![4, 5],
             // Terrain::Dirt => vec![48, 49],
             // Terrain::Sand => vec![4, 5],
@@ -32,6 +34,7 @@ impl Terrain {
     pub fn label_formatted(&self) -> String {
         match self {
             Terrain::Grass => "{G|Grass}",
+            Terrain::DyingGrass => "{y|Dying Grass}",
             Terrain::Dirt => "{X|Dirt}",
             Terrain::Sand => "{Y|Sand}",
             Terrain::River => "{B|River}",
@@ -46,6 +49,7 @@ impl Terrain {
 pub struct TerrainNoise {
     pub sand: Perlin,
     pub grass: Perlin,
+    pub dying_grass: Perlin,
     pub dirt: Perlin,
     pub river: Perlin,
 }
@@ -63,6 +67,7 @@ impl TerrainNoise {
         Self {
             sand: Perlin::new(seed + 120, 0.2, 2, 1.5),
             grass: Perlin::new(seed + 200, 0.08, 1, 1.2),
+            dying_grass: Perlin::new(seed + 210, 0.49, 4, 1.3),
             dirt: Perlin::new(seed + 300, 0.12, 1, 1.8),
             river: Perlin::new(seed + 300, 0.12, 1, 1.8),
         }
@@ -94,6 +99,22 @@ impl TerrainNoise {
         Style {
             idx: grass_tiles[tile_idx],
             fg1: Palette::DarkGray.into(),
+            fg2: None,
+            bg: None,
+            outline: None,
+        }
+    }
+
+    pub fn dying_grass(&mut self, pos: (usize, usize)) -> Style {
+        let v = self.dying_grass.get(pos.0 as f32, pos.1 as f32);
+        let dying_grass_tiles = Terrain::DyingGrass.tiles();
+
+        let tile_idx = (v * dying_grass_tiles.len() as f32) as usize;
+        let tile_idx = tile_idx.min(dying_grass_tiles.len() - 1);
+
+        Style {
+            idx: dying_grass_tiles[tile_idx],
+            fg1: Palette::DarkOrange.into(),
             fg2: None,
             bg: None,
             outline: None,
@@ -158,6 +179,7 @@ impl TerrainNoise {
                 outline: None,
             },
             Terrain::Grass => self.grass(pos),
+            Terrain::DyingGrass => self.dying_grass(pos),
             Terrain::Dirt => self.dirt(pos),
             Terrain::River => self.river(pos),
             Terrain::Sand => self.sand(pos),

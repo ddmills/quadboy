@@ -7,8 +7,8 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Collider, DefaultMeleeAttack,
-        DynamicEntity, Energy, EquipmentSlots, FactionId, FactionMember, GameSaveData, Health,
-        Inventory, Label, Level, LoadZoneCommand, MovementCapabilities, Overworld, Player,
+        DynamicEntity, Energy, EquipItemAction, EquipmentSlots, FactionId, FactionMember, GameSaveData, Health,
+        Inventory, Label, Level, LoadZoneCommand, MovementCapabilities, NeedsStableId, Overworld, Player,
         PlayerPosition, PlayerSaveData, Prefab, PrefabId, Prefabs, StatModifiers, Stats,
         TerrainNoise, Vision, Zones,
     },
@@ -41,44 +41,27 @@ impl NewGameCommand {
     fn execute_new_game(&self, world: &mut World) -> NewGameResult {
         delete_save(&self.save_name);
 
-        let starting_position = Position::new(130, 233, SURFACE_LEVEL_Z);
+        let starting_position = Position::new(196, 204, SURFACE_LEVEL_Z);
         let start_zone = starting_position.zone_idx();
 
-        let mut id_registry = StableIdRegistry::new();
-        let player_id = id_registry.generate_id();
+        let id_registry = StableIdRegistry::new();
+        world.insert_resource(id_registry);
 
-        let player_entity = world
-            .spawn((
-                starting_position.clone(),
-                Glyph::new(2, Palette::White, Palette::Blue)
-                    .layer(Layer::Actors)
-                    .texture(GlyphTextureId::Creatures),
-                Player,
-                StableId::new(player_id),
-                Inventory::new(50.0),
-                EquipmentSlots::humanoid(),
-                Vision::new(60),
-                ApplyVisibilityEffects,
-                Collider::new(
-                    crate::domain::ColliderFlags::SOLID | crate::domain::ColliderFlags::IS_ACTOR,
-                ),
-                MovementCapabilities::terrestrial(),
-                Energy::new(-10),
-            ))
-            .insert(Label::new("{Y|Cowboy}"))
-            .insert(DefaultMeleeAttack::fists())
-            .insert(Level::new(2))
-            .insert(DynamicEntity) // Player can move
-            .insert(CleanupStatePlay)
-            .insert(FactionMember::new(FactionId::Player))
-            .insert(Attributes::new(0, 0, 0, 0))
-            .insert(AttributePoints::new(1)) // Level 1 = 5 + 1 = 6 points
-            .insert(Stats::new())
-            .insert(StatModifiers::new())
-            .insert(Health::new_full()) // Will be set to proper max HP by health system
-            .id();
+        // Create player using prefab system
+        let player_config = Prefab::new(PrefabId::Player, (starting_position.x as usize, starting_position.y as usize, starting_position.z as usize));
+        let player_entity = Prefabs::spawn_world(world, player_config);
 
-        id_registry.register(player_entity, player_id);
+        // Manually assign StableId to player so we can add items to inventory
+        let player_stable_id = {
+            let mut stable_id_registry = world.resource_mut::<StableIdRegistry>();
+            let id = stable_id_registry.generate_id();
+            stable_id_registry.register(player_entity, id);
+            id
+        };
+
+        world.entity_mut(player_entity)
+            .insert(StableId(player_stable_id))
+            .remove::<NeedsStableId>();
 
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();
         camera.focus_on(starting_position.x, starting_position.y);
@@ -87,7 +70,6 @@ impl NewGameCommand {
         world.insert_resource(Overworld::new(self.seed));
         world.insert_resource(TerrainNoise::new(self.seed));
         world.insert_resource(Clock::new(40000)); // 6:40am
-        world.insert_resource(id_registry);
         world.insert_resource(Zones {
             player: start_zone,
             active: vec![start_zone],
@@ -104,11 +86,35 @@ impl NewGameCommand {
             PrefabId::Dynamite,
             PrefabId::Pickaxe,
             PrefabId::Hatchet,
+            PrefabId::Overcoat,
+            PrefabId::SteelToeBoots,
         ];
 
+        let mut spawned_items = Vec::new();
         for item_id in starter_items {
-            let config = Prefab::new(item_id, (0, 0, 0)); // Position doesn't matter for inventory items
-            Prefabs::spawn_in_container(world, config, player_entity);
+            let config = Prefab::new(item_id.clone(), (0, 0, 0)); // Position doesn't matter for inventory items
+            let item_entity = Prefabs::spawn_in_container(world, config, player_entity);
+            spawned_items.push((item_id, item_entity));
+        }
+
+        // Auto-equip specific items
+        let items_to_equip = vec![
+            PrefabId::NavyRevolver,
+            PrefabId::Overcoat,
+            PrefabId::SteelToeBoots,
+        ];
+
+        for (item_id, item_entity) in spawned_items {
+            if items_to_equip.contains(&item_id) {
+                // Get the item's stable ID
+                if let Some(item_stable_id) = world.get::<StableId>(item_entity) {
+                    let equip_action = EquipItemAction {
+                        entity_id: player_stable_id,
+                        item_id: item_stable_id.0,
+                    };
+                    equip_action.apply(world);
+                }
+            }
         }
 
         let serialized_player = serialize(player_entity, world);

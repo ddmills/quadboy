@@ -5,8 +5,8 @@ use super::core::{GlyphAnimation, Particle, ParticleSpawner, ParticleTrail};
 use super::curves::{AlphaCurve, ColorCurve, VelocityCurve};
 use super::spawn_areas::{Distribution, SpawnArea};
 use crate::common::Rand;
-use crate::domain::MaterialType;
-use crate::rendering::world_to_zone_local_f32;
+use crate::domain::{MaterialType, PlayerPosition};
+use crate::rendering::{world_to_zone_idx, world_to_zone_local_f32};
 
 // Blood Effects - Direction/Angle Based
 pub fn spawn_blood_spray(world: &mut World, position: Vec2, direction: Vec2, intensity: f32) {
@@ -293,6 +293,17 @@ pub fn spawn_throw_trail_in_world(
     item_color: u32,
     rand: &mut Rand,
 ) {
+    // Check if either start or target position is in active zone
+    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let start_zone_idx = world_to_zone_idx(start_world.0, start_world.1, start_world.2);
+        let target_zone_idx = world_to_zone_idx(target_world.0, target_world.1, target_world.2);
+        let active_zone = player_pos.zone_idx();
+
+        if start_zone_idx != active_zone && target_zone_idx != active_zone {
+            return; // Don't spawn particles if neither position is in active zone
+        }
+    }
+
     let start_pos = Vec2::new(
         world_to_zone_local_f32(start_world.0 as f32, start_world.1 as f32).0,
         world_to_zone_local_f32(start_world.0 as f32, start_world.1 as f32).1,
@@ -321,6 +332,17 @@ pub fn spawn_bullet_trail_in_world(
     rand: &mut Rand,
     spawn_blood: bool,
 ) {
+    // Check if either start or target position is in active zone
+    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let start_zone_idx = world_to_zone_idx(start_world.0, start_world.1, start_world.2);
+        let target_zone_idx = world_to_zone_idx(target_world.0, target_world.1, target_world.2);
+        let active_zone = player_pos.zone_idx();
+
+        if start_zone_idx != active_zone && target_zone_idx != active_zone {
+            return; // Don't spawn particles if neither position is in active zone
+        }
+    }
+
     let start_local =
         world_to_zone_local_f32(start_world.0 as f32 + 0.5, start_world.1 as f32 + 0.5);
     let start_pos = Vec2::new(start_local.0, start_local.1);
@@ -338,6 +360,14 @@ pub fn spawn_material_hit_in_world(
     material: MaterialType,
     direction: Vec2,
 ) {
+    // Check if position is in active zone
+    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+        if zone_idx != player_pos.zone_idx() {
+            return; // Don't spawn particles outside active zone
+        }
+    }
+
     let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
     let pos = Vec2::new(local_pos.0, local_pos.1);
 
@@ -350,6 +380,14 @@ pub fn spawn_directional_blood_mist(
     direction: Vec2,
     intensity: f32,
 ) {
+    // Check if position is in active zone
+    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+        if zone_idx != player_pos.zone_idx() {
+            return; // Don't spawn particles outside active zone
+        }
+    }
+
     let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
     let pos = Vec2::new(local_pos.0, local_pos.1);
 
@@ -358,6 +396,14 @@ pub fn spawn_directional_blood_mist(
 
 /// Explosion effect for top-down view - radial debris and smoke
 pub fn spawn_explosion_effect(world: &mut World, world_pos: (usize, usize, usize), radius: usize) {
+    // Check if position is in active zone
+    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+        if zone_idx != player_pos.zone_idx() {
+            return; // Don't spawn particles outside active zone
+        }
+    }
+
     let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
     let pos = Vec2::new(local_pos.0, local_pos.1);
 
@@ -532,6 +578,14 @@ pub fn spawn_explosion_effect(world: &mut World, world_pos: (usize, usize, usize
 
 /// Level up celebration effect - golden sparkles and light burst
 pub fn spawn_level_up_celebration(world: &mut World, world_pos: (usize, usize, usize)) {
+    // Check if position is in active zone
+    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+        if zone_idx != player_pos.zone_idx() {
+            return; // Don't spawn particles outside active zone
+        }
+    }
+
     let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
     let pos = Vec2::new(local_pos.0, local_pos.1);
 

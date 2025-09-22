@@ -11,6 +11,7 @@ pub enum LootTableId {
     // Ground loot tables
     ForestGroundLoot,
     DesertGroundLoot,
+    DustyPlainsGroundLoot,
     CavernGroundLoot,
     OpenAirGroundLoot,
     MountainGroundLoot,
@@ -18,6 +19,7 @@ pub enum LootTableId {
     // Chest loot tables
     ForestChestLoot,
     DesertChestLoot,
+    DustyPlainsChestLoot,
     CavernChestLoot,
     CommonChestLoot,
     MountainChestLoot,
@@ -25,6 +27,7 @@ pub enum LootTableId {
     // Enemy tables
     ForestEnemies,
     DesertEnemies,
+    DustyPlainsEnemies,
     CavernEnemies,
     OpenAirEnemies,
     MountainEnemies,
@@ -114,6 +117,36 @@ impl LootTableRegistry {
                 .build(),
         );
 
+        // Dusty Plains loot (mix of forest and desert items)
+        self.tables.insert(
+            LootTableId::DustyPlainsGroundLoot,
+            LootTable::builder()
+                .add(PrefabId::Lantern, 2.0)
+                .add(PrefabId::Pickaxe, 2.0)
+                .add(PrefabId::Campfire, 3.0)
+                .add(PrefabId::Hatchet, 1.5)
+                .add(PrefabId::Apple, 2.0)
+                .add(PrefabId::Bedroll, 2.5)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::DustyPlainsChestLoot,
+            LootTable::builder()
+                .add(PrefabId::Hatchet, 4.0)
+                .add(PrefabId::Lantern, 3.5)
+                .add(PrefabId::CavalrySword, 1.5)
+                .add(PrefabId::Pickaxe, 3.0)
+                .add(PrefabId::Apple, 2.0)
+                .add(PrefabId::WoolShirt, 2.0)
+                .add(PrefabId::Poncho, 2.0)
+                .add(PrefabId::SteelToeBoots, 1.5)
+                .add(PrefabId::NavyRevolver, 0.35)
+                .add(PrefabId::Amulet, 0.25)
+                .add(PrefabId::Ring, 0.25)
+                .build(),
+        );
+
         // Cavern loot
         self.tables.insert(
             LootTableId::CavernGroundLoot,
@@ -194,6 +227,15 @@ impl LootTableRegistry {
                 .add(PrefabId::Bandit, 1.0)
                 .add(PrefabId::Rattlesnake, 0.9)
                 .add(PrefabId::Coyote, 0.5)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::DustyPlainsEnemies,
+            LootTable::builder()
+                .add(PrefabId::Bandit, 1.0)
+                .add(PrefabId::Coyote, 0.6)
+                .add(PrefabId::Rattlesnake, 0.3)
                 .build(),
         );
 

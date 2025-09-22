@@ -4,8 +4,8 @@ use super::{
     spawn_chest, spawn_coyote, spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite,
     spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
     spawn_lever_action_rifle, spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe,
-    spawn_pine_tree, spawn_poncho, spawn_rattlesnake, spawn_ring, spawn_stair_down, spawn_stair_up,
-    spawn_steel_toe_boots, spawn_terrain_tile, spawn_wool_shirt,
+    spawn_pine_tree, spawn_player, spawn_poncho, spawn_rattlesnake, spawn_ring, spawn_stair_down,
+    spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile, spawn_wool_shirt,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
@@ -47,6 +47,7 @@ pub enum PrefabId {
     NavyRevolver,
     Amulet,
     Ring,
+    Player,
 }
 
 #[allow(dead_code)]
@@ -141,8 +142,10 @@ impl Prefabs {
         self.register(PrefabId::NavyRevolver, spawn_navy_revolver);
         self.register(PrefabId::Amulet, spawn_amulet);
         self.register(PrefabId::Ring, spawn_ring);
+        self.register(PrefabId::Player, spawn_player);
 
         self.register(PrefabId::TerrainTile(Terrain::Grass), spawn_terrain_tile);
+        self.register(PrefabId::TerrainTile(Terrain::DyingGrass), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::River), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Sand), spawn_terrain_tile);
@@ -232,8 +235,10 @@ impl fmt::Display for PrefabId {
             PrefabId::NavyRevolver => write!(f, "Navy Revolver"),
             PrefabId::Amulet => write!(f, "Amulet"),
             PrefabId::Ring => write!(f, "Ring"),
+            PrefabId::Player => write!(f, "Player"),
             PrefabId::TerrainTile(terrain) => match terrain {
                 Terrain::Grass => write!(f, "Grass Tile"),
+                Terrain::DyingGrass => write!(f, "Dying Grass Tile"),
                 Terrain::Dirt => write!(f, "Dirt Tile"),
                 Terrain::River => write!(f, "River Tile"),
                 Terrain::Sand => write!(f, "Sand Tile"),
