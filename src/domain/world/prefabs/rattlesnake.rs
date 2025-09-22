@@ -10,15 +10,15 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let mut stat_modifiers = StatModifiers::new();
     stat_modifiers.add_modifier(
         StatType::Dodge,
         StatModifier::intrinsic(4, "Slippery".to_string()),
     );
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_dynamic_tracking() // Rattlesnakes can move
         .with_needs_stable_id()
         .with_glyph_and_texture(
@@ -45,5 +45,5 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) {
         .with_creature_type(CreatureType::Rattlesnake)
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-        .build();
+        
 }

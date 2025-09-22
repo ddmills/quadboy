@@ -7,10 +7,10 @@ use crate::{
     common::Palette,
     domain::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Collider, DefaultMeleeAttack,
-        DynamicEntity, Energy, EquipItemAction, EquipmentSlots, FactionId, FactionMember, GameSaveData, Health,
-        Inventory, Label, Level, LoadZoneCommand, MovementCapabilities, NeedsStableId, Overworld, Player,
-        PlayerPosition, PlayerSaveData, Prefab, PrefabId, Prefabs, StatModifiers, Stats,
-        TerrainNoise, Vision, Zones,
+        DynamicEntity, Energy, EquipItemAction, EquipmentSlots, FactionId, FactionMember,
+        GameSaveData, Health, Inventory, Label, Level, LoadZoneCommand, MovementCapabilities,
+        NeedsStableId, Overworld, Player, PlayerPosition, PlayerSaveData, Prefab, PrefabId,
+        Prefabs, StatModifiers, Stats, TerrainNoise, Vision, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position},
@@ -48,7 +48,14 @@ impl NewGameCommand {
         world.insert_resource(id_registry);
 
         // Create player using prefab system
-        let player_config = Prefab::new(PrefabId::Player, (starting_position.x as usize, starting_position.y as usize, starting_position.z as usize));
+        let player_config = Prefab::new(
+            PrefabId::Player,
+            (
+                starting_position.x as usize,
+                starting_position.y as usize,
+                starting_position.z as usize,
+            ),
+        );
         let player_entity = Prefabs::spawn_world(world, player_config);
 
         // Manually assign StableId to player so we can add items to inventory
@@ -59,7 +66,8 @@ impl NewGameCommand {
             id
         };
 
-        world.entity_mut(player_entity)
+        world
+            .entity_mut(player_entity)
             .insert(StableId(player_stable_id))
             .remove::<NeedsStableId>();
 
@@ -70,6 +78,7 @@ impl NewGameCommand {
         world.insert_resource(Overworld::new(self.seed));
         world.insert_resource(TerrainNoise::new(self.seed));
         world.insert_resource(Clock::new(40000)); // 6:40am
+        // world.insert_resource(Clock::new(100)); // 6:40am
         world.insert_resource(Zones {
             player: start_zone,
             active: vec![start_zone],

@@ -24,7 +24,6 @@ pub fn update_player_vision(
     zones: Res<Zones>,
     lighting_data: Res<LightingData>,
 ) {
-
     // if clock.is_frozen() {
     //     return;
     // }

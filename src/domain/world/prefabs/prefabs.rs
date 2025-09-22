@@ -91,7 +91,7 @@ impl Prefab {
     }
 }
 
-type SpawnFunction = fn(Entity, &mut World, Prefab);
+type SpawnFunction = fn(Entity, &mut World, Prefab) -> super::PrefabBuilder;
 
 #[derive(Resource)]
 pub struct Prefabs {
@@ -145,7 +145,11 @@ impl Prefabs {
         self.register(PrefabId::Player, spawn_player);
 
         self.register(PrefabId::TerrainTile(Terrain::Grass), spawn_terrain_tile);
-        self.register(PrefabId::TerrainTile(Terrain::DyingGrass), spawn_terrain_tile);
+        self.register(
+            PrefabId::TerrainTile(Terrain::DyingGrass),
+            spawn_terrain_tile,
+        );
+        self.register(PrefabId::TerrainTile(Terrain::Gravel), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Dirt), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::River), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Sand), spawn_terrain_tile);
@@ -239,6 +243,7 @@ impl fmt::Display for PrefabId {
             PrefabId::TerrainTile(terrain) => match terrain {
                 Terrain::Grass => write!(f, "Grass Tile"),
                 Terrain::DyingGrass => write!(f, "Dying Grass Tile"),
+                Terrain::Gravel => write!(f, "Gravel Tile"),
                 Terrain::Dirt => write!(f, "Dirt Tile"),
                 Terrain::River => write!(f, "River Tile"),
                 Terrain::Sand => write!(f, "Sand Tile"),

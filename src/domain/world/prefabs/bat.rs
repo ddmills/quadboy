@@ -9,9 +9,9 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_dynamic_tracking() // Bats can move
         .with_needs_stable_id()
         .with_glyph_and_texture(
@@ -38,5 +38,5 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) {
         .with_creature_type(CreatureType::Bat)
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-        .build();
+        
 }

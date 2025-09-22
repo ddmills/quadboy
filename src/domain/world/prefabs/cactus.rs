@@ -4,14 +4,14 @@ use crate::domain::MaterialType;
 use crate::{common::Palette, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let glyph_idx = {
         let mut rand = world.get_resource_mut::<Rand>().unwrap();
         rand.pick(&[67, 68])
     };
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Cacti never move
         .with_needs_stable_id()
         .with_glyph(glyph_idx, Palette::Green, Palette::Purple, Layer::Objects)
@@ -22,5 +22,5 @@ pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) {
         .with_collider()
         .with_vision_blocker()
         .with_destructible(10, MaterialType::Wood)
-        .build();
+        
 }

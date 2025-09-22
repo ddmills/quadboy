@@ -92,7 +92,8 @@ pub fn spawn_bullet_trail(
     let trail_spawner = ParticleSpawner::new(Vec2::ZERO) // Position gets overridden by trail system
         .glyph_animation(GlyphAnimation::Static(' '))
         .bg_curve(ColorCurve::EaseOut {
-            values: vec![0xF3D9BB, 0x261766],
+            // values: vec![0xF3D9BB, 0x261766],
+            values: vec![0x666666, 0x333333, 0x000000],
         })
         .alpha_curve(AlphaCurve::Linear {
             values: vec![0.4, 0.0],

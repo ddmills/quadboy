@@ -169,6 +169,33 @@ pub fn generate_cavern_boulder_ca(zone: &ZoneFactory, rand: &mut Rand) -> Grid<b
     ca.grid().clone()
 }
 
+pub fn generate_mountain_boulder_ca(constraint_grid: &Grid<bool>, rand: &mut Rand) -> Grid<bool> {
+    let initial_grid = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
+        if *constraint_grid.get(x, y).unwrap_or(&true) {
+            false
+        } else {
+            // Lower density for fewer but bigger formations
+            rand.bool(0.25)
+        }
+    });
+
+    let mut ca = CellularAutomata::from_grid(initial_grid)
+        .with_neighborhood(Neighborhood::Moore)
+        .with_boundary(BoundaryBehavior::Constant(false))
+        .with_constraints(constraint_grid.clone());
+
+    // Balanced birth/survival for moderate density with larger formations
+    let mountain_rule = CaveRule::new(4, 2);
+    ca.evolve_steps(&mountain_rule, 3);
+
+    // Gentle smoothing to create smoother formations
+    let smoothing_rule = SmoothingRule::new(0.4);
+    ca.evolve_steps(&smoothing_rule, 2);
+
+    // No erosion to preserve large formations
+    ca.grid().clone()
+}
+
 pub fn should_keep_clear_cavern(zone: &ZoneFactory, x: usize, y: usize) -> bool {
     if y == 0
         && let Some(constraint) = zone.ozone.constraints.north.0.get(x)

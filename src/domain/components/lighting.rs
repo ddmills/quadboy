@@ -11,7 +11,7 @@ pub struct LightSource {
     pub flicker: f32,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct LightBlocker;
 
 #[derive(Component)]

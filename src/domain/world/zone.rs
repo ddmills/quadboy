@@ -7,11 +7,11 @@ use crate::{
     cfg::{CARDINALS_OFFSET, MAP_SIZE, RENDER_DORMANT, ZONE_SIZE},
     common::{Grid, HashGrid},
     domain::{
-        ColliderCache, InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs,
-        Terrain, UnloadZoneCommand, ZoneGenerator,
+        Collider, ColliderCache, InActiveZone, LoadZoneCommand, PlayerMovedEvent, Prefab, PrefabId, Prefabs,
+        StaticEntity, StaticEntitySpawnedEvent, Terrain, UnloadZoneCommand, ZoneGenerator,
     },
     engine::{SerializedEntity, deserialize_all},
-    rendering::{world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz},
+    rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_idx, zone_local_to_world, zone_xyz},
     states::CleanupStatePlay,
 };
 
@@ -390,7 +390,21 @@ pub fn spawn_zone_load(world: &mut World, zone_data: ZoneSaveData) {
 
     spawn_terrain(world, zone_data.idx, zone_entity_id, zone_data.terrain);
 
-    deserialize_all(&zone_data.entities, world);
+    let deserialized_entities = deserialize_all(&zone_data.entities, world);
+
+    // Fire StaticEntitySpawnedEvent for static entities to add them to the zone grid
+    for entity in deserialized_entities {
+        if let (Some(_), Some(position)) = (
+            world.get::<StaticEntity>(entity),
+            world.get::<Position>(entity),
+        ) {
+            world.send_event(StaticEntitySpawnedEvent {
+                entity,
+                position: position.clone(),
+                collider_flags: world.get::<Collider>(entity).map(|c| c.flags),
+            });
+        }
+    }
 }
 
 pub fn manage_zone_cache(

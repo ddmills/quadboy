@@ -13,7 +13,6 @@ use quadboy_macros::profiled_system;
 /// Only processes entities when StaticEntitySpawnedEvent is received
 #[profiled_system]
 pub fn place_static_entities(world: &mut World) {
-
     // Read events for static entities that need placement
     let events: Vec<StaticEntitySpawnedEvent> = {
         let mut event_reader = world
@@ -92,7 +91,6 @@ pub fn place_static_entities(world: &mut World) {
 /// This should process far fewer entities than the original system
 #[profiled_system]
 pub fn update_dynamic_entity_pos(world: &mut World) {
-
     // Collect only dynamic entities that have moved or were just added
     let entities_to_update: Vec<(Entity, Position, Option<ColliderFlags>)> = {
         let mut q_moved = world.query_filtered::<(Entity, &Position, Option<&Collider>), (

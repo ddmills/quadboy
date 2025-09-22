@@ -2,9 +2,7 @@ use bevy_ecs::prelude::*;
 use quadboy_macros::profiled_system;
 use std::collections::HashMap;
 
-use crate::{
-    domain::{FactionId, FactionMember},
-};
+use crate::domain::{FactionId, FactionMember};
 
 #[derive(Resource)]
 pub struct FactionRelations {

@@ -1,4 +1,4 @@
-use super::{Prefab, PrefabId};
+use super::{Prefab, PrefabBuilder, PrefabId};
 use crate::{
     domain::{
         ApplyVisibilityEffects, StaticEntity, StaticEntitySpawnedEvent, TerrainNoise, ZoneStatus,
@@ -8,7 +8,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_terrain_tile(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_terrain_tile(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let terrain = match config.prefab_id {
         PrefabId::TerrainTile(terrain) => terrain,
         _ => panic!("spawn_terrain_tile called with non-TerrainTile prefab_id"),
@@ -40,4 +40,7 @@ pub fn spawn_terrain_tile(entity: Entity, world: &mut World, config: Prefab) {
         position,
         collider_flags: None, // Terrain tiles don't have colliders
     });
+
+    // Return a dummy builder since this function handles everything manually
+    PrefabBuilder::new()
 }

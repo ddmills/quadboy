@@ -136,12 +136,9 @@ pub fn render_text(
     )>,
     time: Res<Time>,
 ) {
-
     let tick = (time.fixed_t * 10.).floor() as usize;
 
-    let changed = {
-        q_text.p0().iter().collect::<Vec<_>>()
-    };
+    let changed = { q_text.p0().iter().collect::<Vec<_>>() };
 
     {
         for (entity, mut text, position, visibility, ignore_lighting_opt) in q_text.p1().iter_mut()

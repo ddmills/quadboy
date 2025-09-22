@@ -36,7 +36,6 @@ pub fn award_xp_on_kill(
     mut e_xp_gain: EventWriter<XPGainEvent>,
     q_levels: Query<&Level>,
 ) {
-
     for destroyed_event in e_entity_destroyed.read() {
         // Only process attack-based deaths
         if let DestructionCause::Attack { attacker } = destroyed_event.cause {
@@ -72,7 +71,6 @@ pub fn apply_xp_gain(
     mut q_levels: Query<&mut Level>,
     mut q_attribute_points: Query<&mut AttributePoints>,
 ) {
-
     for xp_event in e_xp_gain.read() {
         if let Ok(mut level) = q_levels.get_mut(xp_event.recipient_entity) {
             let old_level = level.current_level;
@@ -119,7 +117,6 @@ pub fn handle_level_up(
     q_positions: Query<&Position>,
     mut particle_queue: ResMut<LevelUpParticleQueue>,
 ) {
-
     for level_up_event in e_level_up.read() {
         if let Ok((mut health, level, stats)) = q_health_stats.get_mut(level_up_event.entity) {
             // Restore HP to 100%
@@ -143,7 +140,6 @@ pub fn handle_level_up(
 /// Process level up particle requests by spawning particles (exclusive system)
 #[profiled_system]
 pub fn process_level_up_particles(world: &mut World) {
-
     let mut requests = Vec::new();
     if let Some(mut particle_queue) = world.get_resource_mut::<LevelUpParticleQueue>() {
         requests.append(&mut particle_queue.requests);

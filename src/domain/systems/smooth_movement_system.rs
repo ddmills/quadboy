@@ -9,7 +9,6 @@ pub fn smooth_movement_system(
     mut q_smooth_movement: Query<(Entity, &mut SmoothMovement, &mut Glyph)>,
     time: Res<Time>,
 ) {
-
     let mut entities_to_remove = Vec::new();
 
     for (entity, mut smooth_movement, mut glyph) in q_smooth_movement.iter_mut() {

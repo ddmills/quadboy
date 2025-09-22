@@ -6,15 +6,15 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let mut stat_modifiers = StatModifiers::new();
     stat_modifiers.add_modifier(
         StatType::Armor,
         StatModifier::intrinsic(2, "Weather Resistance".to_string()),
     );
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Items on ground don't move
         .with_glyph(69, Palette::Yellow, Palette::Brown, Layer::Objects)
         .with_label("Poncho")
@@ -26,5 +26,5 @@ pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) {
         ))
         .with_stat_modifiers(stat_modifiers)
         .with_needs_stable_id()
-        .build();
+        
 }

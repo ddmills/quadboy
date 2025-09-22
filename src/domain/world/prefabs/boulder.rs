@@ -6,9 +6,9 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Boulders never move
         .with_needs_stable_id()
         .with_glyph(68, Palette::Gray, Palette::Gray, Layer::Objects)
@@ -22,5 +22,5 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) {
         .with_vision_blocker()
         .with_light_blocker()
         .with_loot_drop(LootDrop::new(LootTableId::BoulderLoot, 0.25))
-        .build();
+        
 }

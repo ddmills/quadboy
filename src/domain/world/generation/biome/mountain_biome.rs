@@ -18,7 +18,7 @@ impl MountainBiome {
 
 impl Biome for MountainBiome {
     fn base_terrain(&self) -> Terrain {
-        Terrain::Grass
+        Terrain::Gravel
     }
 
     fn road_terrain(&self) -> Terrain {
@@ -43,11 +43,13 @@ impl Biome for MountainBiome {
         // Apply base terrain (grass)
         apply_base_terrain(zone, self.base_terrain());
 
-        // Generate boulders using cavern-style generation (rocky mountain terrain)
-        let boulder_grid = generate_cavern_boulder_ca(zone, &mut rand);
+        // Generate constraint grid first
+        let constraints = collect_constraint_grid(zone);
+
+        // Generate boulders using custom mountain generation (large formations)
+        let boulder_grid = generate_mountain_boulder_ca(&constraints, &mut rand);
 
         // Generate sparse pine trees
-        let constraints = collect_constraint_grid(zone);
         let boulder_constraint_grid = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
             *constraints.get(x, y).unwrap_or(&true) || *boulder_grid.get(x, y).unwrap_or(&false)
         });
@@ -73,13 +75,13 @@ impl Biome for MountainBiome {
 }
 
 fn generate_mountain_pine_trees(constraint_grid: &Grid<bool>, rand: &mut Rand) -> Grid<bool> {
-    // Mountains have sparse but clustered pine tree coverage
+    // Mountains have moderate pine tree coverage in small pockets
     let initial_grid = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
         if *constraint_grid.get(x, y).unwrap_or(&true) {
             false
         } else {
-            // Slightly higher initial density for cluster formation
-            rand.bool(0.2)
+            // Increased density for more tree pockets
+            rand.bool(0.15)
         }
     });
 
@@ -88,16 +90,15 @@ fn generate_mountain_pine_trees(constraint_grid: &Grid<bool>, rand: &mut Rand) -
         .with_boundary(BoundaryBehavior::Constant(false))
         .with_constraints(constraint_grid.clone());
 
-    // Mountain trees form in small, tight clusters
-    // Born if 3+ neighbors, survive if 2+ neighbors (tighter clusters than forest)
+    // Trees form in small, tight clusters with moderate birth requirements
     let mountain_rule = CaveRule::new(3, 2);
     ca.evolve_steps(&mountain_rule, 2);
 
-    // Light smoothing to create more natural mountain grove clusters
-    let smoothing_rule = SmoothingRule::new(0.4);
+    // Light smoothing to create small natural groves
+    let smoothing_rule = SmoothingRule::new(0.3);
     ca.evolve_steps(&smoothing_rule, 1);
 
-    // More aggressive erosion to create sparse, well-defined groves
+    // Moderate erosion to create separated pockets
     let erosion_rule = ErosionRule::new(2);
     ca.evolve_steps(&erosion_rule, 2);
 

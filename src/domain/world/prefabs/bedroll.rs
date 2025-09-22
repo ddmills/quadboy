@@ -6,9 +6,9 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_bedroll(entity: Entity, world: &mut World, config: Prefab) {
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+pub fn spawn_bedroll(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Items on ground don't move
         .with_glyph(54, Palette::Purple, Palette::Gray, Layer::Objects)
         .with_label("Bedroll")
@@ -19,5 +19,5 @@ pub fn spawn_bedroll(entity: Entity, world: &mut World, config: Prefab) {
             EquipmentType::Tool,
         ))
         .with_needs_stable_id()
-        .build();
+        
 }

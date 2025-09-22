@@ -38,7 +38,16 @@ impl SpawnPrefabCommand {
                 .ok_or_else(|| format!("Unknown prefab type: {:?}", self.config.prefab_id))?
         };
 
-        spawn_fn(self.entity, world, self.config);
+        let builder = spawn_fn(self.entity, world, self.config);
+
+        let builder = if let Some(_container) = self.container_entity {
+            // Use for_container to prevent Position/StaticEntity and event firing
+            builder.for_container()
+        } else {
+            builder
+        };
+
+        builder.build(self.entity, world);
 
         if let Some(container) = self.container_entity {
             let item_stable_id = {

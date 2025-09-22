@@ -6,7 +6,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_steel_toe_boots(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_steel_toe_boots(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let mut stat_modifiers = StatModifiers::new();
     stat_modifiers.add_modifier(
         StatType::Fortitude,
@@ -17,8 +17,8 @@ pub fn spawn_steel_toe_boots(entity: Entity, world: &mut World, config: Prefab) 
         StatModifier::intrinsic(1, "Steel Protection".to_string()),
     );
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Items on ground don't move
         .with_glyph(70, Palette::Brown, Palette::Gray, Layer::Objects)
         .with_label("{W-Y-W-C-C-C-C-C-C-C-C-C-C-C-C-C-C-C scrollf|Steel-toe} Boots")
@@ -32,5 +32,5 @@ pub fn spawn_steel_toe_boots(entity: Entity, world: &mut World, config: Prefab) 
         ))
         .with_stat_modifiers(stat_modifiers)
         .with_needs_stable_id()
-        .build();
+        
 }

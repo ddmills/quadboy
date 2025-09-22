@@ -11,7 +11,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     // Get level from metadata, default to 2
     let level = config
         .metadata
@@ -22,8 +22,8 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) {
         })
         .unwrap_or(2);
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_dynamic_tracking() // Player can move
         .with_glyph_and_texture(
             2,
@@ -45,12 +45,14 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) {
         .with_component(EquipmentSlots::humanoid())
         .with_component(Vision::new(60))
         .with_component(ApplyVisibilityEffects)
-        .with_component(Collider::new(ColliderFlags::SOLID | ColliderFlags::IS_ACTOR))
+        .with_component(Collider::new(
+            ColliderFlags::SOLID | ColliderFlags::IS_ACTOR,
+        ))
         .with_component(MovementCapabilities::terrestrial())
         .with_component(DynamicEntity)
         .with_component(CleanupStatePlay)
         .with_component(FactionMember::new(FactionId::Player))
         .with_component(AttributePoints::new(1)) // Level 1 = 5 + 1 = 6 points
         .with_component(Health::new_full()) // Will be set to proper max HP by health system
-        .build();
+        
 }

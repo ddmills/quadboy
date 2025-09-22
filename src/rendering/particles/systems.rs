@@ -16,7 +16,6 @@ use super::core::{
 
 #[profiled_system]
 pub fn update_particles(mut particle_grid: ResMut<ParticleGrid>, q_particles: Query<&Particle>) {
-
     particle_grid.clear();
 
     for particle in q_particles.iter() {

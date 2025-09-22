@@ -124,12 +124,12 @@ pub fn get_edge_continuity(
 
         // Add foliage generation based on biome
         let (foliage_density, foliage_min_length, foliage_max_length) = match zone_biome {
-            BiomeType::Forest => (0.5, 1, 3),     // High density, small clusters
-            BiomeType::Desert => (0.25, 1, 2),    // Medium density, smaller clusters
+            BiomeType::Forest => (0.5, 1, 3),  // High density, small clusters
+            BiomeType::Desert => (0.25, 1, 2), // Medium density, smaller clusters
             BiomeType::DustyPlains => (0.15, 1, 2), // Low density, small clusters
-            BiomeType::Cavern => (0.15, 1, 2),    // Low density, small clusters
-            BiomeType::Mountain => (0.3, 1, 2),   // Moderate density, small clusters
-            _ => (0.0, 0, 0),                     // No foliage for other biomes
+            BiomeType::Cavern => (0.15, 1, 2), // Low density, small clusters
+            BiomeType::Mountain => (0.3, 1, 2), // Moderate density, small clusters
+            _ => (0.0, 0, 0),                  // No foliage for other biomes
         };
 
         if foliage_density > 0.0 {

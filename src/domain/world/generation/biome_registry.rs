@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::domain::{
-    Biome, BiomeType, CavernBiome, DesertBiome, DustyPlainsBiome, ForestBiome, MountainBiome, OpenAirBiome,
+    Biome, BiomeType, CavernBiome, DesertBiome, DustyPlainsBiome, ForestBiome, MountainBiome,
+    OpenAirBiome,
 };
 
 pub struct BiomeRegistry {

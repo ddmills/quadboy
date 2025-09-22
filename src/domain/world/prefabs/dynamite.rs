@@ -7,8 +7,9 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_dynamite(entity: Entity, world: &mut World, config: Prefab) {
-    PrefabBuilder::new(entity, world, &config)
+pub fn spawn_dynamite(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_glyph(25, Palette::Red, Palette::White, Layer::Objects)
         .with_label("Dynamite")
         .with_description("Sweating nitroglycerin in the heat. The miner's prayer and last resort.")
@@ -19,5 +20,5 @@ pub fn spawn_dynamite(entity: Entity, world: &mut World, config: Prefab) {
         .with_throwable_char(5, '!', Palette::Red.into())
         .with_component(ExplosiveProperties::dynamite())
         .with_lightable_audio(AudioKey::IgniteMatch, None)
-        .build();
+
 }

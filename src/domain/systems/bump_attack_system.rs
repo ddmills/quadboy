@@ -9,7 +9,6 @@ pub fn bump_attack_system(
     mut q_bump_attack: Query<(Entity, &mut BumpAttack, &mut Glyph)>,
     time: Res<Time>,
 ) {
-
     let mut entities_to_remove = Vec::new();
 
     for (entity, mut bump_attack, mut glyph) in q_bump_attack.iter_mut() {

@@ -9,7 +9,6 @@ pub fn hit_blink_system(
     mut q_hit_blink: Query<(Entity, &mut HitBlink, &mut Glyph)>,
     time: Res<Time>,
 ) {
-
     let mut entities_to_remove = Vec::new();
 
     for (entity, mut hit_blink, mut glyph) in q_hit_blink.iter_mut() {

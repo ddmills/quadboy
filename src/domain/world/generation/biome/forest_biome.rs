@@ -100,13 +100,13 @@ fn generate_forest_boulder_ca(constraint_grid: &Grid<bool>, rand: &mut Rand) -> 
 }
 
 fn generate_forest_tree_ca(constraint_grid: &Grid<bool>, rand: &mut Rand) -> Grid<bool> {
-    // Initialize with higher density for trees than boulders
+    // Initialize with higher density for denser, noisier forest
     let initial_grid = Grid::init_fill(ZONE_SIZE.0, ZONE_SIZE.1, |x, y| {
         if *constraint_grid.get(x, y).unwrap_or(&true) {
             false
         } else {
-            // Higher initial density for forest clusters
-            rand.bool(0.35)
+            // Increased density for denser forest
+            rand.bool(0.3)
         }
     });
 
@@ -115,15 +115,15 @@ fn generate_forest_tree_ca(constraint_grid: &Grid<bool>, rand: &mut Rand) -> Gri
         .with_boundary(BoundaryBehavior::Constant(false))
         .with_constraints(constraint_grid.clone());
 
-    // Trees form in clusters - born if 4-6 neighbors, survive if 3-6 neighbors
+    // Trees form in clusters - easier survival for denser forest
     let forest_rule = CaveRule::new(4, 3);
     ca.evolve_steps(&forest_rule, 2);
 
-    // Light smoothing to create more natural forest clusters
-    let smoothing_rule = SmoothingRule::new(0.45);
-    ca.evolve_steps(&smoothing_rule, 2);
+    // Less smoothing for more noise and irregular patterns
+    let smoothing_rule = SmoothingRule::new(0.35);
+    ca.evolve_steps(&smoothing_rule, 1);
 
-    // Slight erosion to create clearings and paths
+    // Light erosion to preserve density while creating some clearings
     let erosion_rule = ErosionRule::new(1);
     ca.evolve_steps(&erosion_rule, 1);
 

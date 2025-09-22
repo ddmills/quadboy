@@ -38,7 +38,6 @@ pub fn update_lighting_system(
     q_equipped_lights: Query<&LightSource, With<Equipped>>,
     q_entities_with_equipment: Query<(&Position, &EquipmentSlots), With<InActiveZone>>,
 ) {
-
     if clock.tick_delta_accum() == 0 {
         return;
     }

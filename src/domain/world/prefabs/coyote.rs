@@ -10,10 +10,10 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
-        .with_dynamic_tracking() // Coyotes can move
+pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
+        .with_dynamic_tracking()
         .with_needs_stable_id()
         .with_glyph_and_texture(
             32,
@@ -37,6 +37,5 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) {
         .with_creature_type(CreatureType::Coyote)
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-        .with_movement_capabilities(crate::domain::MovementFlags::TERRESTRIAL)
-        .build();
+
 }

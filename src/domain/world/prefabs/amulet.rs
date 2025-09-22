@@ -6,7 +6,7 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_amulet(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_amulet(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let mut rand = world.resource_mut::<Rand>();
     let stats = StatType::all();
     let random_stat = rand.pick(stats);
@@ -19,8 +19,8 @@ pub fn spawn_amulet(entity: Entity, world: &mut World, config: Prefab) {
 
     let label = format!("Amulet of {}", random_stat.verb());
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Items on ground don't move
         .with_glyph(42, Palette::Yellow, Palette::Purple, Layer::Objects)
         .with_label(&label)
@@ -34,5 +34,5 @@ pub fn spawn_amulet(entity: Entity, world: &mut World, config: Prefab) {
         ))
         .with_stat_modifiers(stat_modifiers)
         .with_needs_stable_id()
-        .build();
+        
 }

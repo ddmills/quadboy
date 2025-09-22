@@ -7,14 +7,14 @@ use crate::{
     rendering::Layer,
 };
 
-pub fn spawn_giant_mushroom(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_giant_mushroom(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let glyph_char = {
         let mut rand = world.get_resource_mut::<Rand>().unwrap();
         rand.pick(&[78, 79])
     };
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Giant mushrooms never move
         .with_needs_stable_id()
         .with_glyph(glyph_char, Palette::White, Palette::Red, Layer::Objects)
@@ -26,5 +26,5 @@ pub fn spawn_giant_mushroom(entity: Entity, world: &mut World, config: Prefab) {
         .with_vision_blocker()
         .with_light_source(LightSource::mushroom())
         .with_destructible(5, MaterialType::Wood)
-        .build();
+        
 }

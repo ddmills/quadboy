@@ -6,10 +6,10 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) {
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
-        .with_static_tracking() // Items on ground don't move
+pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
+        .with_static_tracking()
         .with_glyph(41, Palette::Red, Palette::Green, Layer::Objects)
         .with_label("{R|Apple}")
         .with_description(
@@ -19,5 +19,4 @@ pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) {
         .with_needs_stable_id()
         .with_stackable(StackableType::Apple, 1)
         .with_consumable(ConsumableEffect::Heal(2), true)
-        .build();
 }

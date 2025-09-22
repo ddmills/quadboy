@@ -111,7 +111,6 @@ pub fn update_faction_maps(
     q_colliders: Query<(Entity, &Position), With<Collider>>,
     q_faction_members: Query<(&Position, &FactionMember), With<InActiveZone>>,
 ) {
-
     if clock.tick_delta_accum() == 0 {
         return;
     }

@@ -140,7 +140,7 @@ impl Bitmasker {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct BitmaskGlyph {
     pub style: BitmaskStyle,
 }

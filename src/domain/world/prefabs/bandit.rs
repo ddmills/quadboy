@@ -10,15 +10,15 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
+pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
     let mut stat_modifiers = StatModifiers::new();
     stat_modifiers.add_modifier(
         StatType::Armor,
         StatModifier::intrinsic(2, "Leather Vest".to_string()),
     );
 
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_dynamic_tracking() // Bandits can move
         .with_needs_stable_id()
         .with_glyph_and_texture(
@@ -46,5 +46,5 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) {
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Bandits))
         .with_movement_capabilities(crate::domain::MovementFlags::TERRESTRIAL)
-        .build();
+        
 }

@@ -10,10 +10,11 @@ pub enum Terrain {
     #[default]
     Grass = 2,
     DyingGrass = 3,
-    Dirt = 4,
-    River = 5,
-    Sand = 6,
-    Shallows = 7,
+    Gravel = 4,
+    Dirt = 5,
+    River = 6,
+    Sand = 7,
+    Shallows = 8,
 }
 
 impl Terrain {
@@ -21,6 +22,7 @@ impl Terrain {
         match self {
             Terrain::Grass => vec![0, 1, 2],
             Terrain::DyingGrass => vec![16, 17, 0, 1, 2],
+            Terrain::Gravel => vec![16, 17, 0, 1],
             Terrain::Dirt => vec![4, 5],
             // Terrain::Dirt => vec![48, 49],
             // Terrain::Sand => vec![4, 5],
@@ -35,6 +37,7 @@ impl Terrain {
         match self {
             Terrain::Grass => "{G|Grass}",
             Terrain::DyingGrass => "{y|Dying Grass}",
+            Terrain::Gravel => "{U|Gravel}",
             Terrain::Dirt => "{X|Dirt}",
             Terrain::Sand => "{Y|Sand}",
             Terrain::River => "{B|River}",
@@ -50,6 +53,7 @@ pub struct TerrainNoise {
     pub sand: Perlin,
     pub grass: Perlin,
     pub dying_grass: Perlin,
+    pub gravel: Perlin,
     pub dirt: Perlin,
     pub river: Perlin,
 }
@@ -68,6 +72,7 @@ impl TerrainNoise {
             sand: Perlin::new(seed + 120, 0.2, 2, 1.5),
             grass: Perlin::new(seed + 200, 0.08, 1, 1.2),
             dying_grass: Perlin::new(seed + 210, 0.49, 4, 1.3),
+            gravel: Perlin::new(seed + 220, 0.2, 3, 1.4),
             dirt: Perlin::new(seed + 300, 0.12, 1, 1.8),
             river: Perlin::new(seed + 300, 0.12, 1, 1.8),
         }
@@ -98,7 +103,7 @@ impl TerrainNoise {
 
         Style {
             idx: grass_tiles[tile_idx],
-            fg1: Palette::DarkGray.into(),
+            fg1: Palette::DarkGreen.into(),
             fg2: None,
             bg: None,
             outline: None,
@@ -115,6 +120,22 @@ impl TerrainNoise {
         Style {
             idx: dying_grass_tiles[tile_idx],
             fg1: Palette::DarkOrange.into(),
+            fg2: None,
+            bg: None,
+            outline: None,
+        }
+    }
+
+    pub fn gravel(&mut self, pos: (usize, usize)) -> Style {
+        let v = self.gravel.get(pos.0 as f32, pos.1 as f32);
+        let gravel_tiles = Terrain::Gravel.tiles();
+
+        let tile_idx = (v * gravel_tiles.len() as f32) as usize;
+        let tile_idx = tile_idx.min(gravel_tiles.len() - 1);
+
+        Style {
+            idx: gravel_tiles[tile_idx],
+            fg1: Palette::Gray.into(),
             fg2: None,
             bg: None,
             outline: None,
@@ -180,6 +201,7 @@ impl TerrainNoise {
             },
             Terrain::Grass => self.grass(pos),
             Terrain::DyingGrass => self.dying_grass(pos),
+            Terrain::Gravel => self.gravel(pos),
             Terrain::Dirt => self.dirt(pos),
             Terrain::River => self.river(pos),
             Terrain::Sand => self.sand(pos),

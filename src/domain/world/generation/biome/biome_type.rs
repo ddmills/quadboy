@@ -26,11 +26,11 @@ impl BiomeType {
     pub fn get_ambient_color(&self) -> u32 {
         match self {
             BiomeType::OpenAir => 0xFFFFFF,
-            BiomeType::Forest => 0x212924,
-            BiomeType::Desert => 0x1D1A19,
+            BiomeType::Forest => 0x1B241E,
+            BiomeType::Desert => 0x241C1A,
             BiomeType::DustyPlains => 0x2A2518,
             BiomeType::Cavern => 0x15151B,
-            BiomeType::Mountain => 0x151718,
+            BiomeType::Mountain => 0x1D2631,
         }
     }
 
@@ -47,9 +47,11 @@ impl BiomeType {
 
     pub fn uses_daylight_cycle(&self) -> bool {
         match self {
-            BiomeType::OpenAir | BiomeType::Forest | BiomeType::Desert | BiomeType::DustyPlains | BiomeType::Mountain => {
-                true
-            }
+            BiomeType::OpenAir
+            | BiomeType::Forest
+            | BiomeType::Desert
+            | BiomeType::DustyPlains
+            | BiomeType::Mountain => true,
             BiomeType::Cavern => false,
         }
     }
@@ -81,7 +83,7 @@ impl BiomeType {
                 BiomeType::Desert => Terrain::Sand,
                 BiomeType::DustyPlains => Terrain::DyingGrass,
                 BiomeType::Cavern => Terrain::Sand,
-                BiomeType::Mountain => Terrain::Grass,
+                BiomeType::Mountain => Terrain::Gravel,
             }
         }
     }

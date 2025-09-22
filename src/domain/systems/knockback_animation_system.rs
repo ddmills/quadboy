@@ -9,7 +9,6 @@ pub fn knockback_animation_system(
     mut q_knockback: Query<(Entity, &mut KnockbackAnimation, &mut Glyph)>,
     time: Res<Time>,
 ) {
-
     let mut entities_to_remove = Vec::new();
 
     for (entity, mut knockback, mut glyph) in q_knockback.iter_mut() {

@@ -7,9 +7,9 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
-    PrefabBuilder::new(entity, world, &config)
-        .with_base_components()
+pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    PrefabBuilder::new()
+        .with_base_components(config.pos)
         .with_static_tracking() // Items on ground don't move
         .with_glyph(22, Palette::Gray, Palette::Yellow, Layer::Objects)
         .with_label("Lantern")
@@ -24,5 +24,5 @@ pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) {
         .with_light_source(LightSource::lantern())
         .with_lightable_audio(AudioKey::IgniteMatch, None)
         .with_needs_stable_id()
-        .build();
+        
 }

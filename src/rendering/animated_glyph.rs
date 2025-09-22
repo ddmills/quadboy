@@ -38,7 +38,6 @@ pub fn update_animated_glyphs(
     mut q_animated: Query<(&mut AnimatedGlyph, &mut Glyph)>,
     time: Res<Time>,
 ) {
-
     for (mut anim_glyph, mut glyph) in q_animated.iter_mut() {
         if !anim_glyph.is_playing || anim_glyph.frames.is_empty() {
             continue;
