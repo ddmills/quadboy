@@ -1,5 +1,6 @@
 use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
+use quadboy_macros::profiled_system;
 
 use crate::{
     engine::Mouse,
@@ -35,6 +36,7 @@ impl Interactable {
     }
 }
 
+#[profiled_system]
 pub fn ui_interaction_system(
     mut cmds: Commands,
     q_interactions: Query<(Entity, &Position, &Interactable, &Interaction)>,
@@ -43,7 +45,6 @@ pub fn ui_interaction_system(
     dialog_state: Res<DialogState>,
     ui_focus: Res<UiFocus>,
 ) {
-    crate::tracy_span!("ui_interaction_system");
     for (entity, position, interactable, current_interaction) in q_interactions.iter() {
         let mouse_ui = mouse.ui;
         let pos = (position.x, position.y);

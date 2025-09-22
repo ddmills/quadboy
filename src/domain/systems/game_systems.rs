@@ -4,6 +4,7 @@ use bevy_ecs::{
     world::World,
 };
 use macroquad::prelude::trace;
+use quadboy_macros::profiled_system;
 
 use crate::{
     domain::{
@@ -24,7 +25,7 @@ use crate::{
         update_lighting_system, update_player_position_resource, update_player_vision,
     },
     rendering::position_systems::{place_static_entities, update_dynamic_entity_pos},
-    tracy_plot, tracy_span,
+    tracy_plot,
 };
 
 #[derive(Resource)]
@@ -64,28 +65,22 @@ pub fn register_game_systems(world: &mut World) {
     world.insert_resource(GameSystems { all, post });
 }
 
+#[profiled_system]
 fn exec_game_systems(world: &mut World) {
-    tracy_span!("exec_game_systems");
-
     let system_ids = {
-        tracy_span!("exec_game_systems:clone_systems");
         let Some(systems) = world.get_resource::<GameSystems>() else {
             return;
         };
         systems.all.clone()
     };
 
-    {
-        tracy_span!("exec_game_systems:iter");
-        for id in system_ids {
-            let _ = world.run_system(id);
-        }
+    for id in system_ids {
+        let _ = world.run_system(id);
     }
 }
 
+#[profiled_system]
 fn exec_game_post_systems(world: &mut World) {
-    tracy_span!("exec_game_post_systems");
-
     let system_ids = {
         let Some(systems) = world.get_resource::<GameSystems>() else {
             return;
@@ -99,18 +94,17 @@ fn exec_game_post_systems(world: &mut World) {
 }
 
 #[inline]
+#[profiled_system]
 pub fn apply_deferred(world: &mut World) {
-    tracy_span!("apply_deferred");
     let _ = world.run_system_once(bevy_ecs::schedule::ApplyDeferred);
 }
 
+#[profiled_system]
 pub fn game_loop(world: &mut World) {
-    tracy_span!("game_loop");
     let mut iterations = 0;
     const MAX_ITERATIONS: u32 = 200;
 
     loop {
-        tracy_span!("game_loop:iter");
         {
             let Some(player_pos) = world.get_resource::<PlayerPosition>() else {
                 return;

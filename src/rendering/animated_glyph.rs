@@ -1,11 +1,9 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 use serde::{Deserialize, Serialize};
 
 use super::Glyph;
-use crate::{
-    engine::{SerializableComponent, Time},
-    tracy_span,
-};
+use crate::engine::{SerializableComponent, Time};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct AnimatedGlyph {
@@ -35,11 +33,11 @@ impl AnimatedGlyph {
     }
 }
 
+#[profiled_system]
 pub fn update_animated_glyphs(
     mut q_animated: Query<(&mut AnimatedGlyph, &mut Glyph)>,
     time: Res<Time>,
 ) {
-    tracy_span!("update_animated_glyphs");
 
     for (mut anim_glyph, mut glyph) in q_animated.iter_mut() {
         if !anim_glyph.is_playing || anim_glyph.frames.is_empty() {

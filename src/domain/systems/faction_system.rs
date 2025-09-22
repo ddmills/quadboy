@@ -1,9 +1,9 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 use std::collections::HashMap;
 
 use crate::{
     domain::{FactionId, FactionMember},
-    tracy_span,
 };
 
 #[derive(Resource)]
@@ -88,8 +88,8 @@ pub fn are_hostile(entity_a: Entity, entity_b: Entity, world: &World) -> bool {
     get_effective_relationship(entity_a, entity_b, world) < 0
 }
 
+#[profiled_system]
 pub fn tick_faction_modifiers(mut q_faction_members: Query<&mut FactionMember>) {
-    tracy_span!("tick_faction_modifiers");
     for mut faction_member in q_faction_members.iter_mut() {
         faction_member.tick_modifiers();
     }

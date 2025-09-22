@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 use std::collections::HashMap;
 
 use crate::{
@@ -7,7 +8,6 @@ use crate::{
     domain::{Collider, FactionId, FactionMember, InActiveZone, PlayerPosition, Zone},
     engine::Clock,
     rendering::Position,
-    tracy_span,
 };
 
 #[derive(Resource)]
@@ -62,7 +62,6 @@ impl FactionMap {
         let mut faction_goals: HashMap<FactionId, Vec<(usize, usize)>> = HashMap::new();
 
         {
-            tracy_span!("faction_map_collect_goals");
             // Find all faction members in this zone
             for (position, faction_member) in q_faction_members.iter() {
                 let zone_idx = position.zone_idx();
@@ -77,7 +76,6 @@ impl FactionMap {
         }
 
         {
-            tracy_span!("faction_map_create_maps");
             // Create maps for any new factions
             for faction_id in faction_goals.keys() {
                 if !self.maps.contains_key(faction_id) {
@@ -88,14 +86,12 @@ impl FactionMap {
         }
 
         {
-            tracy_span!("faction_map_update_obstacles");
             // Update obstacles for all factions in this zone
             let faction_list: Vec<_> = faction_goals.keys().cloned().collect();
             self.update_obstacles(zone, &faction_list, q_colliders);
         }
 
         {
-            tracy_span!("faction_map_calculate_pathfinding");
             // Calculate pathfinding for each faction
             for (faction_id, goals) in faction_goals {
                 if let Some(map) = self.maps.get_mut(&faction_id) {
@@ -106,6 +102,7 @@ impl FactionMap {
     }
 }
 
+#[profiled_system]
 pub fn update_faction_maps(
     mut faction_map: ResMut<FactionMap>,
     mut clock: ResMut<Clock>,
@@ -114,7 +111,6 @@ pub fn update_faction_maps(
     q_colliders: Query<(Entity, &Position), With<Collider>>,
     q_faction_members: Query<(&Position, &FactionMember), With<InActiveZone>>,
 ) {
-    tracy_span!("update_faction_maps");
 
     if clock.tick_delta_accum() == 0 {
         return;

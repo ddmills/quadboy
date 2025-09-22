@@ -1,18 +1,18 @@
 use bevy_ecs::{prelude::*, system::ParamSet};
+use quadboy_macros::profiled_system;
 
 use crate::domain::{
     Attributes, EquipmentSlots, Item, ModifierSource, StatModifier, StatModifiers, StatType, Stats,
 };
 use crate::engine::StableIdRegistry;
-use crate::tracy_span;
 
+#[profiled_system]
 pub fn recalculate_stats_system(
     mut q_stats: Query<
         (&mut Stats, &Attributes, &StatModifiers),
         Or<(Changed<StatModifiers>, Changed<Attributes>)>,
     >,
 ) {
-    tracy_span!("recalculate_stats_system");
     for (mut stats, attributes, modifiers) in q_stats.iter_mut() {
         for stat_type in StatType::all() {
             let base_value = stat_type.get_base_value(attributes);
@@ -27,12 +27,12 @@ pub fn recalculate_stats_system(
     }
 }
 
+#[profiled_system]
 pub fn equipment_stat_modifier_system(
     mut param_set: ParamSet<(Query<&mut StatModifiers>, Query<&StatModifiers, With<Item>>)>,
     q_equipment_changed: Query<(Entity, &EquipmentSlots), Changed<EquipmentSlots>>,
     registry: Res<StableIdRegistry>,
 ) {
-    tracy_span!("equipment_stat_modifier_system");
     // Collect all the modifiers to add first
     let mut modifiers_to_add: Vec<(Entity, StatType, StatModifier)> = Vec::new();
 

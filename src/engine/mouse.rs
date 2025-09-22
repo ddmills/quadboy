@@ -11,6 +11,7 @@ use crate::{
     rendering::{GameCamera, ScreenSize},
     ui::UiLayout,
 };
+use quadboy_macros::profiled_system;
 
 #[derive(Resource, Default)]
 pub struct Mouse {
@@ -45,6 +46,7 @@ fn crt_curve_uv(uv: (f32, f32), crt_curvature: &crate::rendering::CrtCurvature) 
     (out.x.clamp(0., 1.), out.y.clamp(0., 1.))
 }
 
+#[profiled_system]
 pub fn update_mouse(
     mut cursor: ResMut<Mouse>,
     screen: Res<ScreenSize>,
@@ -52,7 +54,6 @@ pub fn update_mouse(
     layout: Res<UiLayout>,
     settings: Res<GameSettings>,
 ) {
-    crate::tracy_span!("update_mouse");
     let target_size = (
         (screen.tile_w * TILE_SIZE.0) as u32,
         (screen.tile_h * TILE_SIZE.1) as u32,

@@ -1,5 +1,6 @@
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
+use quadboy_macros::profiled_system;
 
 use crate::{
     cfg::{TILE_SIZE, TILE_SIZE_F32, ZONE_SIZE_F32},
@@ -143,8 +144,8 @@ pub struct ScreenSize {
     pub tile_h: usize,
 }
 
+#[profiled_system]
 pub fn update_screen_size(mut screen: ResMut<ScreenSize>) {
-    crate::tracy_span!("update_screen_size");
     let size = get_screen_size_texels();
 
     if size.x != screen.width || size.y != screen.height {

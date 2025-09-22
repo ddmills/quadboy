@@ -1,13 +1,14 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
-use crate::{domain::BumpAttack, engine::Time, rendering::Glyph, tracy_span};
+use crate::{domain::BumpAttack, engine::Time, rendering::Glyph};
 
+#[profiled_system]
 pub fn bump_attack_system(
     mut cmds: Commands,
     mut q_bump_attack: Query<(Entity, &mut BumpAttack, &mut Glyph)>,
     time: Res<Time>,
 ) {
-    tracy_span!("bump_attack_system");
 
     let mut entities_to_remove = Vec::new();
 

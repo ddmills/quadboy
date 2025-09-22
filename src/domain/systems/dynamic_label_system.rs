@@ -1,7 +1,9 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
 use crate::domain::components::Label;
 
+#[profiled_system]
 pub fn update_labels(
     mut q: Query<(Entity, &mut Label)>,
     // Query all the components that can modify labels
@@ -10,7 +12,6 @@ pub fn update_labels(
     q_light_source: Query<&crate::domain::components::LightSource>,
     q_stack_count: Query<&crate::domain::components::StackCount>,
 ) {
-    crate::tracy_span!("update_labels");
     for (entity, mut label) in q.iter_mut() {
         if label.is_dirty() {
             let mut parts = vec![label.get_base().to_string()];
@@ -59,11 +60,11 @@ pub fn update_labels(
     }
 }
 
+#[profiled_system]
 pub fn mark_dirty_on_equipment_change(
     mut q: Query<&mut Label>,
     q_equipped: Query<Entity, (Changed<crate::domain::components::Equipped>, With<Label>)>,
 ) {
-    crate::tracy_span!("mark_dirty_on_equipment_change");
     for entity in q_equipped.iter() {
         if let Ok(mut label) = q.get_mut(entity) {
             label.mark_dirty();
@@ -71,11 +72,11 @@ pub fn mark_dirty_on_equipment_change(
     }
 }
 
+#[profiled_system]
 pub fn mark_dirty_on_fuse_change(
     mut q: Query<&mut Label>,
     q_fuse: Query<Entity, (Changed<crate::domain::components::Fuse>, With<Label>)>,
 ) {
-    crate::tracy_span!("mark_dirty_on_fuse_change");
     for entity in q_fuse.iter() {
         if let Ok(mut label) = q.get_mut(entity) {
             label.mark_dirty();
@@ -83,11 +84,11 @@ pub fn mark_dirty_on_fuse_change(
     }
 }
 
+#[profiled_system]
 pub fn mark_dirty_on_light_change(
     mut q: Query<&mut Label>,
     q_light: Query<Entity, (Changed<crate::domain::components::LightSource>, With<Label>)>,
 ) {
-    crate::tracy_span!("mark_dirty_on_light_change");
     for entity in q_light.iter() {
         if let Ok(mut label) = q.get_mut(entity) {
             label.mark_dirty();
@@ -95,11 +96,11 @@ pub fn mark_dirty_on_light_change(
     }
 }
 
+#[profiled_system]
 pub fn mark_dirty_on_stack_change(
     mut q: Query<&mut Label>,
     q_stack: Query<Entity, (Changed<crate::domain::components::StackCount>, With<Label>)>,
 ) {
-    crate::tracy_span!("mark_dirty_on_stack_change");
     for entity in q_stack.iter() {
         if let Ok(mut label) = q.get_mut(entity) {
             label.mark_dirty();
@@ -107,6 +108,7 @@ pub fn mark_dirty_on_stack_change(
     }
 }
 
+#[profiled_system]
 pub fn ensure_labels_initialized(
     mut q_labels: Query<(Entity, &mut Label), Added<Label>>,
     // Query all the components that can modify labels to build them immediately
@@ -115,7 +117,6 @@ pub fn ensure_labels_initialized(
     q_light_source: Query<&crate::domain::components::LightSource>,
     q_stack_count: Query<&crate::domain::components::StackCount>,
 ) {
-    crate::tracy_span!("ensure_labels_initialized");
     for (entity, mut label) in q_labels.iter_mut() {
         // Build the cached label with all modifiers for newly created labels
         // Since we're only processing Added<Label>, we know these are new and need initialization

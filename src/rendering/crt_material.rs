@@ -1,5 +1,6 @@
 use bevy_ecs::{prelude::*, system::ResMut};
 use macroquad::prelude::*;
+use quadboy_macros::profiled_system;
 
 use crate::domain::GameSettings;
 
@@ -76,8 +77,8 @@ impl Default for CrtShader {
     }
 }
 
+#[profiled_system]
 pub fn update_crt_uniforms(crt: ResMut<CrtShader>, settings: Res<GameSettings>) {
-    crate::tracy_span!("update_crt_uniforms");
     if settings.is_changed() {
         let curve_values = settings.crt_curvature.get_values();
         crt.mat

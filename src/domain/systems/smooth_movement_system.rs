@@ -1,13 +1,14 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
-use crate::{domain::SmoothMovement, engine::Time, rendering::Glyph, tracy_span};
+use crate::{domain::SmoothMovement, engine::Time, rendering::Glyph};
 
+#[profiled_system]
 pub fn smooth_movement_system(
     mut cmds: Commands,
     mut q_smooth_movement: Query<(Entity, &mut SmoothMovement, &mut Glyph)>,
     time: Res<Time>,
 ) {
-    tracy_span!("smooth_movement_system");
 
     let mut entities_to_remove = Vec::new();
 

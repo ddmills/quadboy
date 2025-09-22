@@ -1,13 +1,14 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
-use crate::{domain::KnockbackAnimation, engine::Time, rendering::Glyph, tracy_span};
+use crate::{domain::KnockbackAnimation, engine::Time, rendering::Glyph};
 
+#[profiled_system]
 pub fn knockback_animation_system(
     mut cmds: Commands,
     mut q_knockback: Query<(Entity, &mut KnockbackAnimation, &mut Glyph)>,
     time: Res<Time>,
 ) {
-    tracy_span!("knockback_animation_system");
 
     let mut entities_to_remove = Vec::new();
 

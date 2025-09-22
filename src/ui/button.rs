@@ -1,5 +1,6 @@
 use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
+use quadboy_macros::profiled_system;
 
 use crate::{
     engine::AudioKey,
@@ -75,6 +76,7 @@ impl Activatable {
     }
 }
 
+#[profiled_system]
 pub fn setup_buttons(
     mut cmds: Commands,
     mut q_buttons: Query<
@@ -89,7 +91,6 @@ pub fn setup_buttons(
         (Changed<Activatable>, With<Activatable>),
     >,
 ) {
-    crate::tracy_span!("setup_buttons");
     for (entity, activatable, text_opt, callback_opt, hotkey_opt, interaction_opt) in
         q_buttons.iter_mut()
     {

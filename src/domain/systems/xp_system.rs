@@ -4,9 +4,9 @@ use crate::{
         systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
     },
     rendering::{Position, spawn_level_up_celebration},
-    tracy_span,
 };
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
 #[derive(Resource, Default)]
 pub struct LevelUpParticleQueue {
@@ -30,12 +30,12 @@ pub struct LevelUpEvent {
 }
 
 /// Award XP to any entity with a Level component when they kill another leveled entity
+#[profiled_system]
 pub fn award_xp_on_kill(
     mut e_entity_destroyed: EventReader<EntityDestroyedEvent>,
     mut e_xp_gain: EventWriter<XPGainEvent>,
     q_levels: Query<&Level>,
 ) {
-    tracy_span!("award_xp_on_kill");
 
     for destroyed_event in e_entity_destroyed.read() {
         // Only process attack-based deaths
@@ -65,13 +65,13 @@ pub fn award_xp_on_kill(
 }
 
 /// Apply XP gains to entities with Level components
+#[profiled_system]
 pub fn apply_xp_gain(
     mut e_xp_gain: EventReader<XPGainEvent>,
     mut e_level_up: EventWriter<LevelUpEvent>,
     mut q_levels: Query<&mut Level>,
     mut q_attribute_points: Query<&mut AttributePoints>,
 ) {
-    tracy_span!("apply_xp_gain");
 
     for xp_event in e_xp_gain.read() {
         if let Ok(mut level) = q_levels.get_mut(xp_event.recipient_entity) {
@@ -112,13 +112,13 @@ pub fn apply_xp_gain(
 }
 
 /// Handle level up events by restoring HP to full and spawning celebration particles
+#[profiled_system]
 pub fn handle_level_up(
     mut e_level_up: EventReader<LevelUpEvent>,
     mut q_health_stats: Query<(&mut Health, &Level, &Stats)>,
     q_positions: Query<&Position>,
     mut particle_queue: ResMut<LevelUpParticleQueue>,
 ) {
-    tracy_span!("handle_level_up");
 
     for level_up_event in e_level_up.read() {
         if let Ok((mut health, level, stats)) = q_health_stats.get_mut(level_up_event.entity) {
@@ -141,8 +141,8 @@ pub fn handle_level_up(
 }
 
 /// Process level up particle requests by spawning particles (exclusive system)
+#[profiled_system]
 pub fn process_level_up_particles(world: &mut World) {
-    tracy_span!("process_level_up_particles");
 
     let mut requests = Vec::new();
     if let Some(mut particle_queue) = world.get_resource_mut::<LevelUpParticleQueue>() {

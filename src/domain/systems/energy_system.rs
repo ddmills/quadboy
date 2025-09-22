@@ -1,9 +1,9 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
 use crate::{
     domain::{ActiveConditions, ConditionType, Energy, Player, StatType, Stats},
     engine::Clock,
-    tracy_span,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,13 +29,13 @@ pub struct TurnState {
     pub current_turn_entity: Option<Entity>,
 }
 
+#[profiled_system]
 pub fn turn_scheduler(
     mut q_energy: Query<(Entity, &mut Energy)>,
     mut turn_state: ResMut<TurnState>,
     mut clock: ResMut<Clock>,
     q_player: Query<Entity, With<Player>>,
 ) {
-    tracy_span!("turn_scheduler");
 
     // Clear tick delta at the start of each turn scheduling cycle
     clock.clear_tick_delta();

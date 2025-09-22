@@ -1,5 +1,6 @@
 use bevy_ecs::prelude::*;
 use macroquad::input::KeyCode;
+use quadboy_macros::profiled_system;
 
 use crate::{
     domain::GameSettings,
@@ -60,11 +61,11 @@ impl Focusable {
 }
 
 /// System that updates Interaction components based on focus state
+#[profiled_system]
 pub fn sync_focus_to_interaction(
     mut q_interactions: Query<&mut Interaction>,
     ui_focus: Res<UiFocus>,
 ) {
-    crate::tracy_span!("sync_focus_to_interaction");
     let Some(focused_entity) = ui_focus.focused_element else {
         return;
     };
@@ -78,6 +79,7 @@ pub fn sync_focus_to_interaction(
 }
 
 /// System that handles Tab navigation between focusable elements
+#[profiled_system]
 pub fn tab_navigation(
     mut ui_focus: ResMut<UiFocus>,
     q_focusable: Query<(Entity, &Focusable)>,
@@ -90,7 +92,6 @@ pub fn tab_navigation(
     q_list_items: Query<&ListItem>,
     mut q_lists: Query<&mut List>,
 ) {
-    crate::tracy_span!("tab_navigation");
     let now = time.fixed_t;
     let rate = settings.input_delay;
     let delay = settings.input_initial_delay;
@@ -201,13 +202,13 @@ pub fn tab_navigation(
 }
 
 /// System that updates focus when elements are hovered with mouse
+#[profiled_system]
 pub fn update_focus_from_mouse(
     mut ui_focus: ResMut<UiFocus>,
     q_hovered: Query<Entity, (With<Focusable>, With<Interaction>)>,
     q_interactions: Query<&Interaction>,
     mouse: Res<Mouse>,
 ) {
-    crate::tracy_span!("update_focus_from_mouse");
     // Only update focus if mouse has moved
     if !mouse.has_moved {
         return;

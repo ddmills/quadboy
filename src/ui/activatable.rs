@@ -1,5 +1,6 @@
 use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
+use quadboy_macros::profiled_system;
 
 use crate::{
     common::Palette,
@@ -239,6 +240,7 @@ impl ActivatableBuilder {
 }
 
 /// Unified system for handling all keyboard activation (hotkeys and Enter key)
+#[profiled_system]
 pub fn unified_keyboard_activation_system(
     mut cmds: Commands,
     q_activatable: Query<(Entity, &Activatable)>,
@@ -250,7 +252,6 @@ pub fn unified_keyboard_activation_system(
     keys: Res<KeyInput>,
     audio: Res<Audio>,
 ) {
-    crate::tracy_span!("unified_keyboard_activation_system");
     // Handle hotkey activation for all elements
     for (entity, activatable) in q_activatable.iter() {
         if dialog_state.is_open && q_dialog_content.get(entity).is_err() {
@@ -297,6 +298,7 @@ pub fn unified_keyboard_activation_system(
     }
 }
 
+#[profiled_system]
 pub fn unified_click_system(
     mut cmds: Commands,
     q_activatable: Query<(Entity, &Activatable, &Interaction), Changed<Interaction>>,
@@ -305,7 +307,6 @@ pub fn unified_click_system(
     audio: Res<Audio>,
     mut mouse: ResMut<Mouse>,
 ) {
-    crate::tracy_span!("unified_click_system");
     for (entity, activatable, interaction) in q_activatable.iter() {
         if matches!(interaction, Interaction::Released) {
             // Check if this is a list item in a selectable list
@@ -323,12 +324,12 @@ pub fn unified_click_system(
 }
 
 /// System to manage HotkeyPressed timer and remove expired ones
+#[profiled_system]
 pub fn hotkey_pressed_timer_system(
     mut cmds: Commands,
     time: Res<Time>,
     mut q_hotkey_pressed: Query<(Entity, &mut HotkeyPressed)>,
 ) {
-    crate::tracy_span!("hotkey_pressed_timer_system");
     for (entity, mut hotkey_pressed) in q_hotkey_pressed.iter_mut() {
         hotkey_pressed.remaining_time -= time.dt;
         if hotkey_pressed.remaining_time <= 0.0 {
@@ -338,6 +339,7 @@ pub fn hotkey_pressed_timer_system(
 }
 
 /// Unified styling system that applies consistent colors to all Activatable types
+#[profiled_system]
 pub fn unified_style_system(
     mut q_text: Query<(
         &mut Text,
@@ -357,7 +359,6 @@ pub fn unified_style_system(
         Without<Text>,
     >,
 ) {
-    crate::tracy_span!("unified_style_system");
     // Apply styling to Text components (buttons, dialog buttons)
     for (mut text, activatable, interaction_opt, hotkey_pressed_opt, selected_opt) in
         q_text.iter_mut()

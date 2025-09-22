@@ -9,11 +9,12 @@ use crate::{
         ZoneStatus,
     },
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
-    tracy_plot, tracy_span,
+    tracy_plot,
     ui::{DialogState, UiLayout},
 };
 use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
+use quadboy_macros::profiled_system;
 use serde::{Deserialize, Serialize};
 
 use super::{GameCamera, Layer, Layers, LightingData, Position, Renderable, ScreenSize};
@@ -258,6 +259,7 @@ fn dim_glyph_style(style: GlyphStyle) -> GlyphStyle {
     }
 }
 
+#[profiled_system]
 pub fn render_glyphs(
     q_glyphs: Query<(Entity, &Glyph, &Position, &Visibility)>,
     q_visibility: Query<
@@ -278,11 +280,9 @@ pub fn render_glyphs(
     dialog_state: Res<DialogState>,
     lighting_data: Res<LightingData>,
 ) {
-    tracy_span!("render_glyphs");
     tracy_plot!("Rendered Glyphs", q_glyphs.iter().count() as f64);
 
     {
-        tracy_span!("render_glyphs_clear_layers");
         layers.iter_mut().for_each(|layer| {
             layer.clear();
         });
@@ -305,7 +305,6 @@ pub fn render_glyphs(
         world_top,
         world_bottom,
     ) = {
-        tracy_span!("render_glyphs_calculate_bounds");
         let screen_w = screen.width as f32;
         let screen_h = screen.height as f32;
         let tile_w = TILE_SIZE_F32.0;
@@ -343,7 +342,6 @@ pub fn render_glyphs(
     };
 
     {
-        tracy_span!("render_glyphs_process_entities");
         for (entity, glyph, pos, visibility) in q_glyphs.iter() {
             if *visibility == Visibility::Hidden {
                 continue;

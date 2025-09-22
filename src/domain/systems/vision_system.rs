@@ -9,11 +9,12 @@ use crate::{
     },
     engine::Clock,
     rendering::{LightingData, Position, world_to_zone_idx, world_to_zone_local},
-    tracy_span,
 };
 use bevy_ecs::prelude::*;
 use ordered_float::Pow;
+use quadboy_macros::profiled_system;
 
+#[profiled_system]
 pub fn update_player_vision(
     q_player: Query<&Vision, With<Player>>,
     player_pos: Res<PlayerPosition>,
@@ -23,7 +24,6 @@ pub fn update_player_vision(
     zones: Res<Zones>,
     lighting_data: Res<LightingData>,
 ) {
-    tracy_span!("update_player_vision");
 
     // if clock.is_frozen() {
     //     return;
@@ -54,7 +54,6 @@ pub fn update_player_vision(
     let mut vis = vec![];
 
     let blocker_cache: HashMap<(i32, i32), bool> = {
-        tracy_span!("vision_build_blocker_cache");
         let mut blocker_cache: HashMap<(i32, i32), bool> = HashMap::new();
         for blocker_pos in q_vision_blockers.iter() {
             if blocker_pos.zone_idx() == player_zone_idx {
@@ -67,7 +66,6 @@ pub fn update_player_vision(
     };
 
     let (player_x, player_y, max_vision_range, vision_range) = {
-        tracy_span!("vision_calculate_settings");
         let player_x = player_local_pos.0 as i32;
         let player_y = player_local_pos.1 as i32;
 
@@ -107,20 +105,15 @@ pub fn update_player_vision(
         },
     };
 
-    {
-        tracy_span!("vision_shadowcast");
-        shadowcast(settings);
-    }
+    shadowcast(settings);
 
-    {
-        tracy_span!("vision_apply_results");
-        for (local_x, local_y) in vis {
-            zone.visible.set(local_x, local_y, true);
-            zone.explored.set(local_x, local_y, true);
-        }
+    for (local_x, local_y) in vis {
+        zone.visible.set(local_x, local_y, true);
+        zone.explored.set(local_x, local_y, true);
     }
 }
 
+#[profiled_system]
 pub fn update_entity_visibility_flags(
     mut cmds: Commands,
     q_zones: Query<&Zone>,
@@ -138,7 +131,6 @@ pub fn update_entity_visibility_flags(
     zones: Res<Zones>,
     mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {
-    tracy_span!("update_entity_visibility_flags");
     // if clock.is_frozen() {
     //     return;
     // }

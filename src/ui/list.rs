@@ -1,5 +1,6 @@
 use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
+use quadboy_macros::profiled_system;
 use std::collections::HashSet;
 
 use crate::{
@@ -185,6 +186,7 @@ pub struct ListScrollDownIndicator {
     pub parent_list: Entity,
 }
 
+#[profiled_system]
 pub fn setup_lists(
     mut cmds: Commands,
     mut q_lists: Query<
@@ -215,7 +217,6 @@ pub fn setup_lists(
         Query<&Position>,
     )>,
 ) {
-    crate::tracy_span!("setup_lists");
     for (
         list_entity,
         mut list,
@@ -577,13 +578,13 @@ pub fn setup_lists(
     }
 }
 
+#[profiled_system]
 pub fn update_list_context(
     mut list_context: ResMut<ListContext>,
     ui_focus: Res<UiFocus>,
     q_lists: Query<&List>,
     q_list_items: Query<&ListItem>,
 ) {
-    crate::tracy_span!("update_list_context");
     let Some(focused_element) = ui_focus.focused_element else {
         return;
     };
@@ -600,13 +601,13 @@ pub fn update_list_context(
     }
 }
 
+#[profiled_system]
 pub fn list_cursor_visibility(
     q_lists: Query<(Entity, &List, &Position, &Children)>,
     mut q_cursors: Query<(&ListCursor, &mut Position, &mut Visibility), Without<List>>,
     q_list_items: Query<&ListItem>,
     ui_focus: Res<UiFocus>,
 ) {
-    crate::tracy_span!("list_cursor_visibility");
     for (list_entity, list, list_pos, children) in q_lists.iter() {
         for child in children.iter() {
             if let Ok((cursor, mut cursor_pos, mut cursor_vis)) = q_cursors.get_mut(child)
@@ -651,6 +652,7 @@ pub fn list_cursor_visibility(
     }
 }
 
+#[profiled_system]
 pub fn selectable_list_interaction(
     mut cmds: Commands,
     mut q_selectable_lists: Query<(Entity, &SelectableList, &mut SelectableListState)>,
@@ -665,7 +667,6 @@ pub fn selectable_list_interaction(
     mut mouse: ResMut<Mouse>,
     audio: Res<Audio>,
 ) {
-    crate::tracy_span!("selectable_list_interaction");
     // Handle Enter key for focused item
     if keys.is_pressed(KeyCode::Enter)
         && let Some(focused_entity) = ui_focus.focused_element
@@ -779,8 +780,8 @@ fn toggle_selection(
     }
 }
 
+#[profiled_system]
 pub fn list_mouse_wheel_scroll(mut q_lists: Query<(&mut List, &Position)>, mouse: Res<Mouse>) {
-    crate::tracy_span!("list_mouse_wheel_scroll");
     if mouse.wheel_delta.1.abs() < 0.01 {
         return; // No wheel movement
     }

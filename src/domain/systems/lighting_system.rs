@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
 use crate::{
     common::{
@@ -13,7 +14,6 @@ use crate::{
     },
     engine::{Clock, StableIdRegistry},
     rendering::{LightingData, Position, world_to_zone_local},
-    tracy_span,
 };
 
 #[derive(Clone)]
@@ -26,6 +26,7 @@ struct LightContribution {
     source_id: Entity, // Track which light source created this contribution
 }
 
+#[profiled_system]
 pub fn update_lighting_system(
     clock: Res<Clock>,
     player_pos: Res<PlayerPosition>,
@@ -37,7 +38,6 @@ pub fn update_lighting_system(
     q_equipped_lights: Query<&LightSource, With<Equipped>>,
     q_entities_with_equipment: Query<(&Position, &EquipmentSlots), With<InActiveZone>>,
 ) {
-    tracy_span!("update_lighting_system");
 
     if clock.tick_delta_accum() == 0 {
         return;
@@ -51,7 +51,6 @@ pub fn update_lighting_system(
     let biome_type = overworld.get_zone_type(player_zone_idx);
 
     let (ambient_color, ambient_intensity) = {
-        tracy_span!("lighting_calculate_ambient");
         // Calculate ambient light based on biome and daylight
         if biome_type.uses_daylight_cycle() {
             let daylight = clock.get_daylight();
@@ -86,7 +85,6 @@ pub fn update_lighting_system(
     lighting_data.set_ambient(ambient_color, ambient_intensity);
 
     let blocker_positions: HashSet<_> = {
-        tracy_span!("lighting_build_blockers");
         // Build blocker set for fast lookups - only include blockers in player's zone
         q_blockers
             .iter()
@@ -99,7 +97,6 @@ pub fn update_lighting_system(
     };
 
     let all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = {
-        tracy_span!("lighting_collect_fragments");
         let mut all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
 
         // Process all enabled lights in the zone
@@ -137,7 +134,6 @@ pub fn update_lighting_system(
     };
 
     let (floor_fragments, wall_fragments) = {
-        tracy_span!("lighting_separate_floors_walls");
         // Phase 2: Separate floors and walls, apply floors immediately
         let mut floor_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
         let mut wall_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
@@ -157,7 +153,6 @@ pub fn update_lighting_system(
     };
 
     {
-        tracy_span!("lighting_apply_pov_walls");
         // Phase 3: Apply POV-based wall lighting
         let player_world_pos = player_pos.world();
         let (player_local_x, player_local_y) =

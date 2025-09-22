@@ -4,15 +4,15 @@ use crate::{
         StaticEntitySpawnedEvent, Zone, ZoneStatus, Zones,
     },
     rendering::{Position, world_to_zone_local},
-    tracy_span,
 };
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 // ChildOf is part of prelude now
 
 /// Event-driven placement of static entities in zone caches
 /// Only processes entities when StaticEntitySpawnedEvent is received
+#[profiled_system]
 pub fn place_static_entities(world: &mut World) {
-    tracy_span!("place_static_entities");
 
     // Read events for static entities that need placement
     let events: Vec<StaticEntitySpawnedEvent> = {
@@ -90,8 +90,8 @@ pub fn place_static_entities(world: &mut World) {
 
 /// Handle movement of dynamic entities only
 /// This should process far fewer entities than the original system
+#[profiled_system]
 pub fn update_dynamic_entity_pos(world: &mut World) {
-    tracy_span!("update_dynamic_entity_pos");
 
     // Collect only dynamic entities that have moved or were just added
     let entities_to_update: Vec<(Entity, Position, Option<ColliderFlags>)> = {

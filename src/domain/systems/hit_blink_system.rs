@@ -1,13 +1,14 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
-use crate::{domain::HitBlink, engine::Time, rendering::Glyph, tracy_span};
+use crate::{domain::HitBlink, engine::Time, rendering::Glyph};
 
+#[profiled_system]
 pub fn hit_blink_system(
     mut cmds: Commands,
     mut q_hit_blink: Query<(Entity, &mut HitBlink, &mut Glyph)>,
     time: Res<Time>,
 ) {
-    tracy_span!("hit_blink_system");
 
     let mut entities_to_remove = Vec::new();
 

@@ -4,10 +4,11 @@ use crate::{
     domain::{Destructible, Player, Zone},
     engine::{Audio, Clock},
     states::{CurrentGameState, GameState},
-    tracy_span,
 };
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
+#[profiled_system]
 pub fn on_entity_destroyed_cleanup(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
     q_destructible: Query<&Destructible>,
@@ -19,7 +20,6 @@ pub fn on_entity_destroyed_cleanup(
     mut clock: ResMut<Clock>,
     mut game_state: ResMut<CurrentGameState>,
 ) {
-    tracy_span!("on_entity_destroyed_cleanup");
     for event in e_destroyed.read() {
         // Check if the destroyed entity is the player
         if q_player.contains(event.entity) {

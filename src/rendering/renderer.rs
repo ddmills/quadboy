@@ -1,11 +1,11 @@
 use bevy_ecs::prelude::*;
 use macroquad::{miniquad::PassAction, prelude::*};
+use quadboy_macros::profiled_system;
 
 use crate::{
     cfg::{TEXEL_SIZE_F32, TILE_SIZE},
     engine::Time,
     rendering::{AmbientTransition, CrtShader},
-    tracy_span,
 };
 
 use super::{Layers, ScreenSize, create_render_target};
@@ -48,6 +48,7 @@ pub struct Renderable {
     pub ignore_lighting: f32,
 }
 
+#[profiled_system]
 pub fn render_all(
     mut layers: ResMut<Layers>,
     mut ren: ResMut<RenderTargets>,
@@ -57,7 +58,6 @@ pub fn render_all(
     mut ambient_transition: ResMut<AmbientTransition>,
     lighting_data: Res<super::LightingData>,
 ) {
-    tracy_span!("render_all");
     let target_size = uvec2(
         (screen.tile_w * TILE_SIZE.0) as u32,
         (screen.tile_h * TILE_SIZE.1) as u32,

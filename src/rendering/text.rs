@@ -1,11 +1,11 @@
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
 use crate::{
     common::{END_SEQ, FLAG_SEQ, Palette, PaletteSequence, START_SEQ, cp437_idx},
     domain::IgnoreLighting,
     engine::Time,
     rendering::{GlyphTextureId, Visibility},
-    tracy_span,
 };
 
 use super::{Glyph, Layer, Position};
@@ -121,6 +121,7 @@ impl Text {
     }
 }
 
+#[profiled_system]
 pub fn render_text(
     mut cmds: Commands,
     mut q_text: ParamSet<(
@@ -135,17 +136,14 @@ pub fn render_text(
     )>,
     time: Res<Time>,
 ) {
-    tracy_span!("render_text");
 
     let tick = (time.fixed_t * 10.).floor() as usize;
 
     let changed = {
-        tracy_span!("render_text_collect_changed");
         q_text.p0().iter().collect::<Vec<_>>()
     };
 
     {
-        tracy_span!("render_text_process_entities");
         for (entity, mut text, position, visibility, ignore_lighting_opt) in q_text.p1().iter_mut()
         {
             let is_scroller = text.value.contains("scroll");

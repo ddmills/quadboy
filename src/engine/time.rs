@@ -4,6 +4,7 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::*;
 
 use crate::{rendering::Text, tracy_plot};
+use quadboy_macros::profiled_system;
 
 #[derive(Resource)]
 pub struct Time {
@@ -74,8 +75,8 @@ pub fn update_time(mut time: ResMut<Time>) {
 #[derive(Component)]
 pub struct FpsDisplay;
 
+#[profiled_system]
 pub fn render_fps(time: Res<Time>, mut q_fps: Query<&mut Text, With<FpsDisplay>>) {
-    crate::tracy_span!("render_fps");
     let smoothed = time.get_smooth_avg().to_string();
 
     for mut text in q_fps.iter_mut() {

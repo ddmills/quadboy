@@ -2,10 +2,11 @@ use super::destruction_system::EntityDestroyedEvent;
 use crate::{
     common::Rand,
     domain::{LootDrop, LootTableRegistry, Prefab, Prefabs},
-    tracy_span,
 };
 use bevy_ecs::prelude::*;
+use quadboy_macros::profiled_system;
 
+#[profiled_system]
 pub fn on_entity_destroyed_loot(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
     q_loot_drops: Query<&LootDrop>,
@@ -13,7 +14,6 @@ pub fn on_entity_destroyed_loot(
     mut rand: ResMut<Rand>,
     mut cmds: Commands,
 ) {
-    tracy_span!("on_entity_destroyed_loot");
     for event in e_destroyed.read() {
         let Ok(loot_drop) = q_loot_drops.get(event.entity) else {
             continue;

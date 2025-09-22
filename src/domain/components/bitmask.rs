@@ -6,6 +6,7 @@ use crate::{
     domain::{DynamicEntity, StaticEntity, Zone},
     rendering::{Glyph, Position},
 };
+use quadboy_macros::profiled_system;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BitmaskStyle {
@@ -150,6 +151,7 @@ impl BitmaskGlyph {
     }
 }
 
+#[profiled_system]
 pub fn on_bitmask_spawn(
     q_bitmasks_new: Query<
         (Entity, &Position),
@@ -161,7 +163,6 @@ pub fn on_bitmask_spawn(
     q_zones: Query<&Zone>,
     mut e_refresh_bitmask: EventWriter<RefreshBitmask>,
 ) {
-    crate::tracy_span!("on_bitmask_spawn");
     for (e, p) in q_bitmasks_new.iter() {
         e_refresh_bitmask.write(RefreshBitmask(e));
 
@@ -176,6 +177,7 @@ pub fn on_bitmask_spawn(
 #[derive(Event)]
 pub struct RefreshBitmask(pub Entity);
 
+#[profiled_system]
 pub fn on_refresh_bitmask(
     mut ev_refresh_bitmask: EventReader<RefreshBitmask>,
     q_bitmasks: Query<(&BitmaskGlyph, &Position)>,
@@ -183,7 +185,6 @@ pub fn on_refresh_bitmask(
     mut q_glyphs: Query<&mut Glyph>,
     bitmasker: Res<Bitmasker>,
 ) {
-    crate::tracy_span!("on_refresh_bitmask");
     for RefreshBitmask(entity) in ev_refresh_bitmask.read() {
         let Ok((bitmask, position)) = q_bitmasks.get(*entity) else {
             continue;
