@@ -1,10 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{
-        ActiveConditions, Condition, ConditionType, Health, Level, StatModifier, StatModifiers,
-        StatType, Stats,
-    },
+    domain::{ActiveConditions, Condition, ConditionType, Health, Level, StatModifiers, Stats},
     engine::Clock,
 };
 
@@ -84,124 +81,6 @@ pub fn process_conditions(
                         health.take_damage_from_source(total_damage, current_tick, source);
                         condition.accumulated_effect -= (damage_cycles as f32) * 80.0;
                     }
-                }
-
-                ConditionType::Regenerating {
-                    heal_per_tick,
-                    tick_interval,
-                } => {
-                    condition.accumulated_effect += tick_delta as f32;
-                    if condition.accumulated_effect >= *tick_interval as f32 {
-                        let heal_cycles =
-                            (condition.accumulated_effect / *tick_interval as f32) as i32;
-                        let total_heal = heal_cycles * heal_per_tick;
-                        health.heal(total_heal, level, stats);
-                        condition.accumulated_effect -=
-                            (heal_cycles as f32) * (*tick_interval as f32);
-                    }
-                }
-
-                ConditionType::ReturningHome {
-                    health_regen_per_tick,
-                    armor_regen_multiplier,
-                    tick_interval,
-                } => {
-                    condition.accumulated_effect += tick_delta as f32;
-                    if condition.accumulated_effect >= *tick_interval as f32 {
-                        let heal_cycles =
-                            (condition.accumulated_effect / *tick_interval as f32) as i32;
-                        let total_heal = heal_cycles * health_regen_per_tick;
-                        health.heal(total_heal, level, stats);
-
-                        // Reset armor damage tick to enable immediate armor regen
-                        health.last_damage_tick = 0;
-
-                        condition.accumulated_effect -=
-                            (heal_cycles as f32) * (*tick_interval as f32);
-                    }
-
-                    // Apply armor regen multiplier as a stat modifier
-                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
-                    let armor_regen_bonus = (*armor_regen_multiplier * 10.0) as i32; // Convert multiplier to bonus
-                    stat_modifiers_to_add.push((
-                        StatType::ArmorRegen,
-                        StatModifier::condition(armor_regen_bonus, condition_id),
-                    ));
-                }
-
-                ConditionType::Strengthened { damage_bonus } => {
-                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
-                    let damage_bonus_i32 = *damage_bonus as i32;
-                    stat_modifiers_to_add.push((
-                        StatType::Unarmed,
-                        StatModifier::condition(damage_bonus_i32, condition_id.clone()),
-                    ));
-                    stat_modifiers_to_add.push((
-                        StatType::Blade,
-                        StatModifier::condition(damage_bonus_i32, condition_id.clone()),
-                    ));
-                    stat_modifiers_to_add.push((
-                        StatType::Cudgel,
-                        StatModifier::condition(damage_bonus_i32, condition_id.clone()),
-                    ));
-                }
-
-                ConditionType::Weakened { damage_reduction } => {
-                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
-                    let penalty = -(*damage_reduction as i32);
-                    stat_modifiers_to_add.push((
-                        StatType::Unarmed,
-                        StatModifier::condition(penalty, condition_id.clone()),
-                    ));
-                    stat_modifiers_to_add.push((
-                        StatType::Blade,
-                        StatModifier::condition(penalty, condition_id.clone()),
-                    ));
-                    stat_modifiers_to_add.push((
-                        StatType::Cudgel,
-                        StatModifier::condition(penalty, condition_id.clone()),
-                    ));
-                }
-
-                ConditionType::Blessed { stat_bonus } => {
-                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
-                    // Apply bonus to all stats
-                    for stat_type in StatType::all() {
-                        stat_modifiers_to_add.push((
-                            *stat_type,
-                            StatModifier::condition(*stat_bonus, condition_id.clone()),
-                        ));
-                    }
-                }
-
-                ConditionType::Cursed { stat_penalty } => {
-                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
-                    let penalty = -(*stat_penalty);
-                    // Apply penalty to all stats
-                    for stat_type in StatType::all() {
-                        stat_modifiers_to_add.push((
-                            *stat_type,
-                            StatModifier::condition(penalty, condition_id.clone()),
-                        ));
-                    }
-                }
-
-                ConditionType::Defended { damage_reduction } => {
-                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
-                    let armor_bonus = (*damage_reduction * 10.0) as i32; // Convert percentage to armor points
-                    stat_modifiers_to_add.push((
-                        StatType::Armor,
-                        StatModifier::condition(armor_bonus, condition_id),
-                    ));
-                }
-
-                ConditionType::Vulnerable { damage_multiplier } => {
-                    let condition_id = format!("{:?}_{}", condition.condition_type, index);
-                    let armor_penalty = -((*damage_multiplier - 1.0) * 20.0) as i32; // Convert multiplier to armor penalty
-                    stat_modifiers_to_add.push((
-                        StatType::Armor,
-                        StatModifier::condition(armor_penalty, condition_id),
-                    ));
                 }
 
                 // Other condition types don't need tick-based processing

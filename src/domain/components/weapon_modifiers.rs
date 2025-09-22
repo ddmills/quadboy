@@ -186,17 +186,7 @@ pub fn get_gun_suffixes() -> Vec<WeaponModifier> {
         )
         .with_damage_bonus(1), // Placeholder for accuracy bonus when implemented
         WeaponModifier::new(
-            "of the Outlaw",
-            WeaponModifierType::Suffix,
-            WeaponApplicationType::RangedOnly,
-            "This weapon strikes fear into the hearts of enemies.",
-        )
-        .with_hit_effect(HitEffect::Stun {
-            duration_ticks: 150,
-            chance: 0.2,
-        }),
-        WeaponModifier::new(
-            "of Thunder",
+            "of {P|Thunder}",
             WeaponModifierType::Suffix,
             WeaponApplicationType::RangedOnly,
             "Each shot rings out like a thunderclap.",
@@ -206,7 +196,7 @@ pub fn get_gun_suffixes() -> Vec<WeaponModifier> {
             chance: 0.5,
         }),
         WeaponModifier::new(
-            "of Lead Poisoning",
+            "of Lead {G|Poisoning}",
             WeaponModifierType::Suffix,
             WeaponApplicationType::RangedOnly,
             "Dirty bullets leave lasting damage.",
@@ -228,18 +218,7 @@ pub fn get_gun_suffixes() -> Vec<WeaponModifier> {
             WeaponModifierType::Suffix,
             WeaponApplicationType::RangedOnly,
             "Hits like a mule kick.",
-        )
-        .with_hit_effect(HitEffect::Stun {
-            duration_ticks: 200,
-            chance: 0.3,
-        }),
-        WeaponModifier::new(
-            "of the Marksman",
-            WeaponModifierType::Suffix,
-            WeaponApplicationType::RangedOnly,
-            "Precision engineering for deadly accuracy.",
-        )
-        .with_damage_bonus(2), // Placeholder for crit bonus when implemented
+        ),
     ]
 }
 
@@ -337,17 +316,6 @@ pub fn get_melee_prefixes() -> Vec<WeaponModifier> {
             "Perfect weight distribution allows swift strikes.",
         )
         .with_energy_cost_modifier(-20),
-        WeaponModifier::new(
-            "Brutal",
-            WeaponModifierType::Prefix,
-            WeaponApplicationType::MeleeOnly,
-            "Designed for maximum carnage.",
-        )
-        .with_damage_bonus(3)
-        .with_hit_effect(HitEffect::Stun {
-            duration_ticks: 150,
-            chance: 0.2,
-        }),
     ]
 }
 
@@ -365,17 +333,6 @@ pub fn get_melee_suffixes() -> Vec<WeaponModifier> {
             duration_ticks: 600,
             chance: 0.35,
             can_stack: false,
-        }),
-        WeaponModifier::new(
-            "of Maiming",
-            WeaponModifierType::Suffix,
-            WeaponApplicationType::MeleeOnly,
-            "Crippling blows that slow the enemy.",
-        )
-        .with_hit_effect(HitEffect::Slow {
-            speed_reduction: 0.3,
-            duration_ticks: 500,
-            chance: 0.25,
         }),
         WeaponModifier::new(
             "of Butchery",
@@ -398,16 +355,6 @@ pub fn get_melee_suffixes() -> Vec<WeaponModifier> {
             "Fells trees and men with equal ease.",
         )
         .with_special_damage(MaterialType::Wood, 3),
-        WeaponModifier::new(
-            "of Stunning Blows",
-            WeaponModifierType::Suffix,
-            WeaponApplicationType::MeleeOnly,
-            "Strikes that leave enemies dazed.",
-        )
-        .with_hit_effect(HitEffect::Stun {
-            duration_ticks: 200,
-            chance: 0.2,
-        }),
         WeaponModifier::new(
             "of Swift Strikes",
             WeaponModifierType::Suffix,

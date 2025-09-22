@@ -9,7 +9,8 @@ use crate::{
         ApplyVisibilityEffects, AttributePoints, Attributes, Collider, DefaultMeleeAttack,
         DynamicEntity, Energy, EquipmentSlots, FactionId, FactionMember, GameSaveData, Health,
         Inventory, Label, Level, LoadZoneCommand, MovementCapabilities, Overworld, Player,
-        PlayerPosition, PlayerSaveData, StatModifiers, Stats, TerrainNoise, Vision, Zones,
+        PlayerPosition, PlayerSaveData, Prefab, PrefabId, Prefabs, StatModifiers, Stats,
+        TerrainNoise, Vision, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry, delete_save, save_game, serialize},
     rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position},
@@ -95,12 +96,41 @@ impl NewGameCommand {
 
         let _ = LoadZoneCommand(start_zone).apply(world);
 
+        // Spawn starter items and add them to player's inventory (after StableIdRegistry is available)
+        let starter_items = vec![
+            PrefabId::NavyRevolver,
+            PrefabId::LeverActionRifle,
+            PrefabId::DoubleBarrelShotgun,
+            PrefabId::Dynamite,
+            PrefabId::Pickaxe,
+            PrefabId::Hatchet,
+        ];
+
+        for item_id in starter_items {
+            let config = Prefab::new(item_id, (0, 0, 0)); // Position doesn't matter for inventory items
+            Prefabs::spawn_in_container(world, config, player_entity);
+        }
+
         let serialized_player = serialize(player_entity, world);
+
+        // Collect and serialize player's inventory items (same logic as save_game_cmd.rs)
+        let mut inventory_items = vec![];
+        let mut q_inventory = world.query::<&Inventory>();
+        let id_registry = world.get_resource::<StableIdRegistry>().unwrap();
+
+        if let Ok(inventory) = q_inventory.get(world, player_entity) {
+            for item_id in inventory.item_ids.iter() {
+                if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                    let serialized_item = serialize(item_entity, world);
+                    inventory_items.push(serialized_item);
+                }
+            }
+        }
 
         let player_save_data = PlayerSaveData {
             position: starting_position,
             entity: serialized_player,
-            inventory_items: Vec::new(), // New game has empty inventory items
+            inventory_items,
         };
 
         let game_save_data = GameSaveData::new(player_save_data, 0.0, 0, self.seed);

@@ -27,14 +27,6 @@ pub enum HitEffect {
         duration_ticks: u32,
         chance: f32,
     },
-    /// Stun effect that prevents actions for a duration
-    Stun { duration_ticks: u32, chance: f32 },
-    /// Slow effect that increases action costs
-    Slow {
-        speed_reduction: f32,
-        duration_ticks: u32,
-        chance: f32,
-    },
 }
 
 /// Component for animating the visual knockback effect

@@ -2,8 +2,8 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        ActiveConditions, Energy, EnergyActionType, GameSettings, Player, PlayerMovedEvent,
-        SmoothMovement, Stats, get_energy_cost,
+        Energy, EnergyActionType, GameSettings, Player, PlayerMovedEvent, SmoothMovement, Stats,
+        get_energy_cost,
     },
     rendering::{Glyph, Position},
 };
@@ -51,8 +51,7 @@ impl Command for MoveAction {
         // Calculate energy cost first
         let cost = {
             let stats = world.get::<Stats>(self.entity);
-            let conditions = world.get::<ActiveConditions>(self.entity);
-            get_energy_cost(EnergyActionType::Move, stats, conditions)
+            get_energy_cost(EnergyActionType::Move, stats)
         };
 
         // Then consume energy

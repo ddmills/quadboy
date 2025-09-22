@@ -288,21 +288,6 @@ impl GeneratedWeapon {
                             effect_descriptions.push("May ignite targets".to_string());
                         }
                     }
-                    HitEffect::Stun { chance, .. } => {
-                        if *chance > 0.5 {
-                            effect_descriptions
-                                .push("Stuns enemies with powerful blows".to_string());
-                        } else {
-                            effect_descriptions.push("May stun targets".to_string());
-                        }
-                    }
-                    HitEffect::Slow { chance, .. } => {
-                        if *chance > 0.5 {
-                            effect_descriptions.push("Cripples enemy movement".to_string());
-                        } else {
-                            effect_descriptions.push("May slow enemies".to_string());
-                        }
-                    }
                 }
             }
 

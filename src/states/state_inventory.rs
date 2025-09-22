@@ -1127,24 +1127,6 @@ fn update_item_detail_panel(
                             strength
                         )
                     }
-                    HitEffect::Stun {
-                        duration_ticks,
-                        chance,
-                    } => {
-                        format!("• {:.0}% Stun ({} ticks)", chance * 100.0, duration_ticks)
-                    }
-                    HitEffect::Slow {
-                        speed_reduction,
-                        duration_ticks,
-                        chance,
-                    } => {
-                        format!(
-                            "• {:.0}% Slow ({:.0}% speed, {} ticks)",
-                            chance * 100.0,
-                            speed_reduction * 100.0,
-                            duration_ticks
-                        )
-                    }
                 };
                 effects.push(effect_text);
             }

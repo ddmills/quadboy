@@ -20,7 +20,7 @@ impl AiController {
             home_position,
             leash_range: 40,
             wander_range: 3,
-            detection_range: 12,
+            detection_range: 6,
             current_target_id: None,
             state: AiState::Idle,
         }

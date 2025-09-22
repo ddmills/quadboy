@@ -1,4 +1,5 @@
 pub mod ai_actions;
+pub mod ai_conditions;
 pub mod ai_system;
 pub mod ai_util;
 pub mod armor_regen_system;
@@ -30,6 +31,7 @@ pub mod weapon_generation;
 pub mod xp_system;
 
 pub use ai_actions::*;
+pub use ai_conditions::*;
 pub use ai_system::*;
 pub use ai_util::*;
 pub use collider_recalc_system::*;

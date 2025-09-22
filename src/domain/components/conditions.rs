@@ -103,27 +103,6 @@ pub enum ConditionType {
         spread_chance: f32,
     },
 
-    // Healing over time effects
-    Regenerating {
-        heal_per_tick: i32,
-        tick_interval: u32,
-    },
-    ReturningHome {
-        health_regen_per_tick: i32,
-        armor_regen_multiplier: f32,
-        tick_interval: u32,
-    },
-
-    // Movement and action modifiers
-    Slowed {
-        energy_multiplier: f32,
-    },
-    Quickened {
-        energy_multiplier: f32,
-    },
-    Stunned,
-    Rooted,
-
     // AI behavior modifiers
     Feared {
         flee_from: StableId,
@@ -136,29 +115,6 @@ pub enum ConditionType {
     Confused {
         random_chance: f32,
     },
-
-    // Stat modifiers
-    Weakened {
-        damage_reduction: f32,
-    },
-    Strengthened {
-        damage_bonus: f32,
-    },
-    Blessed {
-        stat_bonus: i32,
-    },
-    Cursed {
-        stat_penalty: i32,
-    },
-
-    // Special conditions
-    Invisible,
-    Vulnerable {
-        damage_multiplier: f32,
-    },
-    Defended {
-        damage_reduction: f32,
-    },
 }
 
 impl ConditionType {
@@ -167,22 +123,9 @@ impl ConditionType {
             ConditionType::Poisoned { .. } => 1000,
             ConditionType::Bleeding { .. } => 800,
             ConditionType::Burning { .. } => 600,
-            ConditionType::Regenerating { .. } => 1200,
-            ConditionType::ReturningHome { .. } => 1200,
-            ConditionType::Slowed { .. } => 500,
-            ConditionType::Quickened { .. } => 400,
-            ConditionType::Stunned => 200,
-            ConditionType::Rooted => 300,
             ConditionType::Feared { .. } => 600,
             ConditionType::Taunted { .. } => 400,
             ConditionType::Confused { .. } => 500,
-            ConditionType::Weakened { .. } => 800,
-            ConditionType::Strengthened { .. } => 600,
-            ConditionType::Blessed { .. } => 1000,
-            ConditionType::Cursed { .. } => 1000,
-            ConditionType::Invisible => 300,
-            ConditionType::Vulnerable { .. } => 400,
-            ConditionType::Defended { .. } => 500,
         }
     }
 
@@ -191,31 +134,10 @@ impl ConditionType {
             ConditionType::Poisoned { .. } => false,
             ConditionType::Bleeding { can_stack, .. } => *can_stack,
             ConditionType::Burning { .. } => false,
-            ConditionType::Regenerating { .. } => false,
-            ConditionType::ReturningHome { .. } => false,
-            ConditionType::Slowed { .. } => false,
-            ConditionType::Quickened { .. } => false,
-            ConditionType::Stunned => false,
-            ConditionType::Rooted => false,
             ConditionType::Feared { .. } => false,
             ConditionType::Taunted { .. } => false,
             ConditionType::Confused { .. } => false,
-            ConditionType::Weakened { .. } => false,
-            ConditionType::Strengthened { .. } => false,
-            ConditionType::Blessed { .. } => true,
-            ConditionType::Cursed { .. } => true,
-            ConditionType::Invisible => false,
-            ConditionType::Vulnerable { .. } => false,
-            ConditionType::Defended { .. } => false,
         }
-    }
-
-    pub fn blocks_actions(&self) -> bool {
-        matches!(self, ConditionType::Stunned)
-    }
-
-    pub fn blocks_movement(&self) -> bool {
-        matches!(self, ConditionType::Stunned | ConditionType::Rooted)
     }
 }
 

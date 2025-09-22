@@ -509,8 +509,6 @@ impl AttackAction {
                     HitEffect::Poison { chance, .. } => roll <= *chance,
                     HitEffect::Bleeding { chance, .. } => roll <= *chance,
                     HitEffect::Burning { chance, .. } => roll <= *chance,
-                    HitEffect::Stun { chance, .. } => roll <= *chance,
-                    HitEffect::Slow { chance, .. } => roll <= *chance,
                 };
             });
 
@@ -554,21 +552,6 @@ impl AttackAction {
                             world,
                             target_entity,
                             *damage_per_tick,
-                            *duration_ticks,
-                        );
-                    }
-                    HitEffect::Stun { duration_ticks, .. } => {
-                        self.apply_stun_effect(world, target_entity, *duration_ticks);
-                    }
-                    HitEffect::Slow {
-                        speed_reduction,
-                        duration_ticks,
-                        ..
-                    } => {
-                        self.apply_slow_effect(
-                            world,
-                            target_entity,
-                            *speed_reduction,
                             *duration_ticks,
                         );
                     }
@@ -839,55 +822,5 @@ impl AttackAction {
 
         // Apply the burning condition to the target
         let _ = apply_condition_to_entity(target_entity, burning_condition, world);
-    }
-
-    fn apply_stun_effect(&self, world: &mut World, target_entity: Entity, duration_ticks: u32) {
-        // Get the attacker's StableId to use as the condition source
-        let condition_source =
-            if let Some(attacker_stable_id) = world.get::<StableId>(self.attacker_entity) {
-                ConditionSource::entity(*attacker_stable_id)
-            } else {
-                ConditionSource::Unknown
-            };
-
-        // Create the stun condition
-        let stun_condition = Condition::new(
-            ConditionType::Stunned,
-            duration_ticks,
-            1.0, // intensity
-            condition_source,
-        );
-
-        // Apply the stun condition to the target
-        let _ = apply_condition_to_entity(target_entity, stun_condition, world);
-    }
-
-    fn apply_slow_effect(
-        &self,
-        world: &mut World,
-        target_entity: Entity,
-        speed_reduction: f32,
-        duration_ticks: u32,
-    ) {
-        // Get the attacker's StableId to use as the condition source
-        let condition_source =
-            if let Some(attacker_stable_id) = world.get::<StableId>(self.attacker_entity) {
-                ConditionSource::entity(*attacker_stable_id)
-            } else {
-                ConditionSource::Unknown
-            };
-
-        // Create the slow condition
-        let slow_condition = Condition::new(
-            ConditionType::Slowed {
-                energy_multiplier: 1.0 + speed_reduction, // Convert reduction to multiplier
-            },
-            duration_ticks,
-            1.0, // intensity
-            condition_source,
-        );
-
-        // Apply the slow condition to the target
-        let _ = apply_condition_to_entity(target_entity, slow_condition, world);
     }
 }

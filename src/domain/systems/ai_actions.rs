@@ -12,6 +12,7 @@ use crate::{
     domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, StairDown, StairUp, Zone},
     rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_local_to_world, zone_xyz},
 };
+use macroquad::rand;
 
 pub fn ai_try_use_stair(world: &mut World, entity: Entity, going_down: bool) -> bool {
     let Some(position) = world.get::<Position>(entity) else {
@@ -289,6 +290,161 @@ pub fn ai_try_move_toward(
         ),
     };
 
+    action.apply(world);
+    true
+}
+
+pub fn ai_try_flee_from(
+    world: &mut World,
+    entity: Entity,
+    flee_from_pos: (usize, usize, usize),
+) -> bool {
+    let Some(position) = world.get::<Position>(entity) else {
+        return false;
+    };
+
+    let current_pos = position.world();
+    let movement_flags = world
+        .get::<MovementCapabilities>(entity)
+        .unwrap_or(&MovementCapabilities::terrestrial())
+        .flags;
+
+    // Calculate all possible moves and pick the one that maximizes distance from the flee target
+    let deltas = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ];
+
+    let mut best_position: Option<(usize, usize, usize)> = None;
+    let mut best_distance = 0.0;
+
+    for (dx, dy) in deltas.iter() {
+        let new_x = current_pos.0 as i32 + dx;
+        let new_y = current_pos.1 as i32 + dy;
+
+        if new_x < 0
+            || new_y < 0
+            || new_x as usize >= WORLD_SIZE.0
+            || new_y as usize >= WORLD_SIZE.1
+        {
+            continue;
+        }
+
+        let new_pos = (new_x as usize, new_y as usize, current_pos.2);
+
+        // Check if position is blocked
+        let zone_idx = world_to_zone_idx(new_pos.0, new_pos.1, new_pos.2);
+        let mut zone_query = world.query::<&Zone>();
+        if let Some(zone) = zone_query.iter(world).find(|z| z.idx == zone_idx) {
+            let local = world_to_zone_local(new_pos.0, new_pos.1);
+            let collider_flags = zone.colliders.get_flags(local.0, local.1);
+
+            if movement_flags.is_blocked_by(collider_flags) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+
+        // Calculate distance from flee target
+        let distance = Distance::diagonal(
+            [new_pos.0 as i32, new_pos.1 as i32, new_pos.2 as i32],
+            [
+                flee_from_pos.0 as i32,
+                flee_from_pos.1 as i32,
+                flee_from_pos.2 as i32,
+            ],
+        );
+
+        if distance > best_distance {
+            best_distance = distance;
+            best_position = Some(new_pos);
+        }
+    }
+
+    if let Some(flee_to) = best_position {
+        let action = MoveAction {
+            entity,
+            new_position: flee_to,
+        };
+        action.apply(world);
+        return true;
+    }
+
+    false
+}
+
+pub fn ai_try_random_move(world: &mut World, entity: Entity) -> bool {
+    let Some(position) = world.get::<Position>(entity) else {
+        return false;
+    };
+
+    let current_pos = position.world();
+    let movement_flags = world
+        .get::<MovementCapabilities>(entity)
+        .unwrap_or(&MovementCapabilities::terrestrial())
+        .flags;
+
+    // Get all valid adjacent positions
+    let deltas = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ];
+
+    let mut valid_positions = Vec::new();
+
+    for (dx, dy) in deltas.iter() {
+        let new_x = current_pos.0 as i32 + dx;
+        let new_y = current_pos.1 as i32 + dy;
+
+        if new_x < 0
+            || new_y < 0
+            || new_x as usize >= WORLD_SIZE.0
+            || new_y as usize >= WORLD_SIZE.1
+        {
+            continue;
+        }
+
+        let new_pos = (new_x as usize, new_y as usize, current_pos.2);
+
+        // Check if position is blocked
+        let zone_idx = world_to_zone_idx(new_pos.0, new_pos.1, new_pos.2);
+        let mut zone_query = world.query::<&Zone>();
+        if let Some(zone) = zone_query.iter(world).find(|z| z.idx == zone_idx) {
+            let local = world_to_zone_local(new_pos.0, new_pos.1);
+            let collider_flags = zone.colliders.get_flags(local.0, local.1);
+
+            if !movement_flags.is_blocked_by(collider_flags) {
+                valid_positions.push(new_pos);
+            }
+        }
+    }
+
+    if valid_positions.is_empty() {
+        return false;
+    }
+
+    // Pick a random valid position
+    let random_index =
+        (rand::gen_range(0.0, 1.0) * valid_positions.len() as f32) as usize % valid_positions.len();
+    let chosen_pos = valid_positions[random_index];
+
+    let action = MoveAction {
+        entity,
+        new_position: chosen_pos,
+    };
     action.apply(world);
     true
 }
