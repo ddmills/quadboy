@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use macroquad::math::Vec2;
+use macroquad::{math::Vec2, prelude::trace};
 
 use crate::{
     cfg::ZONE_SIZE,
@@ -9,6 +9,7 @@ use crate::{
         AlphaCurve, ColorCurve, Distribution, GlyphAnimation, ParticleSpawner, Position, SpawnArea,
         world_to_zone_idx, world_to_zone_local, world_to_zone_local_f32,
     },
+    states::CleanupStatePlay,
 };
 
 #[derive(Event)]
@@ -73,6 +74,7 @@ pub fn explosion_system(
     audio: Option<Res<Audio>>,
 ) {
     for explosion in e_explosion.read() {
+        trace!("Explosion event?");
         // Play explosion sound if available
         if let Some(audio_key) = explosion.audio
             && let Some(audio) = &audio
@@ -90,7 +92,7 @@ pub fn explosion_system(
         let scale = (radius_f / 3.0).max(0.8); // Higher minimum scale
 
         // 1. MASSIVE CENTRAL FLASH - Multiple overlapping flashes
-        cmds.spawn(
+        cmds.spawn((
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::Sequence {
                     glyphs: vec!['█', '◉', '◎', '○', '◦', ' '],
@@ -108,11 +110,12 @@ pub fn explosion_system(
                 .priority(230)
                 .lifetime_range(0.4..0.6)
                 .burst(1),
-        );
+            CleanupStatePlay,
+        ));
 
         // 2. EXPANDING SHOCKWAVE RING
         let shockwave_count = (12.0 * scale) as u32;
-        cmds.spawn(
+        cmds.spawn((
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::Sequence {
                     glyphs: vec!['█', '▓', '▒', '░', '·', ' '],
@@ -132,11 +135,12 @@ pub fn explosion_system(
                 .priority(225)
                 .lifetime_range(0.3..0.5)
                 .burst(shockwave_count),
-        );
+            CleanupStatePlay,
+        ));
 
         // 3. INTENSE FIRE BURST - Much more particles
         let fire_count = (80.0 * scale) as u32;
-        cmds.spawn(
+        cmds.spawn((
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::RandomPool {
                     glyphs: vec!['*', '✦', '●', '◆', '○', '•', '◉', '▲'],
@@ -159,11 +163,12 @@ pub fn explosion_system(
                 .priority(220)
                 .lifetime_range(0.8..2.0)
                 .burst(fire_count),
-        );
+            CleanupStatePlay,
+        ));
 
         // 4. FLYING DEBRIS - Fast moving fragments
         let debris_count = (60.0 * scale) as u32;
-        cmds.spawn(
+        cmds.spawn((
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::RandomPool {
                     glyphs: vec!['*', '·', ',', '`', '\'', '.', '"', '^'],
@@ -186,11 +191,12 @@ pub fn explosion_system(
                 .priority(210)
                 .lifetime_range(1.0..2.5)
                 .burst(debris_count),
-        );
+            CleanupStatePlay,
+        ));
 
         // 5. MASSIVE SMOKE CLOUDS - Much denser
         let smoke_count = (50.0 * scale) as u32;
-        cmds.spawn(
+        cmds.spawn((
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::RandomPool {
                     glyphs: vec![' ', '░', '▒', '▓', '#', '%'],
@@ -213,11 +219,12 @@ pub fn explosion_system(
                 .priority(100)
                 .lifetime_range(2.5..5.0)
                 .burst(smoke_count),
-        );
+            CleanupStatePlay,
+        ));
 
         // 6. SECONDARY SPARKS - Extra sparkly effects
         let spark_count = (40.0 * scale) as u32;
-        cmds.spawn(
+        cmds.spawn((
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::RandomPool {
                     glyphs: vec!['✦', '✧', '◆', '◇', '❋', '✳', '※'],
@@ -240,7 +247,8 @@ pub fn explosion_system(
                 .priority(215)
                 .lifetime_range(0.6..1.8)
                 .burst(spark_count),
-        );
+            CleanupStatePlay,
+        ));
 
         let explosion_zone_idx = world_to_zone_idx(
             explosion.position.0,

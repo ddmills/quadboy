@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
-    domain::{LoadZoneCommand, Overworld, Player, PlayerPosition, TerrainNoise, Zones},
+    domain::{LoadZoneCommand, Overworld, Player, PlayerPosition, TerrainNoise, Zones, ExplosionEvent},
     engine::{Clock, StableIdRegistry, deserialize, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},
@@ -71,6 +72,7 @@ impl LoadGameCommand {
         }
 
         if let Some(mut clock) = world.get_resource_mut::<Clock>() {
+            trace!("LOAD GAME {}", game_data.tick);
             clock.set_tick(game_data.tick);
         }
 

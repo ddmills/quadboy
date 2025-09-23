@@ -1,14 +1,15 @@
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
-    domain::{ExplosionEvent, ExplosiveProperties, Fuse, HitBlink},
+    domain::{ExplosionEvent, ExplosiveProperties, Fuse, HitBlink, systems::destruction_system::EntityDestroyedEvent},
     engine::Clock,
     rendering::Position,
 };
 
 pub fn fuse_system(
-    mut cmds: Commands,
     mut e_explosion: EventWriter<ExplosionEvent>,
+    mut e_entity_destroyed: EventWriter<EntityDestroyedEvent>,
     mut q_fused: Query<(
         Entity,
         &mut Fuse,
@@ -63,8 +64,11 @@ pub fn fuse_system(
         e_explosion
             .write(ExplosionEvent::new(position, radius, damage, 0.3, audio).with_source(entity));
 
-        // Remove the fuse and blink components and despawn the explosive entity
-        cmds.entity(entity).remove::<(Fuse, HitBlink)>();
-        cmds.entity(entity).despawn();
+        // Send entity destroyed event to properly clean up from zones
+        e_entity_destroyed.write(EntityDestroyedEvent::environmental(
+            entity,
+            position,
+            None,
+        ));
     }
 }

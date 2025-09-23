@@ -20,5 +20,4 @@ pub fn spawn_dynamite(entity: Entity, world: &mut World, config: Prefab) -> Pref
         .with_throwable_char(5, '!', Palette::Red.into())
         .with_component(ExplosiveProperties::dynamite())
         .with_lightable_audio(AudioKey::IgniteMatch, None)
-
 }

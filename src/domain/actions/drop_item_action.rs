@@ -3,11 +3,11 @@ use macroquad::prelude::trace;
 
 use crate::{
     domain::{
-        Collider, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item,
-        UnequipItemAction, Zone, get_base_energy_cost, inventory::InventoryChangedEvent,
+        Collider, DynamicEntity, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item,
+        StaticEntity, StaticEntitySpawnedEvent, UnequipItemAction, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::StableIdRegistry,
-    rendering::{Position, world_to_zone_idx, world_to_zone_local},
+    rendering::Position,
 };
 
 pub struct DropItemAction {
@@ -61,39 +61,34 @@ impl Command for DropItemAction {
         let position = Position::new_world(self.drop_position);
         world
             .entity_mut(item_entity)
-            .insert(position)
+            .insert(position.clone())
             .remove::<InInventory>();
 
         // Note: Stackable items keep their StackCount component when dropped
 
-        let zone_idx = world_to_zone_idx(
-            self.drop_position.0,
-            self.drop_position.1,
-            self.drop_position.2,
-        );
-        let (local_x, local_y) = world_to_zone_local(self.drop_position.0, self.drop_position.1);
+        // Check if item has StaticEntity or DynamicEntity component
+        let has_static_entity = world.get::<StaticEntity>(item_entity).is_some();
+        let has_dynamic_entity = world.get::<DynamicEntity>(item_entity).is_some();
+        let collider_flags = world.get::<Collider>(item_entity).map(|c| c.flags);
 
-        let has_collider = world.get::<Collider>(item_entity).is_some();
-        let mut zone_found = false;
-        let mut zones = world.query::<&mut Zone>();
-        for mut zone in zones.iter_mut(world) {
-            if zone.idx == zone_idx {
-                zone.entities.insert(local_x, local_y, item_entity);
-
-                if has_collider {
-                    zone.entities.insert(local_x, local_y, item_entity);
-                }
-
-                zone_found = true;
-                break;
-            }
-        }
-
-        if !zone_found {
-            eprintln!(
-                "DropItemAction: Could not find zone {} to drop item into",
-                zone_idx
-            );
+        if has_static_entity {
+            // Fire StaticEntitySpawnedEvent for proper static entity placement
+            world.send_event(StaticEntitySpawnedEvent {
+                entity: item_entity,
+                position,
+                collider_flags,
+            });
+        } else if has_dynamic_entity {
+            // Dynamic entities are handled by update_dynamic_entity_pos system
+            // Just adding Position component triggers the system
+        } else {
+            // Item doesn't have tracking component (created in inventory), add StaticEntity
+            world.entity_mut(item_entity).insert(StaticEntity);
+            world.send_event(StaticEntitySpawnedEvent {
+                entity: item_entity,
+                position,
+                collider_flags,
+            });
         }
 
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
