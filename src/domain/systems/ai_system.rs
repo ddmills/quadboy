@@ -3,9 +3,10 @@ use macroquad::prelude::trace;
 use quadboy_macros::profiled_system;
 
 use crate::{
+    common::Rand,
     domain::{
         Actor, AiController, Energy, EnergyActionType, Health, TurnState, ai_try_attacking_nearby,
-        ai_try_move_toward_target, ai_try_select_target, detect_actors, get_actor,
+        ai_try_move_toward_target, ai_try_select_target, ai_try_wander, detect_actors, get_actor,
         get_base_energy_cost, try_handle_conditions,
     },
     rendering::{Position, spawn_alert_indicator},
@@ -77,8 +78,27 @@ pub fn ai_turn(world: &mut World) {
 
         // we have a target, but we can't move toward it!
         trace!("AI: Can't reach target!");
+    } else {
+        // No target - try to wander (30% chance) or wait (70% chance)
+        let Some(mut rand) = world.get_resource_mut::<Rand>() else {
+            // If no random resource, just wait
+            if let Some(mut energy) = world.get_mut::<Energy>(current_entity) {
+                let cost = get_base_energy_cost(EnergyActionType::Wait);
+                energy.consume_energy(cost);
+            }
+            return;
+        };
+
+        let should_wander = rand.random() < 0.3; // 30% chance to wander
+        drop(rand); // Release the mutable borrow
+
+        if should_wander && ai_try_wander(world, current_entity) {
+            // Successfully wandered, energy consumed by wander action
+            return;
+        }
     }
 
+    // Default behavior: wait
     if let Some(mut energy) = world.get_mut::<Energy>(current_entity) {
         let cost = get_base_energy_cost(EnergyActionType::Wait);
         energy.consume_energy(cost);

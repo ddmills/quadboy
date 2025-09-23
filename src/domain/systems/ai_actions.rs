@@ -9,7 +9,7 @@ use crate::{
         astar::{AStarSettings, astar},
         distance::Distance,
     },
-    domain::{AiContext, AttackAction, MoveAction, MovementCapabilities, StairDown, StairUp, Zone},
+    domain::{AiContext, AiController, AttackAction, Energy, EnergyActionType, MoveAction, MovementCapabilities, StairDown, StairUp, Zone, get_base_energy_cost},
     rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_local_to_world, zone_xyz},
 };
 use macroquad::rand;
@@ -386,6 +386,7 @@ pub fn ai_try_random_move(world: &mut World, entity: Entity) -> bool {
     };
 
     let current_pos = position.world();
+    let current_zone_idx = world_to_zone_idx(current_pos.0, current_pos.1, current_pos.2);
     let movement_flags = world
         .get::<MovementCapabilities>(entity)
         .unwrap_or(&MovementCapabilities::terrestrial())
@@ -419,8 +420,13 @@ pub fn ai_try_random_move(world: &mut World, entity: Entity) -> bool {
 
         let new_pos = (new_x as usize, new_y as usize, current_pos.2);
 
-        // Check if position is blocked
+        // Check if new position would cross zone boundary
         let zone_idx = world_to_zone_idx(new_pos.0, new_pos.1, new_pos.2);
+        if zone_idx != current_zone_idx {
+            continue;
+        }
+
+        // Check if position is blocked
         let mut zone_query = world.query::<&Zone>();
         if let Some(zone) = zone_query.iter(world).find(|z| z.idx == zone_idx) {
             let local = world_to_zone_local(new_pos.0, new_pos.1);
@@ -446,5 +452,104 @@ pub fn ai_try_random_move(world: &mut World, entity: Entity) -> bool {
         new_position: chosen_pos,
     };
     action.apply(world);
+    true
+}
+
+pub fn ai_try_wander(world: &mut World, entity: Entity) -> bool {
+    let Some(position) = world.get::<Position>(entity) else {
+        return false;
+    };
+
+    let Some(ai_controller) = world.get::<AiController>(entity) else {
+        return false;
+    };
+
+    let current_pos = position.world();
+    let home_pos = ai_controller.home_position;
+    let wander_range = ai_controller.wander_range;
+    let current_zone_idx = world_to_zone_idx(current_pos.0, current_pos.1, current_pos.2);
+
+    let movement_flags = world
+        .get::<MovementCapabilities>(entity)
+        .unwrap_or(&MovementCapabilities::terrestrial())
+        .flags;
+
+    // Get all valid adjacent positions within wander range from home
+    let deltas = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ];
+
+    let mut valid_positions = Vec::new();
+
+    for (dx, dy) in deltas.iter() {
+        let new_x = current_pos.0 as i32 + dx;
+        let new_y = current_pos.1 as i32 + dy;
+
+        if new_x < 0
+            || new_y < 0
+            || new_x as usize >= WORLD_SIZE.0
+            || new_y as usize >= WORLD_SIZE.1
+        {
+            continue;
+        }
+
+        let new_pos = (new_x as usize, new_y as usize, current_pos.2);
+
+        // Check if new position is within wander range from home
+        let distance_from_home = Distance::diagonal(
+            [home_pos.0 as i32, home_pos.1 as i32, home_pos.2 as i32],
+            [new_pos.0 as i32, new_pos.1 as i32, new_pos.2 as i32],
+        );
+
+        if distance_from_home > wander_range as f32 {
+            continue;
+        }
+
+        // Check if new position would cross zone boundary
+        let zone_idx = world_to_zone_idx(new_pos.0, new_pos.1, new_pos.2);
+        if zone_idx != current_zone_idx {
+            continue;
+        }
+
+        // Check if position is blocked
+        let mut zone_query = world.query::<&Zone>();
+        if let Some(zone) = zone_query.iter(world).find(|z| z.idx == zone_idx) {
+            let local = world_to_zone_local(new_pos.0, new_pos.1);
+            let collider_flags = zone.colliders.get_flags(local.0, local.1);
+
+            if !movement_flags.is_blocked_by(collider_flags) {
+                valid_positions.push(new_pos);
+            }
+        }
+    }
+
+    if valid_positions.is_empty() {
+        return false;
+    }
+
+    // Pick a random valid position
+    let random_index =
+        (rand::gen_range(0.0, 1.0) * valid_positions.len() as f32) as usize % valid_positions.len();
+    let chosen_pos = valid_positions[random_index];
+
+    let action = MoveAction {
+        entity,
+        new_position: chosen_pos,
+    };
+    action.apply(world);
+
+    // Consume energy for wandering (same as movement)
+    if let Some(mut energy) = world.get_mut::<Energy>(entity) {
+        let cost = get_base_energy_cost(EnergyActionType::Move);
+        energy.consume_energy(cost);
+    }
+
     true
 }
