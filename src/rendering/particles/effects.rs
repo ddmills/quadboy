@@ -577,6 +577,33 @@ pub fn spawn_explosion_effect(world: &mut World, world_pos: (usize, usize, usize
         .spawn_world(world);
 }
 
+/// Alert indicator - red "!" that floats upward when AI acquires target
+pub fn spawn_alert_indicator(world: &mut World, world_pos: (usize, usize, usize)) {
+    // Check if position is in active zone
+    if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+        if zone_idx != player_pos.zone_idx() {
+            return; // Don't spawn particles outside active zone
+        }
+    }
+
+    let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
+    let pos = Vec2::new(local_pos.0, local_pos.1 - 0.5); // Slightly above the entity
+
+    ParticleSpawner::new(pos)
+        .glyph_animation(GlyphAnimation::Static('!'))
+        .color_curve(ColorCurve::Constant(0xC91121)) // Bright red
+        .alpha_curve(AlphaCurve::EaseOut {
+            values: vec![1.0, 0.75],
+        })
+        .velocity_curve(VelocityCurve::Constant(Vec2::new(0.0, -2.0))) // Float upward
+        .gravity(Vec2::ZERO) // No gravity for floating effect
+        .priority(220) // High priority to render above other particles
+        .lifetime_range(1.4..1.6)
+        .burst(1)
+        .spawn_world(world);
+}
+
 /// Level up celebration effect - golden sparkles and light burst
 pub fn spawn_level_up_celebration(world: &mut World, world_pos: (usize, usize, usize)) {
     // Check if position is in active zone

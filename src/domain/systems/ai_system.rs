@@ -2,10 +2,13 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
 use quadboy_macros::profiled_system;
 
-use crate::domain::{
-    Actor, AiController, Energy, EnergyActionType, Health, TurnState, ai_try_attacking_nearby,
-    ai_try_move_toward_target, ai_try_select_target, detect_actors, get_actor,
-    get_base_energy_cost, try_handle_conditions,
+use crate::{
+    domain::{
+        Actor, AiController, Energy, EnergyActionType, Health, TurnState, ai_try_attacking_nearby,
+        ai_try_move_toward_target, ai_try_select_target, detect_actors, get_actor,
+        get_base_energy_cost, try_handle_conditions,
+    },
+    rendering::{Position, spawn_alert_indicator},
 };
 
 #[derive(Default)]
@@ -37,6 +40,12 @@ pub fn ai_turn(world: &mut World) {
         return;
     };
 
+    // Check if AI had a target before building context
+    let had_target_before = world
+        .get::<AiController>(current_entity)
+        .and_then(|ai| ai.current_target_id)
+        .is_some();
+
     let mut context = build_ai_context(world, current_entity);
 
     if try_handle_conditions(world, current_entity, &mut context) {
@@ -48,6 +57,16 @@ pub fn ai_turn(world: &mut World) {
     }
 
     if ai_try_select_target(world, current_entity, &mut context) {
+        // Check if AI just acquired a target
+        let has_target_now = context.target.is_some();
+        if !had_target_before && has_target_now {
+            // AI just acquired a target - spawn alert particle
+            if let Some(position) = world.get::<Position>(current_entity) {
+                let world_pos = position.world();
+                spawn_alert_indicator(world, world_pos);
+            }
+        }
+
         if let Some(mut ai_controller) = world.get_mut::<AiController>(current_entity) {
             ai_controller.current_target_id = context.target.map(|x| x.stable_id);
         };
