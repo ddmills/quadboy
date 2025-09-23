@@ -5,7 +5,7 @@ use super::{
     spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
     spawn_lever_action_rifle, spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe,
     spawn_pine_tree, spawn_player, spawn_poncho, spawn_rattlesnake, spawn_ring, spawn_stair_down,
-    spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile, spawn_wool_shirt,
+    spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile, spawn_tree, spawn_wool_shirt,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
 use bevy_ecs::{entity::Entity, prelude::Resource, system::Commands, world::World};
@@ -14,6 +14,7 @@ use std::{collections::HashMap, fmt};
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum PrefabId {
     PineTree,
+    Tree,
     Boulder,
     Campfire,
     GoldNugget,
@@ -67,6 +68,7 @@ pub enum SpawnValue {
     Bool(bool),
     LootTableId(LootTableId),
     ItemRarity(crate::domain::ItemRarity),
+    Palette(crate::common::Palette),
 }
 
 impl Prefab {
@@ -110,6 +112,7 @@ impl Prefabs {
 
     fn register_all_prefabs(&mut self) {
         self.register(PrefabId::PineTree, spawn_pine_tree);
+        self.register(PrefabId::Tree, spawn_tree);
         self.register(PrefabId::Boulder, spawn_boulder);
         self.register(PrefabId::Campfire, spawn_campfire);
         self.register(PrefabId::Cactus, spawn_cactus);
@@ -207,6 +210,7 @@ impl fmt::Display for PrefabId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PrefabId::PineTree => write!(f, "Pine Tree"),
+            PrefabId::Tree => write!(f, "Tree"),
             PrefabId::Boulder => write!(f, "Boulder"),
             PrefabId::Campfire => write!(f, "Campfire"),
             PrefabId::GoldNugget => write!(f, "Gold Nugget"),

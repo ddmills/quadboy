@@ -35,6 +35,7 @@ mod stair_down;
 mod stair_up;
 mod steel_toe_boots;
 mod terrain_tile;
+mod tree;
 mod weapon_generation_helper;
 mod wool_shirt;
 
@@ -75,5 +76,6 @@ pub use stair_down::*;
 pub use stair_up::*;
 pub use steel_toe_boots::*;
 pub use terrain_tile::*;
+pub use tree::*;
 pub use weapon_generation_helper::*;
 pub use wool_shirt::*;

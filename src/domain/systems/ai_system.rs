@@ -3,7 +3,7 @@ use macroquad::prelude::trace;
 use quadboy_macros::profiled_system;
 
 use crate::domain::{
-    Actor, AiController, Energy, EnergyActionType, TurnState, ai_try_attacking_nearby,
+    Actor, AiController, Energy, EnergyActionType, Health, TurnState, ai_try_attacking_nearby,
     ai_try_move_toward_target, ai_try_select_target, detect_actors, get_actor,
     get_base_energy_cost, try_handle_conditions,
 };
@@ -72,11 +72,23 @@ pub fn build_ai_context(world: &mut World, entity: Entity) -> AiContext {
         return AiContext::default();
     };
 
-    let target = if let Some(target_id) = ai_controller.current_target_id {
+    let mut target = if let Some(target_id) = ai_controller.current_target_id {
         get_actor(world, entity, target_id)
     } else {
         None
     };
+
+    // Check if this AI has been attacked and doesn't have a current target
+    if target.is_none() {
+        if let Some(health) = world.get::<Health>(entity) {
+            if let Some(attacker_id) = health.last_damage_source {
+                // Try to target the attacker, even if they're not in detection range
+                if let Some(attacker_actor) = get_actor(world, entity, attacker_id) {
+                    target = Some(attacker_actor);
+                }
+            }
+        }
+    }
 
     AiContext { detected, target }
 }

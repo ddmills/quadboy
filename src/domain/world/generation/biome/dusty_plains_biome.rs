@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, Rand},
-    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory},
+    common::{Grid, Palette, Rand},
+    domain::{Biome, LootTableId, Prefab, PrefabId, SpawnValue, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 use bevy_ecs::world::World;
@@ -103,7 +103,7 @@ fn generate_dusty_plains_pine_trees(
 
             if rand.bool(0.005) {
                 let wpos = zone_local_to_world(zone.zone_idx, x, y);
-                zone.push_entity(x, y, Prefab::new(PrefabId::PineTree, wpos));
+                zone.push_entity(x, y, Prefab::new(PrefabId::Tree, wpos).with_metadata("fg1".to_owned(), SpawnValue::Palette(Palette::Green)));
             }
         }
     }
