@@ -24,17 +24,18 @@ use crate::{
     common::Rand,
     domain::{
         ActiveConditions, AiController, ApplyVisibilityEffects, AttributePoints, Attributes,
-        Bitmasker, BumpAttack, Collider, Consumable, CreatureType, DefaultMeleeAttack, Description,
-        Destructible, DynamicEntity, Energy, EquipmentSlots, Equippable, Equipped, ExplosionEvent,
-        ExplosiveProperties, FactionMap, FactionMember, FactionRelations, Fuse, GameSettings,
-        Health, HideWhenNotVisible, HitBlink, InActiveZone, InInventory, Inventory,
-        InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity, KnockbackAnimation, Label,
-        Level, LightSource, LightStateChangedEvent, LoadGameResult, LoadZoneEvent, LootDrop,
-        LootTableRegistry, MovementCapabilities, NeedsStableId, NewGameResult, Player,
-        PlayerMovedEvent, Prefabs, RecalculateColliderFlagsEvent, RefreshBitmask, SaveFlag,
-        SaveGameResult, SetZoneStatusEvent, SmoothMovement, StackCount, Stackable, StairDown,
-        StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent, Stats, Throwable,
-        TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
+        Bitmasker, BumpAttack, Collider, Consumable, CreatureType, DefaultMeleeAttack,
+        DefaultRangedAttack, Description, Destructible, DynamicEntity, Energy, EquipmentSlots,
+        Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap, FactionMember,
+        FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone,
+        InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity,
+        KnockbackAnimation, Label, Level, LightSource, LightStateChangedEvent, LoadGameResult,
+        LoadZoneEvent, LootDrop, LootTableRegistry, MovementCapabilities, NeedsStableId,
+        NewGameResult, Player, PlayerMovedEvent, Prefabs, RecalculateColliderFlagsEvent,
+        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, SmoothMovement, StackCount,
+        Stackable, StairDown, StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent,
+        Stats, Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
+        Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -153,6 +154,7 @@ async fn main() {
     reg.register::<Weapon>();
     reg.register::<ItemRarity>();
     reg.register::<DefaultMeleeAttack>();
+    reg.register::<DefaultRangedAttack>();
     reg.register::<CreatureType>();
     reg.register::<AiController>();
     reg.register::<Level>();

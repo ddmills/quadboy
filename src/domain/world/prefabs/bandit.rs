@@ -2,8 +2,8 @@ use super::{Prefab, PrefabBuilder};
 use crate::{
     common::Palette,
     domain::{
-        CreatureType, DefaultMeleeAttack, FactionId, FactionMember, LootDrop, LootTableId,
-        StatModifier, StatModifiers, StatType,
+        CreatureType, DefaultMeleeAttack, DefaultRangedAttack, FactionId, FactionMember, LootDrop,
+        LootTableId, StatModifier, StatModifiers, StatType,
         components::ai_controller::{AiController, AiTemplate},
     },
     rendering::{GlyphTextureId, Layer},
@@ -37,6 +37,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_actor_collider()
         .with_hide_when_not_visible()
         .with_default_melee_attack(DefaultMeleeAttack::fists())
+        .with_component(DefaultRangedAttack::revolver())
         .with_level(4)
         .with_attributes(crate::domain::Attributes::new(3, 3, 2, 2))
         .with_stats(crate::domain::Stats::new())
@@ -46,5 +47,4 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Bandits))
         .with_movement_capabilities(crate::domain::MovementFlags::TERRESTRIAL)
-        
 }

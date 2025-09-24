@@ -26,5 +26,4 @@ pub fn spawn_poncho(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         ))
         .with_stat_modifiers(stat_modifiers)
         .with_needs_stable_id()
-        
 }

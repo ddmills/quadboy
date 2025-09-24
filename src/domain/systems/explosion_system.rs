@@ -3,7 +3,10 @@ use macroquad::{math::Vec2, prelude::trace};
 
 use crate::{
     cfg::ZONE_SIZE,
-    domain::{Destructible, Health, Zone, systems::destruction_system::EntityDestroyedEvent},
+    domain::{
+        Destructible, Health, PlayerPosition, Zone,
+        systems::destruction_system::EntityDestroyedEvent,
+    },
     engine::{Audio, AudioKey, Clock},
     rendering::{
         AlphaCurve, ColorCurve, Distribution, GlyphAnimation, ParticleSpawner, Position, SpawnArea,
@@ -72,14 +75,16 @@ pub fn explosion_system(
     q_positions: Query<&Position>,
     clock: Res<Clock>,
     audio: Option<Res<Audio>>,
+    player_pos: Option<Res<PlayerPosition>>,
 ) {
     for explosion in e_explosion.read() {
         trace!("Explosion event?");
         // Play explosion sound if available
         if let Some(audio_key) = explosion.audio
             && let Some(audio) = &audio
+            && let Some(player_pos) = &player_pos
         {
-            audio.play(audio_key, 0.5);
+            audio.play_at_position(audio_key, 0.5, explosion.position, player_pos);
         }
 
         // Spawn explosion particle effects

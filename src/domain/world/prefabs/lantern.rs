@@ -24,5 +24,4 @@ pub fn spawn_lantern(entity: Entity, world: &mut World, config: Prefab) -> Prefa
         .with_light_source(LightSource::lantern())
         .with_lightable_audio(AudioKey::IgniteMatch, None)
         .with_needs_stable_id()
-        
 }

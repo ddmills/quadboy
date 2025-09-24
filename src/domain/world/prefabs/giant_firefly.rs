@@ -39,5 +39,4 @@ pub fn spawn_giant_firefly(entity: Entity, world: &mut World, config: Prefab) ->
         .with_loot_drop(LootDrop::new(LootTableId::GiantFireflyLoot, 0.35))
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-        
 }

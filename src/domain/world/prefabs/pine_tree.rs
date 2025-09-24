@@ -25,5 +25,4 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) -> Pre
         .with_destructible(5, MaterialType::Wood)
         .with_vision_blocker()
         .with_light_blocker()
-        
 }

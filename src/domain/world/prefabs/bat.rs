@@ -38,5 +38,4 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) -> PrefabBui
         .with_creature_type(CreatureType::Bat)
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-        
 }

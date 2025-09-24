@@ -54,5 +54,4 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_component(FactionMember::new(FactionId::Player))
         .with_component(AttributePoints::new(1)) // Level 1 = 5 + 1 = 6 points
         .with_component(Health::new_full()) // Will be set to proper max HP by health system
-        
 }

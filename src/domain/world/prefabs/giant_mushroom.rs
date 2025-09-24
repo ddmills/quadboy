@@ -26,5 +26,4 @@ pub fn spawn_giant_mushroom(entity: Entity, world: &mut World, config: Prefab) -
         .with_vision_blocker()
         .with_light_source(LightSource::mushroom())
         .with_destructible(5, MaterialType::Wood)
-        
 }

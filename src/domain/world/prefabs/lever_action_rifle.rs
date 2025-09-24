@@ -6,7 +6,11 @@ use crate::{
 };
 use bevy_ecs::{entity::Entity, world::World};
 
-pub fn spawn_lever_action_rifle(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+pub fn spawn_lever_action_rifle(
+    entity: Entity,
+    world: &mut World,
+    config: Prefab,
+) -> PrefabBuilder {
     // Generate weapon with potential rarity modifiers
     let generated_weapon = generate_weapon_from_prefab(
         &config,

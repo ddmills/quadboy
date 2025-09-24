@@ -4,7 +4,9 @@ use bevy_ecs::prelude::*;
 use macroquad::prelude::trace;
 
 use crate::{
-    domain::{LoadZoneCommand, Overworld, Player, PlayerPosition, TerrainNoise, Zones, ExplosionEvent},
+    domain::{
+        ExplosionEvent, LoadZoneCommand, Overworld, Player, PlayerPosition, TerrainNoise, Zones,
+    },
     engine::{Clock, StableIdRegistry, deserialize, try_load_game},
     rendering::GameCamera,
     states::{CurrentGameState, GameState},

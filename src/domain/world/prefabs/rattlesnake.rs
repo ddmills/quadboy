@@ -45,5 +45,4 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) -> P
         .with_creature_type(CreatureType::Rattlesnake)
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-        
 }

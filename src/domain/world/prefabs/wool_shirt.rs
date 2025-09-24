@@ -26,5 +26,4 @@ pub fn spawn_wool_shirt(entity: Entity, world: &mut World, config: Prefab) -> Pr
         ))
         .with_stat_modifiers(stat_modifiers)
         .with_needs_stable_id()
-        
 }

@@ -37,5 +37,4 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_creature_type(CreatureType::Coyote)
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-
 }

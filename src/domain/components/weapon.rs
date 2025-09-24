@@ -4,6 +4,7 @@ use crate::{
         weapon_type::WeaponType,
     },
     engine::{AudioKey, SerializableComponent},
+    rendering::ParticleEffectId,
 };
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -15,6 +16,7 @@ pub struct Weapon {
     pub weapon_family: WeaponFamily,
     pub weapon_type: WeaponType,
     pub hit_effects: Vec<HitEffect>,
+    pub particle_effect_id: Option<ParticleEffectId>,
 
     // Optional ranged-specific fields
     pub range: Option<usize>,
@@ -39,6 +41,7 @@ impl Weapon {
             weapon_family,
             weapon_type: WeaponType::Melee,
             hit_effects: Vec::new(),
+            particle_effect_id: None,
             range: None,
             shoot_audio: None,
             clip_size: None,
@@ -68,6 +71,7 @@ impl Weapon {
             weapon_family,
             weapon_type: WeaponType::Ranged,
             hit_effects: Vec::new(),
+            particle_effect_id: None, // Will be set by weapon-specific constructors
             range: Some(range),
             shoot_audio: Some(shoot_audio),
             clip_size,
@@ -113,7 +117,7 @@ impl Weapon {
     }
 
     pub fn revolver() -> Self {
-        Self::new_ranged(
+        let mut weapon = Self::new_ranged(
             "1d8+2".to_string(),
             12,
             vec![MaterialType::Flesh],
@@ -124,11 +128,13 @@ impl Weapon {
             Some(AudioKey::RevolverReload),
             Some(AudioKey::RevolverReloadComplete),
             Some(AudioKey::RevolverEmpty),
-        )
+        );
+        weapon.particle_effect_id = Some(ParticleEffectId::default_pistol());
+        weapon
     }
 
     pub fn rifle() -> Self {
-        Self::new_ranged(
+        let mut weapon = Self::new_ranged(
             "1d10+3".to_string(),
             16,
             vec![MaterialType::Flesh],
@@ -139,7 +145,9 @@ impl Weapon {
             Some(AudioKey::RifleReload),
             Some(AudioKey::RifleReloadComplete),
             Some(AudioKey::RifleEmpty),
-        )
+        );
+        weapon.particle_effect_id = Some(ParticleEffectId::default_rifle());
+        weapon
     }
 
     pub fn shotgun() -> Self {
@@ -159,6 +167,7 @@ impl Weapon {
             strength: 1.0,
             chance: 1.0,
         }];
+        shotgun.particle_effect_id = Some(ParticleEffectId::default_shotgun());
         shotgun
     }
 }

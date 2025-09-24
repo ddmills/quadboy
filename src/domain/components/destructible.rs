@@ -1,4 +1,7 @@
-use crate::engine::{AudioCollection, SerializableComponent};
+use crate::{
+    engine::{AudioCollection, SerializableComponent},
+    rendering::ParticleEffectId,
+};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +33,14 @@ impl MaterialType {
             MaterialType::Stone => Some(AudioCollection::RockCrumble),
             MaterialType::Wood => Some(AudioCollection::Vegetation),
             MaterialType::Flesh => Some(AudioCollection::Pain),
+        }
+    }
+
+    pub fn hit_particle_effect(self) -> ParticleEffectId {
+        match self {
+            MaterialType::Stone => ParticleEffectId::HitStone,
+            MaterialType::Wood => ParticleEffectId::HitWood,
+            MaterialType::Flesh => ParticleEffectId::HitFlesh,
         }
     }
 }

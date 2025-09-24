@@ -19,5 +19,4 @@ pub fn spawn_bedroll(entity: Entity, world: &mut World, config: Prefab) -> Prefa
             EquipmentType::Tool,
         ))
         .with_needs_stable_id()
-        
 }

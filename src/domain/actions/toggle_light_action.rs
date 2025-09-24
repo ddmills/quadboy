@@ -4,9 +4,10 @@ use crate::{
     common::Palette,
     domain::{
         Energy, EnergyActionType, ExplosiveProperties, Fuse, HitBlink, LightSource, Lightable,
-        get_base_energy_cost, split_item_from_stack,
+        PlayerPosition, get_base_energy_cost, split_item_from_stack,
     },
     engine::{Audio, Clock, StableIdRegistry},
+    rendering::Position,
 };
 
 #[derive(Event)]
@@ -68,8 +69,10 @@ impl Command for ToggleLightAction {
                     // Play extinguish audio if available
                     if let Some(extinguish_audio) = lightable.extinguish_audio
                         && let Some(audio) = world.get_resource::<Audio>()
+                        && let Some(player_pos) = world.get_resource::<PlayerPosition>()
+                        && let Some(item_pos) = world.get::<Position>(item_entity)
                     {
-                        audio.play(extinguish_audio, 0.6);
+                        audio.play_at_position(extinguish_audio, 0.6, item_pos.world(), player_pos);
                     }
                 }
             } else {
@@ -104,8 +107,10 @@ impl Command for ToggleLightAction {
                         // Play light audio if available
                         if let Some(light_audio) = lightable.light_audio
                             && let Some(audio) = world.get_resource::<Audio>()
+                            && let Some(player_pos) = world.get_resource::<PlayerPosition>()
+                            && let Some(item_pos) = world.get::<Position>(item_entity)
                         {
-                            audio.play(light_audio, 0.6);
+                            audio.play_at_position(light_audio, 0.6, item_pos.world(), player_pos);
                         }
                     }
 
@@ -136,21 +141,28 @@ impl Command for ToggleLightAction {
                     return;
                 };
 
+            // Get position and player position first to avoid borrow checker issues
+            let item_pos = world.get::<Position>(item_entity).map(|p| p.world());
+            let player_pos = world.get_resource::<PlayerPosition>().cloned();
+
             // Update the lightable component's action label and play audio
             if let Some(mut lightable) = world.get_mut::<Lightable>(item_entity) {
+                let light_audio = lightable.light_audio;
+                let extinguish_audio = lightable.extinguish_audio;
                 lightable.update_label(is_enabled);
 
                 // Play appropriate audio if available
-                if is_enabled {
-                    if let Some(light_audio) = lightable.light_audio
-                        && let Some(audio) = world.get_resource::<Audio>()
-                    {
-                        audio.play(light_audio, 0.6);
-                    }
-                } else if let Some(extinguish_audio) = lightable.extinguish_audio
+                if let Some(player_pos) = player_pos
+                    && let Some(item_pos) = item_pos
                     && let Some(audio) = world.get_resource::<Audio>()
                 {
-                    audio.play(extinguish_audio, 0.6);
+                    if is_enabled {
+                        if let Some(light_audio) = light_audio {
+                            audio.play_at_position(light_audio, 0.6, item_pos, &player_pos);
+                        }
+                    } else if let Some(extinguish_audio) = extinguish_audio {
+                        audio.play_at_position(extinguish_audio, 0.6, item_pos, &player_pos);
+                    }
                 }
             }
         }

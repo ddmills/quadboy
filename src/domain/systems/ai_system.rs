@@ -6,8 +6,8 @@ use crate::{
     common::Rand,
     domain::{
         Actor, AiController, Energy, EnergyActionType, Health, TurnState, ai_try_attacking_nearby,
-        ai_try_move_toward_target, ai_try_select_target, ai_try_wander, detect_actors, get_actor,
-        get_base_energy_cost, try_handle_conditions,
+        ai_try_move_toward_target, ai_try_ranged_attack, ai_try_select_target, ai_try_wander,
+        detect_actors, get_actor, get_base_energy_cost, try_handle_conditions,
     },
     rendering::{Position, spawn_alert_indicator},
 };
@@ -53,10 +53,6 @@ pub fn ai_turn(world: &mut World) {
         return;
     }
 
-    if ai_try_attacking_nearby(world, current_entity, &mut context) {
-        return;
-    }
-
     if ai_try_select_target(world, current_entity, &mut context) {
         // Check if AI just acquired a target
         let has_target_now = context.target.is_some();
@@ -71,6 +67,16 @@ pub fn ai_turn(world: &mut World) {
         if let Some(mut ai_controller) = world.get_mut::<AiController>(current_entity) {
             ai_controller.current_target_id = context.target.map(|x| x.stable_id);
         };
+
+        // Try ranged attack first if AI has a ranged weapon and target is not adjacent
+        if ai_try_ranged_attack(world, current_entity, &mut context) {
+            return;
+        }
+
+        // Try melee attack if target is adjacent
+        if ai_try_attacking_nearby(world, current_entity, &mut context) {
+            return;
+        }
 
         if ai_try_move_toward_target(world, current_entity, &mut context) {
             return;

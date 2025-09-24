@@ -103,7 +103,12 @@ fn generate_dusty_plains_pine_trees(
 
             if rand.bool(0.005) {
                 let wpos = zone_local_to_world(zone.zone_idx, x, y);
-                zone.push_entity(x, y, Prefab::new(PrefabId::Tree, wpos).with_metadata("fg1".to_owned(), SpawnValue::Palette(Palette::Green)));
+                zone.push_entity(
+                    x,
+                    y,
+                    Prefab::new(PrefabId::Tree, wpos)
+                        .with_metadata("fg1".to_owned(), SpawnValue::Palette(Palette::Green)),
+                );
             }
         }
     }

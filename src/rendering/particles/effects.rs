@@ -3,10 +3,102 @@ use macroquad::math::Vec2;
 
 use super::core::{GlyphAnimation, Particle, ParticleSpawner, ParticleTrail};
 use super::curves::{AlphaCurve, ColorCurve, VelocityCurve};
+use super::particle_effect_id::ParticleEffectId;
 use super::spawn_areas::{Distribution, SpawnArea};
 use crate::common::Rand;
 use crate::domain::{MaterialType, PlayerPosition};
 use crate::rendering::{world_to_zone_idx, world_to_zone_local_f32};
+
+/// Configuration for material hit effect appearance
+struct MaterialHitConfig {
+    color: u32,
+    glyphs: Vec<char>,
+    base_speed: f32,
+    spread_angle: f32,
+    particle_count: u32,
+}
+
+impl MaterialHitConfig {
+    fn for_stone() -> Self {
+        Self {
+            color: 0xDEE4E4,
+            glyphs: vec!['♥', '♠', '♦', '♦'],
+            base_speed: 4.0,
+            spread_angle: 45.0,
+            particle_count: 5,
+        }
+    }
+
+    fn for_wood() -> Self {
+        Self {
+            color: 0xD4A574,
+            glyphs: vec!['*', '•', '○', '▪'],
+            base_speed: 3.0,
+            spread_angle: 50.0,
+            particle_count: 4,
+        }
+    }
+
+    fn for_flesh() -> Self {
+        Self {
+            color: 0xFF4444,
+            glyphs: vec!['*', '•', '○'],
+            base_speed: 3.5,
+            spread_angle: 40.0,
+            particle_count: 3,
+        }
+    }
+}
+
+/// Helper function to spawn material hit particle effect with given configuration
+fn spawn_material_hit_with_config(
+    world: &mut World,
+    impact_pos: (usize, usize, usize),
+    direction: Vec2,
+    delay: f32,
+    config: MaterialHitConfig,
+) {
+    // Convert world coordinates to local zone coordinates and check if in active zone
+    let local_pos = if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
+        let zone_idx = world_to_zone_idx(impact_pos.0, impact_pos.1, impact_pos.2);
+        let active_zone = player_pos.zone_idx();
+        if zone_idx != active_zone {
+            return; // Don't spawn particles if not in active zone
+        }
+        world_to_zone_local_f32(impact_pos.0 as f32 + 0.5, impact_pos.1 as f32 + 0.5)
+    } else {
+        return;
+    };
+
+    ParticleSpawner::new(Vec2::new(local_pos.0, local_pos.1))
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: config.glyphs,
+            change_rate: Some(15.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![config.color, config.color & 0x585858],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![
+                direction.normalize() * config.base_speed,
+                direction.normalize() * (config.base_speed * 0.3) + Vec2::new(0.0, 3.0),
+            ],
+        })
+        .spawn_area(SpawnArea::Arc {
+            radius: 0.5,
+            angle_start: -config.spread_angle,
+            angle_end: config.spread_angle,
+            radial_distribution: Distribution::Uniform,
+            base_direction: Some(direction),
+        })
+        .gravity(Vec2::new(0.0, 3.0))
+        .priority(180)
+        .lifetime_range(0.4..0.8)
+        .delay(delay)
+        .burst(config.particle_count)
+        .spawn_world(world);
+}
 
 // Blood Effects - Direction/Angle Based
 pub fn spawn_blood_spray(world: &mut World, position: Vec2, direction: Vec2, intensity: f32) {
@@ -52,7 +144,6 @@ pub fn spawn_bullet_trail(
     target_pos: Vec2,
     bullet_speed: f32,
     rand: &mut Rand,
-    spawn_blood: bool,
 ) {
     let direction = (target_pos - start_pos).normalize();
     let distance = start_pos.distance(target_pos);
@@ -92,8 +183,8 @@ pub fn spawn_bullet_trail(
     let trail_spawner = ParticleSpawner::new(Vec2::ZERO) // Position gets overridden by trail system
         .glyph_animation(GlyphAnimation::Static(' '))
         .bg_curve(ColorCurve::EaseOut {
-            // values: vec![0xF3D9BB, 0x261766],
-            values: vec![0x666666, 0x333333, 0x000000],
+            values: vec![0x666666, 0x261766],
+            // values: vec![0x666666, 0x333333, 0x000000],
         })
         .alpha_curve(AlphaCurve::Linear {
             values: vec![0.4, 0.0],
@@ -102,8 +193,8 @@ pub fn spawn_bullet_trail(
             values: vec![Vec2::new(0.0, -0.5), Vec2::new(0.0, 1.0)],
         })
         .priority(90)
-        .lifetime_range(0.2..0.6)
-        .burst(1);
+        .lifetime_range(0.5..0.8)
+        .burst(20);
 
     let trail = ParticleTrail::new(250.0, trail_spawner);
     world.entity_mut(bullet_entity).insert(trail);
@@ -114,8 +205,11 @@ pub fn spawn_bullet_trail(
             glyphs: vec!['◦', '○', '*'],
             duration_per_glyph: 0.1,
         })
-        .color_curve(ColorCurve::Constant(0xFF4400))
+        // .color_curve(ColorCurve::Constant(0xFF4400))
         .bg_curve(ColorCurve::Linear {
+            values: vec![0xFFFF00, 0xFF4400, 0xE6E6E6],
+        })
+        .color_curve(ColorCurve::Linear {
             values: vec![0xFFFF00, 0xFF4400, 0xE6E6E6],
         })
         .spawn_area(SpawnArea::Arc {
@@ -126,55 +220,30 @@ pub fn spawn_bullet_trail(
             base_direction: Some(direction),
         })
         .velocity_curve(VelocityCurve::EaseOut {
-            values: vec![direction * 5.0, direction * 2.0],
+            values: vec![direction * 2.0, direction * 2.0],
         })
         // .gravity(Vec2::new(0.0, 2.0))
         .priority(180)
-        .lifetime_range(0.2..0.3)
+        .lifetime_range(0.1..0.2)
         .burst(40)
         .spawn_world(world);
-
-    // Delayed blood spray at impact (only if hit)
-    if spawn_blood {
-        spawn_delayed_blood_impact(world, target_pos, direction, travel_time);
-    }
 }
 
-fn spawn_delayed_blood_impact(
+/// Spawn a delayed material hit effect based on the material type
+pub fn spawn_delayed_material_hit(
     world: &mut World,
-    impact_pos: Vec2,
-    bullet_direction: Vec2,
+    impact_pos: (usize, usize, usize),
+    material_type: MaterialType,
+    direction: Vec2,
     delay: f32,
 ) {
-    ParticleSpawner::new(impact_pos)
-        .glyph_animation(GlyphAnimation::RandomPool {
-            glyphs: vec!['*', '•', '·', '○'],
-            change_rate: Some(5.0),
-            last_change: 0.0,
-        })
-        .color_curve(ColorCurve::Constant(0x440000))
-        .bg_curve(ColorCurve::EaseOut {
-            values: vec![0xCC0000, 0x440000],
-        })
-        .spawn_area(SpawnArea::Arc {
-            radius: 1.0,
-            angle_start: -60.0,
-            angle_end: 60.0,
-            radial_distribution: Distribution::Gaussian,
-            base_direction: Some(bullet_direction),
-        })
-        .velocity_curve(VelocityCurve::EaseOut {
-            values: vec![
-                bullet_direction * 6.0,
-                bullet_direction * 1.0 + Vec2::new(0.0, 4.0),
-            ],
-        })
-        .gravity(Vec2::new(0.0, 3.0))
-        .priority(150)
-        .lifetime_range(0.5..1.2)
-        .delay(delay)
-        .burst(8)
-        .spawn_world(world);
+    let config = match material_type {
+        MaterialType::Stone => MaterialHitConfig::for_stone(),
+        MaterialType::Wood => MaterialHitConfig::for_wood(),
+        MaterialType::Flesh => MaterialHitConfig::for_flesh(),
+    };
+
+    spawn_material_hit_with_config(world, impact_pos, direction, delay, config);
 }
 
 // Environmental Effects - Area/Context Based
@@ -184,39 +253,8 @@ pub fn spawn_material_hit(
     material: MaterialType,
     direction: Vec2,
 ) {
-    let (spark_color, spark_count, spark_glyphs, base_speed, spread_angle) = match material {
-        MaterialType::Stone => (0xDEE4E4, 5, vec!['♥', '♠', '♦', '♦'], 4.0, 45.0),
-        MaterialType::Wood => (0xB14D13, 4, vec![',', '"', '.', '`'], 3.0, 35.0),
-        MaterialType::Flesh => (0xFF4444, 3, vec!['*', '•', '○'], 3.5, 40.0),
-    };
-
-    ParticleSpawner::new(position)
-        .glyph_animation(GlyphAnimation::RandomPool {
-            glyphs: spark_glyphs,
-            change_rate: Some(15.0),
-            last_change: 0.0,
-        })
-        .color_curve(ColorCurve::EaseOut {
-            values: vec![spark_color, spark_color & 0x585858],
-        })
-        .velocity_curve(VelocityCurve::EaseOut {
-            values: vec![
-                direction.normalize() * base_speed,
-                direction.normalize() * (base_speed * 0.3) + Vec2::new(0.0, 3.0),
-            ],
-        })
-        .spawn_area(SpawnArea::Arc {
-            radius: 0.5,
-            angle_start: -spread_angle,
-            angle_end: spread_angle,
-            radial_distribution: Distribution::Uniform,
-            base_direction: Some(direction),
-        })
-        .gravity(Vec2::new(0.0, 3.0))
-        .priority(180)
-        .lifetime_range(0.4..0.7)
-        .burst(spark_count)
-        .spawn_world(world);
+    let effect_id = material.hit_particle_effect();
+    spawn_material_particle_effect(world, &effect_id, position, direction);
 }
 
 // Helper functions for converting world coordinates
@@ -331,7 +369,6 @@ pub fn spawn_bullet_trail_in_world(
     target_world: (usize, usize, usize),
     speed: f32,
     rand: &mut Rand,
-    spawn_blood: bool,
 ) {
     // Check if either start or target position is in active zone
     if let Some(player_pos) = world.get_resource::<PlayerPosition>() {
@@ -352,7 +389,7 @@ pub fn spawn_bullet_trail_in_world(
         world_to_zone_local_f32(target_world.0 as f32 + 0.5, target_world.1 as f32 + 0.5);
     let target_pos = Vec2::new(target_local.0, target_local.1);
 
-    spawn_bullet_trail(world, start_pos, target_pos, speed, rand, spawn_blood);
+    spawn_bullet_trail(world, start_pos, target_pos, speed, rand);
 }
 
 pub fn spawn_material_hit_in_world(
@@ -682,5 +719,183 @@ pub fn spawn_level_up_celebration(world: &mut World, world_pos: (usize, usize, u
         .priority(180)
         .lifetime_range(1.5..2.5)
         .burst(15)
+        .spawn_world(world);
+}
+
+/// Main particle effect factory function that spawns effects based on ParticleEffectId
+pub fn spawn_particle_effect(
+    world: &mut World,
+    effect_id: &ParticleEffectId,
+    start_pos: (usize, usize, usize),
+    target_pos: (usize, usize, usize),
+    rand: &mut Rand,
+) {
+    match effect_id {
+        ParticleEffectId::Pistol { bullet_speed } => {
+            spawn_bullet_trail_in_world(world, start_pos, target_pos, *bullet_speed, rand);
+        }
+        ParticleEffectId::Rifle { bullet_speed } => {
+            spawn_bullet_trail_in_world(world, start_pos, target_pos, *bullet_speed, rand);
+        }
+        ParticleEffectId::Shotgun { bullet_speed } => {
+            // For shotgun, we could spawn multiple bullet trails with slight spread
+            // For now, use the existing bullet trail but potentially modify it later
+            spawn_bullet_trail_in_world(world, start_pos, target_pos, *bullet_speed, rand);
+        }
+        ParticleEffectId::Explosion { radius } => {
+            spawn_explosion_effect(world, target_pos, *radius as usize);
+        }
+        // Material hit effects - these need special handling with direction
+        ParticleEffectId::HitStone | ParticleEffectId::HitWood | ParticleEffectId::HitFlesh => {
+            // These effects require a direction parameter, which the current spawn_particle_effect
+            // signature doesn't support. They should be handled by a separate function.
+            // For now, do nothing - they'll be handled by the dedicated spawn_material_hit function
+        }
+        // Default fallbacks for non-projectile effects
+        ParticleEffectId::BladeSlash | ParticleEffectId::BluntImpact => {
+            // For melee weapons, we might want different effects later
+            // For now, no particle effect
+        }
+        ParticleEffectId::FireBolt
+        | ParticleEffectId::IceShard
+        | ParticleEffectId::LightningBolt => {
+            // Magical effects - could be implemented later
+            // For now, use default bullet trail as placeholder
+            spawn_bullet_trail_in_world(world, start_pos, target_pos, 50.0, rand);
+        }
+    }
+}
+
+/// Specialized particle effect function for material hits that require direction
+pub fn spawn_material_particle_effect(
+    world: &mut World,
+    effect_id: &ParticleEffectId,
+    position: Vec2,
+    direction: Vec2,
+) {
+    match effect_id {
+        ParticleEffectId::HitStone => {
+            spawn_stone_hit_effect(world, position, direction);
+        }
+        ParticleEffectId::HitWood => {
+            spawn_wood_hit_effect(world, position, direction);
+        }
+        ParticleEffectId::HitFlesh => {
+            spawn_flesh_hit_effect(world, position, direction);
+        }
+        _ => {
+            // Not a material hit effect, ignore
+        }
+    }
+}
+
+/// Stone hit effect - light gray sparks with sharp characters
+fn spawn_stone_hit_effect(world: &mut World, position: Vec2, direction: Vec2) {
+    let spark_color = 0xDEE4E4;
+    let spark_count = 5;
+    let spark_glyphs = vec!['♥', '♠', '♦', '♦'];
+    let base_speed = 4.0;
+    let spread_angle = 45.0;
+
+    ParticleSpawner::new(position)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: spark_glyphs,
+            change_rate: Some(15.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![spark_color, spark_color & 0x585858],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![
+                direction.normalize() * base_speed,
+                direction.normalize() * (base_speed * 0.3) + Vec2::new(0.0, 3.0),
+            ],
+        })
+        .spawn_area(SpawnArea::Arc {
+            radius: 0.5,
+            angle_start: -spread_angle,
+            angle_end: spread_angle,
+            radial_distribution: Distribution::Uniform,
+            base_direction: Some(direction),
+        })
+        .gravity(Vec2::new(0.0, 3.0))
+        .priority(180)
+        .lifetime_range(0.4..0.7)
+        .burst(spark_count)
+        .spawn_world(world);
+}
+
+/// Wood hit effect - brown wood chips with dust characters
+fn spawn_wood_hit_effect(world: &mut World, position: Vec2, direction: Vec2) {
+    let spark_color = 0xB14D13;
+    let spark_count = 4;
+    let spark_glyphs = vec![',', '"', '.', '`'];
+    let base_speed = 3.0;
+    let spread_angle = 35.0;
+
+    ParticleSpawner::new(position)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: spark_glyphs,
+            change_rate: Some(15.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![spark_color, spark_color & 0x585858],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![
+                direction.normalize() * base_speed,
+                direction.normalize() * (base_speed * 0.3) + Vec2::new(0.0, 3.0),
+            ],
+        })
+        .spawn_area(SpawnArea::Arc {
+            radius: 0.5,
+            angle_start: -spread_angle,
+            angle_end: spread_angle,
+            radial_distribution: Distribution::Uniform,
+            base_direction: Some(direction),
+        })
+        .gravity(Vec2::new(0.0, 3.0))
+        .priority(180)
+        .lifetime_range(0.4..0.7)
+        .burst(spark_count)
+        .spawn_world(world);
+}
+
+/// Flesh hit effect - red blood splatter with organic characters
+fn spawn_flesh_hit_effect(world: &mut World, position: Vec2, direction: Vec2) {
+    let spark_color = 0xFF4444;
+    let spark_count = 3;
+    let spark_glyphs = vec!['*', '•', '○'];
+    let base_speed = 3.5;
+    let spread_angle = 40.0;
+
+    ParticleSpawner::new(position)
+        .glyph_animation(GlyphAnimation::RandomPool {
+            glyphs: spark_glyphs,
+            change_rate: Some(15.0),
+            last_change: 0.0,
+        })
+        .color_curve(ColorCurve::EaseOut {
+            values: vec![spark_color, spark_color & 0x585858],
+        })
+        .velocity_curve(VelocityCurve::EaseOut {
+            values: vec![
+                direction.normalize() * base_speed,
+                direction.normalize() * (base_speed * 0.3) + Vec2::new(0.0, 3.0),
+            ],
+        })
+        .spawn_area(SpawnArea::Arc {
+            radius: 0.5,
+            angle_start: -spread_angle,
+            angle_end: spread_angle,
+            radial_distribution: Distribution::Uniform,
+            base_direction: Some(direction),
+        })
+        .gravity(Vec2::new(0.0, 3.0))
+        .priority(180)
+        .lifetime_range(0.4..0.7)
+        .burst(spark_count)
         .spawn_world(world);
 }

@@ -22,5 +22,4 @@ pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_collider()
         .with_vision_blocker()
         .with_destructible(10, MaterialType::Wood)
-        
 }

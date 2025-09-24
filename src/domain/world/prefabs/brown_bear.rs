@@ -47,5 +47,4 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) -> Pr
         .with_creature_type(CreatureType::Bear)
         .with_component(AiController::new(AiTemplate::BasicAggressive, config.pos))
         .with_component(FactionMember::new(FactionId::Wildlife))
-
 }

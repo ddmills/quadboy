@@ -9,7 +9,7 @@ use crate::{
         InventoryAccessible, IsExplored, MoveAction, OpenContainerAction, ReloadAction, StairDown,
         StairUp, ToggleLightAction, TurnState, WaitAction, Zone,
     },
-    engine::{InputRate, KeyInput, Mouse, SerializableComponent, Time},
+    engine::{InputRate, KeyInput, Mouse, SerializableComponent, StableId, Time},
     rendering::{Glyph, Position, Text, world_to_zone_idx, world_to_zone_local},
 };
 use quadboy_macros::profiled_system;
@@ -75,11 +75,12 @@ pub struct StaticEntitySpawnedEvent {
 
 pub fn player_input(
     mut cmds: Commands,
-    q_player: Query<(Entity, &Position, Option<&EquipmentSlots>), With<Player>>,
+    q_player: Query<(Entity, &Position, Option<&EquipmentSlots>, &StableId), With<Player>>,
     q_colliders: Query<&Position, (With<Collider>, Without<Player>)>,
     q_containers: Query<Entity, (With<Inventory>, With<InventoryAccessible>)>,
     q_stairs_down: Query<&Position, (With<StairDown>, Without<Player>)>,
     q_stairs_up: Query<&Position, (With<StairUp>, Without<Player>)>,
+    q_stable_id: Query<&StableId>,
     keys: Res<KeyInput>,
     time: Res<Time>,
     mut input_rate: Local<InputRate>,
@@ -93,7 +94,7 @@ pub fn player_input(
     let now = time.fixed_t;
     let mut rate = settings.input_delay;
     let delay = settings.input_initial_delay;
-    let Ok((player_entity, position, equipment_slots)) = q_player.single() else {
+    let Ok((player_entity, position, equipment_slots, player_stable_id)) = q_player.single() else {
         return;
     };
     let (x, y, z) = position.world();
@@ -113,20 +114,13 @@ pub fn player_input(
             };
 
             if has_ranged_weapon {
-                // Find the selected target's position
-                if let Some((_entity, pos, _dist)) = target_cycling
-                    .targets
-                    .iter()
-                    .find(|(entity, _, _)| *entity == selected_entity)
-                {
-                    let target_x = pos.0.floor() as usize;
-                    let target_y = pos.1.floor() as usize;
-                    let target_z = pos.2 as usize;
-
+                // Find the selected target and get its StableId
+                if let Some(target_stable_id) = q_stable_id.get(selected_entity).ok() {
                     // Execute attack action (targeted attack, not bump)
                     cmds.queue(AttackAction {
-                        attacker_entity: player_entity,
-                        target_pos: (target_x, target_y, target_z),
+                        attacker_stable_id: player_stable_id.0,
+                        weapon_stable_id: None, // Use equipped weapon
+                        target_stable_id: *target_stable_id,
                         is_bump_attack: false,
                     });
                     return;
@@ -294,13 +288,22 @@ pub fn player_input(
                     || (dz > 0 && is_on_stair_down(new_x, new_y, z, &q_stairs_down));
 
                 if can_move_vertically {
-                    if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
-                        // Bump attack - try to attack what we bumped into (actors, trees, walls, etc.)
-                        cmds.queue(AttackAction {
-                            attacker_entity: player_entity,
-                            target_pos: (new_x, new_y, new_z),
-                            is_bump_attack: true,
-                        });
+                    // Find the entity with collider to attack
+                    if let Some(target_entity) =
+                        find_collider_entity_at((new_x, new_y, new_z), &q_colliders, &q_zone)
+                    {
+                        if let Ok(target_stable_id) = q_stable_id.get(target_entity) {
+                            // Bump attack - try to attack what we bumped into (actors, trees, walls, etc.)
+                            cmds.queue(AttackAction {
+                                attacker_stable_id: player_stable_id.0,
+                                weapon_stable_id: None, // Use equipped weapon
+                                target_stable_id: *target_stable_id,
+                                is_bump_attack: true,
+                            });
+                            movement_timer.0 = now;
+                        }
+                    } else if has_collider_at((new_x, new_y, new_z), &q_colliders, &q_zone) {
+                        // Fallback: if there's a collider but we can't find the entity, just block movement
                         movement_timer.0 = now;
                     } else {
                         // Normal movement
@@ -380,6 +383,17 @@ pub fn render_player_debug(
         q_glyphs.iter().len(),
         q_energy.iter().len(),
     );
+}
+
+fn find_collider_entity_at(
+    world_pos: (usize, usize, usize),
+    colliders: &Query<&Position, (With<Collider>, Without<Player>)>,
+    q_zones: &Query<&Zone>,
+) -> Option<Entity> {
+    Zone::get_at(world_pos, q_zones)
+        .iter()
+        .find(|e| colliders.contains(**e))
+        .copied()
 }
 
 fn has_collider_at(

@@ -13,5 +13,4 @@ pub fn spawn_stair_down(entity: Entity, world: &mut World, config: Prefab) -> Pr
             "Carved by forgotten hands into living rock. Each step descends toward older darkness.",
         )
         .with_stair_down()
-        
 }

@@ -18,5 +18,4 @@ pub fn spawn_campfire(entity: Entity, world: &mut World, config: Prefab) -> Pref
         .with_label("{R|C}ampfire")
         .with_description("Ashes and char, ringed with stones like broken teeth. The only honest light in a dishonest land.")
         .with_light_source(LightSource::campfire())
-        
 }

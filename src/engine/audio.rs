@@ -1,4 +1,5 @@
 use crate::common::Rand;
+use crate::domain::PlayerPosition;
 use crate::engine::Time;
 use bevy_ecs::prelude::*;
 use quad_snd::{AudioContext, PlaySoundParams, Sound};
@@ -6,10 +7,21 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+// Positional audio configuration constants
+const MAX_AUDIO_DISTANCE: usize = 20;
+const MIN_AUDIBLE_VOLUME: f32 = 0.05;
+
 struct DelayedAudioEntry {
     key: AudioKey,
     volume: f32,
     remaining_delay: f32,
+}
+
+struct DelayedPositionalAudioEntry {
+    key: AudioKey,
+    volume: f32,
+    remaining_delay: f32,
+    position: (usize, usize, usize),
 }
 
 macro_rules! define_audio {
@@ -91,6 +103,7 @@ pub struct Audio {
     pub sounds: HashMap<AudioKey, Sound>,
     pub collections: HashMap<AudioCollection, Vec<AudioKey>>,
     delayed_queue: Vec<DelayedAudioEntry>,
+    delayed_positional_queue: Vec<DelayedPositionalAudioEntry>,
 }
 
 impl Audio {
@@ -124,6 +137,7 @@ impl Audio {
             sounds,
             collections,
             delayed_queue: Vec::new(),
+            delayed_positional_queue: Vec::new(),
         }
     }
 
@@ -165,13 +179,66 @@ impl Audio {
             remaining_delay: delay,
         });
     }
+
+    /// Play audio at a world position with distance-based volume attenuation
+    /// Sounds from different z-levels are completely muted
+    pub fn play_at_position(
+        &self,
+        key: AudioKey,
+        base_volume: f32,
+        sound_pos: (usize, usize, usize),
+        player_pos: &PlayerPosition,
+    ) {
+        // First check z-level: if different, don't play at all
+        if sound_pos.2 != player_pos.z.floor() as usize {
+            return;
+        }
+
+        // Calculate Manhattan distance (2D only since z-levels match)
+        let distance = ((sound_pos.0 as i32 - player_pos.x as i32).abs()
+            + (sound_pos.1 as i32 - player_pos.y as i32).abs()) as usize;
+
+        // Apply distance-based volume attenuation
+        let attenuated_volume = if distance >= MAX_AUDIO_DISTANCE {
+            0.0 // Completely silent beyond max distance
+        } else {
+            base_volume * (1.0 - (distance as f32 / MAX_AUDIO_DISTANCE as f32))
+        };
+
+        // Only play if volume is above minimum threshold
+        if attenuated_volume >= MIN_AUDIBLE_VOLUME {
+            self.play(key, attenuated_volume);
+        }
+    }
+
+    /// Play audio at a world position with delay and distance-based volume attenuation
+    pub fn play_at_position_delayed(
+        &mut self,
+        key: AudioKey,
+        base_volume: f32,
+        sound_pos: (usize, usize, usize),
+        delay: f32,
+    ) {
+        self.delayed_positional_queue
+            .push(DelayedPositionalAudioEntry {
+                key,
+                volume: base_volume,
+                remaining_delay: delay,
+                position: sound_pos,
+            });
+    }
 }
 
-pub fn process_delayed_audio(mut audio: ResMut<Audio>, time: Res<Time>) {
+pub fn process_delayed_audio(
+    mut audio: ResMut<Audio>,
+    time: Res<Time>,
+    player_pos: Option<Res<PlayerPosition>>,
+) {
     let dt = time.dt;
     let mut to_play = Vec::new();
+    let mut to_play_positional = Vec::new();
 
-    // Process queue, decrement delays
+    // Process regular delayed queue
     audio.delayed_queue.retain_mut(|entry| {
         entry.remaining_delay -= dt;
         if entry.remaining_delay <= 0.0 {
@@ -182,8 +249,26 @@ pub fn process_delayed_audio(mut audio: ResMut<Audio>, time: Res<Time>) {
         }
     });
 
-    // Play sounds that are ready
+    // Process positional delayed queue
+    audio.delayed_positional_queue.retain_mut(|entry| {
+        entry.remaining_delay -= dt;
+        if entry.remaining_delay <= 0.0 {
+            to_play_positional.push((entry.key, entry.volume, entry.position));
+            false // Remove from queue
+        } else {
+            true // Keep in queue
+        }
+    });
+
+    // Play regular sounds that are ready
     for (key, volume) in to_play {
         audio.play(key, volume);
+    }
+
+    // Play positional sounds that are ready
+    if let Some(player_pos) = player_pos {
+        for (key, volume, position) in to_play_positional {
+            audio.play_at_position(key, volume, position, &player_pos);
+        }
     }
 }

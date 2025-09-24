@@ -14,5 +14,4 @@ pub fn spawn_gold_nugget(entity: Entity, world: &mut World, config: Prefab) -> P
         .with_item(0.5)
         .with_needs_stable_id()
         .with_stackable(StackableType::GoldNugget, 1)
-        
 }

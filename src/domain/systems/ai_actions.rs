@@ -9,7 +9,12 @@ use crate::{
         astar::{AStarSettings, astar},
         distance::Distance,
     },
-    domain::{AiContext, AiController, AttackAction, Energy, EnergyActionType, MoveAction, MovementCapabilities, StairDown, StairUp, Zone, get_base_energy_cost},
+    domain::{
+        AiContext, AiController, AttackAction, DefaultRangedAttack, Energy, EnergyActionType,
+        EquipmentSlot, EquipmentSlots, MoveAction, MovementCapabilities, StairDown, StairUp,
+        Weapon, WeaponType, Zone, get_base_energy_cost,
+    },
+    engine::{StableId, StableIdRegistry},
     rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_local_to_world, zone_xyz},
 };
 use macroquad::rand;
@@ -135,14 +140,132 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
         return false;
     }
 
+    let Some(stable_id) = world.get::<StableId>(entity) else {
+        return false;
+    };
+
     let attack = AttackAction {
-        attacker_entity: entity,
-        target_pos: nearest.pos,
+        attacker_stable_id: stable_id.0,
+        weapon_stable_id: None, // Use equipped weapon or default attack
+        target_stable_id: nearest.stable_id,
         is_bump_attack: true,
     };
 
     attack.apply(world);
     true
+}
+
+pub fn ai_try_ranged_attack(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
+    // Check if AI has a target
+    let Some(target) = context.target else {
+        return false;
+    };
+
+    // Skip ranged attack if target is adjacent (prefer melee at close range)
+    if target.distance <= 1.5 {
+        return false;
+    }
+
+    // Get AI's stable ID
+    let Some(stable_id) = world.get::<StableId>(entity) else {
+        return false;
+    };
+
+    // Check if AI has a ranged weapon equipped
+    if let Some(equipment) = world.get::<EquipmentSlots>(entity) {
+        if let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand) {
+            let registry = world.resource::<StableIdRegistry>();
+            if let Some(weapon_entity) = registry.get_entity(weapon_id) {
+                if let Some(weapon) = world.get::<Weapon>(weapon_entity) {
+                    // Only proceed if weapon is ranged
+                    if weapon.weapon_type == WeaponType::Ranged {
+                        // Check if weapon has ammo
+                        if let Some(ammo) = weapon.current_ammo {
+                            if ammo == 0 {
+                                return false; // No ammo
+                            }
+                        }
+
+                        // Check if target is within range
+                        if let Some(range) = weapon.range {
+                            let Some(ai_pos) = world.get::<Position>(entity) else {
+                                return false;
+                            };
+
+                            let ai_world_pos = ai_pos.world();
+                            let distance = Distance::diagonal(
+                                [
+                                    ai_world_pos.0 as i32,
+                                    ai_world_pos.1 as i32,
+                                    ai_world_pos.2 as i32,
+                                ],
+                                [
+                                    target.pos.0 as i32,
+                                    target.pos.1 as i32,
+                                    target.pos.2 as i32,
+                                ],
+                            ) as usize;
+
+                            if distance <= range {
+                                // Perform ranged attack with equipped weapon
+                                let attack = AttackAction {
+                                    attacker_stable_id: stable_id.0,
+                                    weapon_stable_id: Some(weapon_id),
+                                    target_stable_id: target.stable_id,
+                                    is_bump_attack: false,
+                                };
+
+                                attack.apply(world);
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Check if AI has a default ranged attack
+    if let Some(default_ranged) = world.get::<DefaultRangedAttack>(entity) {
+        // Check if default ranged attack has ammo
+        if !default_ranged.has_ammo() {
+            return false; // No ammo
+        }
+
+        // Check if target is within range
+        let Some(ai_pos) = world.get::<Position>(entity) else {
+            return false;
+        };
+
+        let ai_world_pos = ai_pos.world();
+        let distance = Distance::diagonal(
+            [
+                ai_world_pos.0 as i32,
+                ai_world_pos.1 as i32,
+                ai_world_pos.2 as i32,
+            ],
+            [
+                target.pos.0 as i32,
+                target.pos.1 as i32,
+                target.pos.2 as i32,
+            ],
+        ) as usize;
+
+        if distance <= default_ranged.range {
+            // Perform ranged attack with default ranged attack
+            let attack = AttackAction {
+                attacker_stable_id: stable_id.0,
+                weapon_stable_id: None, // No specific weapon, use default
+                target_stable_id: target.stable_id,
+                is_bump_attack: false,
+            };
+
+            attack.apply(world);
+            return true;
+        }
+    }
+
+    false
 }
 
 pub fn ai_try_select_target(_world: &mut World, _entity: Entity, context: &mut AiContext) -> bool {
@@ -265,7 +388,7 @@ pub fn ai_try_move_toward(
             Distance::diagonal([start_x, start_y, start_z], [to_x, to_y, target_z])
         },
         neighbors: |(x, y)| deltas.iter().map(|(dx, dy)| (x + dx, y + dy)).collect(),
-        max_depth: 500,
+        max_depth: 1000,
         max_cost: Some(100.),
     });
 

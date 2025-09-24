@@ -22,5 +22,4 @@ pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) -> Prefa
         .with_vision_blocker()
         .with_light_blocker()
         .with_loot_drop(LootDrop::new(LootTableId::BoulderLoot, 0.25))
-        
 }

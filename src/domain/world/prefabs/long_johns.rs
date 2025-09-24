@@ -32,5 +32,4 @@ pub fn spawn_long_johns(entity: Entity, world: &mut World, config: Prefab) -> Pr
         ))
         .with_stat_modifiers(stat_modifiers)
         .with_needs_stable_id()
-        
 }

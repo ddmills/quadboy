@@ -13,5 +13,4 @@ pub fn spawn_stair_up(entity: Entity, world: &mut World, config: Prefab) -> Pref
             "Worn smooth by desperate feet. The ascent always feels longer than the descent.",
         )
         .with_stair_up()
-        
 }
