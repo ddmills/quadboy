@@ -17,7 +17,7 @@ use crate::{
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableId, StableIdRegistry},
     rendering::{
         Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx, world_to_zone_local,
-        zone_local_to_world,
+        zone_local_to_world, setup_zone_outline_state, spawn_zone_outline,
     },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
@@ -48,7 +48,7 @@ impl Plugin for ExploreStatePlugin {
         GameStatePlugin::new(GameState::Explore)
             .on_enter(
                 app,
-                (setup_callbacks, on_enter_explore, center_camera_on_player).chain(),
+                (setup_callbacks, setup_zone_outline_state, on_enter_explore, center_camera_on_player).chain(),
             )
             .on_update(
                 app,
@@ -75,6 +75,7 @@ impl Plugin for ExploreStatePlugin {
                 ),
             )
             .on_update(app, debug_collider_flags)
+            .on_update(app, spawn_zone_outline)
             .on_update(app, player_input)
             .on_update(app, (handle_item_pickup, game_loop))
             .on_update(

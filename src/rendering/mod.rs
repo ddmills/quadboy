@@ -15,6 +15,7 @@ mod renderer;
 mod text;
 mod text_wrap;
 mod visibility;
+mod zone_outline;
 
 pub use ambient_transition::*;
 pub use animated_glyph::*;
@@ -32,3 +33,4 @@ pub use renderer::*;
 pub use text::*;
 pub use text_wrap::*;
 pub use visibility::*;
+pub use zone_outline::*;
