@@ -24,7 +24,7 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .unwrap_or(1);
 
     let hp_mod = StatModifier {
-        value: 100,
+        value: 80,
         source: ModifierSource::Intrinsic {
             name: "GodMode".to_owned(),
         },

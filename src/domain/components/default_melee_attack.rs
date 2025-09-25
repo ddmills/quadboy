@@ -3,7 +3,7 @@ use crate::{
         destructible::MaterialType, hit_effect::HitEffect, weapon::Weapon,
         weapon_family::WeaponFamily, weapon_type::WeaponType,
     },
-    engine::SerializableComponent,
+    engine::{AudioKey, SerializableComponent},
 };
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -27,6 +27,7 @@ impl DefaultMeleeAttack {
             weapon_type: WeaponType::Melee,
             hit_effects: Vec::new(),
             particle_effect_id: None,
+            melee_audio: None,
             range: None,
             shoot_audio: None,
             clip_size: None,
@@ -54,6 +55,7 @@ impl DefaultMeleeAttack {
             weapon_type: WeaponType::Melee,
             hit_effects: hit_effects.clone(),
             particle_effect_id: None,
+            melee_audio: None,
             range: None,
             shoot_audio: None,
             clip_size: None,
@@ -68,11 +70,13 @@ impl DefaultMeleeAttack {
     }
 
     pub fn fists() -> Self {
-        Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed)
+        let mut attack = Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed);
+        attack.weapon.melee_audio = Some(AudioKey::Punch1);
+        attack
     }
 
     pub fn fists_with_knockback() -> Self {
-        Self::with_hit_effects(
+        let mut attack = Self::with_hit_effects(
             2,
             vec![MaterialType::Flesh],
             "Fists",
@@ -81,7 +85,9 @@ impl DefaultMeleeAttack {
                 strength: 0.5,
                 chance: 1.0,
             }], // Always knockback at half strength
-        )
+        );
+        attack.weapon.melee_audio = Some(AudioKey::Punch1);
+        attack
     }
 
     pub fn claw_swipe() -> Self {
@@ -107,7 +113,7 @@ impl DefaultMeleeAttack {
         )
     }
     pub fn fire_fists() -> Self {
-        Self::with_hit_effects(
+        let mut attack = Self::with_hit_effects(
             3,
             vec![MaterialType::Flesh],
             "Fire Fists",
@@ -118,7 +124,9 @@ impl DefaultMeleeAttack {
                 chance: 1.0, // Always apply poison
                 can_stack: false,
             }],
-        )
+        );
+        attack.weapon.melee_audio = Some(AudioKey::Punch1);
+        attack
     }
 
     pub fn bite() -> Self {

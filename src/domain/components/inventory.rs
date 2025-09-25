@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::engine::SerializableComponent;
+use crate::engine::{AudioKey, SerializableComponent};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct Item {
@@ -19,6 +19,7 @@ pub struct Inventory {
     pub capacity: f32,
     pub item_ids: Vec<u64>,
     pub current_weight: f32,
+    pub open_audio: Option<AudioKey>,
 }
 
 impl Inventory {
@@ -27,6 +28,16 @@ impl Inventory {
             capacity,
             item_ids: Vec::new(),
             current_weight: 0.0,
+            open_audio: None,
+        }
+    }
+
+    pub fn new_with_audio(capacity: f32, open_audio: AudioKey) -> Self {
+        Self {
+            capacity,
+            item_ids: Vec::new(),
+            current_weight: 0.0,
+            open_audio: Some(open_audio),
         }
     }
 

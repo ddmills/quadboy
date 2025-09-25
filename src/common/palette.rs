@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[repr(u32)]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum Palette {
     White = 0xFFEAC5,
     Black = 0x140E08,
@@ -69,7 +69,7 @@ pub const START_SEQ: char = '{';
 pub const END_SEQ: char = '}';
 pub const FLAG_SEQ: char = '|';
 
-fn get_seq_color(ch: &str) -> Palette {
+fn char_to_palette(ch: &str) -> Palette {
     match ch {
         "W" => Palette::White,
         "w" => Palette::White,
@@ -92,6 +92,31 @@ fn get_seq_color(ch: &str) -> Palette {
         "X" => Palette::Brown,
         "x" => Palette::DarkBrown,
         _ => Palette::White,
+    }
+}
+
+pub fn palette_to_char(palette: Palette) -> char {
+    match palette {
+        Palette::White => 'W',
+        Palette::Red => 'R',
+        Palette::DarkRed => 'r',
+        Palette::Gray => 'U',
+        Palette::DarkGray => 'u',
+        Palette::Green => 'G',
+        Palette::DarkGreen => 'g',
+        Palette::Blue => 'B',
+        Palette::DarkBlue => 'b',
+        Palette::Yellow => 'Y',
+        Palette::DarkYellow => 'y',
+        Palette::Cyan => 'C',
+        Palette::DarkCyan => 'c',
+        Palette::Orange => 'O',
+        Palette::DarkOrange => 'o',
+        Palette::Purple => 'P',
+        Palette::DarkPurple => 'p',
+        Palette::Brown => 'X',
+        Palette::DarkBrown => 'x',
+        _ => 'W',
     }
 }
 
@@ -136,7 +161,7 @@ impl PaletteSequence {
             seq_colors = split[0].to_string();
         }
 
-        let mut colors = seq_colors.split('-').map(get_seq_color).collect::<Vec<_>>();
+        let mut colors = seq_colors.split('-').map(char_to_palette).collect::<Vec<_>>();
 
         if colors.is_empty() {
             colors = vec![Palette::White];

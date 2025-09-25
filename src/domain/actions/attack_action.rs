@@ -301,6 +301,17 @@ impl AttackAction {
                 0
             };
 
+            // Play melee audio if the weapon has one and the attack hit
+            if hit && let Some(melee_audio) = weapon.melee_audio {
+                if let Some(mut audio) = world.get_resource_mut::<Audio>() {
+                    audio
+                        .clip(melee_audio)
+                        .volume(0.2)
+                        .position(attacker_pos)
+                        .play();
+                }
+            }
+
             self.apply_damage_to_target(
                 world,
                 attacker_entity,

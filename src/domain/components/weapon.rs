@@ -18,6 +18,9 @@ pub struct Weapon {
     pub hit_effects: Vec<HitEffect>,
     pub particle_effect_id: Option<ParticleEffectId>,
 
+    // Optional melee-specific fields
+    pub melee_audio: Option<AudioKey>,
+
     // Optional ranged-specific fields
     pub range: Option<usize>,
     pub shoot_audio: Option<AudioKey>,
@@ -42,6 +45,7 @@ impl Weapon {
             weapon_type: WeaponType::Melee,
             hit_effects: Vec::new(),
             particle_effect_id: None,
+            melee_audio: None,
             range: None,
             shoot_audio: None,
             clip_size: None,
@@ -72,6 +76,7 @@ impl Weapon {
             weapon_type: WeaponType::Ranged,
             hit_effects: Vec::new(),
             particle_effect_id: None, // Will be set by weapon-specific constructors
+            melee_audio: None,
             range: Some(range),
             shoot_audio: Some(shoot_audio),
             clip_size,

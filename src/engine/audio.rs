@@ -131,6 +131,7 @@ define_audio! {
     Punch1 => "punch_1.wav",
     Explosion1 => "explosion_1.wav",
     IgniteMatch => "ignite_match.wav",
+    ChestOpen1 => "chest_open_1.wav",
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

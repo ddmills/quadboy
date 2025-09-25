@@ -4,6 +4,8 @@ use macroquad::prelude::trace;
 use crate::{
     common::Rand,
     domain::{Inventory, LootTableRegistry, Prefab, Prefabs, UnopenedContainer},
+    engine::Audio,
+    rendering::Position,
     states::{CurrentGameState, GameState},
 };
 
@@ -23,6 +25,22 @@ impl Command for OpenContainerAction {
             world
                 .entity_mut(self.container_entity)
                 .remove::<UnopenedContainer>();
+        }
+
+        // Play open audio if the container has one
+        if let Some(inventory) = world.get::<Inventory>(self.container_entity) {
+            if let Some(open_audio) = inventory.open_audio {
+                if let Some(container_pos) = world.get::<Position>(self.container_entity) {
+                    let world_pos = container_pos.world();
+                    if let Some(mut audio) = world.get_resource_mut::<Audio>() {
+                        audio
+                            .clip(open_audio)
+                            .volume(0.3)
+                            .position(world_pos)
+                            .play();
+                    }
+                }
+            }
         }
 
         world.insert_resource(crate::states::ContainerContext {

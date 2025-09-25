@@ -171,6 +171,7 @@ async fn main() {
     reg.register::<Fuse>();
     reg.register::<LightSource>();
     reg.register::<FactionMember>();
+    reg.register::<ui::Bar>();
 
     app.add_plugin(ExitAppPlugin)
         .add_plugin(MainMenuStatePlugin)

@@ -53,6 +53,11 @@ impl Text {
         self
     }
 
+    pub fn fg2<T: Into<u32>>(mut self, fg2: T) -> Self {
+        self.fg2 = Some(fg2.into());
+        self
+    }
+
     pub fn outline<T: Into<u32>>(mut self, outline: T) -> Self {
         self.outline = Some(outline.into());
         self

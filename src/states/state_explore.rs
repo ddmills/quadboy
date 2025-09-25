@@ -21,10 +21,10 @@ use crate::{
     },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
-        Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
+        Bar, Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
         debug_collider_flags, display_entity_names_at_mouse, render_ai_debug_indicators,
         render_cursor, render_lighting_debug, render_tick_display, spawn_ai_debug_dialog,
-        spawn_debug_ui_entities, spawn_examine_dialog, update_xp_progress_bars,
+        spawn_debug_ui_entities, spawn_examine_dialog, update_bars, update_xp_progress_bars,
     },
 };
 
@@ -65,6 +65,7 @@ impl Plugin for ExploreStatePlugin {
                     display_entity_names_at_mouse,
                     render_ai_debug_indicators,
                     debug_player_map_overlay,
+                    update_bars,
                     update_xp_progress_bars,
                     update_player_hp_bar,
                     update_player_armor_bar,
@@ -168,31 +169,34 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn XP progress bar
     cmds.spawn((
-        Text::new("").layer(Layer::Ui),
-        Position::new_f32(15., 0.5, 0.),
+        Text::new("").fg2(Palette::DarkGray).layer(Layer::Ui),
+        Position::new_f32(1., 3., 0.),
+        Bar::new(0, 100, 12, Palette::Yellow, Palette::DarkGray),
         XPProgressBar::new(30),
         CleanupStateExplore,
     ));
 
     // Spawn player HP display
     cmds.spawn((
-        Text::new("HP").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(1., 3., 0.),
+        Text::new("").fg1(Palette::White).fg2(Palette::DarkGray).layer(Layer::Ui),
+        Position::new_f32(1., 3.5, 0.),
+        Bar::new(1, 1, 12, Palette::Red, Palette::DarkGray),
         PlayerHPBar,
         CleanupStateExplore,
     ));
 
     // Spawn player armor display
     cmds.spawn((
-        Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(1., 3.5, 0.),
+        Text::new("").fg1(Palette::White).fg2(Palette::DarkGray).layer(Layer::Ui),
+        Position::new_f32(1., 4., 0.),
+        Bar::new(0, 1, 12, Palette::Cyan, Palette::DarkGray),
         PlayerArmorBar,
         CleanupStateExplore,
     ));
 
     // Spawn player ammo display
     cmds.spawn((
-        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Text::new("").fg1(Palette::White).fg2(Palette::DarkGray).layer(Layer::Ui),
         Position::new_f32(1., 4., 0.),
         PlayerAmmoBar,
         CleanupStateExplore,
@@ -220,32 +224,32 @@ fn update_player_hp_bar(
         (&Health, &Level, &Stats),
         (With<Player>, Or<(Changed<Health>, Changed<Stats>)>),
     >,
-    mut q_hp_display: Query<&mut Text, With<PlayerHPBar>>,
+    mut q_hp_display: Query<&mut Bar, With<PlayerHPBar>>,
 ) {
     let Ok((health, level, stats)) = q_player.single() else {
         return;
     };
-    let Ok(mut hp_text) = q_hp_display.single_mut() else {
+    let Ok(mut hp_bar) = q_hp_display.single_mut() else {
         return;
     };
 
     let max_hp = Health::get_max_hp(level, stats);
-    hp_text.value = format!("HP: {}/{}", health.current, max_hp);
+    hp_bar.update_values(health.current as usize, max_hp as usize);
 }
 
 fn update_player_armor_bar(
     q_player: Query<(&Health, &Stats), (With<Player>, Or<(Changed<Health>, Changed<Stats>)>)>,
-    mut q_armor_display: Query<&mut Text, With<PlayerArmorBar>>,
+    mut q_armor_display: Query<&mut Bar, With<PlayerArmorBar>>,
 ) {
     let Ok((health, stats)) = q_player.single() else {
         return;
     };
-    let Ok(mut armor_text) = q_armor_display.single_mut() else {
+    let Ok(mut armor_bar) = q_armor_display.single_mut() else {
         return;
     };
 
     let (current_armor, max_armor) = health.get_current_max_armor(stats);
-    armor_text.value = format!("Armor: {}/{}", current_armor, max_armor);
+    armor_bar.update_values(current_armor as usize, max_armor as usize);
 }
 
 fn update_player_ammo_bar(

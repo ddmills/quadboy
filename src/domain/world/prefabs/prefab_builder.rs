@@ -266,6 +266,14 @@ impl PrefabBuilder {
         self
     }
 
+    pub fn with_inventory_audio(mut self, capacity: f32, audio_key: AudioKey) -> Self {
+        self.components
+            .push(PrefabComponent::Inventory(Inventory::new_with_audio(
+                capacity, audio_key,
+            )));
+        self
+    }
+
     pub fn with_inventory_accessible(mut self) -> Self {
         self.components
             .push(PrefabComponent::InventoryAccessible(InventoryAccessible));

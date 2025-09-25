@@ -53,7 +53,7 @@ pub fn draw_ui_panels(mut cmds: Commands, mut ui: ResMut<UiLayout>) {
 
     ui.left_panel.glyphs = vec![];
 
-    let color = Palette::Clear;
+    let color = Palette::DarkGray;
 
     for x in 0..ui.left_panel.width {
         for y in 0..ui.left_panel.height {
