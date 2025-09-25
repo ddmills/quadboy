@@ -29,7 +29,7 @@ pub fn handle_item_pickup(
         if player_world_pos == item_world_pos {
             cmds.queue(PickupItemAction {
                 entity: player_entity,
-                item_stable_id: item_stable_id.0,
+                item_stable_id: *item_stable_id,
                 spend_energy: true,
             });
             return;

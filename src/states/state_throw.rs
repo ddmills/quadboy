@@ -8,7 +8,7 @@ use crate::{
         Attributes, BitmaskGlyph, BitmaskStyle, DynamicEntity, IgnoreLighting, Player,
         PlayerPosition, RefreshBitmask, ThrowItemAction, Throwable, Zone, game_loop,
     },
-    engine::{App, Mouse, Plugin, StableIdRegistry},
+    engine::{App, Mouse, Plugin, StableId, StableIdRegistry},
     rendering::{
         Glyph, GlyphTextureId, Layer, Position, Text, Visibility, world_to_zone_idx,
         world_to_zone_local,
@@ -69,7 +69,7 @@ fn setup_throw_state(
         return;
     };
 
-    let Some(item_entity) = registry.get_entity(context.item_id) else {
+    let Some(item_entity) = registry.get_entity(StableId(context.item_id)) else {
         eprintln!("Item entity not found - returning to inventory");
         game_state.next = GameState::Inventory;
         return;
@@ -283,7 +283,7 @@ fn handle_throw_input(
                 // Execute throw action
                 cmds.queue(ThrowItemAction {
                     thrower_entity: context.player_entity,
-                    item_stable_id: context.item_id,
+                    item_stable_id: StableId(context.item_id),
                     target_position: mouse_world,
                 });
 

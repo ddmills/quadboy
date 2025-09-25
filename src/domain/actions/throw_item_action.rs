@@ -7,13 +7,13 @@ use crate::{
         PrefabId, Prefabs, StackCount, Stackable, Throwable, UnequipItemAction, Zone,
         get_base_energy_cost, inventory::InventoryChangedEvent,
     },
-    engine::StableIdRegistry,
+    engine::{StableId, StableIdRegistry},
     rendering::{Position, spawn_throw_trail_in_world, world_to_zone_idx, world_to_zone_local},
 };
 
 pub struct ThrowItemAction {
     pub thrower_entity: Entity,
-    pub item_stable_id: u64,
+    pub item_stable_id: StableId,
     pub target_position: (usize, usize, usize),
 }
 
@@ -27,7 +27,7 @@ impl Command for ThrowItemAction {
         let Some(item_entity) = id_registry.get_entity(self.item_stable_id) else {
             eprintln!(
                 "ThrowItemAction: Item entity not found for id {}",
-                self.item_stable_id
+                self.item_stable_id.0
             );
             return;
         };
@@ -35,7 +35,7 @@ impl Command for ThrowItemAction {
         // Unequip item if it's equipped
         let mut q_equipped = world.query::<&Equipped>();
         if q_equipped.get(world, item_entity).is_ok() {
-            UnequipItemAction::new(self.item_stable_id).apply(world);
+            UnequipItemAction::new(self.item_stable_id.0).apply(world);
         }
 
         // Get item weight before processing
@@ -91,10 +91,10 @@ impl Command for ThrowItemAction {
                 return;
             };
 
-            if !inventory.remove_item(self.item_stable_id, item_weight) {
+            if !inventory.remove_item(self.item_stable_id.0, item_weight) {
                 eprintln!(
                     "ThrowItemAction: Item {} not found in inventory",
-                    self.item_stable_id
+                    self.item_stable_id.0
                 );
                 return;
             }

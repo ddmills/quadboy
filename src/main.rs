@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 use common::Palette;
-use engine::{KeyInput, Time, process_delayed_audio, render_fps, update_key_input, update_time};
+use engine::{KeyInput, Time, process_audio_queue, render_fps, update_key_input, update_time};
 
 #[derive(Resource, Default)]
 pub struct DebugMode {
@@ -15,7 +15,7 @@ use rendering::{
     ParticleGrid, Position, RenderTargets, ScreenSize, Text, cleanup_particle_glyphs, render_all,
     render_glyphs, render_particle_fragments, render_text, update_animated_glyphs,
     update_crt_uniforms, update_particle_physics, update_particle_spawners, update_particle_trails,
-    update_particles, update_screen_size,
+    update_particles, update_persistent_spawners, update_screen_size,
 };
 use ui::UiLayout;
 
@@ -243,7 +243,7 @@ async fn main() {
                 update_time,
                 update_key_input,
                 update_mouse_input,
-                process_delayed_audio,
+                process_audio_queue,
             ),
         )
         .add_systems(
@@ -301,6 +301,7 @@ async fn main() {
                 update_animated_glyphs,
                 update_particle_physics,
                 update_particle_spawners,
+                update_persistent_spawners,
                 update_particle_trails,
                 update_particles,
                 render_particle_fragments,

@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{Energy, EquipmentSlot, EquipmentSlots, StatType, Stats, Weapon, WeaponType},
-    engine::{Audio, StableIdRegistry},
+    engine::{Audio, StableId, StableIdRegistry},
 };
 
 pub struct ReloadAction {
@@ -25,7 +25,7 @@ impl Command for ReloadAction {
             return;
         };
 
-        let Some(weapon_entity) = registry.get_entity(weapon_id) else {
+        let Some(weapon_entity) = registry.get_entity(StableId(weapon_id)) else {
             return;
         };
 
@@ -84,7 +84,11 @@ impl Command for ReloadAction {
             if let Some(reload_complete_audio_key) = reload_complete_audio
                 && new_ammo >= clip_size
             {
-                audio.play_delayed(reload_complete_audio_key, 0.5, 0.4);
+                audio
+                    .clip(reload_complete_audio_key)
+                    .volume(0.5)
+                    .delay(0.4)
+                    .play();
             }
         }
 

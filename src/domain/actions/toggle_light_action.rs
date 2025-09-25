@@ -6,7 +6,7 @@ use crate::{
         Energy, EnergyActionType, ExplosiveProperties, Fuse, HitBlink, LightSource, Lightable,
         PlayerPosition, get_base_energy_cost, split_item_from_stack,
     },
-    engine::{Audio, Clock, StableIdRegistry},
+    engine::{Audio, Clock, StableId, StableIdRegistry},
     rendering::Position,
 };
 
@@ -39,7 +39,7 @@ impl Command for ToggleLightAction {
             let Some(registry) = world.get_resource::<StableIdRegistry>() else {
                 return;
             };
-            let Some(entity) = registry.get_entity(self.item_id) else {
+            let Some(entity) = registry.get_entity(StableId(self.item_id)) else {
                 return;
             };
             entity

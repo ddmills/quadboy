@@ -12,7 +12,7 @@ use crate::{
         EquipmentSlots, Equipped, InActiveZone, LightBlocker, LightSource, Overworld,
         PlayerPosition,
     },
-    engine::{Clock, StableIdRegistry},
+    engine::{Clock, StableId, StableIdRegistry},
     rendering::{LightingData, Position, world_to_zone_local},
 };
 
@@ -114,7 +114,7 @@ pub fn update_lighting_system(
             }
 
             for slot_id in equipment_slots.slots.values().filter_map(|&id| id) {
-                if let Some(item_entity) = registry.get_entity(slot_id)
+                if let Some(item_entity) = registry.get_entity(StableId(slot_id))
                     && let Ok(light) = q_equipped_lights.get(item_entity)
                     && light.is_enabled
                 {

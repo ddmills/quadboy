@@ -702,14 +702,10 @@ pub fn spawn_level_up_celebration(world: &mut World, world_pos: (usize, usize, u
 
     // Rising golden motes
     ParticleSpawner::new(pos)
-        .glyph_animation(GlyphAnimation::RandomPool {
-            glyphs: vec!['•', '·', '⋅'],
-            change_rate: Some(8.0),
-            last_change: 0.0,
-        })
+        .glyph_animation(GlyphAnimation::Static('↑'))
         .color_curve(ColorCurve::Constant(0xFFD700))
         .alpha_curve(AlphaCurve::Linear {
-            values: vec![0.8, 0.0],
+            values: vec![0.0, 0.8],
         })
         .velocity_curve(VelocityCurve::Constant(Vec2::new(0.0, -3.0)))
         .spawn_area(SpawnArea::Circle {

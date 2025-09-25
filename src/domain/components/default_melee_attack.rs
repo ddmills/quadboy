@@ -11,17 +11,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct DefaultMeleeAttack {
     pub weapon: Weapon,
-    // Keep old fields for backward compatibility during transition
-    #[deprecated = "Use weapon.damage_dice instead"]
-    pub damage: i32,
-    #[deprecated = "Use weapon.can_damage instead"]
-    pub can_damage: Vec<MaterialType>,
-    #[deprecated = "Use weapon name instead"]
-    pub attack_name: String,
-    #[deprecated = "Use weapon.weapon_family instead"]
-    pub weapon_family: WeaponFamily,
-    #[deprecated = "Use weapon.hit_effects instead"]
-    pub hit_effects: Vec<HitEffect>,
 }
 
 impl DefaultMeleeAttack {
@@ -48,14 +37,7 @@ impl DefaultMeleeAttack {
             no_ammo_audio: None,
         };
 
-        Self {
-            weapon,
-            damage,
-            can_damage,
-            attack_name: attack_name.to_string(),
-            weapon_family,
-            hit_effects: Vec::new(),
-        }
+        Self { weapon }
     }
 
     pub fn with_hit_effects(
@@ -82,14 +64,7 @@ impl DefaultMeleeAttack {
             no_ammo_audio: None,
         };
 
-        Self {
-            weapon,
-            damage,
-            can_damage: can_damage.clone(),
-            attack_name: attack_name.to_string(),
-            weapon_family,
-            hit_effects,
-        }
+        Self { weapon }
     }
 
     pub fn fists() -> Self {

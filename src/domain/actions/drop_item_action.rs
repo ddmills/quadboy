@@ -7,13 +7,13 @@ use crate::{
         StaticEntity, StaticEntitySpawnedEvent, UnequipItemAction, get_base_energy_cost,
         inventory::InventoryChangedEvent,
     },
-    engine::StableIdRegistry,
+    engine::{StableId, StableIdRegistry},
     rendering::Position,
 };
 
 pub struct DropItemAction {
     pub entity: Entity,
-    pub item_stable_id: u64,
+    pub item_stable_id: StableId,
     pub drop_position: (usize, usize, usize),
 }
 
@@ -27,7 +27,7 @@ impl Command for DropItemAction {
         let Some(item_entity) = id_registry.get_entity(self.item_stable_id) else {
             eprintln!(
                 "DropItemAction: Item entity not found for id {}",
-                self.item_stable_id
+                self.item_stable_id.0
             );
             return;
         };
@@ -35,8 +35,8 @@ impl Command for DropItemAction {
         let mut q_equipped = world.query::<&Equipped>();
 
         if q_equipped.get(world, item_entity).is_ok() {
-            trace!("eq? {}", self.item_stable_id);
-            UnequipItemAction::new(self.item_stable_id).apply(world);
+            trace!("eq? {}", self.item_stable_id.0);
+            UnequipItemAction::new(self.item_stable_id.0).apply(world);
         }
 
         // Get item weight before removing from inventory
@@ -51,10 +51,10 @@ impl Command for DropItemAction {
         };
 
         // Use the inventory's remove_item method to properly handle weight tracking
-        if !inventory.remove_item(self.item_stable_id, item_weight) {
+        if !inventory.remove_item(self.item_stable_id.0, item_weight) {
             eprintln!(
                 "DropItemAction: Item {} not found in inventory",
-                self.item_stable_id
+                self.item_stable_id.0
             );
             return;
         };

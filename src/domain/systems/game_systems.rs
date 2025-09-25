@@ -12,7 +12,7 @@ use crate::{
         systems::{
             armor_regen_system::armor_regen_system,
             cleanup_system::on_entity_destroyed_cleanup,
-            condition_system::process_conditions,
+            condition_system::{process_conditions, spawn_condition_particles},
             death_check_system::death_check_system,
             explosion_system::explosion_system,
             faction_map::update_faction_maps,
@@ -44,6 +44,7 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(equipment_stat_modifier_system),
         world.register_system(recalculate_stats_system),
         world.register_system(process_conditions),
+        world.register_system(spawn_condition_particles),
         world.register_system(death_check_system),
         world.register_system(update_health_system),
         world.register_system(armor_regen_system),
@@ -75,7 +76,8 @@ fn exec_game_systems(world: &mut World) {
     };
 
     for id in system_ids {
-        let _ = world.run_system(id);
+        let result = world.run_system(id);
+        let _ = result;
     }
 }
 
@@ -133,7 +135,6 @@ pub fn game_loop(world: &mut World) {
 
         iterations += 1;
         if iterations >= MAX_ITERATIONS {
-            trace!("hit max iter");
             break;
         }
     }

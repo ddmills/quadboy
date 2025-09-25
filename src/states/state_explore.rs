@@ -14,7 +14,7 @@ use crate::{
         render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
         update_target_cycling,
     },
-    engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableIdRegistry},
+    engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableId, StableIdRegistry},
     rendering::{
         Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx, world_to_zone_local,
         zone_local_to_world,
@@ -273,7 +273,7 @@ fn update_player_ammo_bar(
         return;
     };
 
-    let Some(weapon_entity) = registry.get_entity(weapon_id) else {
+    let Some(weapon_entity) = registry.get_entity(StableId(weapon_id)) else {
         ammo_text.value = "".to_string();
         return;
     };

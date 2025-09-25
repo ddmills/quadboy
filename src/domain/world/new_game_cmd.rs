@@ -68,7 +68,7 @@ impl NewGameCommand {
 
         world
             .entity_mut(player_entity)
-            .insert(StableId(player_stable_id))
+            .insert(player_stable_id)
             .remove::<NeedsStableId>();
 
         let mut camera = world.get_resource_mut::<GameCamera>().unwrap();
@@ -118,7 +118,7 @@ impl NewGameCommand {
                 // Get the item's stable ID
                 if let Some(item_stable_id) = world.get::<StableId>(item_entity) {
                     let equip_action = EquipItemAction {
-                        entity_id: player_stable_id,
+                        entity_id: player_stable_id.0,
                         item_id: item_stable_id.0,
                     };
                     equip_action.apply(world);
@@ -135,7 +135,7 @@ impl NewGameCommand {
 
         if let Ok(inventory) = q_inventory.get(world, player_entity) {
             for item_id in inventory.item_ids.iter() {
-                if let Some(item_entity) = id_registry.get_entity(*item_id) {
+                if let Some(item_entity) = id_registry.get_entity(StableId(*item_id)) {
                     let serialized_item = serialize(item_entity, world);
                     inventory_items.push(serialized_item);
                 }

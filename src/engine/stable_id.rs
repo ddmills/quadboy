@@ -42,18 +42,18 @@ impl StableIdRegistry {
         }
     }
 
-    pub fn generate_id(&mut self) -> u64 {
+    pub fn generate_id(&mut self) -> StableId {
         let id = self.next_id;
         self.next_id += 1;
-        id
+        StableId(id)
     }
 
-    pub fn register(&mut self, entity: Entity, id: u64) {
-        self.entity_to_id.insert(entity, id);
-        self.id_to_entity.insert(id, entity);
+    pub fn register(&mut self, entity: Entity, id: StableId) {
+        self.entity_to_id.insert(entity, id.0);
+        self.id_to_entity.insert(id.0, entity);
         // Update next_id if we see a higher ID (from deserialization)
-        if id >= self.next_id {
-            self.next_id = id + 1;
+        if id.0 >= self.next_id {
+            self.next_id = id.0 + 1;
         }
     }
 
@@ -63,11 +63,11 @@ impl StableIdRegistry {
         }
     }
 
-    pub fn get_entity(&self, id: u64) -> Option<Entity> {
-        self.id_to_entity.get(&id).copied()
+    pub fn get_entity(&self, id: StableId) -> Option<Entity> {
+        self.id_to_entity.get(&id.0).copied()
     }
 
-    pub fn get_id(&self, entity: Entity) -> Option<u64> {
-        self.entity_to_id.get(&entity).copied()
+    pub fn get_id(&self, entity: Entity) -> Option<StableId> {
+        self.entity_to_id.get(&entity).copied().map(StableId)
     }
 }

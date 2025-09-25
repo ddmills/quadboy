@@ -2,9 +2,7 @@ use super::{Prefab, PrefabBuilder, SpawnValue};
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, AttributePoints, Attributes, Collider, ColliderFlags,
-        DefaultMeleeAttack, DynamicEntity, Energy, EquipmentSlots, FactionId, FactionMember,
-        Health, Inventory, Level, MovementCapabilities, Player, StatModifiers, Stats, Vision,
+        ApplyVisibilityEffects, AttributePoints, Attributes, Collider, ColliderFlags, DefaultMeleeAttack, DynamicEntity, Energy, EquipmentSlots, FactionId, FactionMember, Health, HitBlink, Inventory, Level, ModifierSource, MovementCapabilities, Player, StatModifier, StatModifiers, StatType, Stats, Vision
     },
     rendering::{GlyphTextureId, Layer},
     states::CleanupStatePlay,
@@ -22,6 +20,14 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         })
         .unwrap_or(2);
 
+    let hp_mod = StatModifier {
+        value: 100,
+        source: ModifierSource::Intrinsic { name: "GodMode".to_owned() },
+    };
+
+    let mut mods = StatModifiers::new();
+    mods.add_modifier(StatType::Fortitude, hp_mod);
+
     PrefabBuilder::new()
         .with_base_components(config.pos)
         .with_dynamic_tracking() // Player can move
@@ -38,7 +44,7 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_level(level)
         .with_attributes(Attributes::new(0, 0, 0, 0))
         .with_stats(Stats::new())
-        .with_stat_modifiers(StatModifiers::new())
+        .with_stat_modifiers(mods)
         .with_default_melee_attack(DefaultMeleeAttack::fists())
         .with_inventory(50.0) // 50.0 capacity
         .with_component(Player)
@@ -54,4 +60,5 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_component(FactionMember::new(FactionId::Player))
         .with_component(AttributePoints::new(1)) // Level 1 = 5 + 1 = 6 points
         .with_component(Health::new_full()) // Will be set to proper max HP by health system
+        .with_component(HitBlink::blinking(Palette::Green.into(), 0.5))
 }

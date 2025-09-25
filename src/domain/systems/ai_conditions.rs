@@ -25,7 +25,7 @@ pub fn try_handle_taunted(world: &mut World, entity: Entity, context: &mut AiCon
         } = &condition.condition_type
         {
             let id_registry = world.resource::<StableIdRegistry>();
-            if let Some(taunt_entity) = id_registry.get_entity(move_toward.0) {
+            if let Some(taunt_entity) = id_registry.get_entity(*move_toward) {
                 if let Some(taunt_position) = world.get::<Position>(taunt_entity) {
                     let taunt_pos = taunt_position.world();
 
@@ -68,7 +68,7 @@ pub fn try_handle_feared(world: &mut World, entity: Entity) -> bool {
         } = &condition.condition_type
         {
             let id_registry = world.resource::<StableIdRegistry>();
-            if let Some(fear_entity) = id_registry.get_entity(flee_from.0) {
+            if let Some(fear_entity) = id_registry.get_entity(*flee_from) {
                 if let Some(fear_position) = world.get::<Position>(fear_entity) {
                     if let Some(current_position) = world.get::<Position>(entity) {
                         let fear_pos = fear_position.world();

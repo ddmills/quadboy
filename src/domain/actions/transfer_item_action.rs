@@ -5,13 +5,13 @@ use crate::{
         Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, StackCount, Stackable,
         StackableType, UnequipItemAction, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
-    engine::StableIdRegistry,
+    engine::{StableId, StableIdRegistry},
 };
 
 pub struct TransferItemAction {
     pub from_entity: Entity,
     pub to_entity: Entity,
-    pub item_stable_id: u64,
+    pub item_stable_id: StableId,
 }
 
 impl Command for TransferItemAction {
@@ -26,7 +26,7 @@ impl Command for TransferItemAction {
             let Some(item_entity) = id_registry.get_entity(self.item_stable_id) else {
                 eprintln!(
                     "TransferItemAction: Item entity not found for id {}",
-                    self.item_stable_id
+                    self.item_stable_id.0
                 );
                 return;
             };
@@ -36,7 +36,7 @@ impl Command for TransferItemAction {
                 .map(|item| item.weight)
                 .unwrap_or(1.0);
 
-            let to_stable_id = id_registry.get_id(self.to_entity).unwrap_or(0);
+            let to_stable_id = id_registry.get_id(self.to_entity).unwrap_or(StableId(0));
             (item_entity, item_weight, to_stable_id)
         };
 
@@ -63,7 +63,7 @@ impl Command for TransferItemAction {
                     else {
                         return;
                     };
-                    from_inventory.remove_item(self.item_stable_id, item_weight);
+                    from_inventory.remove_item(self.item_stable_id.0, item_weight);
                     world.entity_mut(item_entity).despawn();
 
                     // Consume energy
@@ -99,21 +99,21 @@ impl Command for TransferItemAction {
                 return;
             };
 
-            if !from_inventory.contains_id(self.item_stable_id) {
+            if !from_inventory.contains_id(self.item_stable_id.0) {
                 eprintln!(
                     "TransferItemAction: Item {} not found in source inventory",
-                    self.item_stable_id
+                    self.item_stable_id.0
                 );
                 return;
             }
 
-            from_inventory.remove_item(self.item_stable_id, item_weight);
+            from_inventory.remove_item(self.item_stable_id.0, item_weight);
         }
 
         {
             let mut q_equipped = world.query::<&Equipped>();
             if q_equipped.get(world, item_entity).is_ok() {
-                UnequipItemAction::new(self.item_stable_id).apply(world);
+                UnequipItemAction::new(self.item_stable_id.0).apply(world);
             }
 
             let Some(mut to_inventory) = world.get_mut::<Inventory>(self.to_entity) else {
@@ -131,17 +131,17 @@ impl Command for TransferItemAction {
                 );
                 // Re-add to source inventory since transfer failed
                 if let Some(mut from_inventory) = world.get_mut::<Inventory>(self.from_entity) {
-                    from_inventory.add_item(self.item_stable_id, item_weight);
+                    from_inventory.add_item(self.item_stable_id.0, item_weight);
                 }
                 return;
             }
 
-            to_inventory.add_item(self.item_stable_id, item_weight);
+            to_inventory.add_item(self.item_stable_id.0, item_weight);
         }
 
         // Update the InInventory component
         if let Some(mut in_inventory) = world.get_mut::<InInventory>(item_entity) {
-            in_inventory.owner_id = to_stable_id;
+            in_inventory.owner_id = to_stable_id.0;
         }
 
         // Consume energy if from_entity has energy (for player actions)
@@ -162,7 +162,7 @@ fn find_existing_stack_transfer(
     let id_registry = world.get_resource::<StableIdRegistry>()?;
 
     for &id in item_ids {
-        if let Some(entity) = id_registry.get_entity(id)
+        if let Some(entity) = id_registry.get_entity(StableId(id))
             && let Some(stackable) = world.get::<Stackable>(entity)
             && stackable.stack_type == stack_type
         {

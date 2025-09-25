@@ -6,7 +6,7 @@ use crate::{
         GameSaveData, GameSettings, Inventory, Overworld, Player, PlayerSaveData,
         UnloadZoneCommand, Zone,
     },
-    engine::{Clock, StableIdRegistry, save_game, serialize},
+    engine::{Clock, StableId, StableIdRegistry, save_game, serialize},
     rendering::Position,
 };
 
@@ -70,7 +70,7 @@ impl SaveGameCommand {
 
         if let Ok(inventory) = q_inventory.get(world, player_entity) {
             for item_id in inventory.item_ids.iter() {
-                let Some(item_entity) = id_registry.get_entity(*item_id) else {
+                let Some(item_entity) = id_registry.get_entity(StableId(*item_id)) else {
                     continue;
                 };
 

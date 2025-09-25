@@ -21,7 +21,7 @@ pub fn death_check_system(
             let position_coords = position.world();
 
             let cause = if let Some(source_id) = health.last_damage_source {
-                if let Some(source_entity) = stable_id_registry.get_entity(source_id.0) {
+                if let Some(source_entity) = stable_id_registry.get_entity(source_id) {
                     DestructionCause::Attack {
                         attacker: source_entity,
                     }

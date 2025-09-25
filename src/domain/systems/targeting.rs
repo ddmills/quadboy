@@ -7,7 +7,7 @@ use crate::{
         DefaultMeleeAttack, EquipmentSlot, EquipmentSlots, Health, IgnoreLighting, Label, Level,
         Player, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
     },
-    engine::{KeyInput, Mouse, StableIdRegistry},
+    engine::{KeyInput, Mouse, StableId, StableIdRegistry},
     rendering::{
         AnimatedGlyph, Glyph, Layer, Position, Text, Visibility, world_to_zone_idx,
         world_to_zone_local,
@@ -93,7 +93,7 @@ pub fn collect_valid_targets(
     let weapon_range =
         if let (Some(equipment), Some(registry)) = (equipment_slots, registry.as_deref()) {
             if let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand) {
-                if let Some(weapon_entity) = registry.get_entity(weapon_id) {
+                if let Some(weapon_entity) = registry.get_entity(StableId(weapon_id)) {
                     // Check if it's a weapon
                     if let Ok(weapon) = q_weapons.get(weapon_entity) {
                         match weapon.weapon_type {
@@ -277,7 +277,7 @@ fn calculate_hit_chance(
         // First try to get equipped weapon
         if let Ok(equipment) = q_equipment.get(attacker_entity)
             && let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand)
-            && let Some(weapon_entity) = registry.get_entity(weapon_id)
+            && let Some(weapon_entity) = registry.get_entity(StableId(weapon_id))
         {
             // Check if it's a weapon
             if let Ok(weapon) = q_weapons.get(weapon_entity) {
@@ -288,7 +288,7 @@ fn calculate_hit_chance(
         }
         // Fall back to default melee attack
         else if let Ok(default_attack) = q_default_attacks.get(attacker_entity) {
-            default_attack.weapon_family
+            default_attack.weapon.weapon_family
         }
         // Default to unarmed if no weapon or default attack
         else {

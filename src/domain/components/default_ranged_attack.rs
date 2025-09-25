@@ -12,29 +12,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct DefaultRangedAttack {
     pub weapon: Weapon,
-    // Keep old fields for backward compatibility during transition
-    #[deprecated = "Use weapon.damage_dice instead"]
-    pub damage_dice: String,
-    #[deprecated = "Use weapon.can_damage instead"]
-    pub can_damage: Vec<MaterialType>,
-    #[deprecated = "Use weapon name instead"]
-    pub attack_name: String,
-    #[deprecated = "Use weapon.weapon_family instead"]
-    pub weapon_family: WeaponFamily,
-    #[deprecated = "Use weapon.hit_effects instead"]
-    pub hit_effects: Vec<HitEffect>,
-    #[deprecated = "Use weapon.range instead"]
-    pub range: usize,
-    #[deprecated = "Use weapon.shoot_audio instead"]
-    pub shoot_audio: Option<AudioKey>,
-    #[deprecated = "Use weapon.clip_size instead"]
-    pub ammo: Option<usize>,
-    #[deprecated = "Use weapon.current_ammo instead"]
-    pub current_ammo: Option<usize>,
-    #[deprecated = "Use weapon.no_ammo_audio instead"]
-    pub no_ammo_audio: Option<AudioKey>,
-    #[deprecated = "Use weapon.particle_effect_id instead"]
-    pub particle_effect_id: Option<ParticleEffectId>,
 }
 
 impl DefaultRangedAttack {
@@ -63,20 +40,7 @@ impl DefaultRangedAttack {
             no_ammo_audio: None,
         };
 
-        Self {
-            weapon,
-            damage_dice,
-            can_damage,
-            attack_name: attack_name.to_string(),
-            weapon_family,
-            hit_effects: Vec::new(),
-            range,
-            shoot_audio,
-            ammo: None,
-            current_ammo: None,
-            no_ammo_audio: None,
-            particle_effect_id: None,
-        }
+        Self { weapon }
     }
 
     pub fn with_ammo(
@@ -108,20 +72,7 @@ impl DefaultRangedAttack {
             no_ammo_audio,
         };
 
-        Self {
-            weapon,
-            damage_dice,
-            can_damage,
-            attack_name: attack_name.to_string(),
-            weapon_family,
-            hit_effects: Vec::new(),
-            range,
-            shoot_audio,
-            ammo: Some(ammo),
-            current_ammo: Some(ammo),
-            no_ammo_audio,
-            particle_effect_id: None,
-        }
+        Self { weapon }
     }
 
     pub fn revolver() -> Self {
@@ -135,8 +86,6 @@ impl DefaultRangedAttack {
             6,
             Some(AudioKey::RevolverEmpty),
         );
-        // Set particle effect on both old field and new weapon
-        revolver.particle_effect_id = Some(ParticleEffectId::default_pistol());
         revolver.weapon.particle_effect_id = Some(ParticleEffectId::default_pistol());
         revolver
     }
@@ -152,27 +101,20 @@ impl DefaultRangedAttack {
             4,
             Some(AudioKey::RifleEmpty),
         );
-        // Set particle effect on both old field and new weapon
-        rifle.particle_effect_id = Some(ParticleEffectId::default_rifle());
         rifle.weapon.particle_effect_id = Some(ParticleEffectId::default_rifle());
         rifle
     }
 
     pub fn has_ammo(&self) -> bool {
-        // Check the weapon first, fallback to old field for compatibility
-        match self.weapon.current_ammo.or(self.current_ammo) {
+        match self.weapon.current_ammo {
             Some(ammo) => ammo > 0,
             None => true, // Unlimited ammo for default weapons
         }
     }
 
     pub fn consume_ammo(&mut self) {
-        // Update both weapon and old field for compatibility
         if let Some(current) = self.weapon.current_ammo {
             self.weapon.current_ammo = Some(current.saturating_sub(1));
-        }
-        if let Some(current) = self.current_ammo {
-            self.current_ammo = Some(current.saturating_sub(1));
         }
     }
 }

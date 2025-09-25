@@ -5,13 +5,13 @@ use crate::{
         Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable,
         StackableType, Zone, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
-    engine::StableIdRegistry,
+    engine::{StableId, StableIdRegistry},
     rendering::Position,
 };
 
 pub struct PickupItemAction {
     pub entity: Entity,
-    pub item_stable_id: u64,
+    pub item_stable_id: StableId,
     pub spend_energy: bool,
 }
 
@@ -103,7 +103,7 @@ impl Command for PickupItemAction {
             return;
         };
 
-        if !inventory.add_item(self.item_stable_id, item_weight) {
+        if !inventory.add_item(self.item_stable_id.0, item_weight) {
             return;
         }
 
@@ -123,7 +123,7 @@ impl Command for PickupItemAction {
             .entity_mut(item_entity)
             .remove::<Position>()
             .remove::<ChildOf>()
-            .insert(InInventory::new(entity_stable_id));
+            .insert(InInventory::new(entity_stable_id.0));
 
         if self.spend_energy
             && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
@@ -144,7 +144,7 @@ fn find_existing_stack(
     let id_registry = world.get_resource::<StableIdRegistry>()?;
 
     for &id in item_ids {
-        if let Some(entity) = id_registry.get_entity(id)
+        if let Some(entity) = id_registry.get_entity(StableId(id))
             && let Some(stackable) = world.get::<Stackable>(entity)
             && stackable.stack_type == stack_type
         {

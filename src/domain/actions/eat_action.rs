@@ -6,7 +6,7 @@ use crate::{
         Item, Level, StackCount, Stackable, Stats, get_base_energy_cost,
         inventory::InventoryChangedEvent,
     },
-    engine::StableIdRegistry,
+    engine::{StableId, StableIdRegistry},
 };
 
 pub struct EatAction {
@@ -28,11 +28,11 @@ impl Command for EatAction {
                 return;
             };
 
-            let Some(eater_entity) = registry.get_entity(self.eater_id) else {
+            let Some(eater_entity) = registry.get_entity(StableId(self.eater_id)) else {
                 return;
             };
 
-            let Some(item_entity) = registry.get_entity(self.item_id) else {
+            let Some(item_entity) = registry.get_entity(StableId(self.item_id)) else {
                 return;
             };
 

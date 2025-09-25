@@ -145,7 +145,7 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
     };
 
     let attack = AttackAction {
-        attacker_stable_id: stable_id.0,
+        attacker_stable_id: *stable_id,
         weapon_stable_id: None, // Use equipped weapon or default attack
         target_stable_id: nearest.stable_id,
         is_bump_attack: true,
@@ -175,7 +175,7 @@ pub fn ai_try_ranged_attack(world: &mut World, entity: Entity, context: &mut AiC
     if let Some(equipment) = world.get::<EquipmentSlots>(entity) {
         if let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand) {
             let registry = world.resource::<StableIdRegistry>();
-            if let Some(weapon_entity) = registry.get_entity(weapon_id) {
+            if let Some(weapon_entity) = registry.get_entity(StableId(weapon_id)) {
                 if let Some(weapon) = world.get::<Weapon>(weapon_entity) {
                     // Only proceed if weapon is ranged
                     if weapon.weapon_type == WeaponType::Ranged {
@@ -209,8 +209,8 @@ pub fn ai_try_ranged_attack(world: &mut World, entity: Entity, context: &mut AiC
                             if distance <= range {
                                 // Perform ranged attack with equipped weapon
                                 let attack = AttackAction {
-                                    attacker_stable_id: stable_id.0,
-                                    weapon_stable_id: Some(weapon_id),
+                                    attacker_stable_id: *stable_id,
+                                    weapon_stable_id: Some(StableId(weapon_id)),
                                     target_stable_id: target.stable_id,
                                     is_bump_attack: false,
                                 };
@@ -251,17 +251,19 @@ pub fn ai_try_ranged_attack(world: &mut World, entity: Entity, context: &mut AiC
             ],
         ) as usize;
 
-        if distance <= default_ranged.range {
-            // Perform ranged attack with default ranged attack
-            let attack = AttackAction {
-                attacker_stable_id: stable_id.0,
-                weapon_stable_id: None, // No specific weapon, use default
-                target_stable_id: target.stable_id,
-                is_bump_attack: false,
-            };
+        if let Some(range) = default_ranged.weapon.range {
+            if distance <= range {
+                // Perform ranged attack with default ranged attack
+                let attack = AttackAction {
+                    attacker_stable_id: *stable_id,
+                    weapon_stable_id: None, // No specific weapon, use default
+                    target_stable_id: target.stable_id,
+                    is_bump_attack: false,
+                };
 
-            attack.apply(world);
-            return true;
+                attack.apply(world);
+                return true;
+            }
         }
     }
 

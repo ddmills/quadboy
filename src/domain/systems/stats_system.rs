@@ -4,7 +4,7 @@ use quadboy_macros::profiled_system;
 use crate::domain::{
     Attributes, EquipmentSlots, Item, ModifierSource, StatModifier, StatModifiers, StatType, Stats,
 };
-use crate::engine::StableIdRegistry;
+use crate::engine::{StableId, StableIdRegistry};
 
 #[profiled_system]
 pub fn recalculate_stats_system(
@@ -40,7 +40,7 @@ pub fn equipment_stat_modifier_system(
         // First, collect all equipment modifiers for this entity
         for item_id_opt in equipment_slots.slots.values() {
             if let Some(item_id) = item_id_opt
-                && let Some(item_entity) = registry.get_entity(*item_id)
+                && let Some(item_entity) = registry.get_entity(StableId(*item_id))
                 && let Ok(item_modifiers) = param_set.p1().get(item_entity)
             {
                 // Collect all stat modifiers from this item

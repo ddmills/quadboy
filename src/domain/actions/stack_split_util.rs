@@ -65,10 +65,10 @@ pub fn split_item_from_stack(
     // Manually assign a StableId immediately since the auto-assign system runs later
     let stable_id = {
         let mut registry = world.get_resource_mut::<StableIdRegistry>()?;
-        let id = registry.generate_id();
-        registry.register(new_entity, id);
-        world.entity_mut(new_entity).insert(StableId::new(id));
-        id
+        let stable_id = registry.generate_id();
+        registry.register(new_entity, stable_id);
+        world.entity_mut(new_entity).insert(stable_id);
+        stable_id.0
     };
 
     // Add the new item to inventory

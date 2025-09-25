@@ -114,7 +114,7 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<Actor> {
 
                     targets.push(Actor {
                         entity: candidate_entity,
-                        stable_id: StableId(stable_id),
+                        stable_id,
                         pos: check_pos,
                         distance,
                         relationship,
@@ -129,7 +129,7 @@ pub fn detect_actors(world: &mut World, entity: Entity) -> Vec<Actor> {
 
 pub fn get_actor(world: &mut World, source: Entity, stable_id: StableId) -> Option<Actor> {
     let id_registry = world.resource::<StableIdRegistry>();
-    let target_entity = id_registry.get_entity(stable_id.0)?;
+    let target_entity = id_registry.get_entity(stable_id)?;
     let pos = world.get::<Position>(target_entity)?.world();
     let source_pos = world.get::<Position>(source)?.world();
     let relationship = get_effective_relationship(source, target_entity, world);

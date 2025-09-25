@@ -59,7 +59,7 @@ impl SpawnPrefabCommand {
 
             world
                 .entity_mut(self.entity)
-                .insert(StableId(item_stable_id))
+                .insert(item_stable_id)
                 .remove::<NeedsStableId>();
 
             PickupItemAction {

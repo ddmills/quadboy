@@ -5,7 +5,7 @@ use crate::{
         Energy, EnergyActionType, EquipmentSlots, Equipped, get_base_energy_cost,
         inventory::InventoryChangedEvent,
     },
-    engine::StableIdRegistry,
+    engine::{StableId, StableIdRegistry},
 };
 
 pub struct UnequipItemAction {
@@ -26,7 +26,7 @@ impl Command for UnequipItemAction {
                 return;
             };
 
-            let Some(item_entity) = registry.get_entity(self.item_id) else {
+            let Some(item_entity) = registry.get_entity(StableId(self.item_id)) else {
                 return;
             };
 
@@ -47,7 +47,7 @@ impl Command for UnequipItemAction {
                 return;
             };
 
-            let Some(owner_entity) = registry.get_entity(owner_id) else {
+            let Some(owner_entity) = registry.get_entity(StableId(owner_id)) else {
                 return;
             };
 

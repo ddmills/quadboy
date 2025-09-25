@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{GameSettings, Inventory, Zone},
-    engine::{SerializableComponent, StableIdRegistry, save_zone, serialize},
+    engine::{SerializableComponent, StableId, StableIdRegistry, save_zone, serialize},
 };
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
@@ -51,7 +51,7 @@ impl Command<Result> for UnloadZoneCommand {
                 if let Ok(inventory) = q_inventory.get(world, *e) {
                     for item_id in inventory.item_ids.iter() {
                         trace!("despawn item_id={}", item_id);
-                        let Some(item) = id_registry.get_entity(*item_id) else {
+                        let Some(item) = id_registry.get_entity(StableId(*item_id)) else {
                             trace!("Missing item in stable_registry {}", item_id);
                             continue;
                         };

@@ -367,6 +367,16 @@ impl ParticleSpawner {
     pub fn spawn_world(self, world: &mut World) -> Entity {
         world.spawn(self).id()
     }
+
+    pub fn spawn_persistent(self, world: &mut World, follow_target: Option<Entity>) -> Entity {
+        let spawner_entity = world.spawn(PersistentParticleSpawner {
+            spawner_config: self,
+            follow_target,
+            spawn_continuously: true,
+            time_since_last_spawn: 0.0,
+        }).id();
+        spawner_entity
+    }
 }
 
 #[derive(Component)]
@@ -374,6 +384,14 @@ pub struct ParticleTrail {
     pub last_spawn_time: f32,
     pub spawn_rate: f32,
     pub trail_spawner: ParticleSpawner,
+}
+
+#[derive(Component)]
+pub struct PersistentParticleSpawner {
+    pub spawner_config: ParticleSpawner,
+    pub follow_target: Option<Entity>,
+    pub spawn_continuously: bool,
+    pub time_since_last_spawn: f32,
 }
 
 impl ParticleTrail {

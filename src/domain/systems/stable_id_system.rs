@@ -13,9 +13,7 @@ pub fn auto_assign_stable_ids(
 ) {
     for entity in q_needs_id.iter() {
         let id = registry.generate_id();
-        cmds.entity(entity)
-            .insert(StableId::new(id))
-            .remove::<NeedsStableId>();
+        cmds.entity(entity).insert(id).remove::<NeedsStableId>();
     }
 }
 
@@ -24,7 +22,7 @@ pub fn register_new_stable_ids(
     q_new_ids: Query<(Entity, &StableId), Added<StableId>>,
 ) {
     for (entity, stable_id) in q_new_ids.iter() {
-        registry.register(entity, stable_id.0);
+        registry.register(entity, *stable_id);
     }
 }
 

@@ -3,6 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{ActiveConditions, Condition, ConditionType, Health, Level, StatModifiers, Stats},
     engine::Clock,
+    rendering::Position,
 };
 
 pub fn process_conditions(
@@ -15,6 +16,7 @@ pub fn process_conditions(
         &Stats,
     )>,
     clock: Res<Clock>,
+    mut cmds: Commands,
 ) {
     let current_tick = clock.current_tick();
     let tick_delta = clock.tick_delta();
@@ -90,7 +92,12 @@ pub fn process_conditions(
 
         // Remove expired conditions (in reverse order to maintain indices)
         for &index in conditions_to_remove.iter().rev() {
-            conditions.conditions.remove(index);
+            let condition = conditions.conditions.remove(index);
+
+            // Cleanup associated particle spawner entity
+            if let Some(spawner_entity) = condition.particle_spawner_entity {
+                cmds.entity(spawner_entity).despawn_recursive();
+            }
         }
 
         // Remove old stat modifiers for expired conditions
@@ -172,4 +179,38 @@ pub fn entity_has_condition(entity: Entity, condition_type: &ConditionType, worl
         .get::<ActiveConditions>(entity)
         .map(|conditions| conditions.has_condition(condition_type))
         .unwrap_or(false)
+}
+
+pub fn spawn_condition_particles(world: &mut World) {
+    let mut spawn_requests = Vec::new();
+
+    // Collect entities and conditions that need particle spawners
+    {
+        let mut q_entities = world.query::<(Entity, &ActiveConditions, &Position)>();
+        for (entity, conditions, _position) in q_entities.iter(world) {
+            for (condition_idx, condition) in conditions.conditions.iter().enumerate() {
+                if condition.particle_spawner_entity.is_none() {
+                    if let Some(spawner_config) = condition.condition_type.create_particle_spawner() {
+                        spawn_requests.push((entity, condition_idx, spawner_config));
+                    }
+                }
+            }
+        }
+    }
+
+    // Process spawn requests
+    let mut updates = Vec::new();
+    for (entity, condition_idx, spawner_config) in spawn_requests {
+        let spawner_entity = spawner_config.spawn_persistent(world, Some(entity));
+        updates.push((entity, condition_idx, spawner_entity));
+    }
+
+    // Apply the updates
+    for (entity, condition_idx, spawner_entity) in updates {
+        if let Some(mut conditions) = world.get_mut::<ActiveConditions>(entity) {
+            if let Some(condition) = conditions.conditions.get_mut(condition_idx) {
+                condition.particle_spawner_entity = Some(spawner_entity);
+            }
+        }
+    }
 }

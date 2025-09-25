@@ -1,17 +1,18 @@
 use bevy_ecs::prelude::*;
 use macroquad::math::Vec2;
+use macroquad::prelude::trace;
 use quadboy_macros::profiled_system;
 
 use crate::{
     common::cp437_idx,
     domain::PlayerPosition,
     engine::Time,
-    rendering::{Glyph, Position, Visibility, zone_local_to_world_f32},
+    rendering::{Glyph, Position, Visibility, world_to_zone_local_f32, zone_local_to_world_f32},
 };
 
 use super::core::{
     Fragment, Particle, ParticleGlyph, ParticleGlyphPool, ParticleGrid, ParticleSpawner,
-    ParticleTrail,
+    ParticleTrail, PersistentParticleSpawner,
 };
 
 #[profiled_system]
@@ -278,6 +279,43 @@ pub fn update_particle_trails(
             trail.trail_spawner.position = particle.pos;
             spawn_particle(&mut cmds, &trail.trail_spawner, &mut rand);
             trail.last_spawn_time = 0.0; // Reset timer
+        }
+    }
+}
+
+#[profiled_system]
+pub fn update_persistent_spawners(
+    mut cmds: Commands,
+    mut q_persistent_spawners: Query<&mut PersistentParticleSpawner>,
+    q_positions: Query<&Position>,
+    time: Res<Time>,
+    mut rand: ResMut<crate::common::Rand>,
+) {
+    let dt = time.dt;
+
+
+    for mut persistent in q_persistent_spawners.iter_mut() {
+        if !persistent.spawn_continuously {
+            continue;
+        }
+
+        // Update the spawner position to follow its target entity if it has one
+        if let Some(target_entity) = persistent.follow_target {
+            if let Ok(target_position) = q_positions.get(target_entity) {
+                let world_pos = target_position.world();
+                // Convert world coordinates to zone-local coordinates for particle spawning
+                let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
+                persistent.spawner_config.position = Vec2::new(local_pos.0, local_pos.1);
+            }
+        }
+
+        // Update spawn timing
+        persistent.time_since_last_spawn += dt;
+
+        let spawn_interval = 1.0 / persistent.spawner_config.spawn_rate;
+        if persistent.time_since_last_spawn >= spawn_interval {
+            spawn_particle(&mut cmds, &persistent.spawner_config, &mut rand);
+            persistent.time_since_last_spawn -= spawn_interval;
         }
     }
 }

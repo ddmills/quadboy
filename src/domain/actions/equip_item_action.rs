@@ -5,7 +5,7 @@ use crate::{
         Energy, EnergyActionType, EquipmentSlots, Equippable, Equipped, Inventory,
         UnequipItemAction, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
-    engine::StableIdRegistry,
+    engine::{StableId, StableIdRegistry},
 };
 
 pub struct EquipItemAction {
@@ -21,11 +21,11 @@ impl Command for EquipItemAction {
                 return;
             };
 
-            let Some(entity) = registry.get_entity(self.entity_id) else {
+            let Some(entity) = registry.get_entity(StableId(self.entity_id)) else {
                 return;
             };
 
-            let Some(item_entity) = registry.get_entity(self.item_id) else {
+            let Some(item_entity) = registry.get_entity(StableId(self.item_id)) else {
                 return;
             };
 

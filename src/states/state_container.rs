@@ -6,7 +6,7 @@ use crate::{
     domain::{
         Inventory, Label, Player, TransferItemAction, game_loop, inventory::InventoryChangedEvent,
     },
-    engine::{App, AudioKey, KeyInput, Plugin, StableIdRegistry},
+    engine::{App, AudioKey, KeyInput, Plugin, StableId, StableIdRegistry},
     rendering::{Layer, Position, ScreenSize, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
     ui::{
@@ -115,7 +115,7 @@ fn transfer_item_from_player(
         cmds.queue(TransferItemAction {
             from_entity: context.player_entity,
             to_entity: context.container_entity,
-            item_stable_id: item_id,
+            item_stable_id: StableId(item_id),
         });
 
         // Close dialog after transfer
@@ -137,7 +137,7 @@ fn transfer_item_from_container(
         cmds.queue(TransferItemAction {
             from_entity: context.container_entity,
             to_entity: context.player_entity,
-            item_stable_id: item_id,
+            item_stable_id: StableId(item_id),
         });
 
         // Close dialog after transfer
@@ -183,7 +183,7 @@ fn direct_transfer_from_player(
             cmds.queue(TransferItemAction {
                 from_entity: context.player_entity,
                 to_entity: context.container_entity,
-                item_stable_id: item_id,
+                item_stable_id: StableId(item_id),
             });
         }
     }
@@ -224,7 +224,7 @@ fn direct_transfer_from_container(
             cmds.queue(TransferItemAction {
                 from_entity: context.container_entity,
                 to_entity: context.player_entity,
-                item_stable_id: item_id,
+                item_stable_id: StableId(item_id),
             });
         }
     }
@@ -240,7 +240,7 @@ fn build_player_list_items(
         .item_ids
         .iter()
         .map(|item_id| {
-            let Some(item_entity) = id_registry.get_entity(*item_id) else {
+            let Some(item_entity) = id_registry.get_entity(StableId(*item_id)) else {
                 return ListItemData::new("Unknown", callbacks.select_item);
             };
 
@@ -266,7 +266,7 @@ fn build_container_list_items(
     let mut items = Vec::new();
 
     for &item_id in inventory.item_ids.iter() {
-        if let Some(item_entity) = id_registry.get_entity(item_id) {
+        if let Some(item_entity) = id_registry.get_entity(StableId(item_id)) {
             let display_text = if let Ok(label) = q_labels.get(item_entity) {
                 label.get()
             } else {
@@ -291,7 +291,7 @@ fn examine_selected_item(world: &mut World) {
     };
 
     let id_registry = world.get_resource::<StableIdRegistry>().unwrap();
-    let Some(item_entity) = id_registry.get_entity(item_id) else {
+    let Some(item_entity) = id_registry.get_entity(StableId(item_id)) else {
         return;
     };
 

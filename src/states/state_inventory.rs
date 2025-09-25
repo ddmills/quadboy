@@ -14,7 +14,7 @@ use crate::{
         Throwable, ToggleLightAction, UnequipItemAction, Weapon, WeaponType, game_loop,
         inventory::InventoryChangedEvent,
     },
-    engine::{App, AudioKey, Plugin, StableIdRegistry},
+    engine::{App, AudioKey, Plugin, StableId, StableIdRegistry},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, ThrowContext, cleanup_system},
     ui::{
@@ -114,7 +114,7 @@ fn build_inventory_list_items(
     let mut items = Vec::new();
 
     for &item_id in inventory.item_ids.iter() {
-        if let Some(item_entity) = id_registry.get_entity(item_id) {
+        if let Some(item_entity) = id_registry.get_entity(StableId(item_id)) {
             let display_text = if let Ok(label) = q_labels.get(item_entity) {
                 label.get()
             } else {
@@ -140,7 +140,7 @@ fn setup_equip_slot_screen(
         return;
     };
 
-    let Some(item_entity) = registry.get_entity(item_id) else {
+    let Some(item_entity) = registry.get_entity(StableId(item_id)) else {
         return;
     };
 
@@ -265,7 +265,7 @@ fn build_item_action_list(
     q_fuse: &Query<&Fuse>,
     callbacks: &InventoryCallbacks,
 ) -> Vec<ListItemData> {
-    let Some(item_entity) = id_registry.get_entity(item_id) else {
+    let Some(item_entity) = id_registry.get_entity(StableId(item_id)) else {
         return Vec::new();
     };
 
@@ -348,7 +348,7 @@ fn spawn_item_actions_dialog(
     callbacks: &InventoryCallbacks,
     screen: &ScreenSize,
 ) {
-    let Some(item_entity) = id_registry.get_entity(item_id) else {
+    let Some(item_entity) = id_registry.get_entity(StableId(item_id)) else {
         return;
     };
 
@@ -428,7 +428,7 @@ fn drop_selected_item_from_dialog(
         let world_pos = player_pos.world();
         cmds.queue(DropItemAction {
             entity: context.player_entity,
-            item_stable_id: action_dialog.item_id,
+            item_stable_id: StableId(action_dialog.item_id),
             drop_position: world_pos,
         });
 
@@ -456,7 +456,7 @@ fn toggle_equip_selected_item_from_dialog(
     mut dialog_state: ResMut<DialogState>,
 ) {
     if let Ok(action_dialog) = q_action_dialog.single() {
-        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+        let Some(item_entity) = id_registry.get_entity(StableId(action_dialog.item_id)) else {
             return;
         };
 
@@ -469,7 +469,7 @@ fn toggle_equip_selected_item_from_dialog(
                 };
 
                 cmds.queue(EquipItemAction {
-                    entity_id: player_id,
+                    entity_id: player_id.0,
                     item_id: action_dialog.item_id,
                 });
             } else {
@@ -499,7 +499,7 @@ fn toggle_light_selected_item_from_dialog(
     q_action_dialog: Query<&ItemActionDialog>,
 ) {
     if let Ok(action_dialog) = q_action_dialog.single() {
-        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+        let Some(item_entity) = id_registry.get_entity(StableId(action_dialog.item_id)) else {
             return;
         };
 
@@ -526,7 +526,7 @@ fn eat_selected_item_from_dialog(
     q_action_dialog: Query<&ItemActionDialog>,
 ) {
     if let Ok(action_dialog) = q_action_dialog.single() {
-        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+        let Some(item_entity) = id_registry.get_entity(StableId(action_dialog.item_id)) else {
             return;
         };
 
@@ -536,7 +536,7 @@ fn eat_selected_item_from_dialog(
                 return;
             };
 
-            cmds.queue(EatAction::new(action_dialog.item_id, player_id));
+            cmds.queue(EatAction::new(action_dialog.item_id, player_id.0));
         }
     }
 }
@@ -553,7 +553,7 @@ fn throw_selected_item_from_dialog(
     mut dialog_state: ResMut<DialogState>,
 ) {
     if let Ok(action_dialog) = q_action_dialog.single() {
-        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+        let Some(item_entity) = id_registry.get_entity(StableId(action_dialog.item_id)) else {
             return;
         };
 
@@ -589,7 +589,7 @@ fn examine_item(world: &mut World) {
 
     if let Some(action_dialog) = action_dialog {
         let id_registry = world.get_resource::<StableIdRegistry>().unwrap();
-        let Some(item_entity) = id_registry.get_entity(action_dialog.item_id) else {
+        let Some(item_entity) = id_registry.get_entity(StableId(action_dialog.item_id)) else {
             return;
         };
 
@@ -963,7 +963,7 @@ fn update_item_detail_panel(
         return;
     };
 
-    let Some(item_entity) = id_registry.get_entity(item_id) else {
+    let Some(item_entity) = id_registry.get_entity(StableId(item_id)) else {
         return;
     };
 
@@ -1299,7 +1299,10 @@ fn refresh_action_dialog_with_timer(
     };
 
     // Check if the item still exists (it may have been consumed)
-    if id_registry.get_entity(action_dialog.item_id).is_none() {
+    if id_registry
+        .get_entity(StableId(action_dialog.item_id))
+        .is_none()
+    {
         // Item no longer exists, close the dialog
         for dialog_entity in q_dialogs.iter() {
             cmds.entity(dialog_entity).despawn();

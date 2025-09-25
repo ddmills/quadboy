@@ -1,13 +1,14 @@
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
     common::Rand,
     domain::{
         BumpAttack, Condition, ConditionSource, ConditionType, DefaultMeleeAttack,
         DefaultRangedAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
-        Health, HitBlink, HitEffect, KnockbackAnimation, MaterialType, PlayerPosition, StatType,
+        Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, PlayerPosition, StatType,
         Stats, Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
-        systems::{apply_condition_to_entity, destruction_system::EntityDestroyedEvent},
+        systems::{apply_condition_to_entity, condition_system::spawn_condition_particles, destruction_system::EntityDestroyedEvent},
     },
     engine::{Audio, Clock, StableId, StableIdRegistry},
     rendering::{
@@ -18,8 +19,8 @@ use crate::{
 };
 
 pub struct AttackAction {
-    pub attacker_stable_id: u64,
-    pub weapon_stable_id: Option<u64>,
+    pub attacker_stable_id: StableId,
+    pub weapon_stable_id: Option<StableId>,
     pub target_stable_id: StableId,
     pub is_bump_attack: bool,
 }
@@ -44,7 +45,7 @@ fn resolve_hit_miss(
         if let Some(registry) = world.get_resource::<StableIdRegistry>()
             && let Some(equipment) = world.get::<EquipmentSlots>(attacker_entity)
             && let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand)
-            && let Some(weapon_entity) = registry.get_entity(weapon_id)
+            && let Some(weapon_entity) = registry.get_entity(StableId(weapon_id))
             && let Some(weapon) = world.get::<Weapon>(weapon_entity)
         {
             weapon.weapon_family
@@ -119,14 +120,14 @@ impl Command for AttackAction {
         let Some(attacker_entity) = registry.get_entity(self.attacker_stable_id) else {
             eprintln!(
                 "AttackAction: Attacker entity not found for stable ID {}",
-                self.attacker_stable_id
+                self.attacker_stable_id.0
             );
             return;
         };
 
         let attacker_pos = world.get::<Position>(attacker_entity).map(|p| p.world());
 
-        let Some(target_entity) = registry.get_entity(self.target_stable_id.0) else {
+        let Some(target_entity) = registry.get_entity(self.target_stable_id) else {
             eprintln!(
                 "AttackAction: Target entity not found for stable ID {}",
                 self.target_stable_id.0
@@ -146,7 +147,7 @@ impl Command for AttackAction {
             else {
                 eprintln!(
                     "AttackAction: No weapon found for attacker {}",
-                    self.attacker_stable_id
+                    self.attacker_stable_id.0
                 );
                 return;
             };
@@ -189,7 +190,7 @@ impl AttackAction {
         // Check for equipped weapon in main hand
         if let Some(equipment) = world.get::<EquipmentSlots>(attacker_entity) {
             if let Some(weapon_id) = equipment.get_equipped_item(EquipmentSlot::MainHand) {
-                if let Some(weapon_entity) = registry.get_entity(weapon_id) {
+                if let Some(weapon_entity) = registry.get_entity(StableId(weapon_id)) {
                     if let Some(weapon) = world.get::<Weapon>(weapon_entity) {
                         return Some((weapon.clone(), Some(weapon_entity)));
                     }
@@ -337,10 +338,12 @@ impl AttackAction {
         if weapon_entity.is_some() && weapon.current_ammo == Some(0) {
             // Play empty sound and consume energy
             if let Some(empty_audio) = weapon.no_ammo_audio {
-                if let Some(audio) = world.get_resource::<Audio>()
-                    && let Some(player_pos) = world.get_resource::<PlayerPosition>()
-                {
-                    audio.play_at_position(empty_audio, 0.2, attacker_pos, player_pos);
+                if let Some(mut audio) = world.get_resource_mut::<Audio>() {
+                    audio
+                        .clip(empty_audio)
+                        .volume(0.2)
+                        .position(attacker_pos)
+                        .play();
                 }
             }
             if let Some(mut energy) = world.get_mut::<Energy>(attacker_entity) {
@@ -362,10 +365,12 @@ impl AttackAction {
 
         // Play shoot sound
         if let Some(shoot_audio) = weapon.shoot_audio {
-            if let Some(audio) = world.get_resource::<Audio>()
-                && let Some(player_pos) = world.get_resource::<PlayerPosition>()
-            {
-                audio.play_at_position(shoot_audio, 0.1, attacker_pos, player_pos);
+            if let Some(mut audio) = world.get_resource_mut::<Audio>() {
+                audio
+                    .clip(shoot_audio)
+                    .volume(0.1)
+                    .position(attacker_pos)
+                    .play();
             }
         }
 
@@ -573,13 +578,30 @@ impl AttackAction {
         for effect in hit_effects {
             // Roll for chance and apply effect if successful
             let mut should_apply = false;
+            let mut roll_result = 0.0;
+            let mut effect_chance = 0.0;
+
             world.resource_scope(|_world, mut rand: Mut<Rand>| {
                 let roll = rand.random();
+                roll_result = roll;
+
                 should_apply = match effect {
-                    HitEffect::Knockback { chance, .. } => roll <= *chance,
-                    HitEffect::Poison { chance, .. } => roll <= *chance,
-                    HitEffect::Bleeding { chance, .. } => roll <= *chance,
-                    HitEffect::Burning { chance, .. } => roll <= *chance,
+                    HitEffect::Knockback { chance, .. } => {
+                        effect_chance = *chance;
+                        roll <= *chance
+                    }
+                    HitEffect::Poison { chance, .. } => {
+                        effect_chance = *chance;
+                        roll <= *chance
+                    }
+                    HitEffect::Bleeding { chance, .. } => {
+                        effect_chance = *chance;
+                        roll <= *chance
+                    }
+                    HitEffect::Burning { chance, .. } => {
+                        effect_chance = *chance;
+                        roll <= *chance
+                    }
                 };
             });
 
@@ -815,6 +837,16 @@ impl AttackAction {
         damage_per_tick: i32,
         duration_ticks: u32,
     ) {
+        // Get entity names for logging
+        let attacker_name = world.get::<Label>(attacker_entity)
+            .map(|label| label.get().to_string())
+            .unwrap_or_else(|| format!("Entity({:?})", attacker_entity));
+
+        let target_name = world.get::<Label>(target_entity)
+            .map(|label| label.get().to_string())
+            .unwrap_or_else(|| format!("Entity({:?})", target_entity));
+
+
         // Get the attacker's StableId to use as the condition source
         let condition_source =
             if let Some(attacker_stable_id) = world.get::<StableId>(attacker_entity) {
@@ -835,9 +867,14 @@ impl AttackAction {
         );
 
         // Apply the poison condition to the target
-        if let Err(err) = apply_condition_to_entity(target_entity, poison_condition, world) {
-            // Log error if needed, but don't fail the attack
-            eprintln!("Failed to apply poison condition: {}", err);
+        match apply_condition_to_entity(target_entity, poison_condition, world) {
+            Ok(()) => {
+                // Immediately spawn particle effects for the new condition
+                spawn_condition_particles(world);
+            }
+            Err(err) => {
+                eprintln!("Failed to apply poison condition: {}", err);
+            }
         }
     }
 
@@ -870,7 +907,15 @@ impl AttackAction {
         );
 
         // Apply the bleeding condition to the target
-        let _ = apply_condition_to_entity(target_entity, bleeding_condition, world);
+        match apply_condition_to_entity(target_entity, bleeding_condition, world) {
+            Ok(()) => {
+                // Immediately spawn particle effects for the new condition
+                spawn_condition_particles(world);
+            }
+            Err(err) => {
+                eprintln!("Failed to apply bleeding condition: {}", err);
+            }
+        }
     }
 
     fn apply_burning_effect(
@@ -901,6 +946,14 @@ impl AttackAction {
         );
 
         // Apply the burning condition to the target
-        let _ = apply_condition_to_entity(target_entity, burning_condition, world);
+        match apply_condition_to_entity(target_entity, burning_condition, world) {
+            Ok(()) => {
+                // Immediately spawn particle effects for the new condition
+                spawn_condition_particles(world);
+            }
+            Err(err) => {
+                eprintln!("Failed to apply burning condition: {}", err);
+            }
+        }
     }
 }

@@ -54,6 +54,8 @@ pub struct Condition {
     pub source: ConditionSource,
     #[serde(skip)]
     pub accumulated_effect: f32,
+    #[serde(skip)]
+    pub particle_spawner_entity: Option<Entity>,
 }
 
 impl Condition {
@@ -69,6 +71,7 @@ impl Condition {
             intensity,
             source,
             accumulated_effect: 0.0,
+            particle_spawner_entity: None,
         }
     }
 

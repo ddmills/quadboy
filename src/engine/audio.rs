@@ -11,17 +11,62 @@ use std::sync::{Arc, Mutex};
 const MAX_AUDIO_DISTANCE: usize = 20;
 const MIN_AUDIBLE_VOLUME: f32 = 0.05;
 
-struct DelayedAudioEntry {
-    key: AudioKey,
+#[derive(Debug, Clone)]
+pub enum AudioSource {
+    Clip(AudioKey),
+    Collection(AudioCollection),
+}
+
+#[derive(Debug, Clone)]
+struct QueuedAudioEntry {
+    source: AudioSource,
     volume: f32,
+    position: Option<(usize, usize, usize)>,
     remaining_delay: f32,
 }
 
-struct DelayedPositionalAudioEntry {
-    key: AudioKey,
+pub struct AudioBuilder<'a> {
+    audio: &'a mut Audio,
+    source: AudioSource,
     volume: f32,
-    remaining_delay: f32,
-    position: (usize, usize, usize),
+    position: Option<(usize, usize, usize)>,
+    delay: f32,
+}
+
+impl<'a> AudioBuilder<'a> {
+    fn new(audio: &'a mut Audio, source: AudioSource) -> Self {
+        Self {
+            audio,
+            source,
+            volume: 1.0,
+            position: None,
+            delay: 0.0,
+        }
+    }
+
+    pub fn volume(mut self, volume: f32) -> Self {
+        self.volume = volume;
+        self
+    }
+
+    pub fn position(mut self, position: (usize, usize, usize)) -> Self {
+        self.position = Some(position);
+        self
+    }
+
+    pub fn delay(mut self, delay: f32) -> Self {
+        self.delay = delay;
+        self
+    }
+
+    pub fn play(self) {
+        self.audio.playback_queue.push(QueuedAudioEntry {
+            source: self.source,
+            volume: self.volume,
+            position: self.position,
+            remaining_delay: self.delay,
+        });
+    }
 }
 
 macro_rules! define_audio {
@@ -102,8 +147,7 @@ pub struct Audio {
     pub ctx: Arc<Mutex<AudioContext>>,
     pub sounds: HashMap<AudioKey, Sound>,
     pub collections: HashMap<AudioCollection, Vec<AudioKey>>,
-    delayed_queue: Vec<DelayedAudioEntry>,
-    delayed_positional_queue: Vec<DelayedPositionalAudioEntry>,
+    playback_queue: Vec<QueuedAudioEntry>,
 }
 
 impl Audio {
@@ -136,8 +180,7 @@ impl Audio {
             ctx: Arc::clone(&ctx),
             sounds,
             collections,
-            delayed_queue: Vec::new(),
-            delayed_positional_queue: Vec::new(),
+            playback_queue: Vec::new(),
         }
     }
 
@@ -172,12 +215,12 @@ impl Audio {
         }
     }
 
-    pub fn play_delayed(&mut self, key: AudioKey, volume: f32, delay: f32) {
-        self.delayed_queue.push(DelayedAudioEntry {
-            key,
-            volume,
-            remaining_delay: delay,
-        });
+    pub fn clip(&mut self, key: AudioKey) -> AudioBuilder {
+        AudioBuilder::new(self, AudioSource::Clip(key))
+    }
+
+    pub fn collection(&mut self, collection: AudioCollection) -> AudioBuilder {
+        AudioBuilder::new(self, AudioSource::Collection(collection))
     }
 
     /// Play audio at a world position with distance-based volume attenuation
@@ -210,65 +253,55 @@ impl Audio {
             self.play(key, attenuated_volume);
         }
     }
-
-    /// Play audio at a world position with delay and distance-based volume attenuation
-    pub fn play_at_position_delayed(
-        &mut self,
-        key: AudioKey,
-        base_volume: f32,
-        sound_pos: (usize, usize, usize),
-        delay: f32,
-    ) {
-        self.delayed_positional_queue
-            .push(DelayedPositionalAudioEntry {
-                key,
-                volume: base_volume,
-                remaining_delay: delay,
-                position: sound_pos,
-            });
-    }
 }
 
-pub fn process_delayed_audio(
+pub fn process_audio_queue(
     mut audio: ResMut<Audio>,
     time: Res<Time>,
     player_pos: Option<Res<PlayerPosition>>,
+    mut rand: ResMut<Rand>,
 ) {
     let dt = time.dt;
     let mut to_play = Vec::new();
-    let mut to_play_positional = Vec::new();
 
-    // Process regular delayed queue
-    audio.delayed_queue.retain_mut(|entry| {
+    // Process unified playback queue
+    audio.playback_queue.retain_mut(|entry| {
         entry.remaining_delay -= dt;
         if entry.remaining_delay <= 0.0 {
-            to_play.push((entry.key, entry.volume));
+            to_play.push(entry.clone());
             false // Remove from queue
         } else {
             true // Keep in queue
         }
     });
 
-    // Process positional delayed queue
-    audio.delayed_positional_queue.retain_mut(|entry| {
-        entry.remaining_delay -= dt;
-        if entry.remaining_delay <= 0.0 {
-            to_play_positional.push((entry.key, entry.volume, entry.position));
-            false // Remove from queue
+    // Play sounds that are ready
+    for entry in to_play {
+        let audio_key = match entry.source {
+            AudioSource::Clip(key) => key,
+            AudioSource::Collection(collection) => {
+                // Pick random key from collection
+                if let Some(keys) = audio.collections.get(&collection) {
+                    if !keys.is_empty() {
+                        let index = rand.pick_idx(keys);
+                        keys[index]
+                    } else {
+                        continue; // Skip empty collections
+                    }
+                } else {
+                    continue; // Skip unknown collections
+                }
+            }
+        };
+
+        // Play with positional audio if position is specified
+        if let Some(position) = entry.position {
+            if let Some(ref player_pos) = player_pos {
+                audio.play_at_position(audio_key, entry.volume, position, player_pos);
+            }
         } else {
-            true // Keep in queue
-        }
-    });
-
-    // Play regular sounds that are ready
-    for (key, volume) in to_play {
-        audio.play(key, volume);
-    }
-
-    // Play positional sounds that are ready
-    if let Some(player_pos) = player_pos {
-        for (key, volume, position) in to_play_positional {
-            audio.play_at_position(key, volume, position, &player_pos);
+            // Play without positional audio
+            audio.play(audio_key, entry.volume);
         }
     }
 }

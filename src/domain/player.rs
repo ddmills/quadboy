@@ -118,7 +118,7 @@ pub fn player_input(
                 if let Some(target_stable_id) = q_stable_id.get(selected_entity).ok() {
                     // Execute attack action (targeted attack, not bump)
                     cmds.queue(AttackAction {
-                        attacker_stable_id: player_stable_id.0,
+                        attacker_stable_id: *player_stable_id,
                         weapon_stable_id: None, // Use equipped weapon
                         target_stable_id: *target_stable_id,
                         is_bump_attack: false,
@@ -295,7 +295,7 @@ pub fn player_input(
                         if let Ok(target_stable_id) = q_stable_id.get(target_entity) {
                             // Bump attack - try to attack what we bumped into (actors, trees, walls, etc.)
                             cmds.queue(AttackAction {
-                                attacker_stable_id: player_stable_id.0,
+                                attacker_stable_id: *player_stable_id,
                                 weapon_stable_id: None, // Use equipped weapon
                                 target_stable_id: *target_stable_id,
                                 is_bump_attack: true,
