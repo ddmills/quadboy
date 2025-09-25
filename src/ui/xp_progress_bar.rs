@@ -42,8 +42,8 @@ fn generate_xp_display(bar: &XPProgressBar, level: &Level) -> String {
     format!(
         "Level {} [{{G|{}}}{{x|{}}}] XP: {}/{}",
         level.current_level,
-        "█".repeat(filled_chars as usize),
-        "░".repeat(empty_chars as usize),
+        "½".repeat(filled_chars as usize),
+        " ".repeat(empty_chars as usize),
         level.current_xp,
         level.xp_to_next_level
     )

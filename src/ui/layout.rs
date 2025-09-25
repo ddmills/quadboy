@@ -27,8 +27,8 @@ pub fn update_ui_layout(
     screen: Res<ScreenSize>,
     mut camera: ResMut<GameCamera>,
 ) {
-    let left_panel_width = 0;
-    // let left_panel_width = 10;
+    // let left_panel_width = 0;
+    let left_panel_width = 10;
 
     ui.left_panel.x = 0;
     ui.left_panel.y = 0;

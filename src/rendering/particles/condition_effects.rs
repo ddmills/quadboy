@@ -11,32 +11,30 @@ impl ConditionType {
     /// Returns None if this condition type doesn't have visual effects
     pub fn create_particle_spawner(&self) -> Option<ParticleSpawner> {
         match self {
-            ConditionType::Poisoned { .. } => {
-                Some(
-                    ParticleSpawner::new(Vec2::ZERO)
-                        .glyph_animation(GlyphAnimation::RandomPool {
-                            glyphs: vec!['○', '◦', '•', '·', 'o'],
-                            change_rate: Some(3.0),
-                            last_change: 0.0,
-                        })
-                        .color_curve(ColorCurve::Linear {
-                            values: vec![0x00FF00, 0x00AA00], // Bright to darker green
-                        })
-                        .alpha_curve(AlphaCurve::EaseOut {
-                            values: vec![0.7, 0.0],
-                        })
-                        .velocity_curve(VelocityCurve::Linear {
-                            values: vec![Vec2::new(0.0, -1.0), Vec2::new(0.0, -0.5)], // Float upward slowly
-                        })
-                        .spawn_area(SpawnArea::Circle {
-                            radius: 0.5,
-                            distribution: Distribution::Uniform,
-                        })
-                        .priority(140) // Above normal particles but below UI
-                        .spawn_rate(10.0) // 2 particles per second
-                        .lifetime_range(1.0..2.0),
-                )
-            }
+            ConditionType::Poisoned { .. } => Some(
+                ParticleSpawner::new(Vec2::ZERO)
+                    .glyph_animation(GlyphAnimation::RandomPool {
+                        glyphs: vec!['·', '•', '◦', '○'],
+                        change_rate: Some(0.5),
+                        last_change: 0.0,
+                    })
+                    .color_curve(ColorCurve::Linear {
+                        values: vec![0x06DD06, 0x074D43],
+                    })
+                    .alpha_curve(AlphaCurve::EaseOut {
+                        values: vec![0.7, 0.3],
+                    })
+                    .velocity_curve(VelocityCurve::Linear {
+                        values: vec![Vec2::new(0.0, -1.0), Vec2::new(0.0, -0.5)],
+                    })
+                    .spawn_area(SpawnArea::Circle {
+                        radius: 0.5,
+                        distribution: Distribution::Uniform,
+                    })
+                    .priority(140)
+                    .spawn_rate(10.0)
+                    .lifetime_range(1.0..2.0),
+            ),
 
             ConditionType::Burning { .. } => {
                 Some(
@@ -72,7 +70,8 @@ impl ConditionType {
                 Some(
                     ParticleSpawner::new(Vec2::ZERO)
                         .glyph_animation(GlyphAnimation::Sequence {
-                            glyphs: vec!['•', ',', '.'],
+                            // glyphs: vec!['•', ',', '.'],
+                            glyphs: vec!['•', '☻'],
                             timing: SequenceTiming::LifetimeOnce {
                                 easing: SequenceEasing::EaseIn,
                             },

@@ -274,10 +274,8 @@ async fn main() {
         .add_systems(
             ScheduleType::Update,
             (
-                // New unified activation systems
                 unified_keyboard_activation_system,
                 unified_click_system,
-                // Label systems
                 ensure_labels_initialized,
                 (
                     mark_dirty_on_equipment_change,
@@ -290,13 +288,11 @@ async fn main() {
             ),
         )
         .add_systems(
-            ScheduleType::PostUpdate,
+            ScheduleType::Update,
             (
                 bump_attack_system,
-                smooth_movement_system,
                 hit_blink_system,
                 knockback_animation_system,
-                (award_xp_on_kill, apply_xp_gain, handle_level_up).chain(),
                 process_level_up_particles,
                 update_animated_glyphs,
                 update_particle_physics,
@@ -305,6 +301,12 @@ async fn main() {
                 update_particle_trails,
                 update_particles,
                 render_particle_fragments,
+            ),
+        )
+        .add_systems(
+            ScheduleType::PostUpdate,
+            (
+                smooth_movement_system,
                 render_glyphs,
                 render_text,
                 cleanup_particle_glyphs,

@@ -21,7 +21,7 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
             SpawnValue::Int(level) => Some(*level as u32),
             _ => None,
         })
-        .unwrap_or(2);
+        .unwrap_or(1);
 
     let hp_mod = StatModifier {
         value: 100,

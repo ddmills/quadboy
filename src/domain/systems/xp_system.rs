@@ -29,7 +29,6 @@ pub struct LevelUpEvent {
     pub levels_gained: u32,
 }
 
-/// Award XP to any entity with a Level component when they kill another leveled entity
 #[profiled_system]
 pub fn award_xp_on_kill(
     mut e_entity_destroyed: EventReader<EntityDestroyedEvent>,
