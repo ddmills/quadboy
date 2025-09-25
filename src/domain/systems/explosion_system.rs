@@ -9,8 +9,8 @@ use crate::{
     },
     engine::{Audio, AudioKey, Clock},
     rendering::{
-        AlphaCurve, ColorCurve, Distribution, GlyphAnimation, ParticleSpawner, Position, SpawnArea,
-        world_to_zone_idx, world_to_zone_local, world_to_zone_local_f32,
+        AlphaCurve, ColorCurve, Distribution, GlyphAnimation, ParticleSpawner, Position,
+        SequenceTiming, SpawnArea, world_to_zone_idx, world_to_zone_local, world_to_zone_local_f32,
     },
     states::CleanupStatePlay,
 };
@@ -101,7 +101,10 @@ pub fn explosion_system(
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::Sequence {
                     glyphs: vec!['█', '◉', '◎', '○', '◦', ' '],
-                    duration_per_glyph: 0.08,
+                    timing: SequenceTiming::FixedDuration {
+                        duration_per_glyph: 0.08,
+                        repeat: false,
+                    },
                 })
                 .color_curve(ColorCurve::Linear {
                     values: vec![0xFFFFFF, 0xFFFFFF, 0xFFDD00, 0xFF8800],
@@ -124,7 +127,10 @@ pub fn explosion_system(
             ParticleSpawner::new(pos)
                 .glyph_animation(GlyphAnimation::Sequence {
                     glyphs: vec!['█', '▓', '▒', '░', '·', ' '],
-                    duration_per_glyph: 0.06,
+                    timing: SequenceTiming::FixedDuration {
+                        duration_per_glyph: 0.06,
+                        repeat: false,
+                    },
                 })
                 .color_curve(ColorCurve::Constant(0xFFFFFF))
                 .bg_curve(ColorCurve::EaseOut {

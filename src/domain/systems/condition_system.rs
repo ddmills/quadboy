@@ -24,9 +24,9 @@ pub fn process_conditions(
     for (_entity, mut conditions, mut health, mut stat_modifiers, level, stats) in
         q_entities.iter_mut()
     {
-        let mut conditions_to_remove = Vec::new();
-        let mut stat_modifiers_to_remove = Vec::new();
-        let mut stat_modifiers_to_add = Vec::new();
+        let mut conditions_to_remove = vec![];
+        let mut stat_modifiers_to_remove = vec![];
+        let mut stat_modifiers_to_add = vec![];
 
         for (index, condition) in conditions.conditions.iter_mut().enumerate() {
             // Process duration
@@ -96,7 +96,7 @@ pub fn process_conditions(
 
             // Cleanup associated particle spawner entity
             if let Some(spawner_entity) = condition.particle_spawner_entity {
-                cmds.entity(spawner_entity).despawn_recursive();
+                cmds.entity(spawner_entity).despawn();
             }
         }
 
@@ -112,15 +112,6 @@ pub fn process_conditions(
     }
 }
 
-pub fn cleanup_empty_conditions(mut q_conditions: Query<&mut ActiveConditions>) {
-    for conditions in q_conditions.iter_mut() {
-        if conditions.is_empty() {
-            // Could add logic here to remove the component entirely if desired
-            // For now, we'll just keep the empty component
-        }
-    }
-}
-
 // Helper function to apply a condition to an entity
 pub fn apply_condition_to_entity(
     entity: Entity,
@@ -130,11 +121,25 @@ pub fn apply_condition_to_entity(
     // Get or create ActiveConditions component
     if let Some(mut conditions) = world.get_mut::<ActiveConditions>(entity) {
         // Check for stacking logic
+        let mut spawners_to_cleanup = Vec::new();
         if !condition.condition_type.can_stack() {
-            // Remove existing condition of this type
-            conditions.remove_condition(&condition.condition_type);
+            // Remove existing condition of this type and collect spawner entities to cleanup
+            let removed_conditions = conditions.remove_condition(&condition.condition_type);
+            for removed_condition in removed_conditions {
+                if let Some(spawner_entity) = removed_condition.particle_spawner_entity {
+                    spawners_to_cleanup.push(spawner_entity);
+                }
+            }
         }
         conditions.add_condition(condition);
+
+        // Drop the borrow on conditions before despawning
+        drop(conditions);
+
+        // Clean up particle spawner entities
+        for spawner_entity in spawners_to_cleanup {
+            world.despawn(spawner_entity);
+        }
     } else {
         // Entity doesn't have ActiveConditions, add it
         let mut new_conditions = ActiveConditions::new();
@@ -143,42 +148,6 @@ pub fn apply_condition_to_entity(
     }
 
     Ok(())
-}
-
-// Helper function to remove a specific condition type from an entity
-pub fn remove_condition_from_entity(
-    entity: Entity,
-    condition_type: &ConditionType,
-    world: &mut World,
-) -> Result<(), String> {
-    if let Some(mut conditions) = world.get_mut::<ActiveConditions>(entity) {
-        conditions.remove_condition(condition_type);
-
-        // Also remove any associated stat modifiers
-        if let Some(mut stat_modifiers) = world.get_mut::<StatModifiers>(entity) {
-            // Find and remove condition modifiers for this condition type
-            let condition_pattern = format!("{:?}_", condition_type);
-            for modifiers in stat_modifiers.modifiers.values_mut() {
-                modifiers.retain(|m| {
-                    if let crate::domain::ModifierSource::Condition { condition_id } = &m.source {
-                        !condition_id.starts_with(&condition_pattern)
-                    } else {
-                        true
-                    }
-                });
-            }
-        }
-    }
-
-    Ok(())
-}
-
-// Helper function to check if an entity has a specific condition
-pub fn entity_has_condition(entity: Entity, condition_type: &ConditionType, world: &World) -> bool {
-    world
-        .get::<ActiveConditions>(entity)
-        .map(|conditions| conditions.has_condition(condition_type))
-        .unwrap_or(false)
 }
 
 pub fn spawn_condition_particles(world: &mut World) {
@@ -190,7 +159,8 @@ pub fn spawn_condition_particles(world: &mut World) {
         for (entity, conditions, _position) in q_entities.iter(world) {
             for (condition_idx, condition) in conditions.conditions.iter().enumerate() {
                 if condition.particle_spawner_entity.is_none() {
-                    if let Some(spawner_config) = condition.condition_type.create_particle_spawner() {
+                    if let Some(spawner_config) = condition.condition_type.create_particle_spawner()
+                    {
                         spawn_requests.push((entity, condition_idx, spawner_config));
                     }
                 }

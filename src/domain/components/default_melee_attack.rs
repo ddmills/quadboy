@@ -106,6 +106,20 @@ impl DefaultMeleeAttack {
             }],
         )
     }
+    pub fn fire_fists() -> Self {
+        Self::with_hit_effects(
+            3,
+            vec![MaterialType::Flesh],
+            "Fire Fists",
+            WeaponFamily::Unarmed,
+            vec![HitEffect::Bleeding {
+                damage_per_tick: 2,
+                duration_ticks: 1000,
+                chance: 1.0, // Always apply poison
+                can_stack: false,
+            }],
+        )
+    }
 
     pub fn bite() -> Self {
         Self::new(3, vec![MaterialType::Flesh], "Bite", WeaponFamily::Unarmed)

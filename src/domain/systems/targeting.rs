@@ -43,7 +43,7 @@ pub fn init_targeting_resource(cmds: &mut Commands) {
 pub fn spawn_targeting_ui(cmds: &mut Commands, cleanup_marker: impl Component + Clone) {
     // Spawn target crosshair (hidden until target selected)
     cmds.spawn((
-        AnimatedGlyph::new(vec![116, 117, 118, 119, 120], 12.0),
+        AnimatedGlyph::new(vec![116, 117, 118, 119, 120], 6.0),
         Glyph::new(88, Palette::Yellow, Palette::Yellow).layer(Layer::Overlay),
         Position::new_f32(0., 0., 0.),
         Visibility::Hidden,

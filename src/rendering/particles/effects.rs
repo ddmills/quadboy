@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use macroquad::math::Vec2;
 
-use super::core::{GlyphAnimation, Particle, ParticleSpawner, ParticleTrail};
+use super::core::{GlyphAnimation, Particle, ParticleSpawner, ParticleTrail, SequenceTiming};
 use super::curves::{AlphaCurve, ColorCurve, VelocityCurve};
 use super::particle_effect_id::ParticleEffectId;
 use super::spawn_areas::{Distribution, SpawnArea};
@@ -203,7 +203,10 @@ pub fn spawn_bullet_trail(
     ParticleSpawner::new(start_pos)
         .glyph_animation(GlyphAnimation::Sequence {
             glyphs: vec!['◦', '○', '*'],
-            duration_per_glyph: 0.1,
+            timing: SequenceTiming::FixedDuration {
+                duration_per_glyph: 0.1,
+                repeat: false,
+            },
         })
         // .color_curve(ColorCurve::Constant(0xFF4400))
         .bg_curve(ColorCurve::Linear {
@@ -452,7 +455,10 @@ pub fn spawn_explosion_effect(world: &mut World, world_pos: (usize, usize, usize
     ParticleSpawner::new(pos)
         .glyph_animation(GlyphAnimation::Sequence {
             glyphs: vec!['◉', '◎', '○', '◦', ' '],
-            duration_per_glyph: 0.1,
+            timing: SequenceTiming::FixedDuration {
+                duration_per_glyph: 0.1,
+                repeat: false,
+            },
         })
         .color_curve(ColorCurve::Linear {
             values: vec![0xFFFFFF, 0xFFDD00, 0xFF8800],
@@ -473,7 +479,10 @@ pub fn spawn_explosion_effect(world: &mut World, world_pos: (usize, usize, usize
     ParticleSpawner::new(pos)
         .glyph_animation(GlyphAnimation::Sequence {
             glyphs: vec!['█', '▓', '▒', '░', ' '],
-            duration_per_glyph: 0.08,
+            timing: SequenceTiming::FixedDuration {
+                duration_per_glyph: 0.08,
+                repeat: false,
+            },
         })
         .color_curve(ColorCurve::Constant(0x888888))
         .bg_curve(ColorCurve::EaseOut {
@@ -684,7 +693,10 @@ pub fn spawn_level_up_celebration(world: &mut World, world_pos: (usize, usize, u
     ParticleSpawner::new(pos)
         .glyph_animation(GlyphAnimation::Sequence {
             glyphs: vec!['◉', '◎', '○', '◦', ' '],
-            duration_per_glyph: 0.15,
+            timing: SequenceTiming::FixedDuration {
+                duration_per_glyph: 0.15,
+                repeat: false,
+            },
         })
         .color_curve(ColorCurve::Linear {
             values: vec![0xFFFFFF, 0xFFD700, 0xFFA500],

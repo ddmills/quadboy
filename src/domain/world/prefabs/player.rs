@@ -2,7 +2,10 @@ use super::{Prefab, PrefabBuilder, SpawnValue};
 use crate::{
     common::Palette,
     domain::{
-        ApplyVisibilityEffects, AttributePoints, Attributes, Collider, ColliderFlags, DefaultMeleeAttack, DynamicEntity, Energy, EquipmentSlots, FactionId, FactionMember, Health, HitBlink, Inventory, Level, ModifierSource, MovementCapabilities, Player, StatModifier, StatModifiers, StatType, Stats, Vision
+        ApplyVisibilityEffects, AttributePoints, Attributes, Collider, ColliderFlags,
+        DefaultMeleeAttack, DynamicEntity, Energy, EquipmentSlots, FactionId, FactionMember,
+        Health, HitBlink, Inventory, Level, ModifierSource, MovementCapabilities, Player,
+        StatModifier, StatModifiers, StatType, Stats, Vision,
     },
     rendering::{GlyphTextureId, Layer},
     states::CleanupStatePlay,
@@ -22,7 +25,9 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
 
     let hp_mod = StatModifier {
         value: 100,
-        source: ModifierSource::Intrinsic { name: "GodMode".to_owned() },
+        source: ModifierSource::Intrinsic {
+            name: "GodMode".to_owned(),
+        },
     };
 
     let mut mods = StatModifiers::new();
@@ -45,7 +50,7 @@ pub fn spawn_player(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_attributes(Attributes::new(0, 0, 0, 0))
         .with_stats(Stats::new())
         .with_stat_modifiers(mods)
-        .with_default_melee_attack(DefaultMeleeAttack::fists())
+        .with_default_melee_attack(DefaultMeleeAttack::fire_fists())
         .with_inventory(50.0) // 50.0 capacity
         .with_component(Player)
         .with_component(EquipmentSlots::humanoid())

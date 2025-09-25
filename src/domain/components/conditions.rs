@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -19,9 +21,19 @@ impl ActiveConditions {
         self.conditions.push(condition);
     }
 
-    pub fn remove_condition(&mut self, condition_type: &ConditionType) {
-        self.conditions
-            .retain(|c| &c.condition_type != condition_type);
+    pub fn remove_condition(&mut self, condition_type: &ConditionType) -> Vec<Condition> {
+        let mut removed_conditions = Vec::new();
+        let mut i = 0;
+
+        while i < self.conditions.len() {
+            if &self.conditions[i].condition_type == condition_type {
+                removed_conditions.push(self.conditions.remove(i));
+            } else {
+                i += 1;
+            }
+        }
+
+        removed_conditions
     }
 
     pub fn has_condition(&self, condition_type: &ConditionType) -> bool {
@@ -140,6 +152,19 @@ impl ConditionType {
             ConditionType::Feared { .. } => false,
             ConditionType::Taunted { .. } => false,
             ConditionType::Confused { .. } => false,
+        }
+    }
+}
+
+impl Display for ConditionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConditionType::Poisoned { .. } => write!(f, "Poisoned"),
+            ConditionType::Bleeding { .. } => write!(f, "Bleeding"),
+            ConditionType::Burning { .. } => write!(f, "Burning"),
+            ConditionType::Feared { .. } => write!(f, "Feared"),
+            ConditionType::Taunted { .. } => write!(f, "Taunted"),
+            ConditionType::Confused { .. } => write!(f, "Confused"),
         }
     }
 }

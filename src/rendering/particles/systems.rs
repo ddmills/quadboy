@@ -293,7 +293,6 @@ pub fn update_persistent_spawners(
 ) {
     let dt = time.dt;
 
-
     for mut persistent in q_persistent_spawners.iter_mut() {
         if !persistent.spawn_continuously {
             continue;
@@ -304,7 +303,8 @@ pub fn update_persistent_spawners(
             if let Ok(target_position) = q_positions.get(target_entity) {
                 let world_pos = target_position.world();
                 // Convert world coordinates to zone-local coordinates for particle spawning
-                let local_pos = world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
+                let local_pos =
+                    world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
                 persistent.spawner_config.position = Vec2::new(local_pos.0, local_pos.1);
             }
         }

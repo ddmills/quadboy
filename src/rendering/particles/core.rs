@@ -1,10 +1,11 @@
 use bevy_ecs::prelude::*;
-use macroquad::math::Vec2;
+use macroquad::{math::Vec2, prelude::trace};
 
 use crate::{
     cfg::ZONE_SIZE,
     common::{Grid, Palette, Rand},
     rendering::{Glyph, GlyphTextureId, Position, Visibility},
+    states::CleanupStatePlay,
 };
 
 use super::curves::{AlphaCurve, ColorCurve, CurveEvaluator, VelocityCurve};
@@ -66,6 +67,43 @@ pub struct Fragment {
 }
 
 #[derive(Clone, Debug)]
+pub enum SequenceTiming {
+    FixedDuration {
+        duration_per_glyph: f32,
+        repeat: bool,
+    },
+    LifetimeOnce {
+        easing: SequenceEasing,
+    },
+}
+
+#[derive(Clone, Debug)]
+pub enum SequenceEasing {
+    Linear,
+    EaseIn,
+    EaseOut,
+    EaseInOut,
+}
+
+impl SequenceEasing {
+    pub fn apply(&self, t: f32) -> f32 {
+        let t = t.clamp(0.0, 1.0);
+        match self {
+            SequenceEasing::Linear => t,
+            SequenceEasing::EaseIn => t * t,
+            SequenceEasing::EaseOut => 1.0 - (1.0 - t) * (1.0 - t),
+            SequenceEasing::EaseInOut => {
+                if t < 0.5 {
+                    2.0 * t * t
+                } else {
+                    1.0 - 2.0 * (1.0 - t) * (1.0 - t)
+                }
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum GlyphAnimation {
     Static(char),
     RandomPool {
@@ -75,7 +113,7 @@ pub enum GlyphAnimation {
     },
     Sequence {
         glyphs: Vec<char>,
-        duration_per_glyph: f32,
+        timing: SequenceTiming,
     },
     TimedCurve {
         keyframes: Vec<(f32, char)>,
@@ -136,6 +174,7 @@ impl Particle {
     }
 
     fn update_glyph_animation(&mut self, dt: f32, rand: &mut Rand) {
+        let progress = self.progress();
         match &mut self.glyph_animation {
             GlyphAnimation::Static(glyph) => {
                 self.current_glyph = *glyph;
@@ -163,20 +202,44 @@ impl Particle {
                     self.current_glyph = glyphs[index];
                 }
             }
-            GlyphAnimation::Sequence {
-                glyphs,
-                duration_per_glyph,
-            } => {
+            GlyphAnimation::Sequence { glyphs, timing } => {
                 if glyphs.is_empty() {
                     self.current_glyph = '*';
                     return;
                 }
 
-                let total_duration = *duration_per_glyph * glyphs.len() as f32;
-                let cycle_time = self.age % total_duration;
-                let index = (cycle_time / *duration_per_glyph) as usize;
-                let clamped_index = index.min(glyphs.len() - 1);
-                self.current_glyph = glyphs[clamped_index];
+                match timing {
+                    SequenceTiming::FixedDuration {
+                        duration_per_glyph,
+                        repeat,
+                    } => {
+                        let total_duration = *duration_per_glyph * glyphs.len() as f32;
+
+                        if *repeat {
+                            // Original behavior - repeat infinitely
+                            let cycle_time = self.age % total_duration;
+                            let index = (cycle_time / *duration_per_glyph) as usize;
+                            let clamped_index = index.min(glyphs.len() - 1);
+                            self.current_glyph = glyphs[clamped_index];
+                        } else {
+                            // Play once then stop at last glyph
+                            if self.age >= total_duration {
+                                self.current_glyph = glyphs[glyphs.len() - 1];
+                            } else {
+                                let index = (self.age / *duration_per_glyph) as usize;
+                                let clamped_index = index.min(glyphs.len() - 1);
+                                self.current_glyph = glyphs[clamped_index];
+                            }
+                        }
+                    }
+                    SequenceTiming::LifetimeOnce { easing } => {
+                        // Apply easing to the progress and spread sequence across entire particle lifetime
+                        let eased_progress = easing.apply(progress);
+                        let index = (eased_progress * glyphs.len() as f32) as usize;
+                        let clamped_index = index.min(glyphs.len() - 1);
+                        self.current_glyph = glyphs[clamped_index];
+                    }
+                }
             }
             GlyphAnimation::TimedCurve { keyframes } => {
                 if keyframes.is_empty() {
@@ -369,13 +432,18 @@ impl ParticleSpawner {
     }
 
     pub fn spawn_persistent(self, world: &mut World, follow_target: Option<Entity>) -> Entity {
-        let spawner_entity = world.spawn(PersistentParticleSpawner {
-            spawner_config: self,
-            follow_target,
-            spawn_continuously: true,
-            time_since_last_spawn: 0.0,
-        }).id();
-        spawner_entity
+        trace!("spawning persistent");
+        world
+            .spawn((
+                PersistentParticleSpawner {
+                    spawner_config: self,
+                    follow_target,
+                    spawn_continuously: true,
+                    time_since_last_spawn: 0.0,
+                },
+                CleanupStatePlay,
+            ))
+            .id()
     }
 }
 

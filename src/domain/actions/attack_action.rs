@@ -6,9 +6,12 @@ use crate::{
     domain::{
         BumpAttack, Condition, ConditionSource, ConditionType, DefaultMeleeAttack,
         DefaultRangedAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
-        Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, PlayerPosition, StatType,
-        Stats, Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
-        systems::{apply_condition_to_entity, condition_system::spawn_condition_particles, destruction_system::EntityDestroyedEvent},
+        Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, PlayerPosition,
+        StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
+        systems::{
+            apply_condition_to_entity, condition_system::spawn_condition_particles,
+            destruction_system::EntityDestroyedEvent,
+        },
     },
     engine::{Audio, Clock, StableId, StableIdRegistry},
     rendering::{
@@ -838,14 +841,15 @@ impl AttackAction {
         duration_ticks: u32,
     ) {
         // Get entity names for logging
-        let attacker_name = world.get::<Label>(attacker_entity)
+        let attacker_name = world
+            .get::<Label>(attacker_entity)
             .map(|label| label.get().to_string())
             .unwrap_or_else(|| format!("Entity({:?})", attacker_entity));
 
-        let target_name = world.get::<Label>(target_entity)
+        let target_name = world
+            .get::<Label>(target_entity)
             .map(|label| label.get().to_string())
             .unwrap_or_else(|| format!("Entity({:?})", target_entity));
-
 
         // Get the attacker's StableId to use as the condition source
         let condition_source =

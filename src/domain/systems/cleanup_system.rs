@@ -1,7 +1,7 @@
 use super::destruction_system::EntityDestroyedEvent;
 use crate::{
     common::Rand,
-    domain::{Destructible, Player, Zone},
+    domain::{ActiveConditions, Destructible, Player, Zone},
     engine::{Audio, Clock},
     states::{CurrentGameState, GameState},
 };
@@ -13,6 +13,7 @@ pub fn on_entity_destroyed_cleanup(
     mut e_destroyed: EventReader<EntityDestroyedEvent>,
     q_destructible: Query<&Destructible>,
     q_player: Query<&Player>,
+    q_conditions: Query<&ActiveConditions>,
     mut q_zones: Query<&mut Zone>,
     audio_registry: Option<Res<Audio>>,
     mut rand: Option<ResMut<Rand>>,
@@ -40,6 +41,15 @@ pub fn on_entity_destroyed_cleanup(
             && let (Some(audio_registry), Some(rand)) = (&audio_registry, &mut rand)
         {
             audio_registry.play_random_from_collection(audio_collection, rand, 0.7);
+        }
+
+        // Clean up condition particle spawners before despawning entity
+        if let Ok(conditions) = q_conditions.get(event.entity) {
+            for condition in &conditions.conditions {
+                if let Some(spawner_entity) = condition.particle_spawner_entity {
+                    cmds.entity(spawner_entity).despawn();
+                }
+            }
         }
 
         cmds.entity(event.entity).despawn();
