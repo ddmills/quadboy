@@ -1,4 +1,4 @@
-use super::{Prefab, PrefabBuilder};
+use super::{Prefab, PrefabBuilder, SpawnValue};
 use crate::{
     common::Palette,
     domain::{BitmaskStyle, LootDrop, LootTableId, MaterialType},
@@ -7,11 +7,23 @@ use crate::{
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_boulder(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
+    let fg1 = if let Some(SpawnValue::Palette(color)) = config.metadata.get("fg1") {
+        *color
+    } else {
+        Palette::Gray
+    };
+
+    let fg2 = if let Some(SpawnValue::Palette(color)) = config.metadata.get("fg2") {
+        *color
+    } else {
+        Palette::Gray
+    };
+
     PrefabBuilder::new()
         .with_base_components(config.pos)
         .with_static_tracking() // Boulders never move
         .with_needs_stable_id()
-        .with_glyph(68, Palette::Gray, Palette::Gray, Layer::Objects)
+        .with_glyph(68, fg1, fg2, Layer::Objects)
         .with_bitmask(BitmaskStyle::Rocks)
         .with_label("Boulder")
         .with_description(

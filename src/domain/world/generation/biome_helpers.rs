@@ -98,7 +98,7 @@ pub fn generate_desert_boulder_ca(constraint_grid: &Grid<bool>, rand: &mut Rand)
         if *constraint_grid.get(x, y).unwrap_or(&true) {
             false
         } else {
-            rand.bool(0.25)
+            rand.bool(0.40)
         }
     });
 
@@ -111,7 +111,7 @@ pub fn generate_desert_boulder_ca(constraint_grid: &Grid<bool>, rand: &mut Rand)
     ca.evolve_steps(&desert_rule, 2);
 
     let smoothing_rule = SmoothingRule::new(0.5);
-    ca.evolve_steps(&smoothing_rule, 2);
+    ca.evolve_steps(&smoothing_rule, 3);
 
     let erosion_rule = ErosionRule::new(3);
     ca.evolve_steps(&erosion_rule, 1);

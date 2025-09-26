@@ -150,4 +150,13 @@ impl DefaultMeleeAttack {
             WeaponFamily::Unarmed,
         )
     }
+
+    pub fn nibble() -> Self {
+        Self::new(
+            1,
+            vec![MaterialType::Flesh],
+            "Nibble",
+            WeaponFamily::Unarmed,
+        )
+    }
 }

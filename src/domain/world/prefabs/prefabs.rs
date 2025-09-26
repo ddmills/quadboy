@@ -4,7 +4,7 @@ use super::{
     spawn_chest, spawn_coyote, spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite,
     spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
     spawn_lever_action_rifle, spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe,
-    spawn_pine_tree, spawn_player, spawn_poncho, spawn_rattlesnake, spawn_ring, spawn_stair_down,
+    spawn_pine_tree, spawn_player, spawn_poncho, spawn_rat, spawn_rattlesnake, spawn_ring, spawn_stair_down,
     spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile, spawn_tree, spawn_wool_shirt,
 };
 use crate::domain::{LootTableId, Terrain, spawn_gold_nugget};
@@ -27,6 +27,7 @@ pub enum PrefabId {
     Rattlesnake,
     Bat,
     Coyote,
+    Rat,
     GiantFirefly,
     Hatchet,
     Lantern,
@@ -124,6 +125,7 @@ impl Prefabs {
         self.register(PrefabId::Rattlesnake, spawn_rattlesnake);
         self.register(PrefabId::Bat, spawn_bat);
         self.register(PrefabId::Coyote, spawn_coyote);
+        self.register(PrefabId::Rat, spawn_rat);
         self.register(PrefabId::GiantFirefly, spawn_giant_firefly);
         self.register(PrefabId::Hatchet, spawn_hatchet);
         self.register(PrefabId::Lantern, spawn_lantern);
@@ -223,6 +225,7 @@ impl fmt::Display for PrefabId {
             PrefabId::Rattlesnake => write!(f, "Rattlesnake"),
             PrefabId::Bat => write!(f, "Bat"),
             PrefabId::Coyote => write!(f, "Coyote"),
+            PrefabId::Rat => write!(f, "Rat"),
             PrefabId::GiantFirefly => write!(f, "Giant Firefly"),
             PrefabId::Hatchet => write!(f, "Hatchet"),
             PrefabId::Lantern => write!(f, "Lantern"),

@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, Rand},
-    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory},
+    common::{Grid, Rand, Palette},
+    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory, SpawnValue},
     rendering::zone_local_to_world,
 };
 use bevy_ecs::world::World;
@@ -45,7 +45,7 @@ impl Biome for DesertBiome {
         let constraint_grid = collect_constraint_grid(zone);
         let boulder_grid = generate_desert_boulder_ca(&constraint_grid, &mut rand);
 
-        place_feature_grid(zone, &boulder_grid, PrefabId::Boulder);
+        place_desert_boulders(zone, &boulder_grid);
 
         generate_desert_cacti(zone, &mut rand, Some(&boulder_grid));
 
@@ -81,6 +81,26 @@ fn generate_desert_cacti(
             if rand.bool(0.02) {
                 let wpos = zone_local_to_world(zone.zone_idx, x, y);
                 zone.push_entity(x, y, Prefab::new(PrefabId::Cactus, wpos));
+            }
+        }
+    }
+}
+
+fn place_desert_boulders(zone: &mut ZoneFactory, boulder_grid: &Grid<bool>) {
+    for x in 0..ZONE_SIZE.0 {
+        for y in 0..ZONE_SIZE.1 {
+            if *boulder_grid.get(x, y).unwrap_or(&false) {
+                let wpos = zone_local_to_world(zone.zone_idx, x, y);
+                let mut boulder_prefab = Prefab::new(PrefabId::Boulder, wpos);
+                boulder_prefab.metadata.insert(
+                    "fg1".to_string(),
+                    SpawnValue::Palette(Palette::DarkRed),
+                );
+                boulder_prefab.metadata.insert(
+                    "fg2".to_string(),
+                    SpawnValue::Palette(Palette::DarkRed),
+                );
+                zone.push_entity(x, y, boulder_prefab);
             }
         }
     }
