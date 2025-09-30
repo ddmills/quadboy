@@ -24,7 +24,8 @@ use crate::{
         Bar, Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
         debug_collider_flags, display_entity_names_at_mouse, render_ai_debug_indicators,
         render_cursor, render_lighting_debug, render_tick_display, spawn_ai_debug_dialog,
-        spawn_debug_ui_entities, spawn_examine_dialog, update_bars, update_xp_progress_bars,
+        spawn_debug_ui_entities, spawn_event_log_ui, spawn_examine_dialog, update_bars,
+        update_xp_progress_bars,
     },
 };
 
@@ -166,7 +167,7 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     // Spawn player debug info
     cmds.spawn((
         Text::new("123").bg(Palette::Black),
-        Position::new_f32(6., 0., 0.),
+        Position::new_f32(6., 1., 0.),
         PlayerDebug,
         CleanupStateExplore,
     ));
@@ -177,8 +178,8 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     // Spawn XP progress bar
     cmds.spawn((
         Text::new("").fg2(Palette::DarkGray).layer(Layer::Ui),
-        Position::new_f32(1., 3., 0.),
-        Bar::new(0, 100, 12, Palette::Yellow, Palette::DarkGray),
+        Position::new_f32(0.5, 4., 0.),
+        Bar::new(0, 100, 18, Palette::Yellow, Palette::DarkGray),
         XPProgressBar::new(30),
         CleanupStateExplore,
     ));
@@ -189,8 +190,8 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
             .fg1(Palette::White)
             .fg2(Palette::DarkGray)
             .layer(Layer::Ui),
-        Position::new_f32(1., 3.5, 0.),
-        Bar::new(1, 1, 12, Palette::Red, Palette::DarkGray),
+        Position::new_f32(0.5, 4.5, 0.),
+        Bar::new(1, 1, 18, Palette::Red, Palette::DarkGray),
         PlayerHPBar,
         CleanupStateExplore,
     ));
@@ -201,8 +202,8 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
             .fg1(Palette::White)
             .fg2(Palette::DarkGray)
             .layer(Layer::Ui),
-        Position::new_f32(1., 4., 0.),
-        Bar::new(0, 1, 12, Palette::Cyan, Palette::DarkGray),
+        Position::new_f32(0.5, 5., 0.),
+        Bar::new(0, 1, 18, Palette::Cyan, Palette::DarkGray),
         PlayerArmorBar,
         CleanupStateExplore,
     ));
@@ -213,10 +214,13 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
             .fg1(Palette::White)
             .fg2(Palette::DarkGray)
             .layer(Layer::Ui),
-        Position::new_f32(1., 4., 0.),
+        Position::new_f32(0.5, 5.5, 0.),
         PlayerAmmoBar,
         CleanupStateExplore,
     ));
+
+    // Spawn event log UI
+    spawn_event_log_ui(&mut cmds);
 }
 
 fn on_leave_explore() {
@@ -322,34 +326,34 @@ fn update_player_ammo_bar(
 
 fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {
     cmds.spawn((
-        Position::new_f32(3., 1.5, 0.),
+        Position::new_f32(3., 0.5, 0.),
         Button::new("({Y|M}) MAP", callbacks.open_map).hotkey(macroquad::input::KeyCode::M),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(7., 1.5, 0.),
+        Position::new_f32(7., 0.5, 0.),
         Button::new("({Y|I}) INVENTORY", callbacks.open_inventory)
             .hotkey(macroquad::input::KeyCode::I),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(16., 1.5, 0.),
+        Position::new_f32(16., 0.5, 0.),
         Button::new("({Y|B}) DEBUG", callbacks.open_debug_spawn)
             .hotkey(macroquad::input::KeyCode::B),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(22., 1.5, 0.),
+        Position::new_f32(22., 0.5, 0.),
         Button::new("({Y|Y}) ATTRIBUTES", callbacks.open_attributes)
             .hotkey(macroquad::input::KeyCode::Y),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(30., 1.5, 0.),
+        Position::new_f32(30., 0.5, 0.),
         Button::new("({Y|ESC}) PAUSE", callbacks.open_pause)
             .hotkey(macroquad::input::KeyCode::Escape),
         CleanupStateExplore,

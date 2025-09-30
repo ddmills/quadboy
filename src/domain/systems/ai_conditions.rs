@@ -118,10 +118,7 @@ pub fn try_handle_confused(world: &mut World, entity: Entity) -> bool {
                 }
 
                 // If random movement fails, skip turn (wait)
-                if let Some(mut energy) = world.get_mut::<Energy>(entity) {
-                    let cost = get_base_energy_cost(EnergyActionType::Wait);
-                    energy.consume_energy(cost);
-                }
+                ai_try_wait(world, entity);
                 return true;
             }
         }

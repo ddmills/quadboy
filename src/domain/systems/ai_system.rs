@@ -48,29 +48,85 @@ pub fn ai_turn(world: &mut World) {
     };
 
     // Track consecutive turns for the same entity to detect stuck AI
-    let is_stuck = {
+    let (is_stuck, needs_energy_check) = {
         let mut tracker = world.get_resource_or_insert_with(AiTurnTracker::default);
         if tracker.last_entity == Some(current_entity) {
             tracker.consecutive_count += 1;
-            if tracker.consecutive_count >= 5 {
+            if tracker.consecutive_count >= 10 {
                 eprintln!(
-                    "WARNING: Entity {:?} stuck in AI turn loop ({}x), forcing wait",
+                    "WARNING: Entity {:?} stuck in AI turn loop ({}x), checking energy",
                     current_entity, tracker.consecutive_count
                 );
-                tracker.consecutive_count = 0;
-                true
+                (true, true)
             } else {
-                false
+                (false, false)
             }
         } else {
             tracker.last_entity = Some(current_entity);
             tracker.consecutive_count = 1;
-            false
+            (false, false)
         }
     };
 
+    if needs_energy_check {
+        let has_energy = world.get::<Energy>(current_entity).is_some();
+        let energy_value = world
+            .get::<Energy>(current_entity)
+            .map(|e| e.value)
+            .unwrap_or(0);
+
+        if !has_energy {
+            eprintln!(
+                "ERROR: Entity {:?} has no Energy component! Skipping turn.",
+                current_entity
+            );
+            // Reset tracker to avoid getting stuck on this entity
+            let mut tracker = world.get_resource_or_insert_with(AiTurnTracker::default);
+            tracker.consecutive_count = 0;
+            tracker.last_entity = None;
+            return;
+        } else {
+            // Count other entities and their energy
+            let mut other_entities = Vec::new();
+            for (entity, energy) in world.query::<(Entity, &Energy)>().iter(world) {
+                if entity != current_entity {
+                    other_entities.push((entity, energy.value));
+                }
+            }
+            other_entities.sort_by_key(|&(_, e)| -e); // Sort by energy descending
+
+            eprintln!(
+                "Entity {:?} energy: {}, top 3 others: {:?}",
+                current_entity,
+                energy_value,
+                &other_entities[..3.min(other_entities.len())]
+            );
+
+            // Reset counter since we're forcing a wait
+            let mut tracker = world.get_resource_or_insert_with(AiTurnTracker::default);
+            tracker.consecutive_count = 0;
+        }
+    }
+
     if is_stuck {
-        ai_try_wait(world, current_entity);
+        // Check if wait actually consumes energy
+        let energy_before = world
+            .get::<Energy>(current_entity)
+            .map(|e| e.value)
+            .unwrap_or(0);
+        let wait_result = ai_try_wait(world, current_entity);
+        let energy_after = world
+            .get::<Energy>(current_entity)
+            .map(|e| e.value)
+            .unwrap_or(0);
+
+        eprintln!(
+            "Wait result: {}, energy: {} → {} (consumed: {})",
+            wait_result,
+            energy_before,
+            energy_after,
+            energy_before - energy_after
+        );
         return;
     }
 
@@ -118,6 +174,7 @@ pub fn ai_turn(world: &mut World) {
         // we have a target, but we can't move toward it!
         trace!("AI: Can't reach target!");
         ai_try_wait(world, current_entity);
+        return;
     } else {
         // No target - try to wander (30% chance) or wait (70% chance)
         let Some(mut rand) = world.get_resource_mut::<Rand>() else {

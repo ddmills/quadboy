@@ -41,6 +41,7 @@ pub enum LootTableId {
     GiantFireflyLoot,
     BoulderLoot,
     RatLoot,
+    BeetleLoot,
 }
 
 #[derive(Resource)]
@@ -228,6 +229,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Bandit, 1.0)
                 .add(PrefabId::Rattlesnake, 0.9)
                 .add(PrefabId::Coyote, 0.5)
+                .add(PrefabId::GiantBeetle, 0.8)
                 .build(),
         );
 
@@ -237,6 +239,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Bandit, 1.0)
                 .add(PrefabId::Coyote, 0.6)
                 .add(PrefabId::Rattlesnake, 0.3)
+                .add(PrefabId::GiantBeetle, 1.0)
                 .build(),
         );
 
@@ -329,6 +332,14 @@ impl LootTableRegistry {
         self.tables.insert(
             LootTableId::BoulderLoot,
             LootTable::builder().add(PrefabId::GoldNugget, 1.0).build(),
+        );
+
+        self.tables.insert(
+            LootTableId::BeetleLoot,
+            LootTable::builder()
+                .add(PrefabId::GoldNugget, 0.5)
+                .add(PrefabId::Pickaxe, 0.3)
+                .build(),
         );
     }
 

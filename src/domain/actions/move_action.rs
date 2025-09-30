@@ -53,12 +53,13 @@ impl GameAction for MoveAction {
             get_energy_cost(EnergyActionType::Move, stats)
         };
 
-        // Then consume energy
+        // Then consume energy - return false if no Energy component
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
             energy.consume_energy(cost);
+            true
+        } else {
+            false
         }
-
-        true
     }
 }
 

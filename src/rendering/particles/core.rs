@@ -432,7 +432,6 @@ impl ParticleSpawner {
     }
 
     pub fn spawn_persistent(self, world: &mut World, follow_target: Option<Entity>) -> Entity {
-        trace!("spawning persistent");
         world
             .spawn((
                 PersistentParticleSpawner {

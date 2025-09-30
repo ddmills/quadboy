@@ -2,11 +2,12 @@ use bevy_ecs::prelude::*;
 
 use crate::{
     domain::{
-        Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable,
+        Energy, EnergyActionType, InInventory, Inventory, Item, Player, StackCount, Stackable,
         StackableType, Zone, actions::GameAction, get_base_energy_cost,
         inventory::InventoryChangedEvent,
+        systems::game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
     },
-    engine::{StableId, StableIdRegistry},
+    engine::{Clock, StableId, StableIdRegistry},
     rendering::Position,
 };
 
@@ -60,6 +61,29 @@ impl GameAction for PickupItemAction {
                     remove_item_from_zone(world, item_entity);
                     world.entity_mut(item_entity).despawn();
 
+                    // Send pickup log event
+                    let knowledge = if world.get::<Player>(self.entity).is_some() {
+                        KnowledgeLevel::Player
+                    } else {
+                        let picker_pos = world.get::<Position>(self.entity)
+                            .map(|p| (p.x as usize, p.y as usize, p.z as usize))
+                            .unwrap_or((0, 0, 0));
+                        KnowledgeLevel::Action {
+                            actor: self.entity,
+                            location: picker_pos,
+                        }
+                    };
+
+                    world.send_event(GameLogEvent {
+                        message: LogMessage::ItemPickup {
+                            picker: self.entity,
+                            item: item_entity,
+                            quantity: Some(pickup_count),
+                        },
+                        tick: world.resource::<Clock>().current_tick(),
+                        knowledge,
+                    });
+
                     // Consume energy
                     if self.spend_energy
                         && let Some(mut energy) = world.get_mut::<Energy>(self.entity)
@@ -73,6 +97,29 @@ impl GameAction for PickupItemAction {
                     if let Some(mut ground_stack) = world.get_mut::<StackCount>(item_entity) {
                         ground_stack.count = overflow;
                     }
+
+                    // Send partial pickup log event
+                    let knowledge = if world.get::<Player>(self.entity).is_some() {
+                        KnowledgeLevel::Player
+                    } else {
+                        let picker_pos = world.get::<Position>(self.entity)
+                            .map(|p| (p.x as usize, p.y as usize, p.z as usize))
+                            .unwrap_or((0, 0, 0));
+                        KnowledgeLevel::Action {
+                            actor: self.entity,
+                            location: picker_pos,
+                        }
+                    };
+
+                    world.send_event(GameLogEvent {
+                        message: LogMessage::ItemPickup {
+                            picker: self.entity,
+                            item: item_entity,
+                            quantity: Some(pickup_count - overflow),
+                        },
+                        tick: world.resource::<Clock>().current_tick(),
+                        knowledge,
+                    });
 
                     // Consume energy for partial pickup
                     if self.spend_energy
@@ -131,6 +178,29 @@ impl GameAction for PickupItemAction {
             let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
             energy.consume_energy(cost);
         }
+
+        // Send pickup log event for normal pickup
+        let knowledge = if world.get::<Player>(self.entity).is_some() {
+            KnowledgeLevel::Player
+        } else {
+            let picker_pos = world.get::<Position>(self.entity)
+                .map(|p| (p.x as usize, p.y as usize, p.z as usize))
+                .unwrap_or((0, 0, 0));
+            KnowledgeLevel::Action {
+                actor: self.entity,
+                location: picker_pos,
+            }
+        };
+
+        world.send_event(GameLogEvent {
+            message: LogMessage::ItemPickup {
+                picker: self.entity,
+                item: item_entity,
+                quantity: None, // Single item pickup
+            },
+            tick: world.resource::<Clock>().current_tick(),
+            knowledge,
+        });
 
         world.send_event(InventoryChangedEvent);
 

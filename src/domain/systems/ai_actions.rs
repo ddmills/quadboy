@@ -315,6 +315,18 @@ pub fn ai_try_move_toward(
         target_pos.2 as i32,
     );
 
+    // Build zone cache first
+    for zone in world.query::<&Zone>().iter(world) {
+        zone_cache.insert(zone.idx, zone);
+    }
+
+    // Check if target zone is loaded
+    let target_zone_idx = world_to_zone_idx(target_pos.0, target_pos.1, target_pos.2);
+    if !zone_cache.contains_key(&target_zone_idx) {
+        // Target is in an unloaded zone, can't path there
+        return false;
+    }
+
     // check if on different Z levels!
     if start_z != target_z {
         let going_down = start_z < target_z;
@@ -332,10 +344,6 @@ pub fn ai_try_move_toward(
         .get::<MovementCapabilities>(entity)
         .unwrap_or(&MovementCapabilities::terrestrial())
         .flags;
-
-    for zone in world.query::<&Zone>().iter(world) {
-        zone_cache.insert(zone.idx, zone);
-    }
 
     let deltas = [
         (-1, -1),
@@ -362,10 +370,7 @@ pub fn ai_try_move_toward(
 
             let to_zone_idx = world_to_zone_idx(to_x as usize, to_y as usize, target_z as usize);
             let Some(zone) = zone_cache.get(&to_zone_idx) else {
-                trace!(
-                    "zone not in cache {},{},{} = {}",
-                    to_x, to_y, target_z, to_zone_idx
-                );
+                // Zone not loaded, can't path through it
                 return f32::INFINITY;
             };
 

@@ -12,6 +12,7 @@ pub enum CreatureType {
     Rattlesnake,
     Bat,
     Rat,
+    Beetle,
 }
 
 impl CreatureType {
@@ -23,6 +24,7 @@ impl CreatureType {
             CreatureType::Rattlesnake => AudioKey::Hiss1,
             CreatureType::Bat => AudioKey::Hiss1,
             CreatureType::Rat => AudioKey::Hiss1,
+            CreatureType::Beetle => AudioKey::Hiss1,
         }
     }
 }

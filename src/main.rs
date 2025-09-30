@@ -47,9 +47,12 @@ use crate::{
         systems::hit_blink_system::hit_blink_system,
         systems::knockback_animation_system::knockback_animation_system,
         systems::smooth_movement_system::smooth_movement_system,
-        systems::xp_system::{
-            LevelUpEvent, LevelUpParticleQueue, XPGainEvent, apply_xp_gain, award_xp_on_kill,
-            handle_level_up, process_level_up_particles,
+        systems::{
+            game_log_system::{GameLog, GameLogEvent},
+            xp_system::{
+                LevelUpEvent, LevelUpParticleQueue, XPGainEvent, apply_xp_gain, award_xp_on_kill,
+                handle_level_up, process_level_up_particles,
+            },
         },
     },
     engine::{
@@ -67,11 +70,13 @@ use crate::{
     },
     ui::{
         DialogState, ListContext, UiFocus, clear_mouse_capture_when_not_hovering,
-        hotkey_pressed_timer_system, list_cursor_visibility, list_mouse_wheel_scroll,
-        render_dialog_content, selectable_list_interaction, setup_buttons, setup_dialogs,
-        setup_lists, sync_focus_to_interaction, tab_navigation, ui_interaction_system,
+        event_log_scroll_system, event_log_visibility_system, hotkey_pressed_timer_system,
+        list_cursor_visibility, list_mouse_wheel_scroll, render_dialog_content,
+        selectable_list_interaction, setup_buttons, setup_dialogs, setup_lists,
+        sync_focus_to_interaction, tab_navigation, ui_interaction_system,
         unified_click_system, unified_keyboard_activation_system, unified_style_system,
-        update_focus_from_mouse, update_list_context,
+        update_event_log_display, update_event_log_positioning, update_focus_from_mouse,
+        update_list_context,
     },
 };
 
@@ -204,11 +209,13 @@ async fn main() {
         .register_event::<InventoryChangedEvent>()
         .register_event::<LightStateChangedEvent>()
         .register_event::<ExplosionEvent>()
+        .register_event::<GameLogEvent>()
         .insert_resource(tileset_registry)
         .insert_resource(audio_registry)
         .insert_resource(reg)
         .insert_resource(LootTableRegistry::new())
         .init_resource::<LevelUpParticleQueue>()
+        .init_resource::<GameLog>()
         .init_resource::<Mouse>()
         .init_resource::<ScreenSize>()
         .init_resource::<UiFocus>()
@@ -270,6 +277,15 @@ async fn main() {
                 update_crt_uniforms,
                 render_fps,
                 (on_refresh_bitmask, on_bitmask_spawn).chain(),
+            ),
+        )
+        .add_systems(
+            ScheduleType::Update,
+            (
+                update_event_log_positioning,
+                update_event_log_display,
+                event_log_scroll_system,
+                event_log_visibility_system,
             ),
         )
         .add_systems(

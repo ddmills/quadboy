@@ -4,10 +4,11 @@ use macroquad::prelude::trace;
 use crate::{
     domain::{
         Collider, DynamicEntity, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item,
-        StaticEntity, StaticEntitySpawnedEvent, UnequipItemAction, actions::GameAction,
+        Player, StaticEntity, StaticEntitySpawnedEvent, UnequipItemAction, actions::GameAction,
         get_base_energy_cost, inventory::InventoryChangedEvent,
+        systems::game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
     },
-    engine::{StableId, StableIdRegistry},
+    engine::{Clock, StableId, StableIdRegistry},
     rendering::Position,
 };
 
@@ -86,6 +87,26 @@ impl GameAction for DropItemAction {
             let cost = get_base_energy_cost(EnergyActionType::DropItem);
             energy.consume_energy(cost);
         }
+
+        // Send drop log event
+        let knowledge = if world.get::<Player>(self.entity).is_some() {
+            KnowledgeLevel::Player
+        } else {
+            KnowledgeLevel::Action {
+                actor: self.entity,
+                location: self.drop_position,
+            }
+        };
+
+        world.send_event(GameLogEvent {
+            message: LogMessage::ItemDrop {
+                dropper: self.entity,
+                item: item_entity,
+                quantity: None, // TODO: Add stack count support if needed
+            },
+            tick: world.resource::<Clock>().current_tick(),
+            knowledge,
+        });
 
         world.send_event(InventoryChangedEvent);
 

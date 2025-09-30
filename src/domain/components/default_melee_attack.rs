@@ -159,4 +159,13 @@ impl DefaultMeleeAttack {
             WeaponFamily::Unarmed,
         )
     }
+
+    pub fn mandible_crush() -> Self {
+        Self::new(
+            5,
+            vec![MaterialType::Flesh, MaterialType::Wood],
+            "Mandible Crush",
+            WeaponFamily::Unarmed,
+        )
+    }
 }

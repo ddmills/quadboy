@@ -1,8 +1,12 @@
 use crate::{
     domain::{
-        AttributePoints, GameFormulas, Health, Level, Stats,
-        systems::destruction_system::{DestructionCause, EntityDestroyedEvent},
+        AttributePoints, GameFormulas, Health, Level, Player, Stats,
+        systems::{
+            destruction_system::{DestructionCause, EntityDestroyedEvent},
+            game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
+        },
     },
+    engine::Clock,
     rendering::{Position, spawn_level_up_celebration},
 };
 use bevy_ecs::prelude::*;
@@ -33,7 +37,10 @@ pub struct LevelUpEvent {
 pub fn award_xp_on_kill(
     mut e_entity_destroyed: EventReader<EntityDestroyedEvent>,
     mut e_xp_gain: EventWriter<XPGainEvent>,
+    mut e_game_log: EventWriter<GameLogEvent>,
     q_levels: Query<&Level>,
+    q_player: Query<&Player>,
+    clock: Res<Clock>,
 ) {
     for destroyed_event in e_entity_destroyed.read() {
         // Only process attack-based deaths
@@ -56,6 +63,19 @@ pub fn award_xp_on_kill(
                             victim_level.current_level
                         ),
                     });
+
+                    // Send XP gain log event if player is involved
+                    if q_player.get(attacker).is_ok() {
+                        e_game_log.send(GameLogEvent {
+                            message: LogMessage::XpGain {
+                                entity: attacker,
+                                amount: xp_gained,
+                                source: destroyed_event.entity,
+                            },
+                            tick: clock.current_tick(),
+                            knowledge: KnowledgeLevel::Player,
+                        });
+                    }
                 }
             }
         }
@@ -67,8 +87,11 @@ pub fn award_xp_on_kill(
 pub fn apply_xp_gain(
     mut e_xp_gain: EventReader<XPGainEvent>,
     mut e_level_up: EventWriter<LevelUpEvent>,
+    mut e_game_log: EventWriter<GameLogEvent>,
     mut q_levels: Query<&mut Level>,
     mut q_attribute_points: Query<&mut AttributePoints>,
+    q_player: Query<&Player>,
+    clock: Res<Clock>,
 ) {
     for xp_event in e_xp_gain.read() {
         if let Ok(mut level) = q_levels.get_mut(xp_event.recipient_entity) {
@@ -86,23 +109,24 @@ pub fn apply_xp_gain(
                     levels_gained,
                 });
 
+                // Send level up log event if player is involved
+                if q_player.get(xp_event.recipient_entity).is_ok() {
+                    e_game_log.send(GameLogEvent {
+                        message: LogMessage::LevelUp {
+                            entity: xp_event.recipient_entity,
+                            new_level: level.current_level,
+                        },
+                        tick: clock.current_tick(),
+                        knowledge: KnowledgeLevel::Player,
+                    });
+                }
+
                 // Grant additional attribute points for level up
                 if let Ok(mut attribute_points) =
                     q_attribute_points.get_mut(xp_event.recipient_entity)
                 {
                     attribute_points.available += levels_gained;
-                    println!(
-                        "Entity leveled up from {} to {}! (+{} XP, +{} attribute points)",
-                        old_level, level.current_level, xp_event.xp_amount, levels_gained
-                    );
-                } else {
-                    println!(
-                        "Entity leveled up from {} to {}! (+{} XP)",
-                        old_level, level.current_level, xp_event.xp_amount
-                    );
                 }
-            } else {
-                println!("Entity gained {} XP", xp_event.xp_amount);
             }
         }
     }
@@ -127,11 +151,6 @@ pub fn handle_level_up(
                 let world_pos = position.world();
                 particle_queue.requests.push(world_pos);
             }
-
-            println!(
-                "LEVEL UP! Level {} reached - HP restored to {}/{}!",
-                level_up_event.new_level, health.current, max_hp
-            );
         }
     }
 }

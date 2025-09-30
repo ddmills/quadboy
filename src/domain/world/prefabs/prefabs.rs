@@ -2,7 +2,7 @@ use super::{
     SpawnPrefabCommand, spawn_amulet, spawn_apple, spawn_bandit, spawn_bat, spawn_bedroll,
     spawn_boulder, spawn_brown_bear, spawn_cactus, spawn_campfire, spawn_cavalry_sword,
     spawn_chest, spawn_coyote, spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite,
-    spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
+    spawn_giant_beetle, spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
     spawn_lever_action_rifle, spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe,
     spawn_pine_tree, spawn_player, spawn_poncho, spawn_rat, spawn_rattlesnake, spawn_ring,
     spawn_stair_down, spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile, spawn_tree,
@@ -30,6 +30,7 @@ pub enum PrefabId {
     Coyote,
     Rat,
     GiantFirefly,
+    GiantBeetle,
     Hatchet,
     Lantern,
     Pickaxe,
@@ -128,6 +129,7 @@ impl Prefabs {
         self.register(PrefabId::Coyote, spawn_coyote);
         self.register(PrefabId::Rat, spawn_rat);
         self.register(PrefabId::GiantFirefly, spawn_giant_firefly);
+        self.register(PrefabId::GiantBeetle, spawn_giant_beetle);
         self.register(PrefabId::Hatchet, spawn_hatchet);
         self.register(PrefabId::Lantern, spawn_lantern);
         self.register(PrefabId::Pickaxe, spawn_pickaxe);
@@ -228,6 +230,7 @@ impl fmt::Display for PrefabId {
             PrefabId::Coyote => write!(f, "Coyote"),
             PrefabId::Rat => write!(f, "Rat"),
             PrefabId::GiantFirefly => write!(f, "Giant Firefly"),
+            PrefabId::GiantBeetle => write!(f, "Giant Beetle"),
             PrefabId::Hatchet => write!(f, "Hatchet"),
             PrefabId::Lantern => write!(f, "Lantern"),
             PrefabId::Pickaxe => write!(f, "Pickaxe"),

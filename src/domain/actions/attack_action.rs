@@ -6,13 +6,14 @@ use crate::{
     domain::{
         BumpAttack, Condition, ConditionSource, ConditionType, DefaultMeleeAttack,
         DefaultRangedAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
-        Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, PlayerPosition,
+        Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, Player, PlayerPosition,
         StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
         actions::GameAction,
         get_base_energy_cost,
         systems::{
             apply_condition_to_entity, condition_system::spawn_condition_particles,
             destruction_system::EntityDestroyedEvent,
+            game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
         },
     },
     engine::{Audio, Clock, StableId, StableIdRegistry},
@@ -145,8 +146,13 @@ impl GameAction for AttackAction {
             (weapon, weapon_entity)
         };
 
-        // Use the unified attack method - only proceed if we have attacker position
+        // Use the unified attack method - only proceed if we have attacker position and Energy component
         if let Some(attacker_pos) = attacker_pos {
+            // Check if attacker has Energy component before proceeding
+            if world.get::<Energy>(attacker_entity).is_none() {
+                return false;
+            }
+
             self.apply_attack(
                 world,
                 attacker_entity,
@@ -515,6 +521,26 @@ impl AttackAction {
                 health.take_damage_from_source(rolled_damage, current_tick, attacker_stable_id);
                 *should_apply_hit_blink = true;
 
+                // Send attack log event
+                let knowledge = if world.get::<Player>(attacker_entity).is_some() || world.get::<Player>(target_entity).is_some() {
+                    KnowledgeLevel::Player
+                } else {
+                    KnowledgeLevel::Action {
+                        actor: attacker_entity,
+                        location: attacker_pos,
+                    }
+                };
+
+                world.send_event(GameLogEvent {
+                    message: LogMessage::Attack {
+                        attacker: attacker_entity,
+                        target: target_entity,
+                        damage: rolled_damage,
+                    },
+                    tick: current_tick,
+                    knowledge,
+                });
+
                 // Apply hit effects to flesh targets
                 self.apply_hit_effects(world, attacker_entity, target_entity, hit_effects);
 
@@ -879,6 +905,28 @@ impl AttackAction {
         // Apply the poison condition to the target
         match apply_condition_to_entity(target_entity, poison_condition, world) {
             Ok(()) => {
+                // Send poison applied log event
+                let knowledge = if world.get::<Player>(attacker_entity).is_some() || world.get::<Player>(target_entity).is_some() {
+                    KnowledgeLevel::Player
+                } else {
+                    let attacker_pos = world.get::<Position>(attacker_entity)
+                        .map(|p| (p.x as usize, p.y as usize, p.z as usize))
+                        .unwrap_or((0, 0, 0));
+                    KnowledgeLevel::Action {
+                        actor: attacker_entity,
+                        location: attacker_pos,
+                    }
+                };
+
+                world.send_event(GameLogEvent {
+                    message: LogMessage::PoisonApplied {
+                        source: attacker_entity,
+                        target: target_entity,
+                    },
+                    tick: world.resource::<Clock>().current_tick(),
+                    knowledge,
+                });
+
                 // Immediately spawn particle effects for the new condition
                 spawn_condition_particles(world);
             }
@@ -919,6 +967,28 @@ impl AttackAction {
         // Apply the bleeding condition to the target
         match apply_condition_to_entity(target_entity, bleeding_condition, world) {
             Ok(()) => {
+                // Send bleeding applied log event
+                let knowledge = if world.get::<Player>(attacker_entity).is_some() || world.get::<Player>(target_entity).is_some() {
+                    KnowledgeLevel::Player
+                } else {
+                    let attacker_pos = world.get::<Position>(attacker_entity)
+                        .map(|p| (p.x as usize, p.y as usize, p.z as usize))
+                        .unwrap_or((0, 0, 0));
+                    KnowledgeLevel::Action {
+                        actor: attacker_entity,
+                        location: attacker_pos,
+                    }
+                };
+
+                world.send_event(GameLogEvent {
+                    message: LogMessage::BleedingApplied {
+                        source: attacker_entity,
+                        target: target_entity,
+                    },
+                    tick: world.resource::<Clock>().current_tick(),
+                    knowledge,
+                });
+
                 // Immediately spawn particle effects for the new condition
                 spawn_condition_particles(world);
             }
@@ -958,6 +1028,27 @@ impl AttackAction {
         // Apply the burning condition to the target
         match apply_condition_to_entity(target_entity, burning_condition, world) {
             Ok(()) => {
+                // Send burning applied log event
+                let knowledge = if world.get::<Player>(target_entity).is_some() {
+                    KnowledgeLevel::Player
+                } else {
+                    let target_pos = world.get::<Position>(target_entity)
+                        .map(|p| (p.x as usize, p.y as usize, p.z as usize))
+                        .unwrap_or((0, 0, 0));
+                    KnowledgeLevel::Action {
+                        actor: target_entity,
+                        location: target_pos,
+                    }
+                };
+
+                world.send_event(GameLogEvent {
+                    message: LogMessage::BurningApplied {
+                        target: target_entity,
+                    },
+                    tick: world.resource::<Clock>().current_tick(),
+                    knowledge,
+                });
+
                 // Immediately spawn particle effects for the new condition
                 spawn_condition_particles(world);
             }
