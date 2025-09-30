@@ -12,7 +12,7 @@ use crate::{
     domain::{
         AiContext, AiController, AttackAction, DefaultRangedAttack, Energy, EnergyActionType,
         EquipmentSlot, EquipmentSlots, MoveAction, MovementCapabilities, StairDown, StairUp,
-        Weapon, WeaponType, Zone, get_base_energy_cost,
+        WaitAction, Weapon, WeaponType, Zone, actions::GameAction, get_base_energy_cost,
     },
     engine::{StableId, StableIdRegistry},
     rendering::{Position, world_to_zone_idx, world_to_zone_local, zone_local_to_world, zone_xyz},
@@ -59,8 +59,7 @@ pub fn ai_try_use_stair(world: &mut World, entity: Entity, going_down: bool) -> 
                 entity,
                 new_position: (pos_world.0, pos_world.1, new_z),
             };
-            action.apply(world);
-            return true;
+            return action.try_apply(world);
         }
     }
 
@@ -151,8 +150,7 @@ pub fn ai_try_attacking_nearby(world: &mut World, entity: Entity, context: &mut 
         is_bump_attack: true,
     };
 
-    attack.apply(world);
-    true
+    attack.try_apply(world)
 }
 
 pub fn ai_try_ranged_attack(world: &mut World, entity: Entity, context: &mut AiContext) -> bool {
@@ -215,8 +213,7 @@ pub fn ai_try_ranged_attack(world: &mut World, entity: Entity, context: &mut AiC
                                     is_bump_attack: false,
                                 };
 
-                                attack.apply(world);
-                                return true;
+                                return attack.try_apply(world);
                             }
                         }
                     }
@@ -261,8 +258,7 @@ pub fn ai_try_ranged_attack(world: &mut World, entity: Entity, context: &mut AiC
                     is_bump_attack: false,
                 };
 
-                attack.apply(world);
-                return true;
+                return attack.try_apply(world);
             }
         }
     }
@@ -415,8 +411,7 @@ pub fn ai_try_move_toward(
         ),
     };
 
-    action.apply(world);
-    true
+    action.try_apply(world)
 }
 
 pub fn ai_try_flee_from(
@@ -498,8 +493,7 @@ pub fn ai_try_flee_from(
             entity,
             new_position: flee_to,
         };
-        action.apply(world);
-        return true;
+        return action.try_apply(world);
     }
 
     false
@@ -576,8 +570,7 @@ pub fn ai_try_random_move(world: &mut World, entity: Entity) -> bool {
         entity,
         new_position: chosen_pos,
     };
-    action.apply(world);
-    true
+    action.try_apply(world)
 }
 
 pub fn ai_try_wander(world: &mut World, entity: Entity) -> bool {
@@ -668,13 +661,9 @@ pub fn ai_try_wander(world: &mut World, entity: Entity) -> bool {
         entity,
         new_position: chosen_pos,
     };
-    action.apply(world);
+    action.try_apply(world)
+}
 
-    // Consume energy for wandering (same as movement)
-    if let Some(mut energy) = world.get_mut::<Energy>(entity) {
-        let cost = get_base_energy_cost(EnergyActionType::Move);
-        energy.consume_energy(cost);
-    }
-
-    true
+pub fn ai_try_wait(world: &mut World, entity: Entity) -> bool {
+    WaitAction { entity }.try_apply(world)
 }

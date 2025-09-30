@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{Energy, EquipmentSlot, EquipmentSlots, StatType, Stats, Weapon, WeaponType},
+    domain::{
+        Energy, EquipmentSlot, EquipmentSlots, StatType, Stats, Weapon, WeaponType,
+        actions::GameAction,
+    },
     engine::{Audio, StableId, StableIdRegistry},
 };
 
@@ -9,45 +12,45 @@ pub struct ReloadAction {
     pub entity: Entity,
 }
 
-impl Command for ReloadAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for ReloadAction {
+    fn try_apply(self, world: &mut World) -> bool {
         let Some(registry) = world.get_resource::<StableIdRegistry>() else {
-            return;
+            return false;
         };
 
         let Some(equipment) = world.get::<EquipmentSlots>(self.entity) else {
-            return;
+            return false;
         };
 
         let weapon_id = equipment.get_equipped_item(EquipmentSlot::MainHand);
 
         let Some(weapon_id) = weapon_id else {
-            return;
+            return false;
         };
 
         let Some(weapon_entity) = registry.get_entity(StableId(weapon_id)) else {
-            return;
+            return false;
         };
 
         let (clip_size, current_ammo, reload_audio, reload_complete_audio, energy_cost) = {
             let Some(weapon) = world.get::<Weapon>(weapon_entity) else {
-                return;
+                return false;
             };
 
             // Only ranged weapons can be reloaded
             if weapon.weapon_type != WeaponType::Ranged {
-                return;
+                return false;
             }
 
             let Some(clip_size) = weapon.clip_size else {
-                return;
+                return false;
             };
 
             let current_ammo = weapon.current_ammo.unwrap_or(0);
 
             // Can't reload if already at max capacity
             if current_ammo >= clip_size {
-                return;
+                return false;
             }
 
             // Calculate energy cost using reload speed stat
@@ -95,5 +98,13 @@ impl Command for ReloadAction {
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
             energy.consume_energy(energy_cost);
         }
+
+        true
+    }
+}
+
+impl Command for ReloadAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }

@@ -16,8 +16,8 @@ use crate::{
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableId, StableIdRegistry},
     rendering::{
-        Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx, world_to_zone_local,
-        zone_local_to_world, setup_zone_outline_state, spawn_zone_outline,
+        Layer, Position, ScreenSize, Text, Visibility, setup_zone_outline_state,
+        spawn_zone_outline, world_to_zone_idx, world_to_zone_local, zone_local_to_world,
     },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
@@ -48,7 +48,13 @@ impl Plugin for ExploreStatePlugin {
         GameStatePlugin::new(GameState::Explore)
             .on_enter(
                 app,
-                (setup_callbacks, setup_zone_outline_state, on_enter_explore, center_camera_on_player).chain(),
+                (
+                    setup_callbacks,
+                    setup_zone_outline_state,
+                    on_enter_explore,
+                    center_camera_on_player,
+                )
+                    .chain(),
             )
             .on_update(
                 app,
@@ -179,7 +185,10 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn player HP display
     cmds.spawn((
-        Text::new("").fg1(Palette::White).fg2(Palette::DarkGray).layer(Layer::Ui),
+        Text::new("")
+            .fg1(Palette::White)
+            .fg2(Palette::DarkGray)
+            .layer(Layer::Ui),
         Position::new_f32(1., 3.5, 0.),
         Bar::new(1, 1, 12, Palette::Red, Palette::DarkGray),
         PlayerHPBar,
@@ -188,7 +197,10 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn player armor display
     cmds.spawn((
-        Text::new("").fg1(Palette::White).fg2(Palette::DarkGray).layer(Layer::Ui),
+        Text::new("")
+            .fg1(Palette::White)
+            .fg2(Palette::DarkGray)
+            .layer(Layer::Ui),
         Position::new_f32(1., 4., 0.),
         Bar::new(0, 1, 12, Palette::Cyan, Palette::DarkGray),
         PlayerArmorBar,
@@ -197,7 +209,10 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn player ammo display
     cmds.spawn((
-        Text::new("").fg1(Palette::White).fg2(Palette::DarkGray).layer(Layer::Ui),
+        Text::new("")
+            .fg1(Palette::White)
+            .fg2(Palette::DarkGray)
+            .layer(Layer::Ui),
         Position::new_f32(1., 4., 0.),
         PlayerAmmoBar,
         CleanupStateExplore,

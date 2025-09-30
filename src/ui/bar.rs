@@ -3,9 +3,9 @@ use macroquad::prelude::trace;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{palette_to_char, Palette},
+    common::{Palette, palette_to_char},
     engine::{SerializableComponent, Time},
-    rendering::Text
+    rendering::Text,
 };
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
@@ -21,7 +21,13 @@ pub struct Bar {
 }
 
 impl Bar {
-    pub fn new(current: usize, max: usize, width: usize, color: Palette, color_empty: Palette) -> Self {
+    pub fn new(
+        current: usize,
+        max: usize,
+        width: usize,
+        color: Palette,
+        color_empty: Palette,
+    ) -> Self {
         trace!("New bar: {}/{} width={}", current, max, width);
         Self {
             current,
@@ -57,20 +63,16 @@ impl Bar {
         let mut result = String::new();
 
         if full_sections > 0 {
-            result.push_str(&format!("{{{}|{}}}",
-                color_char,
-                "½".repeat(full_sections)
-            ));
+            result.push_str(&format!("{{{}|{}}}", color_char, "½".repeat(full_sections)));
         }
 
         if has_half_section {
-            result.push_str(&format!("{{{}|¼}}",
-                color_char
-            ));
+            result.push_str(&format!("{{{}|¼}}", color_char));
         }
 
         if empty_sections > 0 {
-            result.push_str(&format!("{{{}|{}}}",
+            result.push_str(&format!(
+                "{{{}|{}}}",
                 empty_color_char,
                 "½".repeat(empty_sections)
             ));

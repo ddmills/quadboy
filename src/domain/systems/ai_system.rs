@@ -6,11 +6,17 @@ use crate::{
     common::Rand,
     domain::{
         Actor, AiController, Energy, EnergyActionType, Health, TurnState, ai_try_attacking_nearby,
-        ai_try_move_toward_target, ai_try_ranged_attack, ai_try_select_target, ai_try_wander,
-        detect_actors, get_actor, get_base_energy_cost, try_handle_conditions,
+        ai_try_move_toward_target, ai_try_ranged_attack, ai_try_select_target, ai_try_wait,
+        ai_try_wander, detect_actors, get_actor, get_base_energy_cost, try_handle_conditions,
     },
     rendering::{Position, spawn_alert_indicator},
 };
+
+#[derive(Resource, Default)]
+pub struct AiTurnTracker {
+    last_entity: Option<Entity>,
+    consecutive_count: u32,
+}
 
 #[derive(Default)]
 pub struct AiContext {
@@ -40,6 +46,33 @@ pub fn ai_turn(world: &mut World) {
     let Some(current_entity) = turn_state.current_turn_entity else {
         return;
     };
+
+    // Track consecutive turns for the same entity to detect stuck AI
+    let is_stuck = {
+        let mut tracker = world.get_resource_or_insert_with(AiTurnTracker::default);
+        if tracker.last_entity == Some(current_entity) {
+            tracker.consecutive_count += 1;
+            if tracker.consecutive_count >= 5 {
+                eprintln!(
+                    "WARNING: Entity {:?} stuck in AI turn loop ({}x), forcing wait",
+                    current_entity, tracker.consecutive_count
+                );
+                tracker.consecutive_count = 0;
+                true
+            } else {
+                false
+            }
+        } else {
+            tracker.last_entity = Some(current_entity);
+            tracker.consecutive_count = 1;
+            false
+        }
+    };
+
+    if is_stuck {
+        ai_try_wait(world, current_entity);
+        return;
+    }
 
     // Check if AI had a target before building context
     let had_target_before = world
@@ -84,19 +117,16 @@ pub fn ai_turn(world: &mut World) {
 
         // we have a target, but we can't move toward it!
         trace!("AI: Can't reach target!");
+        ai_try_wait(world, current_entity);
     } else {
         // No target - try to wander (30% chance) or wait (70% chance)
         let Some(mut rand) = world.get_resource_mut::<Rand>() else {
             // If no random resource, just wait
-            if let Some(mut energy) = world.get_mut::<Energy>(current_entity) {
-                let cost = get_base_energy_cost(EnergyActionType::Wait);
-                energy.consume_energy(cost);
-            }
+            ai_try_wait(world, current_entity);
             return;
         };
 
         let should_wander = rand.random() < 0.3; // 30% chance to wander
-        drop(rand); // Release the mutable borrow
 
         if should_wander && ai_try_wander(world, current_entity) {
             // Successfully wandered, energy consumed by wander action
@@ -105,10 +135,7 @@ pub fn ai_turn(world: &mut World) {
     }
 
     // Default behavior: wait
-    if let Some(mut energy) = world.get_mut::<Energy>(current_entity) {
-        let cost = get_base_energy_cost(EnergyActionType::Wait);
-        energy.consume_energy(cost);
-    }
+    ai_try_wait(world, current_entity);
 }
 
 pub fn build_ai_context(world: &mut World, entity: Entity) -> AiContext {

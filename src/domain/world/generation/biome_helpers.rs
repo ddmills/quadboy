@@ -13,7 +13,7 @@ use crate::{
 use bevy_ecs::world::World;
 
 const LOOT_SPAWN_CHANCE: f32 = 0.01; // 1% chance for loot
-const ENEMY_SPAWN_CHANCE: f32 = 0.004; // .04% chance for enemies
+const ENEMY_SPAWN_CHANCE: f32 = 0.008; // .08% chance for enemies
 const CHEST_SPAWN_CHANCE: f32 = 0.003; // 0.3% chance for chests (rarer than regular loot)
 
 pub fn apply_base_terrain(zone: &mut ZoneFactory, terrain: Terrain) {

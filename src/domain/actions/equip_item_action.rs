@@ -3,7 +3,8 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, EquipmentSlots, Equippable, Equipped, Inventory,
-        UnequipItemAction, get_base_energy_cost, inventory::InventoryChangedEvent,
+        UnequipItemAction, actions::GameAction, get_base_energy_cost,
+        inventory::InventoryChangedEvent,
     },
     engine::{StableId, StableIdRegistry},
 };
@@ -13,20 +14,20 @@ pub struct EquipItemAction {
     pub item_id: u64,   // What to equip (stable ID)
 }
 
-impl Command for EquipItemAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for EquipItemAction {
+    fn try_apply(self, world: &mut World) -> bool {
         // Get entities from registry
         let (entity, item_entity) = {
             let Some(registry) = world.get_resource::<StableIdRegistry>() else {
-                return;
+                return false;
             };
 
             let Some(entity) = registry.get_entity(StableId(self.entity_id)) else {
-                return;
+                return false;
             };
 
             let Some(item_entity) = registry.get_entity(StableId(self.item_id)) else {
-                return;
+                return false;
             };
 
             (entity, item_entity)
@@ -35,7 +36,7 @@ impl Command for EquipItemAction {
         // Check if item is equippable and get requirements
         let slot_requirements = {
             let Some(equippable) = world.get::<Equippable>(item_entity) else {
-                return;
+                return false;
             };
             equippable.slot_requirements.clone()
         };
@@ -43,11 +44,11 @@ impl Command for EquipItemAction {
         // Check inventory and remove item
         {
             let Some(inventory) = world.get_mut::<Inventory>(entity) else {
-                return;
+                return false;
             };
 
             if !inventory.contains_id(self.item_id) {
-                return;
+                return false;
             }
 
             // inventory.remove_item(self.item_id);
@@ -56,7 +57,7 @@ impl Command for EquipItemAction {
         // Auto-unequip existing items in target slots
         {
             let Some(equipment_slots) = world.get::<EquipmentSlots>(entity) else {
-                return;
+                return false;
             };
 
             // Collect items to unequip
@@ -78,7 +79,7 @@ impl Command for EquipItemAction {
         // Add to equipment slots
         {
             let Some(mut equipment_slots) = world.get_mut::<EquipmentSlots>(entity) else {
-                return;
+                return false;
             };
             equipment_slots.equip(self.item_id, &slot_requirements);
         }
@@ -95,5 +96,13 @@ impl Command for EquipItemAction {
         }
 
         world.send_event(InventoryChangedEvent);
+
+        true
+    }
+}
+
+impl Command for EquipItemAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }

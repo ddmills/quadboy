@@ -6,7 +6,9 @@ use crate::{
     common::Palette,
     domain::{PlayerPosition, Zones},
     engine::SerializableComponent,
-    rendering::{Glyph, GlyphTextureId, Layer, Position, Visibility, world_to_zone_idx, zone_local_to_world},
+    rendering::{
+        Glyph, GlyphTextureId, Layer, Position, Visibility, world_to_zone_idx, zone_local_to_world,
+    },
     states::CleanupStateExplore,
 };
 
@@ -63,15 +65,15 @@ pub fn spawn_zone_outline(
             // Determine glyph index based on position
             let glyph_idx = match (x, y) {
                 // Corners
-                (0, 0) => 2,                                         // top-left
-                (x, 0) if x == zone_width - 1 => 3,                 // top-right
-                (0, y) if y == zone_height - 1 => 6,                // bottom-left
+                (0, 0) => 2,                                                // top-left
+                (x, 0) if x == zone_width - 1 => 3,                         // top-right
+                (0, y) if y == zone_height - 1 => 6,                        // bottom-left
                 (x, y) if x == zone_width - 1 && y == zone_height - 1 => 7, // bottom-right
                 // Edges
-                (_, 0) => 8,                                         // top
-                (_, y) if y == zone_height - 1 => 9,                // bottom
-                (x, _) if x == zone_width - 1 => 11,                // right
-                (0, _) => 12,                                        // left
+                (_, 0) => 8,                         // top
+                (_, y) if y == zone_height - 1 => 9, // bottom
+                (x, _) if x == zone_width - 1 => 11, // right
+                (0, _) => 12,                        // left
                 _ => continue,
             };
 

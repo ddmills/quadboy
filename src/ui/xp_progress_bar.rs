@@ -28,7 +28,10 @@ pub fn update_xp_progress_bars(
     };
 
     for (xp_bar, mut text, mut bar) in q_bars.iter_mut() {
-        bar.update_values(player_level.current_xp as usize, player_level.xp_to_next_level as usize);
+        bar.update_values(
+            player_level.current_xp as usize,
+            player_level.xp_to_next_level as usize,
+        );
         let new_text = format!("Level {}", player_level.current_level);
         if text.value != new_text {
             text.value = new_text;

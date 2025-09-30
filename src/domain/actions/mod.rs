@@ -1,3 +1,9 @@
+use bevy_ecs::prelude::*;
+
+pub trait GameAction {
+    fn try_apply(self, world: &mut World) -> bool;
+}
+
 mod attack_action;
 mod drop_item_action;
 mod eat_action;

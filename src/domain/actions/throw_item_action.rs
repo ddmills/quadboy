@@ -5,7 +5,7 @@ use crate::{
     domain::{
         Collider, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, Prefab,
         PrefabId, Prefabs, StackCount, Stackable, Throwable, UnequipItemAction, Zone,
-        get_base_energy_cost, inventory::InventoryChangedEvent,
+        actions::GameAction, get_base_energy_cost, inventory::InventoryChangedEvent,
     },
     engine::{StableId, StableIdRegistry},
     rendering::{Position, spawn_throw_trail_in_world, world_to_zone_idx, world_to_zone_local},
@@ -17,11 +17,11 @@ pub struct ThrowItemAction {
     pub target_position: (usize, usize, usize),
 }
 
-impl Command for ThrowItemAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for ThrowItemAction {
+    fn try_apply(self, world: &mut World) -> bool {
         let Some(id_registry) = world.get_resource::<StableIdRegistry>() else {
             eprintln!("ThrowItemAction: StableIdRegistry not found");
-            return;
+            return false;
         };
 
         let Some(item_entity) = id_registry.get_entity(self.item_stable_id) else {
@@ -29,7 +29,7 @@ impl Command for ThrowItemAction {
                 "ThrowItemAction: Item entity not found for id {}",
                 self.item_stable_id.0
             );
-            return;
+            return false;
         };
 
         // Unequip item if it's equipped
@@ -88,7 +88,7 @@ impl Command for ThrowItemAction {
                     "ThrowItemAction: Entity {:?} has no inventory",
                     self.thrower_entity
                 );
-                return;
+                return false;
             };
 
             if !inventory.remove_item(self.item_stable_id.0, item_weight) {
@@ -96,7 +96,7 @@ impl Command for ThrowItemAction {
                     "ThrowItemAction: Item {} not found in inventory",
                     self.item_stable_id.0
                 );
-                return;
+                return false;
             }
 
             item_entity
@@ -174,5 +174,13 @@ impl Command for ThrowItemAction {
 
         // Send inventory changed event
         world.send_event(InventoryChangedEvent);
+
+        true
+    }
+}
+
+impl Command for ThrowItemAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }

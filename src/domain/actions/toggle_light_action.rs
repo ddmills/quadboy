@@ -4,7 +4,7 @@ use crate::{
     common::Palette,
     domain::{
         Energy, EnergyActionType, ExplosiveProperties, Fuse, HitBlink, LightSource, Lightable,
-        PlayerPosition, get_base_energy_cost, split_item_from_stack,
+        PlayerPosition, actions::GameAction, get_base_energy_cost, split_item_from_stack,
     },
     engine::{Audio, Clock, StableId, StableIdRegistry},
     rendering::Position,
@@ -32,15 +32,15 @@ impl ToggleLightAction {
     }
 }
 
-impl Command for ToggleLightAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for ToggleLightAction {
+    fn try_apply(self, world: &mut World) -> bool {
         // Get the item entity from stable ID
         let item_entity = {
             let Some(registry) = world.get_resource::<StableIdRegistry>() else {
-                return;
+                return false;
             };
             let Some(entity) = registry.get_entity(StableId(self.item_id)) else {
-                return;
+                return false;
             };
             entity
         };
@@ -129,7 +129,7 @@ impl Command for ToggleLightAction {
                 && world.get::<LightSource>(item_entity).is_some();
 
             if !has_components {
-                return;
+                return false;
             }
 
             // Toggle the light source
@@ -138,7 +138,7 @@ impl Command for ToggleLightAction {
                     light_source.is_enabled = !light_source.is_enabled;
                     light_source.is_enabled
                 } else {
-                    return;
+                    return false;
                 };
 
             // Get position and player position first to avoid borrow checker issues
@@ -174,5 +174,13 @@ impl Command for ToggleLightAction {
 
         // Send event to notify that light state has changed
         world.send_event(LightStateChangedEvent::new(final_lit_item_id));
+
+        true
+    }
+}
+
+impl Command for ToggleLightAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }

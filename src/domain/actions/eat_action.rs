@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Consumable, ConsumableEffect, Energy, EnergyActionType, Health, InInventory, Inventory,
-        Item, Level, StackCount, Stackable, Stats, get_base_energy_cost,
+        Item, Level, StackCount, Stackable, Stats, actions::GameAction, get_base_energy_cost,
         inventory::InventoryChangedEvent,
     },
     engine::{StableId, StableIdRegistry},
@@ -20,20 +20,20 @@ impl EatAction {
     }
 }
 
-impl Command for EatAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for EatAction {
+    fn try_apply(self, world: &mut World) -> bool {
         // Get entities from registry
         let (eater_entity, item_entity) = {
             let Some(registry) = world.get_resource::<StableIdRegistry>() else {
-                return;
+                return false;
             };
 
             let Some(eater_entity) = registry.get_entity(StableId(self.eater_id)) else {
-                return;
+                return false;
             };
 
             let Some(item_entity) = registry.get_entity(StableId(self.item_id)) else {
-                return;
+                return false;
             };
 
             (eater_entity, item_entity)
@@ -42,7 +42,7 @@ impl Command for EatAction {
         // Check if item is consumable
         let consumable = {
             let Some(consumable) = world.get::<Consumable>(item_entity) else {
-                return;
+                return false;
             };
             consumable.clone()
         };
@@ -50,11 +50,11 @@ impl Command for EatAction {
         // Check if eater has the item in inventory
         {
             let Some(inventory) = world.get::<Inventory>(eater_entity) else {
-                return;
+                return false;
             };
 
             if !inventory.contains_id(self.item_id) {
-                return;
+                return false;
             }
         }
 
@@ -149,5 +149,13 @@ impl Command for EatAction {
 
         // Send inventory changed event
         world.send_event(InventoryChangedEvent);
+
+        true
+    }
+}
+
+impl Command for EatAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }

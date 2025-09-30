@@ -1,7 +1,7 @@
 use crate::{
     cfg::ZONE_SIZE,
-    common::{Grid, Rand, Palette},
-    domain::{Biome, LootTableId, Prefab, PrefabId, Terrain, ZoneFactory, SpawnValue},
+    common::{Grid, Palette, Rand},
+    domain::{Biome, LootTableId, Prefab, PrefabId, SpawnValue, Terrain, ZoneFactory},
     rendering::zone_local_to_world,
 };
 use bevy_ecs::world::World;
@@ -92,14 +92,12 @@ fn place_desert_boulders(zone: &mut ZoneFactory, boulder_grid: &Grid<bool>) {
             if *boulder_grid.get(x, y).unwrap_or(&false) {
                 let wpos = zone_local_to_world(zone.zone_idx, x, y);
                 let mut boulder_prefab = Prefab::new(PrefabId::Boulder, wpos);
-                boulder_prefab.metadata.insert(
-                    "fg1".to_string(),
-                    SpawnValue::Palette(Palette::DarkRed),
-                );
-                boulder_prefab.metadata.insert(
-                    "fg2".to_string(),
-                    SpawnValue::Palette(Palette::DarkRed),
-                );
+                boulder_prefab
+                    .metadata
+                    .insert("fg1".to_string(), SpawnValue::Palette(Palette::DarkRed));
+                boulder_prefab
+                    .metadata
+                    .insert("fg2".to_string(), SpawnValue::Palette(Palette::DarkRed));
                 zone.push_entity(x, y, boulder_prefab);
             }
         }

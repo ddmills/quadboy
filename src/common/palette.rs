@@ -161,7 +161,10 @@ impl PaletteSequence {
             seq_colors = split[0].to_string();
         }
 
-        let mut colors = seq_colors.split('-').map(char_to_palette).collect::<Vec<_>>();
+        let mut colors = seq_colors
+            .split('-')
+            .map(char_to_palette)
+            .collect::<Vec<_>>();
 
         if colors.is_empty() {
             colors = vec![Palette::White];

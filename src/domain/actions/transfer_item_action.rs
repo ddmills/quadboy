@@ -3,7 +3,8 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, Equipped, InInventory, Inventory, Item, StackCount, Stackable,
-        StackableType, UnequipItemAction, get_base_energy_cost, inventory::InventoryChangedEvent,
+        StackableType, UnequipItemAction, actions::GameAction, get_base_energy_cost,
+        inventory::InventoryChangedEvent,
     },
     engine::{StableId, StableIdRegistry},
 };
@@ -14,13 +15,13 @@ pub struct TransferItemAction {
     pub item_stable_id: StableId,
 }
 
-impl Command for TransferItemAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for TransferItemAction {
+    fn try_apply(self, world: &mut World) -> bool {
         // Get item entity, weight, and to_stable_id first
         let (item_entity, item_weight, to_stable_id) = {
             let Some(id_registry) = world.get_resource::<StableIdRegistry>() else {
                 eprintln!("TransferItemAction: StableIdRegistry not found");
-                return;
+                return false;
             };
 
             let Some(item_entity) = id_registry.get_entity(self.item_stable_id) else {
@@ -28,7 +29,7 @@ impl Command for TransferItemAction {
                     "TransferItemAction: Item entity not found for id {}",
                     self.item_stable_id.0
                 );
-                return;
+                return false;
             };
 
             let item_weight = world
@@ -61,7 +62,7 @@ impl Command for TransferItemAction {
                     // All items fit in existing stack - remove from source and despawn
                     let Some(mut from_inventory) = world.get_mut::<Inventory>(self.from_entity)
                     else {
-                        return;
+                        return false;
                     };
                     from_inventory.remove_item(self.item_stable_id.0, item_weight);
                     world.entity_mut(item_entity).despawn();
@@ -71,7 +72,7 @@ impl Command for TransferItemAction {
                         let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
                         energy.consume_energy(cost);
                     }
-                    return;
+                    return false;
                 } else {
                     // Partial transfer - update source item with remaining count
                     if let Some(mut source_stack) = world.get_mut::<StackCount>(item_entity) {
@@ -83,7 +84,7 @@ impl Command for TransferItemAction {
                         let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
                         energy.consume_energy(cost);
                     }
-                    return;
+                    return false;
                 }
             }
         }
@@ -96,7 +97,7 @@ impl Command for TransferItemAction {
                     "TransferItemAction: Entity {:?} has no inventory",
                     self.from_entity
                 );
-                return;
+                return false;
             };
 
             if !from_inventory.contains_id(self.item_stable_id.0) {
@@ -104,7 +105,7 @@ impl Command for TransferItemAction {
                     "TransferItemAction: Item {} not found in source inventory",
                     self.item_stable_id.0
                 );
-                return;
+                return false;
             }
 
             from_inventory.remove_item(self.item_stable_id.0, item_weight);
@@ -121,7 +122,7 @@ impl Command for TransferItemAction {
                     "TransferItemAction: Entity {:?} has no inventory",
                     self.to_entity
                 );
-                return;
+                return false;
             };
 
             if !to_inventory.has_space_for_weight(item_weight) {
@@ -133,7 +134,7 @@ impl Command for TransferItemAction {
                 if let Some(mut from_inventory) = world.get_mut::<Inventory>(self.from_entity) {
                     from_inventory.add_item(self.item_stable_id.0, item_weight);
                 }
-                return;
+                return false;
             }
 
             to_inventory.add_item(self.item_stable_id.0, item_weight);
@@ -151,6 +152,14 @@ impl Command for TransferItemAction {
         }
 
         world.send_event(InventoryChangedEvent);
+
+        true
+    }
+}
+
+impl Command for TransferItemAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }
 

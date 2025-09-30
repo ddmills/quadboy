@@ -3,7 +3,9 @@ use macroquad::prelude::trace;
 
 use crate::{
     common::Rand,
-    domain::{Inventory, LootTableRegistry, Prefab, Prefabs, UnopenedContainer},
+    domain::{
+        Inventory, LootTableRegistry, Prefab, Prefabs, UnopenedContainer, actions::GameAction,
+    },
     engine::Audio,
     rendering::Position,
     states::{CurrentGameState, GameState},
@@ -14,8 +16,8 @@ pub struct OpenContainerAction {
     pub container_entity: Entity,
 }
 
-impl Command for OpenContainerAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for OpenContainerAction {
+    fn try_apply(self, world: &mut World) -> bool {
         // Check if this is an unopened container and generate loot if needed
         if let Some(unopened) = world.get::<UnopenedContainer>(self.container_entity) {
             let loot_table_id = unopened.0;
@@ -51,6 +53,14 @@ impl Command for OpenContainerAction {
         if let Some(mut game_state) = world.get_resource_mut::<CurrentGameState>() {
             game_state.next = GameState::Container;
         }
+
+        true
+    }
+}
+
+impl Command for OpenContainerAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }
 

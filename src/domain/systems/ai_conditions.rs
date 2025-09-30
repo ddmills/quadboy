@@ -5,7 +5,7 @@ use crate::{
     domain::{
         ActiveConditions, AiContext, AiController, ConditionType, Energy, EnergyActionType,
         ai_try_attacking_nearby, ai_try_flee_from, ai_try_move_toward, ai_try_random_move,
-        get_actor, get_base_energy_cost,
+        ai_try_wait, get_actor, get_base_energy_cost,
     },
     engine::StableIdRegistry,
     rendering::Position,
@@ -46,6 +46,10 @@ pub fn try_handle_taunted(world: &mut World, entity: Entity, context: &mut AiCon
                     if ai_try_move_toward(world, entity, taunt_pos) {
                         return true;
                     }
+
+                    // Taunted but can't move or attack - wait instead
+                    ai_try_wait(world, entity);
+                    return true;
                 }
             }
         }
@@ -85,6 +89,9 @@ pub fn try_handle_feared(world: &mut World, entity: Entity) -> bool {
                             if ai_try_flee_from(world, entity, fear_pos) {
                                 return true;
                             }
+                            // Feared but can't flee - wait instead
+                            ai_try_wait(world, entity);
+                            return true;
                         }
                     }
                 }

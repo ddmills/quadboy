@@ -7,7 +7,9 @@ use crate::{
         BumpAttack, Condition, ConditionSource, ConditionType, DefaultMeleeAttack,
         DefaultRangedAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
         Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, PlayerPosition,
-        StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone, get_base_energy_cost,
+        StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
+        actions::GameAction,
+        get_base_energy_cost,
         systems::{
             apply_condition_to_entity, condition_system::spawn_condition_particles,
             destruction_system::EntityDestroyedEvent,
@@ -113,34 +115,24 @@ fn calculate_normalized_direction(
     }
 }
 
-impl Command for AttackAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for AttackAction {
+    fn try_apply(self, world: &mut World) -> bool {
         let Some(registry) = world.get_resource::<StableIdRegistry>() else {
-            eprintln!("AttackAction: StableIdRegistry not found");
-            return;
+            return false;
         };
 
         let Some(attacker_entity) = registry.get_entity(self.attacker_stable_id) else {
-            eprintln!(
-                "AttackAction: Attacker entity not found for stable ID {}",
-                self.attacker_stable_id.0
-            );
-            return;
+            return false;
         };
 
         let attacker_pos = world.get::<Position>(attacker_entity).map(|p| p.world());
 
         let Some(target_entity) = registry.get_entity(self.target_stable_id) else {
-            eprintln!(
-                "AttackAction: Target entity not found for stable ID {}",
-                self.target_stable_id.0
-            );
-            return;
+            return false;
         };
 
         let Some(target_pos) = world.get::<Position>(target_entity).map(|p| p.world()) else {
-            eprintln!("AttackAction: Target entity has no Position component");
-            return;
+            return false;
         };
 
         // Use the new unified weapon resolution
@@ -148,11 +140,7 @@ impl Command for AttackAction {
             let Some((weapon, weapon_entity)) =
                 self.resolve_weapon(world, attacker_entity, registry)
             else {
-                eprintln!(
-                    "AttackAction: No weapon found for attacker {}",
-                    self.attacker_stable_id.0
-                );
-                return;
+                return false;
             };
             (weapon, weapon_entity)
         };
@@ -168,9 +156,16 @@ impl Command for AttackAction {
                 weapon_entity,
                 attacker_pos,
             );
+            true
         } else {
-            eprintln!("AttackAction: Attacker entity has no Position component");
+            false
         }
+    }
+}
+
+impl Command for AttackAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }
 

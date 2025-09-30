@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, GameSettings, Player, PlayerMovedEvent, SmoothMovement, Stats,
-        get_energy_cost,
+        actions::GameAction, get_energy_cost,
     },
     rendering::{Glyph, Position},
 };
@@ -13,11 +13,10 @@ pub struct MoveAction {
     pub new_position: (usize, usize, usize),
 }
 
-impl Command for MoveAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for MoveAction {
+    fn try_apply(self, world: &mut World) -> bool {
         let Some(mut position) = world.get_mut::<Position>(self.entity) else {
-            eprintln!("MoveAction: Entity {:?} has no Position", self.entity);
-            return;
+            return false;
         };
 
         // Store old position for smooth movement animation
@@ -58,5 +57,13 @@ impl Command for MoveAction {
         if let Some(mut energy) = world.get_mut::<Energy>(self.entity) {
             energy.consume_energy(cost);
         }
+
+        true
+    }
+}
+
+impl Command for MoveAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }

@@ -3,7 +3,8 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, InInventory, Inventory, Item, StackCount, Stackable,
-        StackableType, Zone, get_base_energy_cost, inventory::InventoryChangedEvent,
+        StackableType, Zone, actions::GameAction, get_base_energy_cost,
+        inventory::InventoryChangedEvent,
     },
     engine::{StableId, StableIdRegistry},
     rendering::Position,
@@ -15,18 +16,17 @@ pub struct PickupItemAction {
     pub spend_energy: bool,
 }
 
-impl Command for PickupItemAction {
-    fn apply(self, world: &mut World) {
+impl GameAction for PickupItemAction {
+    fn try_apply(self, world: &mut World) -> bool {
         let Some(id_registry) = world.get_resource::<StableIdRegistry>() else {
-            eprintln!("PickupItemAction: StableIdRegistry not found");
-            return;
+            return false;
         };
 
         let Some(item_entity) = id_registry.get_entity(self.item_stable_id) else {
-            return;
+            return false;
         };
         let Some(entity_stable_id) = id_registry.get_id(self.entity) else {
-            return;
+            return false;
         };
 
         // Check if item is stackable first (before any mutable borrows)
@@ -42,7 +42,7 @@ impl Command for PickupItemAction {
         let mut q_inventory = world.query::<&mut Inventory>();
 
         let Ok(inventory) = q_inventory.get_mut(world, self.entity) else {
-            return;
+            return false;
         };
 
         if let Some((stack_type, pickup_count)) = stackable_info {
@@ -67,7 +67,7 @@ impl Command for PickupItemAction {
                         let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
                         energy.consume_energy(cost);
                     }
-                    return;
+                    return true;
                 } else {
                     // Partial pickup - update the item on ground with remaining count
                     if let Some(mut ground_stack) = world.get_mut::<StackCount>(item_entity) {
@@ -81,7 +81,7 @@ impl Command for PickupItemAction {
                         let cost = get_base_energy_cost(EnergyActionType::PickUpItem);
                         energy.consume_energy(cost);
                     }
-                    return;
+                    return true;
                 }
             }
         }
@@ -100,11 +100,11 @@ impl Command for PickupItemAction {
         };
 
         let Ok(mut inventory) = q_inventory.get_mut(world, self.entity) else {
-            return;
+            return false;
         };
 
         if !inventory.add_item(self.item_stable_id.0, item_weight) {
-            return;
+            return false;
         }
 
         if let Ok(position) = q_items.get(world, item_entity) {
@@ -133,6 +133,14 @@ impl Command for PickupItemAction {
         }
 
         world.send_event(InventoryChangedEvent);
+
+        true
+    }
+}
+
+impl Command for PickupItemAction {
+    fn apply(self, world: &mut World) {
+        self.try_apply(world);
     }
 }
 
