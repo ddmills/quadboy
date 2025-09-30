@@ -9,9 +9,9 @@ use crate::{
         register_game_systems, register_new_stable_ids,
     },
     engine::{App, Plugin, SerializableComponent},
-    rendering::{ScreenSize, on_zone_status_change, update_camera},
-    states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system},
-    ui::{UiLayout, draw_ui_panels, update_ui_layout},
+    rendering::{on_zone_status_change, update_camera, ScreenSize},
+    states::{cleanup_system, AppState, AppStatePlugin, CurrentGameState, GameState},
+    ui::{draw_ui_panels, update_ui_layout, UiLayout},
 };
 
 pub struct PlayStatePlugin;
@@ -49,8 +49,7 @@ impl Plugin for PlayStatePlugin {
                         update_camera,
                     )
                         .chain(),
-                    update_ui_layout.run_if(resource_changed::<ScreenSize>),
-                    draw_ui_panels.run_if(resource_changed::<UiLayout>),
+                    (update_ui_layout, draw_ui_panels).chain().run_if(resource_changed::<ScreenSize>),
                 ),
             )
             .on_leave(

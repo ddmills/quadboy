@@ -140,7 +140,7 @@ pub fn update_event_log_positioning(
 ) {
     // Position log at bottom-left of screen, aligned with bottom panel
     // Account for text height (0.5) and 6 visible lines = 3.0 total height
-    let log_y = screen.tile_h as f32 - 3.0;
+    let log_y = screen.tile_h as f32 - 3.5;
     let left_panel_offset = ui.left_panel.width as f32;
 
     for mut log_pos in q_log_ui.iter_mut() {

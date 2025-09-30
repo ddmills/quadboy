@@ -63,6 +63,11 @@ impl Text {
         self
     }
 
+    pub fn texture(mut self, texture_id: GlyphTextureId) -> Self {
+        self.texture_id = texture_id;
+        self
+    }
+
     pub fn get_glyphs(&self, tick: usize) -> Vec<Glyph> {
         let mut in_seq = false;
         let mut in_flags = false;

@@ -347,7 +347,7 @@ async fn main() {
 
     world.spawn((
         Text::new("123").bg(Palette::Black),
-        Position::new_f32(0., 0., 0.),
+        Position::new_f32(0.5, 0.5, 0.),
         FpsDisplay,
     ));
 

@@ -326,34 +326,34 @@ fn update_player_ammo_bar(
 
 fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {
     cmds.spawn((
-        Position::new_f32(3., 0.5, 0.),
+        Position::new_f32(0.5, 10., 0.),
         Button::new("({Y|M}) MAP", callbacks.open_map).hotkey(macroquad::input::KeyCode::M),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(7., 0.5, 0.),
+        Position::new_f32(0.5, 10.5, 0.),
         Button::new("({Y|I}) INVENTORY", callbacks.open_inventory)
             .hotkey(macroquad::input::KeyCode::I),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(16., 0.5, 0.),
+        Position::new_f32(0.5, 11., 0.),
         Button::new("({Y|B}) DEBUG", callbacks.open_debug_spawn)
             .hotkey(macroquad::input::KeyCode::B),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(22., 0.5, 0.),
+        Position::new_f32(0.5, 11.5, 0.),
         Button::new("({Y|Y}) ATTRIBUTES", callbacks.open_attributes)
             .hotkey(macroquad::input::KeyCode::Y),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(30., 0.5, 0.),
+        Position::new_f32(0.5, 12., 0.),
         Button::new("({Y|ESC}) PAUSE", callbacks.open_pause)
             .hotkey(macroquad::input::KeyCode::Escape),
         CleanupStateExplore,

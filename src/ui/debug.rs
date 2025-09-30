@@ -257,7 +257,7 @@ pub fn spawn_debug_ui_entities(cmds: &mut Commands, cleanup_marker: impl Compone
     // Spawn tick display
     cmds.spawn((
         Text::new("Turn: 0.000").bg(Palette::Black),
-        Position::new_f32(0., 0.5, 0.),
+        Position::new_f32(0.5, 1.0, 0.),
         TickDisplay,
         cleanup_marker.clone(),
     ));

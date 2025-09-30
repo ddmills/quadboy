@@ -1,9 +1,10 @@
 use bevy_ecs::prelude::*;
+use macroquad::prelude::trace;
 
 use crate::{
     cfg::TILE_SIZE_F32,
     common::Palette,
-    rendering::{GameCamera, Glyph, Layer, Position, ScreenSize},
+    rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, ScreenSize, Text},
     states::CleanupStatePlay,
 };
 
@@ -14,6 +15,7 @@ pub struct Panel {
     pub x: usize,
     pub y: usize,
     pub glyph: Option<Entity>,
+    pub border_entities: Vec<Entity>,
 }
 
 #[derive(Resource, Default)]
@@ -31,8 +33,8 @@ pub fn update_ui_layout(
 ) {
     // let left_panel_width = 0;
     let left_panel_width = 10;
-    let bottom_panel_height = 3;
-    let top_panel_height = 1;
+    let bottom_panel_height = 4;
+    let top_panel_height = 2;
 
     // Top panel takes full width at top of screen
     ui.top_panel.x = 0;
@@ -64,6 +66,7 @@ pub fn update_ui_layout(
 
     camera.width = ui.game_panel.width as f32 * TILE_SIZE_F32.0;
     camera.height = ui.game_panel.height as f32 * TILE_SIZE_F32.1;
+
 }
 
 pub fn draw_ui_panels(
@@ -171,5 +174,108 @@ pub fn draw_ui_panels(
             cmds.entity(entity).try_despawn();
             ui.bottom_panel.glyph = None;
         }
+    }
+
+    // Draw borders for panels (excluding game panel)
+    draw_panel_borders(&mut cmds, &mut ui.top_panel, true);
+    draw_panel_borders(&mut cmds, &mut ui.left_panel, true);
+    draw_panel_borders(&mut cmds, &mut ui.bottom_panel, true);
+    draw_panel_borders(&mut cmds, &mut ui.game_panel, false); // No borders for game panel
+}
+
+fn draw_panel_borders(
+    cmds: &mut Commands,
+    panel: &mut Panel,
+    has_borders: bool,
+) {
+    if !has_borders || panel.width == 0 || panel.height == 0 {
+        // Remove existing borders if they exist
+        for entity in panel.border_entities.drain(..) {
+            cmds.entity(entity).try_despawn();
+        }
+        return;
+    }
+
+    // Clear existing borders
+    for entity in panel.border_entities.drain(..) {
+        cmds.entity(entity).try_despawn();
+    }
+
+    let border_color = Palette::DarkGray;
+
+    // Convert panel coordinates to text coordinates (multiply by 2)
+    let text_x = panel.x * 2;
+    let text_y = panel.y * 2;
+    let text_width = panel.width * 2;
+    let text_height = panel.height * 2;
+
+    // Draw corners
+    let corners = [
+        (text_x, text_y, '┌'), // top-left
+        (text_x + text_width - 1, text_y, '┐'), // top-right
+        (text_x, text_y + text_height - 1, '└'), // bottom-left
+        (text_x + text_width - 1, text_y + text_height - 1, '┘'), // bottom-right
+    ];
+
+    for (x, y, ch) in corners {
+        let entity = cmds.spawn((
+            CleanupStatePlay,
+            Text::new(&ch.to_string())
+                .fg1(border_color)
+                .layer(Layer::Ui)
+                .texture(GlyphTextureId::BodyFont),
+            Position::new_f32(x as f32 * 0.5, y as f32 * 0.5, 0.0),
+        )).id();
+        panel.border_entities.push(entity);
+    }
+
+    // Draw horizontal lines (top and bottom)
+    for x in (text_x + 1)..(text_x + text_width - 1) {
+        // Top edge
+        let entity = cmds.spawn((
+            CleanupStatePlay,
+            Text::new("─")
+                .fg1(border_color)
+                .layer(Layer::Ui)
+                .texture(GlyphTextureId::BodyFont),
+            Position::new_f32(x as f32 * 0.5, text_y as f32 * 0.5, 0.0),
+        )).id();
+        panel.border_entities.push(entity);
+
+        // Bottom edge
+        let entity = cmds.spawn((
+            CleanupStatePlay,
+            Text::new("─")
+                .fg1(border_color)
+                .layer(Layer::Ui)
+                .texture(GlyphTextureId::BodyFont),
+            Position::new_f32(x as f32 * 0.5, (text_y + text_height - 1) as f32 * 0.5, 0.0),
+        )).id();
+        panel.border_entities.push(entity);
+    }
+
+    // Draw vertical lines (left and right)
+    for y in (text_y + 1)..(text_y + text_height - 1) {
+        // Left edge
+        let entity = cmds.spawn((
+            CleanupStatePlay,
+            Text::new("│")
+                .fg1(border_color)
+                .layer(Layer::Ui)
+                .texture(GlyphTextureId::BodyFont),
+            Position::new_f32(text_x as f32 * 0.5, y as f32 * 0.5, 0.0),
+        )).id();
+        panel.border_entities.push(entity);
+
+        // Right edge
+        let entity = cmds.spawn((
+            CleanupStatePlay,
+            Text::new("│")
+                .fg1(border_color)
+                .layer(Layer::Ui)
+                .texture(GlyphTextureId::BodyFont),
+            Position::new_f32((text_x + text_width - 1) as f32 * 0.5, y as f32 * 0.5, 0.0),
+        )).id();
+        panel.border_entities.push(entity);
     }
 }
