@@ -7,7 +7,10 @@ use crate::{
     common::cp437_idx,
     domain::PlayerPosition,
     engine::Time,
-    rendering::{Glyph, Position, Visibility, world_to_zone_idx, world_to_zone_local_f32, zone_local_to_world_f32},
+    rendering::{
+        Glyph, Position, Visibility, world_to_zone_idx, world_to_zone_local_f32,
+        zone_local_to_world_f32,
+    },
 };
 
 use super::core::{

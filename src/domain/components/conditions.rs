@@ -3,7 +3,10 @@ use std::fmt::Display;
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::engine::{SerializableComponent, StableId};
+use crate::{
+    common::{Palette, palette_to_char},
+    engine::{SerializableComponent, StableId},
+};
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent, Default)]
 pub struct ActiveConditions {
@@ -156,7 +159,6 @@ impl ConditionType {
     }
 
     pub fn get_blink_color(&self) -> u32 {
-        use crate::common::Palette;
         match self {
             ConditionType::Poisoned { .. } => Palette::Green.into(),
             ConditionType::Bleeding { .. } => Palette::Red.into(),
@@ -164,6 +166,29 @@ impl ConditionType {
             ConditionType::Feared { .. } => Palette::Purple.into(),
             ConditionType::Taunted { .. } => Palette::Yellow.into(),
             ConditionType::Confused { .. } => Palette::Cyan.into(),
+        }
+    }
+
+    pub fn get_display_color_char(&self) -> char {
+        let palette = match self {
+            ConditionType::Poisoned { .. } => Palette::Green,
+            ConditionType::Bleeding { .. } => Palette::Red,
+            ConditionType::Burning { .. } => Palette::Orange,
+            ConditionType::Feared { .. } => Palette::Purple,
+            ConditionType::Taunted { .. } => Palette::Yellow,
+            ConditionType::Confused { .. } => Palette::Cyan,
+        };
+        palette_to_char(palette)
+    }
+
+    pub fn get_icon_glyph(&self) -> char {
+        match self {
+            ConditionType::Poisoned { .. } => '☻',
+            ConditionType::Bleeding { .. } => '☻',
+            ConditionType::Burning { .. } => '◘',
+            ConditionType::Feared { .. } => '☺',
+            ConditionType::Taunted { .. } => '♥',
+            ConditionType::Confused { .. } => '♫',
         }
     }
 }

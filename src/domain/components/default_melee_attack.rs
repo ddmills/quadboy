@@ -152,11 +152,17 @@ impl DefaultMeleeAttack {
     }
 
     pub fn nibble() -> Self {
-        Self::new(
+        Self::with_hit_effects(
             1,
             vec![MaterialType::Flesh],
             "Nibble",
             WeaponFamily::Unarmed,
+            vec![HitEffect::Bleeding {
+                damage_per_tick: 1,
+                duration_ticks: 500,
+                chance: 1.0,
+                can_stack: true,
+            }],
         )
     }
 

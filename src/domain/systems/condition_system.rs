@@ -1,7 +1,10 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{ActiveConditions, Condition, ConditionType, Health, Level, StatModifiers, Stats, PlayerPosition},
+    domain::{
+        ActiveConditions, Condition, ConditionType, Health, Level, PlayerPosition, StatModifiers,
+        Stats,
+    },
     engine::Clock,
     rendering::{Position, world_to_zone_idx},
 };

@@ -7,8 +7,8 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{Palette, hex},
     domain::{
-        AiController, CreatureType, Description, EquipmentSlot, EquipmentSlots, FactionId,
-        FactionMap, Health, IgnoreLighting, Item, Label, Level, Player, PlayerDebug,
+        ActiveConditions, AiController, CreatureType, Description, EquipmentSlot, EquipmentSlots,
+        FactionId, FactionMap, Health, IgnoreLighting, Item, Label, Level, Player, PlayerDebug,
         PlayerMovedEvent, PlayerPosition, Stats, Weapon, WeaponType, Zone, collect_valid_targets,
         game_loop, handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
         render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
@@ -82,6 +82,7 @@ impl Plugin for ExploreStatePlugin {
                     update_player_hp_bar,
                     update_player_armor_bar,
                     update_player_ammo_bar,
+                    update_player_condition_display,
                     update_player_xp_label,
                     update_player_hp_label,
                     update_player_armor_label,
@@ -129,6 +130,9 @@ pub struct PlayerArmorBar;
 
 #[derive(Component)]
 pub struct PlayerAmmoBar;
+
+#[derive(Component)]
+pub struct PlayerConditionDisplay;
 
 #[derive(Component)]
 pub struct FactionMapOverlay;
@@ -262,6 +266,14 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
         CleanupStateExplore,
     ));
 
+    // Spawn player condition display
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(0.5, 7., 0.),
+        PlayerConditionDisplay,
+        CleanupStateExplore,
+    ));
+
     // Spawn event log UI
     spawn_event_log_ui(&mut cmds);
 }
@@ -365,6 +377,39 @@ fn update_player_ammo_bar(
         .collect::<String>();
 
     ammo_text.value = format!("[{}] {}/{}", bar_chars, current_ammo, clip_size);
+}
+
+fn update_player_condition_display(
+    q_player: Query<&ActiveConditions, (With<Player>, Changed<ActiveConditions>)>,
+    mut q_condition_display: Query<&mut Text, With<PlayerConditionDisplay>>,
+) {
+    let Ok(mut condition_text) = q_condition_display.single_mut() else {
+        return;
+    };
+
+    let Ok(active_conditions) = q_player.single() else {
+        condition_text.value = "".to_string();
+        return;
+    };
+
+    if active_conditions.is_empty() {
+        condition_text.value = "".to_string();
+        return;
+    }
+
+    let condition_strings: Vec<String> = active_conditions
+        .conditions
+        .iter()
+        .map(|condition| {
+            let color_char = condition.condition_type.get_display_color_char();
+            format!(
+                "{{{}|{} ({})}}",
+                color_char, condition.condition_type, condition.duration_remaining
+            )
+        })
+        .collect();
+
+    condition_text.value = condition_strings.join(", ");
 }
 
 fn update_player_xp_label(
