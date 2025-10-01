@@ -154,6 +154,18 @@ impl ConditionType {
             ConditionType::Confused { .. } => false,
         }
     }
+
+    pub fn get_blink_color(&self) -> u32 {
+        use crate::common::Palette;
+        match self {
+            ConditionType::Poisoned { .. } => Palette::Green.into(),
+            ConditionType::Bleeding { .. } => Palette::Red.into(),
+            ConditionType::Burning { .. } => Palette::Orange.into(),
+            ConditionType::Feared { .. } => Palette::Purple.into(),
+            ConditionType::Taunted { .. } => Palette::Yellow.into(),
+            ConditionType::Confused { .. } => Palette::Cyan.into(),
+        }
+    }
 }
 
 impl Display for ConditionType {

@@ -12,6 +12,7 @@ use crate::{
         systems::{
             armor_regen_system::armor_regen_system,
             cleanup_system::on_entity_destroyed_cleanup,
+            condition_blink_system::sync_condition_blink_system,
             condition_system::{process_conditions, spawn_condition_particles},
             death_check_system::death_check_system,
             explosion_system::explosion_system,
@@ -47,6 +48,7 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(recalculate_stats_system),
         world.register_system(process_conditions),
         world.register_system(spawn_condition_particles),
+        world.register_system(sync_condition_blink_system),
         world.register_system(death_check_system),
         world.register_system(update_health_system),
         world.register_system(armor_regen_system),

@@ -28,7 +28,7 @@ pub fn spawn_giant_beetle(entity: Entity, world: &mut World, config: Prefab) -> 
             Layer::Actors,
             GlyphTextureId::Creatures,
         )
-        .with_label("{G-g-X-g repeat|Giant Beetle}")
+        .with_label("Giant Beetle")
         .with_description(
             "A massive beetle with gleaming chitin armor. Its mandibles click menacingly as it scuttles across the desert sands.",
         )

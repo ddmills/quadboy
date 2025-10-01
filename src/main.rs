@@ -24,21 +24,22 @@ use crate::{
     common::Rand,
     domain::{
         ActiveConditions, AiController, ApplyVisibilityEffects, AttributePoints, Attributes,
-        Bitmasker, BumpAttack, Collider, Consumable, CreatureType, DefaultMeleeAttack,
-        DefaultRangedAttack, Description, Destructible, DynamicEntity, Energy, EquipmentSlots,
-        Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap, FactionMember,
-        FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink, InActiveZone,
-        InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item, ItemRarity,
-        KnockbackAnimation, Label, Level, LightSource, LightStateChangedEvent, LoadGameResult,
-        LoadZoneEvent, LootDrop, LootTableRegistry, MovementCapabilities, NeedsStableId,
-        NewGameResult, Player, PlayerMovedEvent, Prefabs, RecalculateColliderFlagsEvent,
-        RefreshBitmask, SaveFlag, SaveGameResult, SetZoneStatusEvent, SmoothMovement, StackCount,
-        Stackable, StairDown, StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent,
-        Stats, Throwable, TurnState, UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker,
-        Weapon, Zones,
+        Bitmasker, BumpAttack, Collider, ConditionBlink, Consumable, CreatureType,
+        DefaultMeleeAttack, DefaultRangedAttack, Description, Destructible, DynamicEntity, Energy,
+        EquipmentSlots, Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap,
+        FactionMember, FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink,
+        InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
+        ItemRarity, KnockbackAnimation, Label, Level, LightSource, LightStateChangedEvent,
+        LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, MovementCapabilities,
+        NeedsStableId, NewGameResult, Player, PlayerMovedEvent, Prefabs,
+        RecalculateColliderFlagsEvent, RefreshBitmask, SaveFlag, SaveGameResult,
+        SetZoneStatusEvent, SmoothMovement, StackCount, Stackable, StairDown, StairUp,
+        StatModifiers, StaticEntity, StaticEntitySpawnedEvent, Stats, Throwable, TurnState,
+        UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
+        systems::condition_blink_system::condition_blink_system,
         systems::destruction_system::EntityDestroyedEvent,
         systems::dynamic_label_system::{
             ensure_labels_initialized, mark_dirty_on_equipment_change, mark_dirty_on_fuse_change,
@@ -151,6 +152,7 @@ async fn main() {
     reg.register::<Equipped>();
     reg.register::<Health>();
     reg.register::<HitBlink>();
+    reg.register::<ConditionBlink>();
     reg.register::<KnockbackAnimation>();
     reg.register::<BumpAttack>();
     reg.register::<SmoothMovement>();
@@ -308,6 +310,7 @@ async fn main() {
             (
                 bump_attack_system,
                 hit_blink_system,
+                condition_blink_system,
                 knockback_animation_system,
                 process_level_up_particles,
                 update_animated_glyphs,
