@@ -171,7 +171,17 @@ impl Overworld {
             return BiomeType::OpenAir;
         }
 
-        if z > SURFACE_LEVEL_Z {
+        if z == SURFACE_LEVEL_Z + 1 {
+            // First underground level - mushroom forests
+            let noise = self.perlin.get(x as f32, y as f32);
+            if noise > 0.3 && noise < 0.7 {
+                return BiomeType::MushroomForest;
+            } else {
+                return BiomeType::Cavern;
+            }
+        }
+
+        if z > SURFACE_LEVEL_Z + 1 {
             return BiomeType::Cavern;
         }
 

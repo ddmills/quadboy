@@ -1,5 +1,4 @@
 use bevy_ecs::prelude::*;
-use macroquad::prelude::trace;
 
 use crate::{
     common::Rand,
@@ -162,8 +161,7 @@ impl GameAction for AttackAction {
                 &weapon,
                 weapon_entity,
                 attacker_pos,
-            );
-            true
+            )
         } else {
             false
         }
@@ -229,7 +227,7 @@ impl AttackAction {
         weapon: &Weapon,
         weapon_entity: Option<Entity>,
         attacker_pos: (usize, usize, usize),
-    ) {
+    ) -> bool {
         match weapon.weapon_type {
             WeaponType::Melee => self.apply_unified_melee_attack(
                 world,
@@ -256,7 +254,7 @@ impl AttackAction {
                             attacker_pos,
                         );
                     }
-                    return;
+                    return false;
                 }
                 self.apply_unified_ranged_attack(
                     world,
@@ -279,7 +277,7 @@ impl AttackAction {
         target_pos: (usize, usize, usize),
         weapon: &Weapon,
         attacker_pos: (usize, usize, usize),
-    ) {
+    ) -> bool {
         // Add bump attack animation for melee attacks
         if let Some(direction) = calculate_normalized_direction(attacker_pos, target_pos) {
             world
@@ -338,6 +336,8 @@ impl AttackAction {
             let cost = get_base_energy_cost(EnergyActionType::Attack);
             energy.consume_energy(cost);
         }
+
+        true
     }
 
     fn apply_unified_ranged_attack(
@@ -349,10 +349,10 @@ impl AttackAction {
         weapon: &Weapon,
         weapon_entity: Option<Entity>,
         attacker_pos: (usize, usize, usize),
-    ) {
+    ) -> bool {
         // Check ammo for equipped weapons (default weapons have infinite ammo via None)
         if weapon_entity.is_some() && weapon.current_ammo == Some(0) {
-            // Play empty sound and consume energy
+            // Play empty sound but don't consume energy
             if let Some(empty_audio) = weapon.no_ammo_audio {
                 if let Some(mut audio) = world.get_resource_mut::<Audio>() {
                     audio
@@ -362,11 +362,7 @@ impl AttackAction {
                         .play();
                 }
             }
-            if let Some(mut energy) = world.get_mut::<Energy>(attacker_entity) {
-                let cost = get_base_energy_cost(EnergyActionType::Shoot);
-                energy.consume_energy(cost);
-            }
-            return;
+            return false;
         }
 
         // Check range
@@ -375,7 +371,7 @@ impl AttackAction {
                 + (target_pos.1 as i32 - attacker_pos.1 as i32).abs())
                 as usize;
             if distance > range {
-                return;
+                return false;
             }
         }
 
@@ -464,6 +460,8 @@ impl AttackAction {
             let cost = get_base_energy_cost(EnergyActionType::Shoot);
             energy.consume_energy(cost);
         }
+
+        true
     }
 
     fn spawn_ranged_hit_effect(

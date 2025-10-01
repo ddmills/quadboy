@@ -115,6 +115,7 @@ fn render_overworld_map(
                 BiomeType::Desert => (33, Palette::Yellow),
                 BiomeType::DustyPlains => (1, Palette::DarkYellow),
                 BiomeType::Cavern => (129, Palette::Gray),
+                BiomeType::MushroomForest => (78, Palette::Purple), // Mushroom glyph in purple
                 BiomeType::Mountain => (30, Palette::White),
             };
 

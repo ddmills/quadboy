@@ -13,6 +13,7 @@ pub enum LootTableId {
     DesertGroundLoot,
     DustyPlainsGroundLoot,
     CavernGroundLoot,
+    MushroomForestGroundLoot,
     OpenAirGroundLoot,
     MountainGroundLoot,
 
@@ -21,6 +22,7 @@ pub enum LootTableId {
     DesertChestLoot,
     DustyPlainsChestLoot,
     CavernChestLoot,
+    MushroomForestChestLoot,
     CommonChestLoot,
     MountainChestLoot,
 
@@ -29,6 +31,7 @@ pub enum LootTableId {
     DesertEnemies,
     DustyPlainsEnemies,
     CavernEnemies,
+    MushroomForestEnemies,
     OpenAirEnemies,
     MountainEnemies,
 
@@ -176,6 +179,35 @@ impl LootTableRegistry {
                 .build(),
         );
 
+        // Mushroom Forest loot (similar to cavern but with more lanterns for lighting)
+        self.tables.insert(
+            LootTableId::MushroomForestGroundLoot,
+            LootTable::builder()
+                .add(PrefabId::Lantern, 2.0)
+                .add(PrefabId::Pickaxe, 1.0)
+                .add(PrefabId::Hatchet, 1.0)
+                .add(PrefabId::Campfire, 2.0)
+                .add(PrefabId::Apple, 1.5) // Mushrooms are edible, so some food
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::MushroomForestChestLoot,
+            LootTable::builder()
+                .add(PrefabId::Lantern, 6.0) // High priority in dark mushroom forests
+                .add(PrefabId::Pickaxe, 4.0)
+                .add(PrefabId::CavalrySword, 1.0)
+                .add(PrefabId::Apple, 3.0)
+                .add(PrefabId::Hatchet, 2.0)
+                .add(PrefabId::WoolShirt, 2.0)
+                .add(PrefabId::Overcoat, 1.0)
+                .add(PrefabId::SteelToeBoots, 1.5)
+                .add(PrefabId::NavyRevolver, 0.3)
+                .add(PrefabId::Amulet, 0.3)
+                .add(PrefabId::Ring, 0.3)
+                .build(),
+        );
+
         // OpenAir (minimal loot)
         self.tables
             .insert(LootTableId::OpenAirGroundLoot, LootTable::builder().build());
@@ -249,6 +281,16 @@ impl LootTableRegistry {
                 .add(PrefabId::Bandit, 1.0)
                 .add(PrefabId::Bat, 0.8)
                 .add(PrefabId::Rat, 2.5)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::MushroomForestEnemies,
+            LootTable::builder()
+                .add(PrefabId::Bandit, 0.5) // Fewer bandits in mushroom forests
+                .add(PrefabId::Bat, 1.2) // More bats due to mushroom bioluminescence
+                .add(PrefabId::Rat, 2.0)
+                .add(PrefabId::GiantBeetle, 1.5) // Beetles love mushroom environments
                 .build(),
         );
 

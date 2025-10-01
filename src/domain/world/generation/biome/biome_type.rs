@@ -19,6 +19,7 @@ pub enum BiomeType {
     Desert,
     DustyPlains,
     Cavern,
+    MushroomForest,
     Mountain,
 }
 
@@ -30,6 +31,7 @@ impl BiomeType {
             BiomeType::Desert => 0x241C1A,
             BiomeType::DustyPlains => 0x2A2518,
             BiomeType::Cavern => 0x15151B,
+            BiomeType::MushroomForest => 0x1A101F,
             BiomeType::Mountain => 0x1D2631,
         }
     }
@@ -41,6 +43,7 @@ impl BiomeType {
             BiomeType::Desert => 1.0,
             BiomeType::DustyPlains => 0.95,
             BiomeType::Cavern => 0.4,
+            BiomeType::MushroomForest => 0.5,
             BiomeType::Mountain => 0.85,
         }
     }
@@ -53,6 +56,7 @@ impl BiomeType {
             | BiomeType::DustyPlains
             | BiomeType::Mountain => true,
             BiomeType::Cavern => false,
+            BiomeType::MushroomForest => false,
         }
     }
 
@@ -67,6 +71,7 @@ impl BiomeType {
                 BiomeType::Desert => Terrain::Dirt,
                 BiomeType::DustyPlains => Terrain::Dirt,
                 BiomeType::Cavern => Terrain::Dirt,
+                BiomeType::MushroomForest => Terrain::Sand,
                 BiomeType::Mountain => Terrain::Dirt,
             }
         }
@@ -83,6 +88,7 @@ impl BiomeType {
                 BiomeType::Desert => Terrain::Sand,
                 BiomeType::DustyPlains => Terrain::DyingGrass,
                 BiomeType::Cavern => Terrain::Sand,
+                BiomeType::MushroomForest => Terrain::Dirt,
                 BiomeType::Mountain => Terrain::Gravel,
             }
         }
@@ -97,6 +103,7 @@ impl Display for BiomeType {
             BiomeType::Desert => write!(f, "Desert"),
             BiomeType::DustyPlains => write!(f, "DustyPlains"),
             BiomeType::Cavern => write!(f, "Cavern"),
+            BiomeType::MushroomForest => write!(f, "MushroomForest"),
             BiomeType::Mountain => write!(f, "Mountain"),
         }
     }
