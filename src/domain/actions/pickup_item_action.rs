@@ -3,9 +3,11 @@ use bevy_ecs::prelude::*;
 use crate::{
     domain::{
         Energy, EnergyActionType, InInventory, Inventory, Item, Player, StackCount, Stackable,
-        StackableType, Zone, actions::GameAction, get_base_energy_cost,
+        StackableType, Zone,
+        actions::GameAction,
+        get_base_energy_cost,
         inventory::InventoryChangedEvent,
-        systems::game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
+        systems::game_log_system::{GameLogEvent, KnowledgeLevel, LogMessage},
     },
     engine::{Clock, StableId, StableIdRegistry},
     rendering::Position,
@@ -65,7 +67,8 @@ impl GameAction for PickupItemAction {
                     let knowledge = if world.get::<Player>(self.entity).is_some() {
                         KnowledgeLevel::Player
                     } else {
-                        let picker_pos = world.get::<Position>(self.entity)
+                        let picker_pos = world
+                            .get::<Position>(self.entity)
                             .map(|p| (p.x as usize, p.y as usize, p.z as usize))
                             .unwrap_or((0, 0, 0));
                         KnowledgeLevel::Action {
@@ -102,7 +105,8 @@ impl GameAction for PickupItemAction {
                     let knowledge = if world.get::<Player>(self.entity).is_some() {
                         KnowledgeLevel::Player
                     } else {
-                        let picker_pos = world.get::<Position>(self.entity)
+                        let picker_pos = world
+                            .get::<Position>(self.entity)
                             .map(|p| (p.x as usize, p.y as usize, p.z as usize))
                             .unwrap_or((0, 0, 0));
                         KnowledgeLevel::Action {
@@ -183,7 +187,8 @@ impl GameAction for PickupItemAction {
         let knowledge = if world.get::<Player>(self.entity).is_some() {
             KnowledgeLevel::Player
         } else {
-            let picker_pos = world.get::<Position>(self.entity)
+            let picker_pos = world
+                .get::<Position>(self.entity)
                 .map(|p| (p.x as usize, p.y as usize, p.z as usize))
                 .unwrap_or((0, 0, 0));
             KnowledgeLevel::Action {

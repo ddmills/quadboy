@@ -6,14 +6,15 @@ use crate::{
     domain::{
         BumpAttack, Condition, ConditionSource, ConditionType, DefaultMeleeAttack,
         DefaultRangedAttack, Destructible, Energy, EnergyActionType, EquipmentSlot, EquipmentSlots,
-        Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, Player, PlayerPosition,
-        StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
+        Health, HitBlink, HitEffect, KnockbackAnimation, Label, MaterialType, Player,
+        PlayerPosition, StatType, Stats, Weapon, WeaponFamily, WeaponType, Zone,
         actions::GameAction,
         get_base_energy_cost,
         systems::{
-            apply_condition_to_entity, condition_system::spawn_condition_particles,
+            apply_condition_to_entity,
+            condition_system::spawn_condition_particles,
             destruction_system::EntityDestroyedEvent,
-            game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
+            game_log_system::{GameLogEvent, KnowledgeLevel, LogMessage},
         },
     },
     engine::{Audio, Clock, StableId, StableIdRegistry},
@@ -522,7 +523,9 @@ impl AttackAction {
                 *should_apply_hit_blink = true;
 
                 // Send attack log event
-                let knowledge = if world.get::<Player>(attacker_entity).is_some() || world.get::<Player>(target_entity).is_some() {
+                let knowledge = if world.get::<Player>(attacker_entity).is_some()
+                    || world.get::<Player>(target_entity).is_some()
+                {
                     KnowledgeLevel::Player
                 } else {
                     KnowledgeLevel::Action {
@@ -906,10 +909,13 @@ impl AttackAction {
         match apply_condition_to_entity(target_entity, poison_condition, world) {
             Ok(()) => {
                 // Send poison applied log event
-                let knowledge = if world.get::<Player>(attacker_entity).is_some() || world.get::<Player>(target_entity).is_some() {
+                let knowledge = if world.get::<Player>(attacker_entity).is_some()
+                    || world.get::<Player>(target_entity).is_some()
+                {
                     KnowledgeLevel::Player
                 } else {
-                    let attacker_pos = world.get::<Position>(attacker_entity)
+                    let attacker_pos = world
+                        .get::<Position>(attacker_entity)
                         .map(|p| (p.x as usize, p.y as usize, p.z as usize))
                         .unwrap_or((0, 0, 0));
                     KnowledgeLevel::Action {
@@ -968,10 +974,13 @@ impl AttackAction {
         match apply_condition_to_entity(target_entity, bleeding_condition, world) {
             Ok(()) => {
                 // Send bleeding applied log event
-                let knowledge = if world.get::<Player>(attacker_entity).is_some() || world.get::<Player>(target_entity).is_some() {
+                let knowledge = if world.get::<Player>(attacker_entity).is_some()
+                    || world.get::<Player>(target_entity).is_some()
+                {
                     KnowledgeLevel::Player
                 } else {
-                    let attacker_pos = world.get::<Position>(attacker_entity)
+                    let attacker_pos = world
+                        .get::<Position>(attacker_entity)
                         .map(|p| (p.x as usize, p.y as usize, p.z as usize))
                         .unwrap_or((0, 0, 0));
                     KnowledgeLevel::Action {
@@ -1032,7 +1041,8 @@ impl AttackAction {
                 let knowledge = if world.get::<Player>(target_entity).is_some() {
                     KnowledgeLevel::Player
                 } else {
-                    let target_pos = world.get::<Position>(target_entity)
+                    let target_pos = world
+                        .get::<Position>(target_entity)
                         .map(|p| (p.x as usize, p.y as usize, p.z as usize))
                         .unwrap_or((0, 0, 0));
                     KnowledgeLevel::Action {

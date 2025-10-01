@@ -4,9 +4,11 @@ use macroquad::prelude::trace;
 use crate::{
     domain::{
         Collider, DynamicEntity, Energy, EnergyActionType, Equipped, InInventory, Inventory, Item,
-        Player, StaticEntity, StaticEntitySpawnedEvent, UnequipItemAction, actions::GameAction,
-        get_base_energy_cost, inventory::InventoryChangedEvent,
-        systems::game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
+        Player, StaticEntity, StaticEntitySpawnedEvent, UnequipItemAction,
+        actions::GameAction,
+        get_base_energy_cost,
+        inventory::InventoryChangedEvent,
+        systems::game_log_system::{GameLogEvent, KnowledgeLevel, LogMessage},
     },
     engine::{Clock, StableId, StableIdRegistry},
     rendering::Position,

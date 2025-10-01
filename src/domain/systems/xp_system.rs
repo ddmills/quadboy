@@ -3,7 +3,7 @@ use crate::{
         AttributePoints, GameFormulas, Health, Level, Player, Stats,
         systems::{
             destruction_system::{DestructionCause, EntityDestroyedEvent},
-            game_log_system::{GameLogEvent, LogMessage, KnowledgeLevel},
+            game_log_system::{GameLogEvent, KnowledgeLevel, LogMessage},
         },
     },
     engine::Clock,

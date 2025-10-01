@@ -72,11 +72,19 @@ impl Plugin for ExploreStatePlugin {
                     display_entity_names_at_mouse,
                     render_ai_debug_indicators,
                     debug_player_map_overlay,
+                ),
+            )
+            .on_update(
+                app,
+                (
                     update_bars,
                     update_xp_progress_bars,
                     update_player_hp_bar,
                     update_player_armor_bar,
                     update_player_ammo_bar,
+                    update_player_xp_label,
+                    update_player_hp_label,
+                    update_player_armor_label,
                     handle_examine_input,
                     handle_debug_input,
                 ),
@@ -103,6 +111,15 @@ impl Plugin for ExploreStatePlugin {
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct CleanupStateExplore;
+
+#[derive(Component)]
+pub struct PlayerXPLabel;
+
+#[derive(Component)]
+pub struct PlayerHPLabel;
+
+#[derive(Component)]
+pub struct PlayerArmorLabel;
 
 #[derive(Component)]
 pub struct PlayerHPBar;
@@ -167,7 +184,7 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     // Spawn player debug info
     cmds.spawn((
         Text::new("123").bg(Palette::Black),
-        Position::new_f32(6., 1., 0.),
+        Position::new_f32(12., 1., 0.),
         PlayerDebug,
         CleanupStateExplore,
     ));
@@ -175,12 +192,30 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
     // Spawn UI buttons
     spawn_ui_buttons(&mut cmds, &callbacks);
 
+    // Spawn XP label
+    cmds.spawn((
+        Text::new("XP: 0/100").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(0.5, 3., 0.),
+        PlayerXPLabel,
+        CleanupStateExplore,
+    ));
+
     // Spawn XP progress bar
     cmds.spawn((
         Text::new("").fg2(Palette::DarkGray).layer(Layer::Ui),
-        Position::new_f32(0.5, 4., 0.),
+        Position::new_f32(0.5, 3.5, 0.),
         Bar::new(0, 100, 18, Palette::Yellow, Palette::DarkGray),
         XPProgressBar::new(30),
+        CleanupStateExplore,
+    ));
+
+    // Spawn HP label
+    cmds.spawn((
+        Text::new("Health: 1/1")
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+        Position::new_f32(0.5, 4., 0.),
+        PlayerHPLabel,
         CleanupStateExplore,
     ));
 
@@ -196,13 +231,21 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
         CleanupStateExplore,
     ));
 
+    // Spawn armor label
+    cmds.spawn((
+        Text::new("Armor: 0/1").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(0.5, 5., 0.),
+        PlayerArmorLabel,
+        CleanupStateExplore,
+    ));
+
     // Spawn player armor display
     cmds.spawn((
         Text::new("")
             .fg1(Palette::White)
             .fg2(Palette::DarkGray)
             .layer(Layer::Ui),
-        Position::new_f32(0.5, 5., 0.),
+        Position::new_f32(0.5, 5.5, 0.),
         Bar::new(0, 1, 18, Palette::Cyan, Palette::DarkGray),
         PlayerArmorBar,
         CleanupStateExplore,
@@ -214,7 +257,7 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
             .fg1(Palette::White)
             .fg2(Palette::DarkGray)
             .layer(Layer::Ui),
-        Position::new_f32(0.5, 5.5, 0.),
+        Position::new_f32(0.5, 6., 0.),
         PlayerAmmoBar,
         CleanupStateExplore,
     ));
@@ -322,6 +365,55 @@ fn update_player_ammo_bar(
         .collect::<String>();
 
     ammo_text.value = format!("[{}] {}/{}", bar_chars, current_ammo, clip_size);
+}
+
+fn update_player_xp_label(
+    q_player: Query<&Level, (With<Player>, Changed<Level>)>,
+    mut q_xp_label: Query<&mut Text, With<PlayerXPLabel>>,
+) {
+    let Ok(level) = q_player.single() else {
+        return;
+    };
+    let Ok(mut xp_text) = q_xp_label.single_mut() else {
+        return;
+    };
+
+    let current_xp = level.current_xp;
+    let next_level_xp = level.xp_to_next_level;
+    xp_text.value = format!("XP: {}/{}", current_xp, next_level_xp);
+}
+
+fn update_player_hp_label(
+    q_player: Query<
+        (&Health, &Level, &Stats),
+        (With<Player>, Or<(Changed<Health>, Changed<Stats>)>),
+    >,
+    mut q_hp_label: Query<&mut Text, With<PlayerHPLabel>>,
+) {
+    let Ok((health, level, stats)) = q_player.single() else {
+        return;
+    };
+    let Ok(mut hp_text) = q_hp_label.single_mut() else {
+        return;
+    };
+
+    let max_hp = Health::get_max_hp(level, stats);
+    hp_text.value = format!("Health: {}/{}", health.current as usize, max_hp as usize);
+}
+
+fn update_player_armor_label(
+    q_player: Query<(&Health, &Stats), (With<Player>, Or<(Changed<Health>, Changed<Stats>)>)>,
+    mut q_armor_label: Query<&mut Text, With<PlayerArmorLabel>>,
+) {
+    let Ok((health, stats)) = q_player.single() else {
+        return;
+    };
+    let Ok(mut armor_text) = q_armor_label.single_mut() else {
+        return;
+    };
+
+    let (current_armor, max_armor) = health.get_current_max_armor(stats);
+    armor_text.value = format!("Armor: {}/{}", current_armor as usize, max_armor as usize);
 }
 
 fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {

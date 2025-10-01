@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
-use std::collections::VecDeque;
 use quadboy_macros::profiled_system;
+use std::collections::VecDeque;
 
 use crate::{
     domain::{Label, Player, Zone, Zones},
@@ -21,52 +21,52 @@ pub enum LogMessage {
     Attack {
         attacker: Entity,
         target: Entity,
-        damage: i32
+        damage: i32,
     },
     Death {
         entity: Entity,
-        killer: Option<Entity>
+        killer: Option<Entity>,
     },
 
     // Status Effects
     PoisonApplied {
         source: Entity,
-        target: Entity
+        target: Entity,
     },
     BleedingApplied {
         source: Entity,
-        target: Entity
+        target: Entity,
     },
     BurningApplied {
-        target: Entity
+        target: Entity,
     },
 
     // Items
     ItemPickup {
         picker: Entity,
         item: Entity,
-        quantity: Option<u32>
+        quantity: Option<u32>,
     },
     ItemDrop {
         dropper: Entity,
         item: Entity,
-        quantity: Option<u32>
+        quantity: Option<u32>,
     },
 
     // Progression
     XpGain {
         entity: Entity,
         amount: u32,
-        source: Entity
+        source: Entity,
     },
     LevelUp {
         entity: Entity,
-        new_level: u32
+        new_level: u32,
     },
 
     // Environmental/System
     Discovery {
-        text: String
+        text: String,
     },
     GameSaved,
     GameLoaded,
@@ -108,7 +108,9 @@ impl LogMessage {
             LogMessage::ItemPickup { .. } | LogMessage::ItemDrop { .. } => LogCategory::Item,
             LogMessage::XpGain { .. } | LogMessage::LevelUp { .. } => LogCategory::Progression,
             LogMessage::Discovery { .. } => LogCategory::Discovery,
-            LogMessage::GameSaved | LogMessage::GameLoaded | LogMessage::Custom(_) => LogCategory::System,
+            LogMessage::GameSaved | LogMessage::GameLoaded | LogMessage::Custom(_) => {
+                LogCategory::System
+            }
         }
     }
 }
@@ -182,7 +184,9 @@ pub fn process_game_log_events(
     zones: Res<Zones>,
 ) {
     // Get player position for visibility checks
-    let player_pos = q_player.iter().next()
+    let player_pos = q_player
+        .iter()
+        .next()
         .map(|(_, pos)| (pos.x as usize, pos.y as usize, pos.z as usize));
 
     for event in e_log.read() {
@@ -192,7 +196,7 @@ pub fn process_game_log_events(
             KnowledgeLevel::Global => true,
             KnowledgeLevel::Action { actor: _, location } => {
                 is_action_visible(location, player_pos, &q_zones, &zones)
-            },
+            }
         };
 
         if !should_show {
@@ -200,11 +204,7 @@ pub fn process_game_log_events(
         }
 
         // Format and store the message
-        let message_text = format_log_message(
-            &event.message,
-            &q_labels,
-            &q_player,
-        );
+        let message_text = format_log_message(&event.message, &q_labels, &q_player);
 
         game_log.add_message(LogEntry {
             text: message_text,
@@ -255,11 +255,18 @@ fn format_log_message(
     q_player: &Query<(&Player, &Position)>,
 ) -> String {
     match message {
-        LogMessage::Attack { attacker, target, damage } => {
+        LogMessage::Attack {
+            attacker,
+            target,
+            damage,
+        } => {
             let attacker_label = get_entity_label(*attacker, q_labels, q_player);
             let target_label = get_entity_label(*target, q_labels, q_player);
-            format!("{} hits {} for {{r|{} damage}}!", attacker_label, target_label, damage)
-        },
+            format!(
+                "{} hits {} for {{r|{} damage}}!",
+                attacker_label, target_label, damage
+            )
+        }
 
         LogMessage::Death { entity, killer } => {
             let entity_label = get_entity_label(*entity, q_labels, q_player);
@@ -267,10 +274,10 @@ fn format_log_message(
                 Some(k) => {
                     let killer_label = get_entity_label(*k, q_labels, q_player);
                     format!("{} was slain by {}!", entity_label, killer_label)
-                },
+                }
                 None => format!("{} died.", entity_label),
             }
-        },
+        }
 
         LogMessage::PoisonApplied { source, target } => {
             let source_label = get_entity_label(*source, q_labels, q_player);
@@ -282,7 +289,7 @@ fn format_log_message(
                 let target_label = get_entity_label(*target, q_labels, q_player);
                 format!("{} poisons {}!", source_label, target_label)
             }
-        },
+        }
 
         LogMessage::BleedingApplied { source, target } => {
             let source_label = get_entity_label(*source, q_labels, q_player);
@@ -294,7 +301,7 @@ fn format_log_message(
                 let target_label = get_entity_label(*target, q_labels, q_player);
                 format!("{} wounds {}!", source_label, target_label)
             }
-        },
+        }
 
         LogMessage::BurningApplied { target } => {
             let is_player_target = q_player.get(*target).is_ok();
@@ -305,9 +312,13 @@ fn format_log_message(
                 let target_label = get_entity_label(*target, q_labels, q_player);
                 format!("{{O|Fire}} spreads to {}!", target_label)
             }
-        },
+        }
 
-        LogMessage::ItemPickup { picker, item, quantity } => {
+        LogMessage::ItemPickup {
+            picker,
+            item,
+            quantity,
+        } => {
             let picker_label = get_entity_label(*picker, q_labels, q_player);
             let item_label = get_entity_label(*item, q_labels, q_player);
 
@@ -315,9 +326,13 @@ fn format_log_message(
                 Some(n) if *n > 1 => format!("{} pick up {} {}.", picker_label, n, item_label),
                 _ => format!("{} pick up {}.", picker_label, item_label),
             }
-        },
+        }
 
-        LogMessage::ItemDrop { dropper, item, quantity } => {
+        LogMessage::ItemDrop {
+            dropper,
+            item,
+            quantity,
+        } => {
             let dropper_label = get_entity_label(*dropper, q_labels, q_player);
             let item_label = get_entity_label(*item, q_labels, q_player);
 
@@ -325,18 +340,28 @@ fn format_log_message(
                 Some(n) if *n > 1 => format!("{} drop {} {}.", dropper_label, n, item_label),
                 _ => format!("{} drop {}.", dropper_label, item_label),
             }
-        },
+        }
 
-        LogMessage::XpGain { entity, amount, source } => {
+        LogMessage::XpGain {
+            entity,
+            amount,
+            source,
+        } => {
             let entity_label = get_entity_label(*entity, q_labels, q_player);
             let source_label = get_entity_label(*source, q_labels, q_player);
-            format!("{} defeated {}! {{g|(+{} XP)}}", entity_label, source_label, amount)
-        },
+            format!(
+                "{} defeated {}! {{g|(+{} XP)}}",
+                entity_label, source_label, amount
+            )
+        }
 
         LogMessage::LevelUp { entity, new_level } => {
             let entity_label = get_entity_label(*entity, q_labels, q_player);
-            format!("{{G|Level up!}} {} are now level {{C|{}}}!", entity_label, new_level)
-        },
+            format!(
+                "{{G|Level up!}} {} are now level {{C|{}}}!",
+                entity_label, new_level
+            )
+        }
 
         // Environmental and text-based messages
         LogMessage::Discovery { text } => text.clone(),
@@ -357,7 +382,8 @@ fn get_entity_label(
     // }
 
     // Get the label, with fallback
-    q_labels.get(entity)
+    q_labels
+        .get(entity)
         .map(|label| label.get().to_string())
         .unwrap_or_else(|_| "{x|something}".to_string())
 }

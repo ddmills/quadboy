@@ -73,10 +73,9 @@ use crate::{
         event_log_scroll_system, event_log_visibility_system, hotkey_pressed_timer_system,
         list_cursor_visibility, list_mouse_wheel_scroll, render_dialog_content,
         selectable_list_interaction, setup_buttons, setup_dialogs, setup_lists,
-        sync_focus_to_interaction, tab_navigation, ui_interaction_system,
-        unified_click_system, unified_keyboard_activation_system, unified_style_system,
-        update_event_log_display, update_event_log_positioning, update_focus_from_mouse,
-        update_list_context,
+        sync_focus_to_interaction, tab_navigation, ui_interaction_system, unified_click_system,
+        unified_keyboard_activation_system, unified_style_system, update_event_log_display,
+        update_event_log_positioning, update_focus_from_mouse, update_list_context,
     },
 };
 

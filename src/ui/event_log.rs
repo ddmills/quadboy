@@ -80,11 +80,13 @@ pub struct EventLogBackground {
 
 /// Spawn the event log UI when entering the explore state
 pub fn spawn_event_log_ui(cmds: &mut Commands) {
-    let log_ui = cmds.spawn((
-        EventLogUi::new(),
-        Position::new_f32(1.0, 0.0, 0.0), // Will be updated to bottom of screen
-        CleanupStateExplore,
-    )).id();
+    let log_ui = cmds
+        .spawn((
+            EventLogUi::new(),
+            Position::new_f32(1.0, 0.0, 0.0), // Will be updated to bottom of screen
+            CleanupStateExplore,
+        ))
+        .id();
 
     // Spawn background panel
     cmds.spawn((
@@ -134,9 +136,27 @@ pub fn update_event_log_positioning(
     ui: Res<UiLayout>,
     mut q_log_ui: Query<&mut Position, With<EventLogUi>>,
     mut q_background: Query<(&EventLogBackground, &mut Position), Without<EventLogUi>>,
-    mut q_lines: Query<(&EventLogLine, &mut Position), (Without<EventLogUi>, Without<EventLogBackground>)>,
-    mut q_scroll_up: Query<(&EventLogScrollUpIndicator, &mut Position), (Without<EventLogUi>, Without<EventLogBackground>, Without<EventLogLine>)>,
-    mut q_scroll_down: Query<(&EventLogScrollDownIndicator, &mut Position), (Without<EventLogUi>, Without<EventLogBackground>, Without<EventLogLine>, Without<EventLogScrollUpIndicator>)>,
+    mut q_lines: Query<
+        (&EventLogLine, &mut Position),
+        (Without<EventLogUi>, Without<EventLogBackground>),
+    >,
+    mut q_scroll_up: Query<
+        (&EventLogScrollUpIndicator, &mut Position),
+        (
+            Without<EventLogUi>,
+            Without<EventLogBackground>,
+            Without<EventLogLine>,
+        ),
+    >,
+    mut q_scroll_down: Query<
+        (&EventLogScrollDownIndicator, &mut Position),
+        (
+            Without<EventLogUi>,
+            Without<EventLogBackground>,
+            Without<EventLogLine>,
+            Without<EventLogScrollUpIndicator>,
+        ),
+    >,
 ) {
     // Position log at bottom-left of screen, aligned with bottom panel
     // Account for text height (0.5) and 6 visible lines = 3.0 total height
@@ -178,8 +198,23 @@ pub fn update_event_log_display(
     mut q_log_ui: Query<&mut EventLogUi>,
     mut q_lines: Query<(&EventLogLine, &mut Text, &mut Visibility)>,
     mut q_background: Query<&mut Visibility, (With<EventLogBackground>, Without<EventLogLine>)>,
-    mut q_scroll_up: Query<&mut Visibility, (With<EventLogScrollUpIndicator>, Without<EventLogLine>, Without<EventLogBackground>)>,
-    mut q_scroll_down: Query<&mut Visibility, (With<EventLogScrollDownIndicator>, Without<EventLogLine>, Without<EventLogBackground>, Without<EventLogScrollUpIndicator>)>,
+    mut q_scroll_up: Query<
+        &mut Visibility,
+        (
+            With<EventLogScrollUpIndicator>,
+            Without<EventLogLine>,
+            Without<EventLogBackground>,
+        ),
+    >,
+    mut q_scroll_down: Query<
+        &mut Visibility,
+        (
+            With<EventLogScrollDownIndicator>,
+            Without<EventLogLine>,
+            Without<EventLogBackground>,
+            Without<EventLogScrollUpIndicator>,
+        ),
+    >,
 ) {
     let messages = game_log.get_messages();
     let message_count = messages.len();
@@ -226,11 +261,19 @@ pub fn update_event_log_display(
     let can_scroll_down = log_ui.scroll_offset + log_ui.visible_lines < message_count;
 
     for mut vis in q_scroll_up.iter_mut() {
-        *vis = if can_scroll_up { Visibility::Visible } else { Visibility::Hidden };
+        *vis = if can_scroll_up {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
     }
 
     for mut vis in q_scroll_down.iter_mut() {
-        *vis = if can_scroll_down { Visibility::Visible } else { Visibility::Hidden };
+        *vis = if can_scroll_down {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
     }
 
     // Update line contents
@@ -350,10 +393,7 @@ pub fn event_log_scroll_system(
 
 /// Handle visibility and new message notifications
 #[profiled_system]
-pub fn event_log_visibility_system(
-    game_log: Res<GameLog>,
-    mut q_log_ui: Query<&mut EventLogUi>,
-) {
+pub fn event_log_visibility_system(game_log: Res<GameLog>, mut q_log_ui: Query<&mut EventLogUi>) {
     let Ok(mut log_ui) = q_log_ui.get_single_mut() else {
         return;
     };

@@ -66,7 +66,6 @@ pub fn update_ui_layout(
 
     camera.width = ui.game_panel.width as f32 * TILE_SIZE_F32.0;
     camera.height = ui.game_panel.height as f32 * TILE_SIZE_F32.1;
-
 }
 
 pub fn draw_ui_panels(
@@ -78,8 +77,9 @@ pub fn draw_ui_panels(
     let color = Palette::Clear;
 
     // Handle top panel
-    if ui.top_panel.width > 0 && ui.top_panel.height > 0 {
-        if let Some(entity) = ui.top_panel.glyph {
+    if let Some(entity) = ui.top_panel.glyph {
+        // Check if entity still exists
+        if cmds.get_entity(entity).is_ok() {
             // Update existing entity
             if let Ok(mut glyph) = q_glyphs.get_mut(entity) {
                 glyph.scale = (ui.top_panel.width as f32, ui.top_panel.height as f32);
@@ -89,6 +89,13 @@ pub fn draw_ui_panels(
                 position.y = ui.top_panel.y as f32;
             }
         } else {
+            // Entity was despawned, clear the reference
+            ui.top_panel.glyph = None;
+        }
+    }
+
+    if ui.top_panel.width > 0 && ui.top_panel.height > 0 {
+        if ui.top_panel.glyph.is_none() {
             // Create new entity
             let entity = cmds
                 .spawn((
@@ -111,8 +118,9 @@ pub fn draw_ui_panels(
     }
 
     // Handle left panel
-    if ui.left_panel.width > 0 && ui.left_panel.height > 0 {
-        if let Some(entity) = ui.left_panel.glyph {
+    if let Some(entity) = ui.left_panel.glyph {
+        // Check if entity still exists
+        if cmds.get_entity(entity).is_ok() {
             // Update existing entity
             if let Ok(mut glyph) = q_glyphs.get_mut(entity) {
                 glyph.scale = (ui.left_panel.width as f32, ui.left_panel.height as f32);
@@ -122,6 +130,13 @@ pub fn draw_ui_panels(
                 position.y = ui.left_panel.y as f32;
             }
         } else {
+            // Entity was despawned, clear the reference
+            ui.left_panel.glyph = None;
+        }
+    }
+
+    if ui.left_panel.width > 0 && ui.left_panel.height > 0 {
+        if ui.left_panel.glyph.is_none() {
             // Create new entity
             let entity = cmds
                 .spawn((
@@ -144,8 +159,9 @@ pub fn draw_ui_panels(
     }
 
     // Handle bottom panel
-    if ui.bottom_panel.width > 0 && ui.bottom_panel.height > 0 {
-        if let Some(entity) = ui.bottom_panel.glyph {
+    if let Some(entity) = ui.bottom_panel.glyph {
+        // Check if entity still exists
+        if cmds.get_entity(entity).is_ok() {
             // Update existing entity
             if let Ok(mut glyph) = q_glyphs.get_mut(entity) {
                 glyph.scale = (ui.bottom_panel.width as f32, ui.bottom_panel.height as f32);
@@ -155,6 +171,13 @@ pub fn draw_ui_panels(
                 position.y = ui.bottom_panel.y as f32;
             }
         } else {
+            // Entity was despawned, clear the reference
+            ui.bottom_panel.glyph = None;
+        }
+    }
+
+    if ui.bottom_panel.width > 0 && ui.bottom_panel.height > 0 {
+        if ui.bottom_panel.glyph.is_none() {
             // Create new entity
             let entity = cmds
                 .spawn((
@@ -180,14 +203,10 @@ pub fn draw_ui_panels(
     draw_panel_borders(&mut cmds, &mut ui.top_panel, true);
     draw_panel_borders(&mut cmds, &mut ui.left_panel, true);
     draw_panel_borders(&mut cmds, &mut ui.bottom_panel, true);
-    draw_panel_borders(&mut cmds, &mut ui.game_panel, false); // No borders for game panel
+    draw_panel_borders(&mut cmds, &mut ui.game_panel, false);
 }
 
-fn draw_panel_borders(
-    cmds: &mut Commands,
-    panel: &mut Panel,
-    has_borders: bool,
-) {
+fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool) {
     if !has_borders || panel.width == 0 || panel.height == 0 {
         // Remove existing borders if they exist
         for entity in panel.border_entities.drain(..) {
@@ -211,71 +230,81 @@ fn draw_panel_borders(
 
     // Draw corners
     let corners = [
-        (text_x, text_y, '┌'), // top-left
-        (text_x + text_width - 1, text_y, '┐'), // top-right
-        (text_x, text_y + text_height - 1, '└'), // bottom-left
+        (text_x, text_y, '┌'),                                    // top-left
+        (text_x + text_width - 1, text_y, '┐'),                   // top-right
+        (text_x, text_y + text_height - 1, '└'),                  // bottom-left
         (text_x + text_width - 1, text_y + text_height - 1, '┘'), // bottom-right
     ];
 
     for (x, y, ch) in corners {
-        let entity = cmds.spawn((
-            CleanupStatePlay,
-            Text::new(&ch.to_string())
-                .fg1(border_color)
-                .layer(Layer::Ui)
-                .texture(GlyphTextureId::BodyFont),
-            Position::new_f32(x as f32 * 0.5, y as f32 * 0.5, 0.0),
-        )).id();
+        let entity = cmds
+            .spawn((
+                CleanupStatePlay,
+                Text::new(&ch.to_string())
+                    .fg1(border_color)
+                    .layer(Layer::Ui)
+                    .texture(GlyphTextureId::BodyFont),
+                Position::new_f32(x as f32 * 0.5, y as f32 * 0.5, 0.0),
+            ))
+            .id();
         panel.border_entities.push(entity);
     }
 
     // Draw horizontal lines (top and bottom)
     for x in (text_x + 1)..(text_x + text_width - 1) {
         // Top edge
-        let entity = cmds.spawn((
-            CleanupStatePlay,
-            Text::new("─")
-                .fg1(border_color)
-                .layer(Layer::Ui)
-                .texture(GlyphTextureId::BodyFont),
-            Position::new_f32(x as f32 * 0.5, text_y as f32 * 0.5, 0.0),
-        )).id();
+        let entity = cmds
+            .spawn((
+                CleanupStatePlay,
+                Text::new("─")
+                    .fg1(border_color)
+                    .layer(Layer::Ui)
+                    .texture(GlyphTextureId::BodyFont),
+                Position::new_f32(x as f32 * 0.5, text_y as f32 * 0.5, 0.0),
+            ))
+            .id();
         panel.border_entities.push(entity);
 
         // Bottom edge
-        let entity = cmds.spawn((
-            CleanupStatePlay,
-            Text::new("─")
-                .fg1(border_color)
-                .layer(Layer::Ui)
-                .texture(GlyphTextureId::BodyFont),
-            Position::new_f32(x as f32 * 0.5, (text_y + text_height - 1) as f32 * 0.5, 0.0),
-        )).id();
+        let entity = cmds
+            .spawn((
+                CleanupStatePlay,
+                Text::new("─")
+                    .fg1(border_color)
+                    .layer(Layer::Ui)
+                    .texture(GlyphTextureId::BodyFont),
+                Position::new_f32(x as f32 * 0.5, (text_y + text_height - 1) as f32 * 0.5, 0.0),
+            ))
+            .id();
         panel.border_entities.push(entity);
     }
 
     // Draw vertical lines (left and right)
     for y in (text_y + 1)..(text_y + text_height - 1) {
         // Left edge
-        let entity = cmds.spawn((
-            CleanupStatePlay,
-            Text::new("│")
-                .fg1(border_color)
-                .layer(Layer::Ui)
-                .texture(GlyphTextureId::BodyFont),
-            Position::new_f32(text_x as f32 * 0.5, y as f32 * 0.5, 0.0),
-        )).id();
+        let entity = cmds
+            .spawn((
+                CleanupStatePlay,
+                Text::new("│")
+                    .fg1(border_color)
+                    .layer(Layer::Ui)
+                    .texture(GlyphTextureId::BodyFont),
+                Position::new_f32(text_x as f32 * 0.5, y as f32 * 0.5, 0.0),
+            ))
+            .id();
         panel.border_entities.push(entity);
 
         // Right edge
-        let entity = cmds.spawn((
-            CleanupStatePlay,
-            Text::new("│")
-                .fg1(border_color)
-                .layer(Layer::Ui)
-                .texture(GlyphTextureId::BodyFont),
-            Position::new_f32((text_x + text_width - 1) as f32 * 0.5, y as f32 * 0.5, 0.0),
-        )).id();
+        let entity = cmds
+            .spawn((
+                CleanupStatePlay,
+                Text::new("│")
+                    .fg1(border_color)
+                    .layer(Layer::Ui)
+                    .texture(GlyphTextureId::BodyFont),
+                Position::new_f32((text_x + text_width - 1) as f32 * 0.5, y as f32 * 0.5, 0.0),
+            ))
+            .id();
         panel.border_entities.push(entity);
     }
 }
