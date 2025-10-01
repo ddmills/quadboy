@@ -241,7 +241,7 @@ pub fn update_event_log_display(
         return;
     }
 
-    let Ok(mut log_ui) = q_log_ui.get_single_mut() else {
+    let Ok(mut log_ui) = q_log_ui.single_mut() else {
         return;
     };
 
@@ -325,7 +325,7 @@ pub fn event_log_scroll_system(
     screen: Res<ScreenSize>,
     ui: Res<UiLayout>,
 ) {
-    let Ok(mut log_ui) = q_log_ui.get_single_mut() else {
+    let Ok(mut log_ui) = q_log_ui.single_mut() else {
         return;
     };
 
@@ -394,7 +394,7 @@ pub fn event_log_scroll_system(
 /// Handle visibility and new message notifications
 #[profiled_system]
 pub fn event_log_visibility_system(game_log: Res<GameLog>, mut q_log_ui: Query<&mut EventLogUi>) {
-    let Ok(mut log_ui) = q_log_ui.get_single_mut() else {
+    let Ok(mut log_ui) = q_log_ui.single_mut() else {
         return;
     };
 

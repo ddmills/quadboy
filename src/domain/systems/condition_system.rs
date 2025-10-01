@@ -1,9 +1,9 @@
 use bevy_ecs::prelude::*;
 
 use crate::{
-    domain::{ActiveConditions, Condition, ConditionType, Health, Level, StatModifiers, Stats},
+    domain::{ActiveConditions, Condition, ConditionType, Health, Level, StatModifiers, Stats, PlayerPosition},
     engine::Clock,
-    rendering::Position,
+    rendering::{Position, world_to_zone_idx},
 };
 
 pub fn process_conditions(
@@ -153,10 +153,26 @@ pub fn apply_condition_to_entity(
 pub fn spawn_condition_particles(world: &mut World) {
     let mut spawn_requests = Vec::new();
 
+    // Get the active zone from player position
+    let active_zone = world
+        .get_resource::<PlayerPosition>()
+        .map(|player_pos| player_pos.zone_idx());
+
     // Collect entities and conditions that need particle spawners
     {
         let mut q_entities = world.query::<(Entity, &ActiveConditions, &Position)>();
-        for (entity, conditions, _position) in q_entities.iter(world) {
+        for (entity, conditions, position) in q_entities.iter(world) {
+            // Check if entity is in the active zone
+            if let Some(active_zone_idx) = active_zone {
+                let world_pos = position.world();
+                let entity_zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+
+                // Only spawn particles for entities in the active zone
+                if entity_zone_idx != active_zone_idx {
+                    continue;
+                }
+            }
+
             for (condition_idx, condition) in conditions.conditions.iter().enumerate() {
                 if condition.particle_spawner_entity.is_none() {
                     if let Some(spawner_config) = condition.condition_type.create_particle_spawner()

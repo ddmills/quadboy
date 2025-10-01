@@ -7,7 +7,7 @@ use crate::{
     common::cp437_idx,
     domain::PlayerPosition,
     engine::Time,
-    rendering::{Glyph, Position, Visibility, world_to_zone_local_f32, zone_local_to_world_f32},
+    rendering::{Glyph, Position, Visibility, world_to_zone_idx, world_to_zone_local_f32, zone_local_to_world_f32},
 };
 
 use super::core::{
@@ -288,6 +288,7 @@ pub fn update_persistent_spawners(
     mut cmds: Commands,
     mut q_persistent_spawners: Query<&mut PersistentParticleSpawner>,
     q_positions: Query<&Position>,
+    player_position: Option<Res<PlayerPosition>>,
     time: Res<Time>,
     mut rand: ResMut<crate::common::Rand>,
 ) {
@@ -302,6 +303,18 @@ pub fn update_persistent_spawners(
         if let Some(target_entity) = persistent.follow_target {
             if let Ok(target_position) = q_positions.get(target_entity) {
                 let world_pos = target_position.world();
+
+                // Check if target entity is in the active zone
+                if let Some(player_pos) = player_position.as_ref() {
+                    let target_zone_idx = world_to_zone_idx(world_pos.0, world_pos.1, world_pos.2);
+                    let active_zone_idx = player_pos.zone_idx();
+
+                    // Only spawn particles if target is in the active zone
+                    if target_zone_idx != active_zone_idx {
+                        continue;
+                    }
+                }
+
                 // Convert world coordinates to zone-local coordinates for particle spawning
                 let local_pos =
                     world_to_zone_local_f32(world_pos.0 as f32 + 0.5, world_pos.1 as f32 + 0.5);
