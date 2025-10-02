@@ -324,6 +324,7 @@ impl AttackAction {
                 &mut should_apply_hit_blink,
                 attacker_pos,
                 target_pos,
+                &weapon.attack_verb,
             );
 
             if should_apply_hit_blink {
@@ -433,6 +434,7 @@ impl AttackAction {
                 &mut should_apply_hit_blink,
                 attacker_pos,
                 target_pos,
+                &weapon.attack_verb,
             );
 
             if should_apply_hit_blink {
@@ -513,6 +515,7 @@ impl AttackAction {
         should_apply_hit_blink: &mut bool,
         attacker_pos: (usize, usize, usize),
         target_pos: (usize, usize, usize),
+        weapon_verb: &str,
     ) {
         let attacker_stable_id = world.get::<StableId>(attacker_entity).copied();
         if let Some(mut health) = world.get_mut::<Health>(target_entity) {
@@ -537,6 +540,7 @@ impl AttackAction {
                         attacker: attacker_entity,
                         target: target_entity,
                         damage: rolled_damage,
+                        weapon_verb: weapon_verb.to_string(),
                     },
                     tick: current_tick,
                     knowledge,

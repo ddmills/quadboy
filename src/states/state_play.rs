@@ -10,7 +10,7 @@ use crate::{
     },
     engine::{App, Plugin, SerializableComponent},
     rendering::{ScreenSize, on_zone_status_change, update_camera},
-    states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system},
+    states::{AppState, AppStatePlugin, CurrentGameState, GameState, cleanup_system, in_game_state},
     ui::{UiLayout, draw_ui_panels, update_ui_layout},
 };
 
@@ -51,7 +51,7 @@ impl Plugin for PlayStatePlugin {
                         .chain(),
                     (update_ui_layout, draw_ui_panels)
                         .chain()
-                        .run_if(resource_changed::<ScreenSize>),
+                        .run_if(resource_changed::<ScreenSize>.and(in_game_state(GameState::Explore))),
                 ),
             )
             .on_leave(

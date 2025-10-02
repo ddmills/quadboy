@@ -25,7 +25,7 @@ pub struct EventLogUi {
 impl Default for EventLogUi {
     fn default() -> Self {
         Self {
-            visible_lines: 6,
+            visible_lines: 8,
             max_width: 40.0,
             scroll_offset: 0,
             auto_scroll: true,
@@ -73,29 +73,16 @@ pub struct EventLogScrollDownIndicator {
     pub parent_log: Entity,
 }
 
-#[derive(Component)]
-pub struct EventLogBackground {
-    pub parent_log: Entity,
-}
-
 /// Spawn the event log UI when entering the explore state
 pub fn spawn_event_log_ui(cmds: &mut Commands) {
+    let h = 8;
     let log_ui = cmds
         .spawn((
-            EventLogUi::new(),
+            EventLogUi::new().with_lines(h),
             Position::new_f32(1.0, 0.0, 0.0), // Will be updated to bottom of screen
             CleanupStateExplore,
         ))
         .id();
-
-    // Spawn background panel
-    cmds.spawn((
-        Text::new("").bg(Palette::Black).layer(Layer::Ui),
-        Position::new_f32(0.0, 0.0, 0.0),
-        EventLogBackground { parent_log: log_ui },
-        Visibility::Hidden, // Start hidden, show when messages exist
-        CleanupStateExplore,
-    ));
 
     // Spawn scroll indicators
     cmds.spawn((
@@ -115,7 +102,7 @@ pub fn spawn_event_log_ui(cmds: &mut Commands) {
     ));
 
     // Spawn text lines for the log
-    for i in 0..6 {
+    for i in 0..h {
         cmds.spawn((
             Text::new("").layer(Layer::Ui),
             Position::new_f32(0.0, 0.0, 0.0),
@@ -135,24 +122,15 @@ pub fn update_event_log_positioning(
     screen: Res<ScreenSize>,
     ui: Res<UiLayout>,
     mut q_log_ui: Query<&mut Position, With<EventLogUi>>,
-    mut q_background: Query<(&EventLogBackground, &mut Position), Without<EventLogUi>>,
-    mut q_lines: Query<
-        (&EventLogLine, &mut Position),
-        (Without<EventLogUi>, Without<EventLogBackground>),
-    >,
+    mut q_lines: Query<(&EventLogLine, &mut Position), (Without<EventLogUi>)>,
     mut q_scroll_up: Query<
         (&EventLogScrollUpIndicator, &mut Position),
-        (
-            Without<EventLogUi>,
-            Without<EventLogBackground>,
-            Without<EventLogLine>,
-        ),
+        (Without<EventLogUi>, Without<EventLogLine>),
     >,
     mut q_scroll_down: Query<
         (&EventLogScrollDownIndicator, &mut Position),
         (
             Without<EventLogUi>,
-            Without<EventLogBackground>,
             Without<EventLogLine>,
             Without<EventLogScrollUpIndicator>,
         ),
@@ -160,17 +138,11 @@ pub fn update_event_log_positioning(
 ) {
     // Position log at bottom-left of screen, aligned with bottom panel
     // Account for text height (0.5) and 6 visible lines = 3.0 total height
-    let log_y = screen.tile_h as f32 - 3.5;
+    let log_y = screen.tile_h as f32 - 4.5;
     let left_panel_offset = ui.left_panel.width as f32;
 
     for mut log_pos in q_log_ui.iter_mut() {
         log_pos.y = log_y;
-    }
-
-    // Update background position
-    for (_bg, mut bg_pos) in q_background.iter_mut() {
-        bg_pos.x = left_panel_offset + 0.5;
-        bg_pos.y = log_y - 0.25;
     }
 
     // Update line positions
@@ -187,7 +159,7 @@ pub fn update_event_log_positioning(
 
     for (_indicator, mut pos) in q_scroll_down.iter_mut() {
         pos.x = left_panel_offset + 0.5;
-        pos.y = log_y + 2.5;
+        pos.y = log_y + 3.5;
     }
 }
 
@@ -197,21 +169,15 @@ pub fn update_event_log_display(
     game_log: Res<GameLog>,
     mut q_log_ui: Query<&mut EventLogUi>,
     mut q_lines: Query<(&EventLogLine, &mut Text, &mut Visibility)>,
-    mut q_background: Query<&mut Visibility, (With<EventLogBackground>, Without<EventLogLine>)>,
     mut q_scroll_up: Query<
         &mut Visibility,
-        (
-            With<EventLogScrollUpIndicator>,
-            Without<EventLogLine>,
-            Without<EventLogBackground>,
-        ),
+        (With<EventLogScrollUpIndicator>, Without<EventLogLine>),
     >,
     mut q_scroll_down: Query<
         &mut Visibility,
         (
             With<EventLogScrollDownIndicator>,
             Without<EventLogLine>,
-            Without<EventLogBackground>,
             Without<EventLogScrollUpIndicator>,
         ),
     >,
@@ -223,10 +189,6 @@ pub fn update_event_log_display(
         // Hide everything if no messages
         for (_, mut text, mut vis) in q_lines.iter_mut() {
             text.value = String::new();
-            *vis = Visibility::Hidden;
-        }
-
-        for mut vis in q_background.iter_mut() {
             *vis = Visibility::Hidden;
         }
 
@@ -250,11 +212,6 @@ pub fn update_event_log_display(
         log_ui.scroll_offset = message_count.saturating_sub(log_ui.visible_lines);
     }
     log_ui.last_message_count = message_count;
-
-    // Show background
-    for mut vis in q_background.iter_mut() {
-        *vis = Visibility::Visible;
-    }
 
     // Update scroll indicators
     let can_scroll_up = log_ui.scroll_offset > 0;
@@ -293,15 +250,7 @@ pub fn update_event_log_display(
                     message.text.clone()
                 };
 
-                // Apply fade effect for older messages if enabled
-                if log_ui.fade_old_messages {
-                    let age = message_count - message_index - 1;
-                    if age > 2 {
-                        text.fg1 = Some(Palette::DarkGray.into());
-                    } else {
-                        text.fg1 = Some(Palette::White.into());
-                    }
-                }
+                text.fg1 = Some(Palette::White.into());
 
                 *vis = Visibility::Visible;
             } else {
@@ -361,7 +310,7 @@ pub fn event_log_scroll_system(
 
     // Handle mouse wheel scrolling
     if mouse.wheel_delta.1.abs() > 0.01 {
-        let log_y = screen.tile_h as f32 - 3.0;
+        let log_y = screen.tile_h as f32 - 4.5;
         let log_height = log_ui.visible_lines as f32 * 0.5;
         let left_panel_offset = ui.left_panel.width as f32;
 
@@ -372,7 +321,7 @@ pub fn event_log_scroll_system(
             && mouse.ui.1 <= log_y + log_height;
 
         if mouse_over_log {
-            let scroll_speed = 3;
+            let scroll_speed = 1;
 
             if mouse.wheel_delta.1 > 0.0 {
                 // Scroll up (show older messages)

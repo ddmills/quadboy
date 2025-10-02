@@ -6,9 +6,9 @@ use crate::{
     common::Palette,
     domain::{BiomeType, Overworld, PlayerPosition},
     engine::{AudioKey, Mouse, Plugin},
-    rendering::{Glyph, Layer, Position, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
+    rendering::{Glyph, Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
-    ui::Button,
+    ui::{Button, FullScreenBackground, setup_fullscreen_backgrounds},
 };
 
 use super::GameState;
@@ -25,9 +25,13 @@ impl Plugin for OverworldStatePlugin {
         GameStatePlugin::new(GameState::Overworld)
             .on_enter(
                 app,
-                (setup_callbacks, on_enter_overworld, render_overworld_map).chain(),
+                (setup_callbacks, on_enter_overworld, render_overworld_map, setup_overworld_background, setup_fullscreen_backgrounds).chain(),
             )
             .on_update(app, display_overworld_debug_at_mouse)
+            .on_update(
+                app,
+                setup_fullscreen_backgrounds.run_if(resource_changed::<ScreenSize>),
+            )
             .on_leave(
                 app,
                 (
@@ -218,4 +222,17 @@ fn display_overworld_debug_at_mouse(
 
     text.value = debug_info;
     *visibility = Visibility::Visible;
+}
+
+fn setup_overworld_background(mut cmds: Commands, screen: Res<ScreenSize>) {
+    let color = Palette::Clear;
+    cmds.spawn((
+        FullScreenBackground,
+        CleanupStateOverworld,
+        Position::new(0, 0, 0),
+        Glyph::new(6, color, color)
+            .bg(color)
+            .scale((screen.tile_w as f32, screen.tile_h as f32))
+            .layer(Layer::UiPanels),
+    ));
 }

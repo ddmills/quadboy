@@ -22,24 +22,23 @@ impl DefaultRangedAttack {
         weapon_family: WeaponFamily,
         range: usize,
         shoot_audio: Option<AudioKey>,
+        attack_verb: &str,
     ) -> Self {
-        let weapon = Weapon {
-            damage_dice: damage_dice.clone(),
-            can_damage: can_damage.clone(),
+        let mut weapon = Weapon::new_ranged(
+            damage_dice,
+            range,
+            can_damage,
+            shoot_audio.unwrap_or(AudioKey::RevolverShoot1),
             weapon_family,
-            weapon_type: WeaponType::Ranged,
-            hit_effects: Vec::new(),
-            particle_effect_id: None,
-            melee_audio: None,
-            range: Some(range),
-            shoot_audio,
-            clip_size: None,
-            current_ammo: None, // None = infinite ammo for default weapons
-            base_reload_cost: None,
-            reload_audio: None,
-            reload_complete_audio: None,
-            no_ammo_audio: None,
-        };
+            attack_verb.to_string(),
+            None, // No clip for default weapons
+            None, // No reload cost
+            None, // No reload audio
+            None, // No reload complete audio
+            None, // No empty audio
+        );
+        weapon.current_ammo = None; // Override to infinite ammo
+        weapon.shoot_audio = shoot_audio; // Restore original audio setting
 
         Self { weapon }
     }
@@ -53,26 +52,25 @@ impl DefaultRangedAttack {
         shoot_audio: Option<AudioKey>,
         ammo: usize,
         no_ammo_audio: Option<AudioKey>,
+        attack_verb: &str,
     ) -> Self {
         // NOTE: Despite the name "with_ammo", default weapons still get infinite ammo
         // This method is kept for API compatibility
-        let weapon = Weapon {
-            damage_dice: damage_dice.clone(),
-            can_damage: can_damage.clone(),
+        let mut weapon = Weapon::new_ranged(
+            damage_dice,
+            range,
+            can_damage,
+            shoot_audio.unwrap_or(AudioKey::RevolverShoot1),
             weapon_family,
-            weapon_type: WeaponType::Ranged,
-            hit_effects: Vec::new(),
-            particle_effect_id: None,
-            melee_audio: None,
-            range: Some(range),
-            shoot_audio,
-            clip_size: None,
-            current_ammo: None, // None = infinite ammo for default weapons
-            base_reload_cost: None,
-            reload_audio: None,
-            reload_complete_audio: None,
+            attack_verb.to_string(),
+            None, // No clip for default weapons
+            None, // No reload cost
+            None, // No reload audio
+            None, // No reload complete audio
             no_ammo_audio,
-        };
+        );
+        weapon.current_ammo = None; // Override to infinite ammo
+        weapon.shoot_audio = shoot_audio; // Restore original audio setting
 
         Self { weapon }
     }
@@ -87,6 +85,7 @@ impl DefaultRangedAttack {
             Some(AudioKey::RevolverShoot1),
             6,
             Some(AudioKey::RevolverEmpty),
+            "shoots",
         );
         revolver.weapon.particle_effect_id = Some(ParticleEffectId::default_pistol());
         revolver
@@ -102,6 +101,7 @@ impl DefaultRangedAttack {
             Some(AudioKey::RifleShoot2),
             4,
             Some(AudioKey::RifleEmpty),
+            "shoots",
         );
         rifle.weapon.particle_effect_id = Some(ParticleEffectId::default_rifle());
         rifle

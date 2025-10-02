@@ -19,24 +19,14 @@ impl DefaultMeleeAttack {
         can_damage: Vec<MaterialType>,
         attack_name: &str,
         weapon_family: WeaponFamily,
+        attack_verb: &str,
     ) -> Self {
-        let weapon = Weapon {
-            damage_dice: damage.to_string(),
-            can_damage: can_damage.clone(),
+        let weapon = Weapon::new_melee(
+            damage.to_string(),
+            can_damage,
             weapon_family,
-            weapon_type: WeaponType::Melee,
-            hit_effects: Vec::new(),
-            particle_effect_id: None,
-            melee_audio: None,
-            range: None,
-            shoot_audio: None,
-            clip_size: None,
-            current_ammo: None,
-            base_reload_cost: None,
-            reload_audio: None,
-            reload_complete_audio: None,
-            no_ammo_audio: None,
-        };
+            attack_verb.to_string(),
+        );
 
         Self { weapon }
     }
@@ -47,30 +37,21 @@ impl DefaultMeleeAttack {
         attack_name: &str,
         weapon_family: WeaponFamily,
         hit_effects: Vec<HitEffect>,
+        attack_verb: &str,
     ) -> Self {
-        let weapon = Weapon {
-            damage_dice: damage.to_string(),
-            can_damage: can_damage.clone(),
+        let mut weapon = Weapon::new_melee(
+            damage.to_string(),
+            can_damage,
             weapon_family,
-            weapon_type: WeaponType::Melee,
-            hit_effects: hit_effects.clone(),
-            particle_effect_id: None,
-            melee_audio: None,
-            range: None,
-            shoot_audio: None,
-            clip_size: None,
-            current_ammo: None,
-            base_reload_cost: None,
-            reload_audio: None,
-            reload_complete_audio: None,
-            no_ammo_audio: None,
-        };
+            attack_verb.to_string(),
+        );
+        weapon.hit_effects = hit_effects;
 
         Self { weapon }
     }
 
     pub fn fists() -> Self {
-        let mut attack = Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed);
+        let mut attack = Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed, "punches");
         attack.weapon.melee_audio = Some(AudioKey::Punch1);
         attack
     }
@@ -85,6 +66,7 @@ impl DefaultMeleeAttack {
                 strength: 0.5,
                 chance: 1.0,
             }], // Always knockback at half strength
+            "punches",
         );
         attack.weapon.melee_audio = Some(AudioKey::Punch1);
         attack
@@ -96,6 +78,7 @@ impl DefaultMeleeAttack {
             vec![MaterialType::Flesh, MaterialType::Wood],
             "Claw Swipe",
             WeaponFamily::Unarmed,
+            "claws",
         )
     }
 
@@ -110,6 +93,7 @@ impl DefaultMeleeAttack {
                 duration_ticks: 1000,
                 chance: 1.0, // Always apply poison
             }],
+            "bites",
         )
     }
     pub fn fire_fists() -> Self {
@@ -124,13 +108,14 @@ impl DefaultMeleeAttack {
                 chance: 1.0, // Always apply poison
                 can_stack: false,
             }],
+            "strikes",
         );
         attack.weapon.melee_audio = Some(AudioKey::Punch1);
         attack
     }
 
     pub fn bite() -> Self {
-        Self::new(3, vec![MaterialType::Flesh], "Bite", WeaponFamily::Unarmed)
+        Self::new(3, vec![MaterialType::Flesh], "Bite", WeaponFamily::Unarmed, "bites")
     }
 
     pub fn wing_buffet() -> Self {
@@ -139,6 +124,7 @@ impl DefaultMeleeAttack {
             vec![MaterialType::Flesh],
             "Wing Buffet",
             WeaponFamily::Unarmed,
+            "buffets",
         )
     }
 
@@ -148,6 +134,7 @@ impl DefaultMeleeAttack {
             vec![MaterialType::Flesh],
             "Electric Touch",
             WeaponFamily::Unarmed,
+            "electrifies",
         )
     }
 
@@ -163,15 +150,22 @@ impl DefaultMeleeAttack {
                 chance: 1.0,
                 can_stack: true,
             }],
+            "nibbles",
         )
     }
 
     pub fn mandible_crush() -> Self {
-        Self::new(
+        Self::with_hit_effects(
             5,
             vec![MaterialType::Flesh, MaterialType::Wood],
-            "Mandible Crush",
+            "Burning Mandible Crush",
             WeaponFamily::Unarmed,
+            vec![HitEffect::Burning {
+                damage_per_tick: 1,
+                duration_ticks: 500,
+                chance: 1.0,
+            }],
+            "crushes",
         )
     }
 }

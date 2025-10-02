@@ -5,7 +5,7 @@ use crate::{
     cfg::TILE_SIZE_F32,
     common::Palette,
     rendering::{GameCamera, Glyph, GlyphTextureId, Layer, Position, ScreenSize, Text},
-    states::CleanupStatePlay,
+    states::CleanupStateExplore,
 };
 
 #[derive(Default)]
@@ -33,7 +33,7 @@ pub fn update_ui_layout(
 ) {
     // let left_panel_width = 0;
     let left_panel_width = 10;
-    let bottom_panel_height = 4;
+    let bottom_panel_height = 5;
     let top_panel_height = 2;
 
     // Top panel takes full width at top of screen
@@ -99,7 +99,7 @@ pub fn draw_ui_panels(
             // Create new entity
             let entity = cmds
                 .spawn((
-                    CleanupStatePlay,
+                    CleanupStateExplore,
                     Position::new(ui.top_panel.x, ui.top_panel.y, 0),
                     Glyph::new(0, color, color)
                         .bg(color)
@@ -140,7 +140,7 @@ pub fn draw_ui_panels(
             // Create new entity
             let entity = cmds
                 .spawn((
-                    CleanupStatePlay,
+                    CleanupStateExplore,
                     Position::new(ui.left_panel.x, ui.left_panel.y, 0),
                     Glyph::new(0, color, color)
                         .bg(color)
@@ -181,7 +181,7 @@ pub fn draw_ui_panels(
             // Create new entity
             let entity = cmds
                 .spawn((
-                    CleanupStatePlay,
+                    CleanupStateExplore,
                     Position::new(ui.bottom_panel.x, ui.bottom_panel.y, 0),
                     Glyph::new(0, color, color)
                         .bg(color)
@@ -220,7 +220,7 @@ fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool)
         cmds.entity(entity).try_despawn();
     }
 
-    let border_color = Palette::DarkGray;
+    let border_color = Palette::DarkGreen;
 
     // Convert panel coordinates to text coordinates (multiply by 2)
     let text_x = panel.x * 2;
@@ -239,7 +239,7 @@ fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool)
     for (x, y, ch) in corners {
         let entity = cmds
             .spawn((
-                CleanupStatePlay,
+                CleanupStateExplore,
                 Text::new(&ch.to_string())
                     .fg1(border_color)
                     .layer(Layer::Ui)
@@ -255,7 +255,7 @@ fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool)
         // Top edge
         let entity = cmds
             .spawn((
-                CleanupStatePlay,
+                CleanupStateExplore,
                 Text::new("─")
                     .fg1(border_color)
                     .layer(Layer::Ui)
@@ -268,7 +268,7 @@ fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool)
         // Bottom edge
         let entity = cmds
             .spawn((
-                CleanupStatePlay,
+                CleanupStateExplore,
                 Text::new("─")
                     .fg1(border_color)
                     .layer(Layer::Ui)
@@ -284,7 +284,7 @@ fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool)
         // Left edge
         let entity = cmds
             .spawn((
-                CleanupStatePlay,
+                CleanupStateExplore,
                 Text::new("│")
                     .fg1(border_color)
                     .layer(Layer::Ui)
@@ -297,7 +297,7 @@ fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool)
         // Right edge
         let entity = cmds
             .spawn((
-                CleanupStatePlay,
+                CleanupStateExplore,
                 Text::new("│")
                     .fg1(border_color)
                     .layer(Layer::Ui)

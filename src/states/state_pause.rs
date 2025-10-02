@@ -12,9 +12,9 @@ use crate::{
     common::Palette,
     domain::{GameSettings, SaveGameCommand, SaveGameResult},
     engine::{Plugin, Time},
-    rendering::{Position, Text},
-    states::{AppState, CurrentAppState, CurrentGameState, GameStatePlugin, cleanup_system},
-    ui::{List, ListItemData},
+    rendering::{Glyph, Layer, Position, ScreenSize, Text},
+    states::{cleanup_system, AppState, CurrentAppState, CurrentGameState, GameStatePlugin},
+    ui::{setup_fullscreen_backgrounds, FullScreenBackground, List, ListItemData},
 };
 
 use super::GameState;
@@ -31,8 +31,12 @@ pub struct PauseStatePlugin;
 impl Plugin for PauseStatePlugin {
     fn build(&self, app: &mut crate::engine::App) {
         GameStatePlugin::new(GameState::Pause)
-            .on_enter(app, (setup_callbacks, on_enter_pause).chain())
+            .on_enter(app, (setup_callbacks, on_enter_pause, setup_pause_background, setup_fullscreen_backgrounds).chain())
             .on_update(app, (update_save_status_display, handle_save_result))
+            .on_update(
+                app,
+                setup_fullscreen_backgrounds.run_if(resource_changed::<ScreenSize>),
+            )
             .on_leave(
                 app,
                 (
@@ -160,4 +164,17 @@ fn handle_save_result(
             }
         }
     }
+}
+
+fn setup_pause_background(mut cmds: Commands, screen: Res<ScreenSize>) {
+    let color = Palette::Clear;
+    cmds.spawn((
+        FullScreenBackground,
+        CleanupStatePause,
+        Position::new(0, 0, 0),
+        Glyph::new(6, color, color)
+            .bg(color)
+            .scale((screen.tile_w as f32, screen.tile_h as f32))
+            .layer(Layer::UiPanels),
+    ));
 }

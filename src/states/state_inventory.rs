@@ -18,8 +18,9 @@ use crate::{
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
     states::{CurrentGameState, GameState, GameStatePlugin, ThrowContext, cleanup_system},
     ui::{
-        ActivatableBuilder, Dialog, DialogContent, DialogState, List, ListContext, ListItem,
-        ListItemData, UiFocus, center_dialogs_on_screen_change, spawn_examine_dialog,
+        ActivatableBuilder, Dialog, DialogContent, DialogState, FullScreenBackground, List,
+        ListContext, ListItem, ListItemData, UiFocus, center_dialogs_on_screen_change,
+        setup_fullscreen_backgrounds, spawn_examine_dialog,
     },
 };
 
@@ -652,13 +653,17 @@ impl Plugin for InventoryStatePlugin {
         GameStatePlugin::new(GameState::Inventory)
             .on_enter(
                 app,
-                (setup_inventory_callbacks, setup_inventory_screen).chain(),
+                (setup_inventory_callbacks, setup_inventory_screen, setup_inventory_background, setup_fullscreen_backgrounds).chain(),
             )
             .on_update(app, game_loop)
             .on_update(app, refresh_inventory_display)
             .on_update(app, refresh_action_dialog_on_events)
             .on_update(app, refresh_action_dialog_with_timer)
             .on_update(app, update_item_detail_panel)
+            .on_update(
+                app,
+                setup_fullscreen_backgrounds.run_if(resource_changed::<ScreenSize>),
+            )
             .on_update(
                 app,
                 center_dialogs_on_screen_change.run_if(resource_changed::<ScreenSize>),
@@ -736,7 +741,7 @@ fn setup_inventory_screen(
     ));
 
     // Add item detail panel on the right
-    let detail_x = left_x + 20.0;
+    let detail_x = left_x + 28.0;
     let detail_y = 3.0;
 
     // Panel header
@@ -747,6 +752,16 @@ fn setup_inventory_screen(
         Position::new_f32(detail_x, detail_y - 1.0, 0.),
         CleanupStateInventory,
         ItemDetailPanel,
+    ));
+
+    // Item icon background frame
+    cmds.spawn((
+        Glyph::new(219, Palette::DarkGray, Palette::DarkGray)
+            .scale((3.0, 3.0))
+            .layer(Layer::Ui)
+            .bg(Palette::DarkGray),
+        Position::new_f32(detail_x + 0.5, detail_y + 0.5, 0.),
+        CleanupStateInventory,
     ));
 
     // Item icon (will be updated when item is focused)
@@ -773,111 +788,111 @@ fn setup_inventory_screen(
     // Item rarity
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 5.0, detail_y + 1.0, 0.),
+        Position::new_f32(detail_x + 5.0, detail_y + 1.5, 0.),
         CleanupStateInventory,
         ItemDetailRarity,
     ));
 
     // Basic properties section header
     cmds.spawn((
-        Text::new("Basic Stats:")
+        Text::new("── Basic Stats ──")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 2.0, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 3.5, 0.),
         CleanupStateInventory,
     ));
 
     // Basic properties divider
     cmds.spawn((
-        Text::new("-----------")
+        Text::new("═══════════")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 2.5, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 4.0, 0.),
         CleanupStateInventory,
     ));
 
     // Basic properties content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 3.0, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 4.5, 0.),
         CleanupStateInventory,
         ItemDetailProperties,
     ));
 
     // Weapon damage section header
     cmds.spawn((
-        Text::new("Weapon Stats:")
+        Text::new("── Weapon Stats ──")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 4.5, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 6.0, 0.),
         CleanupStateInventory,
     ));
 
     // Weapon damage section divider
     cmds.spawn((
-        Text::new("-----------")
+        Text::new("═══════════")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 5.0, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 6.5, 0.),
         CleanupStateInventory,
     ));
 
     // Weapon damage section content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 5.5, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 7.0, 0.),
         CleanupStateInventory,
         ItemDetailDamageSection,
     ));
 
     // Hit effects section header
     cmds.spawn((
-        Text::new("On-Hit Effects:")
+        Text::new("── On-Hit Effects ──")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 7.0, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 8.5, 0.),
         CleanupStateInventory,
     ));
 
     // Hit effects section divider
     cmds.spawn((
-        Text::new("-----------")
+        Text::new("═══════════")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 7.5, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 9.0, 0.),
         CleanupStateInventory,
     ));
 
     // Hit effects content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 8.0, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 9.5, 0.),
         CleanupStateInventory,
         ItemDetailEffects,
     ));
 
     // Special properties section header
     cmds.spawn((
-        Text::new("Special Properties:")
+        Text::new("── Special Properties ──")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 9.5, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 11.0, 0.),
         CleanupStateInventory,
     ));
 
     // Special properties section divider
     cmds.spawn((
-        Text::new("-----------")
+        Text::new("═══════════")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 10.0, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 11.5, 0.),
         CleanupStateInventory,
     ));
 
     // Special properties content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 10.5, 0.),
+        Position::new_f32(detail_x + 1.0, detail_y + 12.0, 0.),
         CleanupStateInventory,
         ItemDetailSpecial,
     ));
@@ -1336,4 +1351,18 @@ fn refresh_action_dialog_with_timer(
         // Manually trigger change detection so setup_lists will update the UI
         list.set_changed(); // Found and updated, exit early
     }
+}
+
+fn setup_inventory_background(mut cmds: Commands, screen: Res<ScreenSize>) {
+    // Direct test - spawn a red background covering the entire screen
+    let color = Palette::Clear;
+    cmds.spawn((
+        FullScreenBackground,
+        CleanupStateInventory,
+        Position::new(0, 0, 0),
+        Glyph::new(6, color, color) // Use glyph index 6 (solid fill) like dialogs
+            .bg(color)
+            .scale((screen.tile_w as f32, screen.tile_h as f32))
+            .layer(Layer::UiPanels), // Render behind UI content but in screen space
+    ));
 }

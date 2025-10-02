@@ -17,6 +17,7 @@ pub struct Weapon {
     pub weapon_type: WeaponType,
     pub hit_effects: Vec<HitEffect>,
     pub particle_effect_id: Option<ParticleEffectId>,
+    pub attack_verb: String,
 
     // Optional melee-specific fields
     pub melee_audio: Option<AudioKey>,
@@ -37,6 +38,7 @@ impl Weapon {
         damage_dice: String,
         can_damage: Vec<MaterialType>,
         weapon_family: WeaponFamily,
+        attack_verb: String,
     ) -> Self {
         Self {
             damage_dice,
@@ -45,6 +47,7 @@ impl Weapon {
             weapon_type: WeaponType::Melee,
             hit_effects: Vec::new(),
             particle_effect_id: None,
+            attack_verb,
             melee_audio: None,
             range: None,
             shoot_audio: None,
@@ -63,6 +66,7 @@ impl Weapon {
         can_damage: Vec<MaterialType>,
         shoot_audio: AudioKey,
         weapon_family: WeaponFamily,
+        attack_verb: String,
         clip_size: Option<usize>,
         base_reload_cost: Option<i32>,
         reload_audio: Option<AudioKey>,
@@ -76,6 +80,7 @@ impl Weapon {
             weapon_type: WeaponType::Ranged,
             hit_effects: Vec::new(),
             particle_effect_id: None, // Will be set by weapon-specific constructors
+            attack_verb,
             melee_audio: None,
             range: Some(range),
             shoot_audio: Some(shoot_audio),
@@ -102,6 +107,7 @@ impl Weapon {
             "1d4".to_string(),
             vec![MaterialType::Stone, MaterialType::Flesh],
             WeaponFamily::Cudgel,
+            "strikes".to_string(),
         )
     }
 
@@ -110,6 +116,7 @@ impl Weapon {
             "1d4".to_string(),
             vec![MaterialType::Wood, MaterialType::Flesh],
             WeaponFamily::Cudgel,
+            "chops".to_string(),
         )
     }
 
@@ -118,6 +125,7 @@ impl Weapon {
             "1d6+1".to_string(),
             vec![MaterialType::Flesh],
             WeaponFamily::Blade,
+            "slashes".to_string(),
         )
     }
 
@@ -128,6 +136,7 @@ impl Weapon {
             vec![MaterialType::Flesh],
             AudioKey::RevolverShoot1,
             WeaponFamily::Pistol,
+            "shoots".to_string(),
             Some(6),
             Some(150),
             Some(AudioKey::RevolverReload),
@@ -145,6 +154,7 @@ impl Weapon {
             vec![MaterialType::Flesh],
             AudioKey::RifleShoot2,
             WeaponFamily::Rifle,
+            "shoots".to_string(),
             Some(4),
             Some(50),
             Some(AudioKey::RifleReload),
@@ -162,6 +172,7 @@ impl Weapon {
             vec![MaterialType::Flesh],
             AudioKey::ShotgunShoot1,
             WeaponFamily::Shotgun,
+            "blasts".to_string(),
             Some(2),
             Some(250),
             Some(AudioKey::ShotgunReload),

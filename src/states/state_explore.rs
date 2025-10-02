@@ -1,4 +1,5 @@
 use bevy_ecs::{prelude::*, schedule::common_conditions::resource_changed, system::SystemId};
+
 use macroquad::{input::KeyCode, prelude::trace};
 use serde::{Deserialize, Serialize};
 
@@ -7,12 +8,12 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{Palette, hex},
     domain::{
-        ActiveConditions, AiController, CreatureType, Description, EquipmentSlot, EquipmentSlots,
-        FactionId, FactionMap, Health, IgnoreLighting, Item, Label, Level, Player, PlayerDebug,
-        PlayerMovedEvent, PlayerPosition, Stats, Weapon, WeaponType, Zone, collect_valid_targets,
-        game_loop, handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
-        render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
-        update_target_cycling,
+        ActiveConditions, AiController, ConditionType, CreatureType, Description, EquipmentSlot,
+        EquipmentSlots, FactionId, FactionMap, Health, IgnoreLighting, Item, Label, Level, Player,
+        PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats, Weapon, WeaponType, Zone,
+        collect_valid_targets, game_loop, handle_item_pickup, init_targeting_resource,
+        player_input, render_player_debug, render_target_crosshair, render_target_info,
+        spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableId, StableIdRegistry},
     rendering::{
@@ -22,10 +23,10 @@ use crate::{
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
         Bar, Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
-        debug_collider_flags, display_entity_names_at_mouse, render_ai_debug_indicators,
-        render_cursor, render_lighting_debug, render_tick_display, spawn_ai_debug_dialog,
-        spawn_debug_ui_entities, spawn_event_log_ui, spawn_examine_dialog, update_bars,
-        update_xp_progress_bars,
+        debug_collider_flags, display_entity_names_at_mouse, draw_ui_panels,
+        render_ai_debug_indicators, render_cursor, render_lighting_debug, render_tick_display,
+        spawn_ai_debug_dialog, spawn_debug_ui_entities, spawn_event_log_ui, spawn_examine_dialog,
+        update_bars, update_ui_layout, update_xp_progress_bars,
     },
 };
 
@@ -54,6 +55,8 @@ impl Plugin for ExploreStatePlugin {
                     setup_zone_outline_state,
                     on_enter_explore,
                     center_camera_on_player,
+                    update_ui_layout,
+                    draw_ui_panels,
                 )
                     .chain(),
             )
@@ -133,6 +136,11 @@ pub struct PlayerAmmoBar;
 
 #[derive(Component)]
 pub struct PlayerConditionDisplay;
+
+#[derive(Component)]
+pub struct PlayerConditionItem {
+    pub condition_type: ConditionType,
+}
 
 #[derive(Component)]
 pub struct FactionMapOverlay;
@@ -266,13 +274,7 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
         CleanupStateExplore,
     ));
 
-    // Spawn player condition display
-    cmds.spawn((
-        Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(0.5, 7., 0.),
-        PlayerConditionDisplay,
-        CleanupStateExplore,
-    ));
+    // Player condition displays are now spawned dynamically in update_player_condition_display
 
     // Spawn event log UI
     spawn_event_log_ui(&mut cmds);
@@ -380,36 +382,76 @@ fn update_player_ammo_bar(
 }
 
 fn update_player_condition_display(
-    q_player: Query<&ActiveConditions, (With<Player>, Changed<ActiveConditions>)>,
-    mut q_condition_display: Query<&mut Text, With<PlayerConditionDisplay>>,
+    q_player: Query<&ActiveConditions, With<Player>>,
+    mut q_existing_displays: Query<
+        (Entity, &PlayerConditionItem, &mut Text),
+        With<PlayerConditionItem>,
+    >,
+    mut cmds: Commands,
 ) {
-    let Ok(mut condition_text) = q_condition_display.single_mut() else {
-        return;
-    };
-
     let Ok(active_conditions) = q_player.single() else {
-        condition_text.value = "".to_string();
+        // Player not found, despawn all condition displays
+        for (entity, _, _) in q_existing_displays.iter() {
+            cmds.entity(entity).despawn();
+        }
         return;
     };
 
-    if active_conditions.is_empty() {
-        condition_text.value = "".to_string();
-        return;
+    // Despawn displays for conditions that no longer exist
+    for (entity, item, _) in q_existing_displays.iter() {
+        let condition_still_exists = active_conditions
+            .conditions
+            .iter()
+            .any(|c| c.condition_type == item.condition_type);
+
+        if !condition_still_exists {
+            cmds.entity(entity).despawn();
+        }
     }
 
-    let condition_strings: Vec<String> = active_conditions
-        .conditions
-        .iter()
-        .map(|condition| {
-            let color_char = condition.condition_type.get_display_color_char();
-            format!(
-                "{{{}|{} ({})}}",
-                color_char, condition.condition_type, condition.duration_remaining
-            )
-        })
-        .collect();
+    // Update existing displays and spawn new ones
+    for (index, condition) in active_conditions.conditions.iter().enumerate() {
+        let y_position = 7.0 + (index as f32 * 0.5);
 
-    condition_text.value = condition_strings.join(", ");
+        // Check if display already exists for this condition type
+        let mut found_existing = false;
+        for (entity, item, mut text) in q_existing_displays.iter_mut() {
+            if item.condition_type == condition.condition_type {
+                // Update existing display
+                let color_char = condition.condition_type.get_display_color_char();
+                let icon = condition.condition_type.get_icon_glyph();
+                text.value = format!(
+                    "{{{}|{} {} ({})}}",
+                    color_char, icon, condition.condition_type, condition.duration_remaining
+                );
+
+                // Update position in case order changed
+                cmds.entity(entity)
+                    .insert(Position::new_f32(0.5, y_position, 0.));
+                found_existing = true;
+                break;
+            }
+        }
+
+        if !found_existing {
+            // Spawn new display
+            let color_char = condition.condition_type.get_display_color_char();
+            let icon = condition.condition_type.get_icon_glyph();
+            let text_value = format!(
+                "{{{}|{} {} ({})}}",
+                color_char, icon, condition.condition_type, condition.duration_remaining
+            );
+
+            cmds.spawn((
+                PlayerConditionItem {
+                    condition_type: condition.condition_type.clone(),
+                },
+                Text::new(&text_value).layer(Layer::Ui),
+                Position::new_f32(0.5, y_position, 0.),
+                CleanupStateExplore,
+            ));
+        }
+    }
 }
 
 fn update_player_xp_label(

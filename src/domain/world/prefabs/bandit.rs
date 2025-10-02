@@ -28,7 +28,7 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) -> Prefab
             Layer::Actors,
             GlyphTextureId::Creatures,
         )
-        .with_label("{R|Bandit}")
+        .with_label("Bandit")
         .with_description(
             "Eyes like burnt coal and a soul to match. The desert makes men into something else.",
         )

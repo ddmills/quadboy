@@ -22,6 +22,7 @@ pub enum LogMessage {
         attacker: Entity,
         target: Entity,
         damage: i32,
+        weapon_verb: String,
     },
     Death {
         entity: Entity,
@@ -259,12 +260,13 @@ fn format_log_message(
             attacker,
             target,
             damage,
+            weapon_verb,
         } => {
             let attacker_label = get_entity_label(*attacker, q_labels, q_player);
             let target_label = get_entity_label(*target, q_labels, q_player);
             format!(
-                "{} hits {} for {{r|{} damage}}!",
-                attacker_label, target_label, damage
+                "{} {} {} for {} damage",
+                attacker_label, weapon_verb, target_label, damage
             )
         }
 
@@ -273,9 +275,9 @@ fn format_log_message(
             match killer {
                 Some(k) => {
                     let killer_label = get_entity_label(*k, q_labels, q_player);
-                    format!("{} was slain by {}!", entity_label, killer_label)
+                    format!("{} was slain by {}", entity_label, killer_label)
                 }
-                None => format!("{} died.", entity_label),
+                None => format!("{} died", entity_label),
             }
         }
 
@@ -284,10 +286,13 @@ fn format_log_message(
             let is_player_target = q_player.get(*target).is_ok();
 
             if is_player_target {
-                format!("{} poisons {{C|you}}! {{g|You feel sick.}}", source_label)
+                format!(
+                    "{} poisons {{C|you}}! You are {{G|☻ poisoned}}",
+                    source_label
+                )
             } else {
                 let target_label = get_entity_label(*target, q_labels, q_player);
-                format!("{} poisons {}!", source_label, target_label)
+                format!("{} is {{G|☻ poisoned}}", target_label)
             }
         }
 
@@ -296,10 +301,13 @@ fn format_log_message(
             let is_player_target = q_player.get(*target).is_ok();
 
             if is_player_target {
-                format!("{} wounds {{C|you}}! {{r|You are bleeding!}}", source_label)
+                format!(
+                    "{} wounds {{C|you}}! You are {{R|☻ bleeding}}",
+                    source_label
+                )
             } else {
                 let target_label = get_entity_label(*target, q_labels, q_player);
-                format!("{} wounds {}!", source_label, target_label)
+                format!("{} is {{R|☻ bleeding}}", target_label)
             }
         }
 
@@ -307,10 +315,10 @@ fn format_log_message(
             let is_player_target = q_player.get(*target).is_ok();
 
             if is_player_target {
-                "{O|Fire} spreads to {{C|you}}! {{o|You are burning!}}".to_string()
+                "{O|Fire} spreads to {C|you}! You are {O|◘ burning}".to_string()
             } else {
                 let target_label = get_entity_label(*target, q_labels, q_player);
-                format!("{{O|Fire}} spreads to {}!", target_label)
+                format!("{} is {{O|◘ burning}}", target_label)
             }
         }
 
@@ -323,8 +331,8 @@ fn format_log_message(
             let item_label = get_entity_label(*item, q_labels, q_player);
 
             match quantity {
-                Some(n) if *n > 1 => format!("{} pick up {} {}.", picker_label, n, item_label),
-                _ => format!("{} pick up {}.", picker_label, item_label),
+                Some(n) if *n > 1 => format!("{} picked up {} {}", picker_label, n, item_label),
+                _ => format!("{} picked up {}", picker_label, item_label),
             }
         }
 
@@ -337,8 +345,8 @@ fn format_log_message(
             let item_label = get_entity_label(*item, q_labels, q_player);
 
             match quantity {
-                Some(n) if *n > 1 => format!("{} drop {} {}.", dropper_label, n, item_label),
-                _ => format!("{} drop {}.", dropper_label, item_label),
+                Some(n) if *n > 1 => format!("{} dropped {} {}", dropper_label, n, item_label),
+                _ => format!("{} dropped {}", dropper_label, item_label),
             }
         }
 
@@ -350,7 +358,7 @@ fn format_log_message(
             let entity_label = get_entity_label(*entity, q_labels, q_player);
             let source_label = get_entity_label(*source, q_labels, q_player);
             format!(
-                "{} defeated {}! {{g|(+{} XP)}}",
+                "{} defeated {}! {{u|(+{} XP)}}",
                 entity_label, source_label, amount
             )
         }
@@ -358,7 +366,7 @@ fn format_log_message(
         LogMessage::LevelUp { entity, new_level } => {
             let entity_label = get_entity_label(*entity, q_labels, q_player);
             format!(
-                "{{G|Level up!}} {} are now level {{C|{}}}!",
+                "Level up! {} is now level {{C|{}}}",
                 entity_label, new_level
             )
         }

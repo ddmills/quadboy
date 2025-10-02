@@ -4,13 +4,12 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        AttributePoints, Attributes, Health, Level, Player, StatModifiers, StatType, Stats,
-        game_loop,
+        game_loop, AttributePoints, Attributes, Health, Level, Player, StatModifiers, StatType, Stats
     },
     engine::{App, Plugin},
-    rendering::{Layer, Position, Text},
-    states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
-    ui::Button,
+    rendering::{Glyph, Layer, Position, ScreenSize, Text},
+    states::{cleanup_system, CurrentGameState, GameState, GameStatePlugin},
+    ui::{setup_fullscreen_backgrounds, Button, FullScreenBackground},
 };
 
 #[derive(Resource)]
@@ -59,9 +58,13 @@ impl Plugin for AttributesStatePlugin {
         GameStatePlugin::new(GameState::Attributes)
             .on_enter(
                 app,
-                (setup_attributes_callbacks, setup_attributes_screen).chain(),
+                (setup_attributes_callbacks, setup_attributes_screen, setup_attributes_background, setup_fullscreen_backgrounds).chain(),
             )
             .on_update(app, (game_loop, update_attributes_display).chain())
+            .on_update(
+                app,
+                setup_fullscreen_backgrounds.run_if(resource_changed::<ScreenSize>),
+            )
             .on_leave(
                 app,
                 (
@@ -860,4 +863,17 @@ fn setup_attributes_screen(
         dodge_display,
         reload_speed_display,
     });
+}
+
+fn setup_attributes_background(mut cmds: Commands, screen: Res<ScreenSize>) {
+    let color = Palette::Clear;
+    cmds.spawn((
+        FullScreenBackground,
+        CleanupStateAttributes,
+        Position::new(0, 0, 0),
+        Glyph::new(6, color, color)
+            .bg(color)
+            .scale((screen.tile_w as f32, screen.tile_h as f32))
+            .layer(Layer::UiPanels),
+    ));
 }
