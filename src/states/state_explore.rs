@@ -504,35 +504,37 @@ fn update_player_armor_label(
 }
 
 fn spawn_ui_buttons(cmds: &mut Commands, callbacks: &ExploreCallbacks) {
+    let ui_button_y = 15.;
+
     cmds.spawn((
-        Position::new_f32(0.5, 10., 0.),
+        Position::new_f32(0.5, ui_button_y, 0.),
         Button::new("({Y|M}) MAP", callbacks.open_map).hotkey(macroquad::input::KeyCode::M),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(0.5, 10.5, 0.),
+        Position::new_f32(0.5, ui_button_y + 0.5, 0.),
         Button::new("({Y|I}) INVENTORY", callbacks.open_inventory)
             .hotkey(macroquad::input::KeyCode::I),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(0.5, 11., 0.),
+        Position::new_f32(0.5, ui_button_y + 1.0, 0.),
         Button::new("({Y|B}) DEBUG", callbacks.open_debug_spawn)
             .hotkey(macroquad::input::KeyCode::B),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(0.5, 11.5, 0.),
+        Position::new_f32(0.5, ui_button_y + 1.5, 0.),
         Button::new("({Y|Y}) ATTRIBUTES", callbacks.open_attributes)
             .hotkey(macroquad::input::KeyCode::Y),
         CleanupStateExplore,
     ));
 
     cmds.spawn((
-        Position::new_f32(0.5, 12., 0.),
+        Position::new_f32(0.5, ui_button_y + 2.0, 0.),
         Button::new("({Y|ESC}) PAUSE", callbacks.open_pause)
             .hotkey(macroquad::input::KeyCode::Escape),
         CleanupStateExplore,

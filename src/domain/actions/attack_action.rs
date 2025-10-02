@@ -325,6 +325,7 @@ impl AttackAction {
                 attacker_pos,
                 target_pos,
                 &weapon.attack_verb,
+                &weapon.attack_noun,
             );
 
             if should_apply_hit_blink {
@@ -435,6 +436,7 @@ impl AttackAction {
                 attacker_pos,
                 target_pos,
                 &weapon.attack_verb,
+                &weapon.attack_noun,
             );
 
             if should_apply_hit_blink {
@@ -516,55 +518,70 @@ impl AttackAction {
         attacker_pos: (usize, usize, usize),
         target_pos: (usize, usize, usize),
         weapon_verb: &str,
+        weapon_noun: &str,
     ) {
         let attacker_stable_id = world.get::<StableId>(attacker_entity).copied();
+
+        let knowledge = if world.get::<Player>(attacker_entity).is_some()
+            || world.get::<Player>(target_entity).is_some()
+        {
+            KnowledgeLevel::Player
+        } else {
+            KnowledgeLevel::Action {
+                actor: attacker_entity,
+                location: attacker_pos,
+            }
+        };
+
         if let Some(mut health) = world.get_mut::<Health>(target_entity) {
-            if can_damage.contains(&MaterialType::Flesh) && hit {
-                health.take_damage_from_source(rolled_damage, current_tick, attacker_stable_id);
-                *should_apply_hit_blink = true;
+            if can_damage.contains(&MaterialType::Flesh) {
+                if hit {
+                    health.take_damage_from_source(rolled_damage, current_tick, attacker_stable_id);
+                    *should_apply_hit_blink = true;
 
-                // Send attack log event
-                let knowledge = if world.get::<Player>(attacker_entity).is_some()
-                    || world.get::<Player>(target_entity).is_some()
-                {
-                    KnowledgeLevel::Player
-                } else {
-                    KnowledgeLevel::Action {
-                        actor: attacker_entity,
-                        location: attacker_pos,
+                    // Send attack hit log event
+                    world.send_event(GameLogEvent {
+                        message: LogMessage::Attack {
+                            attacker: attacker_entity,
+                            target: target_entity,
+                            damage: rolled_damage,
+                            weapon_verb: weapon_verb.to_string(),
+                        },
+                        tick: current_tick,
+                        knowledge,
+                    });
+
+                    // Apply hit effects to flesh targets
+                    self.apply_hit_effects(world, attacker_entity, target_entity, hit_effects);
+
+                    // Play hit audio for flesh target
+                    if let Some(audio_collection) = MaterialType::Flesh.hit_audio_collection() {
+                        world.resource_scope(|world, audio_registry: Mut<Audio>| {
+                            if let Some(mut rand) = world.get_resource_mut::<Rand>() {
+                                audio_registry.play_random_from_collection(
+                                    audio_collection,
+                                    &mut rand,
+                                    0.5,
+                                );
+                            }
+                        });
                     }
-                };
 
-                world.send_event(GameLogEvent {
-                    message: LogMessage::Attack {
-                        attacker: attacker_entity,
-                        target: target_entity,
-                        damage: rolled_damage,
-                        weapon_verb: weapon_verb.to_string(),
-                    },
-                    tick: current_tick,
-                    knowledge,
-                });
-
-                // Apply hit effects to flesh targets
-                self.apply_hit_effects(world, attacker_entity, target_entity, hit_effects);
-
-                // Play hit audio for flesh target
-                if let Some(audio_collection) = MaterialType::Flesh.hit_audio_collection() {
-                    world.resource_scope(|world, audio_registry: Mut<Audio>| {
-                        if let Some(mut rand) = world.get_resource_mut::<Rand>() {
-                            audio_registry.play_random_from_collection(
-                                audio_collection,
-                                &mut rand,
-                                0.5,
-                            );
-                        }
+                    // Add directional blood spray for flesh targets
+                    let direction = calculate_direction(attacker_pos, target_pos);
+                    spawn_directional_blood_mist(world, target_pos, direction, 0.8);
+                } else {
+                    // Send attack miss log event
+                    world.send_event(GameLogEvent {
+                        message: LogMessage::AttackMiss {
+                            attacker: attacker_entity,
+                            target: target_entity,
+                            weapon_noun: weapon_noun.to_string(),
+                        },
+                        tick: current_tick,
+                        knowledge,
                     });
                 }
-
-                // Add directional blood spray for flesh targets
-                let direction = calculate_direction(attacker_pos, target_pos);
-                spawn_directional_blood_mist(world, target_pos, direction, 0.8);
             }
         }
         // Check if target has Destructible (object)

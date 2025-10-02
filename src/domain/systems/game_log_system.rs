@@ -24,6 +24,11 @@ pub enum LogMessage {
         damage: i32,
         weapon_verb: String,
     },
+    AttackMiss {
+        attacker: Entity,
+        target: Entity,
+        weapon_noun: String,
+    },
     Death {
         entity: Entity,
         killer: Option<Entity>,
@@ -102,7 +107,7 @@ pub enum LogCategory {
 impl LogMessage {
     pub fn category(&self) -> LogCategory {
         match self {
-            LogMessage::Attack { .. } | LogMessage::Death { .. } => LogCategory::Combat,
+            LogMessage::Attack { .. } | LogMessage::AttackMiss { .. } | LogMessage::Death { .. } => LogCategory::Combat,
             LogMessage::PoisonApplied { .. }
             | LogMessage::BleedingApplied { .. }
             | LogMessage::BurningApplied { .. } => LogCategory::Status,
@@ -268,6 +273,16 @@ fn format_log_message(
                 "{} {} {} for {} damage",
                 attacker_label, weapon_verb, target_label, damage
             )
+        }
+
+        LogMessage::AttackMiss {
+            attacker,
+            target,
+            weapon_noun,
+        } => {
+            let attacker_label = get_entity_label(*attacker, q_labels, q_player);
+            let target_label = get_entity_label(*target, q_labels, q_player);
+            format!("{} {{U|dodges}} {}'s {}", target_label, attacker_label, weapon_noun)
         }
 
         LogMessage::Death { entity, killer } => {

@@ -23,6 +23,7 @@ impl DefaultRangedAttack {
         range: usize,
         shoot_audio: Option<AudioKey>,
         attack_verb: &str,
+        attack_noun: &str,
     ) -> Self {
         let mut weapon = Weapon::new_ranged(
             damage_dice,
@@ -31,6 +32,7 @@ impl DefaultRangedAttack {
             shoot_audio.unwrap_or(AudioKey::RevolverShoot1),
             weapon_family,
             attack_verb.to_string(),
+            attack_noun.to_string(),
             None, // No clip for default weapons
             None, // No reload cost
             None, // No reload audio
@@ -53,6 +55,7 @@ impl DefaultRangedAttack {
         ammo: usize,
         no_ammo_audio: Option<AudioKey>,
         attack_verb: &str,
+        attack_noun: &str,
     ) -> Self {
         // NOTE: Despite the name "with_ammo", default weapons still get infinite ammo
         // This method is kept for API compatibility
@@ -63,6 +66,7 @@ impl DefaultRangedAttack {
             shoot_audio.unwrap_or(AudioKey::RevolverShoot1),
             weapon_family,
             attack_verb.to_string(),
+            attack_noun.to_string(),
             None, // No clip for default weapons
             None, // No reload cost
             None, // No reload audio
@@ -86,6 +90,7 @@ impl DefaultRangedAttack {
             6,
             Some(AudioKey::RevolverEmpty),
             "shoots",
+            "shot",
         );
         revolver.weapon.particle_effect_id = Some(ParticleEffectId::default_pistol());
         revolver
@@ -102,6 +107,7 @@ impl DefaultRangedAttack {
             4,
             Some(AudioKey::RifleEmpty),
             "shoots",
+            "shot",
         );
         rifle.weapon.particle_effect_id = Some(ParticleEffectId::default_rifle());
         rifle

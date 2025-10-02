@@ -20,12 +20,14 @@ impl DefaultMeleeAttack {
         attack_name: &str,
         weapon_family: WeaponFamily,
         attack_verb: &str,
+        attack_noun: &str,
     ) -> Self {
         let weapon = Weapon::new_melee(
             damage.to_string(),
             can_damage,
             weapon_family,
             attack_verb.to_string(),
+            attack_noun.to_string(),
         );
 
         Self { weapon }
@@ -38,12 +40,14 @@ impl DefaultMeleeAttack {
         weapon_family: WeaponFamily,
         hit_effects: Vec<HitEffect>,
         attack_verb: &str,
+        attack_noun: &str,
     ) -> Self {
         let mut weapon = Weapon::new_melee(
             damage.to_string(),
             can_damage,
             weapon_family,
             attack_verb.to_string(),
+            attack_noun.to_string(),
         );
         weapon.hit_effects = hit_effects;
 
@@ -51,7 +55,7 @@ impl DefaultMeleeAttack {
     }
 
     pub fn fists() -> Self {
-        let mut attack = Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed, "punches");
+        let mut attack = Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed, "punches", "punch");
         attack.weapon.melee_audio = Some(AudioKey::Punch1);
         attack
     }
@@ -67,6 +71,7 @@ impl DefaultMeleeAttack {
                 chance: 1.0,
             }], // Always knockback at half strength
             "punches",
+            "punch",
         );
         attack.weapon.melee_audio = Some(AudioKey::Punch1);
         attack
@@ -79,6 +84,7 @@ impl DefaultMeleeAttack {
             "Claw Swipe",
             WeaponFamily::Unarmed,
             "claws",
+            "claw",
         )
     }
 
@@ -94,6 +100,7 @@ impl DefaultMeleeAttack {
                 chance: 1.0, // Always apply poison
             }],
             "bites",
+            "bite",
         )
     }
     pub fn fire_fists() -> Self {
@@ -109,13 +116,14 @@ impl DefaultMeleeAttack {
                 can_stack: false,
             }],
             "strikes",
+            "strike",
         );
         attack.weapon.melee_audio = Some(AudioKey::Punch1);
         attack
     }
 
     pub fn bite() -> Self {
-        Self::new(3, vec![MaterialType::Flesh], "Bite", WeaponFamily::Unarmed, "bites")
+        Self::new(3, vec![MaterialType::Flesh], "Bite", WeaponFamily::Unarmed, "bites", "bite")
     }
 
     pub fn wing_buffet() -> Self {
@@ -125,6 +133,7 @@ impl DefaultMeleeAttack {
             "Wing Buffet",
             WeaponFamily::Unarmed,
             "buffets",
+            "buffet",
         )
     }
 
@@ -135,6 +144,7 @@ impl DefaultMeleeAttack {
             "Electric Touch",
             WeaponFamily::Unarmed,
             "electrifies",
+            "shock",
         )
     }
 
@@ -151,6 +161,7 @@ impl DefaultMeleeAttack {
                 can_stack: true,
             }],
             "nibbles",
+            "nibble",
         )
     }
 
@@ -166,6 +177,7 @@ impl DefaultMeleeAttack {
                 chance: 1.0,
             }],
             "crushes",
+            "crush",
         )
     }
 }
