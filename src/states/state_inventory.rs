@@ -11,7 +11,7 @@ use crate::{
         Consumable, DropItemAction, EatAction, EquipItemAction, EquipmentSlot, Equippable,
         Equipped, ExplosiveProperties, Fuse, HitEffect, Inventory, Item, ItemRarity, Label,
         LightSource, LightStateChangedEvent, Lightable, Player, PlayerPosition, StackCount,
-        Throwable, ToggleLightAction, UnequipItemAction, Weapon, WeaponType, game_loop,
+        ModifierSource, StatModifiers, Throwable, ToggleLightAction, UnequipItemAction, Weapon, WeaponType, game_loop,
         inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableId, StableIdRegistry},
@@ -51,6 +51,11 @@ struct InventoryCallbacks {
     close_examine_dialog: SystemId,
 }
 
+#[derive(Resource, Default)]
+struct LastSelectedItem {
+    item_id: Option<u64>,
+}
+
 #[derive(Component, Clone)]
 pub struct CleanupStateInventory;
 
@@ -85,6 +90,15 @@ pub struct ItemDetailEffects;
 pub struct ItemDetailSpecial;
 
 #[derive(Component)]
+pub struct ItemDetailStatLine;
+
+#[derive(Component)]
+pub struct ItemDetailWeaponLine;
+
+#[derive(Component)]
+pub struct ItemDetailPropertyLine;
+
+#[derive(Component)]
 pub struct ItemActionDialog {
     pub item_id: u64,
 }
@@ -104,6 +118,10 @@ pub struct InventoryContext {
 
 fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
     game_state.next = GameState::Explore;
+}
+
+fn setup_last_selected_item(mut cmds: Commands) {
+    cmds.init_resource::<LastSelectedItem>();
 }
 
 fn build_inventory_list_items(
@@ -653,7 +671,7 @@ impl Plugin for InventoryStatePlugin {
         GameStatePlugin::new(GameState::Inventory)
             .on_enter(
                 app,
-                (setup_inventory_callbacks, setup_inventory_screen, setup_inventory_background, setup_fullscreen_backgrounds).chain(),
+                (setup_last_selected_item, setup_inventory_callbacks, setup_inventory_screen, setup_inventory_background, setup_fullscreen_backgrounds).chain(),
             )
             .on_update(app, game_loop)
             .on_update(app, refresh_inventory_display)
@@ -708,7 +726,7 @@ fn setup_inventory_screen(
         return;
     };
 
-    let left_x = 2.0;
+    let left_x: f32 = 2.0;
 
     cmds.spawn((
         Text::new("PLAYER INVENTORY")
@@ -754,33 +772,21 @@ fn setup_inventory_screen(
         ItemDetailPanel,
     ));
 
-    // Item icon background frame
-    cmds.spawn((
-        Glyph::new(219, Palette::DarkGray, Palette::DarkGray)
-            .scale((3.0, 3.0))
-            .layer(Layer::Ui)
-            .bg(Palette::DarkGray),
-        Position::new_f32(detail_x + 0.5, detail_y + 0.5, 0.),
-        CleanupStateInventory,
-    ));
-
     // Item icon (will be updated when item is focused)
     cmds.spawn((
         Glyph::idx(0)
             .scale((2.0, 2.0))
             .layer(Layer::Ui)
             .fg1(Palette::White),
-        Position::new_f32(detail_x + 1.0, detail_y + 1.0, 0.),
+        Position::new_f32(detail_x, detail_y + 1.0, 0.),
         CleanupStateInventory,
         ItemDetailIcon,
     ));
 
     // Item name
     cmds.spawn((
-        Text::new("Select an item")
-            .fg1(Palette::Gray)
-            .layer(Layer::Ui),
-        Position::new_f32(detail_x + 5.0, detail_y + 1.0, 0.),
+        Text::new("Select an item").layer(Layer::Ui),
+        Position::new_f32(detail_x + 3.0, detail_y + 1.0, 0.),
         CleanupStateInventory,
         ItemDetailName,
     ));
@@ -788,7 +794,7 @@ fn setup_inventory_screen(
     // Item rarity
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 5.0, detail_y + 1.5, 0.),
+        Position::new_f32(detail_x + 3.0, detail_y + 1.5, 0.),
         CleanupStateInventory,
         ItemDetailRarity,
     ));
@@ -798,23 +804,14 @@ fn setup_inventory_screen(
         Text::new("── Basic Stats ──")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 3.5, 0.),
-        CleanupStateInventory,
-    ));
-
-    // Basic properties divider
-    cmds.spawn((
-        Text::new("═══════════")
-            .fg1(Palette::Yellow)
-            .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 4.0, 0.),
+        Position::new_f32(detail_x, detail_y + 3.5, 0.),
         CleanupStateInventory,
     ));
 
     // Basic properties content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 4.5, 0.),
+        Position::new_f32(detail_x, detail_y + 4.0, 0.),
         CleanupStateInventory,
         ItemDetailProperties,
     ));
@@ -824,78 +821,36 @@ fn setup_inventory_screen(
         Text::new("── Weapon Stats ──")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 6.0, 0.),
+        Position::new_f32(detail_x, detail_y + 5.5, 0.),
         CleanupStateInventory,
     ));
 
-    // Weapon damage section divider
-    cmds.spawn((
-        Text::new("═══════════")
-            .fg1(Palette::Yellow)
-            .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 6.5, 0.),
-        CleanupStateInventory,
-    ));
 
     // Weapon damage section content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 7.0, 0.),
+        Position::new_f32(detail_x, detail_y + 6.0, 0.),
         CleanupStateInventory,
         ItemDetailDamageSection,
     ));
 
-    // Hit effects section header
+    // Properties section header
     cmds.spawn((
-        Text::new("── On-Hit Effects ──")
+        Text::new("── Properties ──")
             .fg1(Palette::Yellow)
             .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 8.5, 0.),
+        Position::new_f32(detail_x, detail_y + 7.5, 0.),
         CleanupStateInventory,
     ));
 
-    // Hit effects section divider
-    cmds.spawn((
-        Text::new("═══════════")
-            .fg1(Palette::Yellow)
-            .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 9.0, 0.),
-        CleanupStateInventory,
-    ));
-
-    // Hit effects content
+    // Properties content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 9.5, 0.),
+        Position::new_f32(detail_x, detail_y + 8.0, 0.),
         CleanupStateInventory,
         ItemDetailEffects,
     ));
 
-    // Special properties section header
-    cmds.spawn((
-        Text::new("── Special Properties ──")
-            .fg1(Palette::Yellow)
-            .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 11.0, 0.),
-        CleanupStateInventory,
-    ));
-
-    // Special properties section divider
-    cmds.spawn((
-        Text::new("═══════════")
-            .fg1(Palette::Yellow)
-            .layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 11.5, 0.),
-        CleanupStateInventory,
-    ));
-
-    // Special properties content
-    cmds.spawn((
-        Text::new("").fg1(Palette::White).layer(Layer::Ui),
-        Position::new_f32(detail_x + 1.0, detail_y + 12.0, 0.),
-        CleanupStateInventory,
-        ItemDetailSpecial,
-    ));
 
     let help_y = 3.5 + (inventory.count() as f32 * 0.5) + 1.0;
 
@@ -936,8 +891,10 @@ fn handle_equip_slot_input(mut game_state: ResMut<CurrentGameState>) {
 }
 
 fn update_item_detail_panel(
+    mut cmds: Commands,
     ui_focus: Res<UiFocus>,
     id_registry: Res<StableIdRegistry>,
+    mut last_selected: ResMut<LastSelectedItem>,
     q_list_items: Query<&ListItem>,
     q_lists: Query<&List>,
     q_labels: Query<&Label>,
@@ -946,6 +903,8 @@ fn update_item_detail_panel(
     q_stack_counts: Query<&StackCount>,
     q_weapons: Query<&Weapon>,
     q_rarities: Query<&ItemRarity>,
+    q_stat_modifiers: Query<&StatModifiers>,
+    q_existing_stat_lines: Query<Entity, Or<(With<ItemDetailStatLine>, With<ItemDetailWeaponLine>, With<ItemDetailPropertyLine>)>>,
     mut glyph_queries: ParamSet<(Query<&Glyph>, Query<&mut Glyph, With<ItemDetailIcon>>)>,
     mut detail_text_queries: ParamSet<(
         Query<&mut Text, (With<ItemDetailName>, Without<ItemDetailProperties>)>,
@@ -953,7 +912,6 @@ fn update_item_detail_panel(
         Query<&mut Text, With<ItemDetailRarity>>,
         Query<&mut Text, With<ItemDetailDamageSection>>,
         Query<&mut Text, With<ItemDetailEffects>>,
-        Query<&mut Text, With<ItemDetailSpecial>>,
     )>,
 ) {
     // Get the focused list item
@@ -981,6 +939,119 @@ fn update_item_detail_panel(
     let Some(item_entity) = id_registry.get_entity(StableId(item_id)) else {
         return;
     };
+
+    // Only update dynamic entities when selection changes
+    if last_selected.item_id == Some(item_id) {
+        return; // Selection hasn't changed, skip dynamic updates
+    }
+
+    // Update the last selected item
+    last_selected.item_id = Some(item_id);
+
+    // Clean up existing dynamic lines first and create new ones
+    for entity in q_existing_stat_lines.iter() {
+        cmds.entity(entity).despawn();
+    }
+
+    // Create dynamic stat lines - use proper layout positioning
+    // Get the screen width for proper layout calculation
+    let left_x = 2.0; // Same as in setup_inventory_screen
+    let detail_x = left_x + 28.0; // Same calculation as setup_inventory_screen
+    let detail_y = 3.0;
+    let stat_x = detail_x;// + 3.0; // Align with item name/rarity text
+    let mut current_y = detail_y + 4.0; // Start after "Basic Stats" header
+
+    // Create Basic Stats lines
+    let mut stats = Vec::new();
+
+    if let Ok(item) = q_items.get(item_entity) {
+        stats.push(format!("- Weight: {:.1} kg", item.weight));
+    }
+
+    if let Ok(stack) = q_stack_counts.get(item_entity) {
+        stats.push(format!("- Quantity: {}", stack.count));
+    }
+
+    // Add stat modifiers
+    if let Ok(stat_modifiers) = q_stat_modifiers.get(item_entity) {
+        for (stat_type, modifiers) in &stat_modifiers.modifiers {
+            for modifier in modifiers {
+                if let ModifierSource::Intrinsic { name } = &modifier.source {
+                    let sign = if modifier.value >= 0 { "+" } else { "" };
+                    stats.push(format!("- {}: {}{} {}", name, sign, modifier.value, stat_type.verb()));
+                }
+            }
+        }
+    }
+
+
+    // Spawn Basic Stats lines
+    println!("Creating {} stat lines: {:?}", stats.len(), stats);
+    for stat in stats {
+        println!("Spawning stat line: '{}' at position ({}, {})", stat, stat_x, current_y);
+        cmds.spawn((
+            Text::new(&stat).fg1(Palette::White).layer(Layer::Ui),
+            Position::new_f32(stat_x, current_y, 0.),
+            CleanupStateInventory,
+            ItemDetailStatLine,
+        ));
+        current_y += 0.5;
+    }
+
+    // Update Y position for weapon stats
+    current_y += 1.5; // Gap before Weapon Stats
+
+    // Create Weapon Stats lines
+    if let Ok(weapon) = q_weapons.get(item_entity) {
+        let mut weapon_stats = Vec::new();
+        weapon_stats.push(format!("- Damage: {}", weapon.damage_dice));
+        weapon_stats.push(format!(
+            "- Type: {}",
+            if weapon.weapon_type == WeaponType::Melee {
+                "Melee"
+            } else {
+                "Ranged"
+            }
+        ));
+
+        // Spawn Weapon Stats lines
+        for stat in weapon_stats {
+            cmds.spawn((
+                Text::new(&stat).fg1(Palette::White).layer(Layer::Ui),
+                Position::new_f32(stat_x, current_y, 0.),
+                CleanupStateInventory,
+                ItemDetailWeaponLine,
+            ));
+            current_y += 0.5;
+        }
+    }
+
+    // Update Y position for properties
+    current_y += 1.5; // Gap before Properties
+
+    // Create Properties lines
+    if let Ok(weapon) = q_weapons.get(item_entity) {
+        let mut properties = Vec::new();
+
+        if let Some(range) = weapon.range {
+            properties.push(format!("- Range: {}", range));
+        }
+
+        if let Some(clip_size) = weapon.clip_size {
+            properties.push(format!("- Clip size: {}", clip_size));
+        }
+
+        // Spawn Properties lines
+        for property in properties {
+            cmds.spawn((
+                Text::new(&property).fg1(Palette::White).layer(Layer::Ui),
+                Position::new_f32(stat_x, current_y, 0.),
+                CleanupStateInventory,
+                ItemDetailPropertyLine,
+            ));
+            current_y += 0.5;
+        }
+    }
 
     // Update icon - first get the item glyph data
     let item_glyph_data = glyph_queries
@@ -1031,14 +1102,26 @@ fn update_item_detail_panel(
 
         // Weight
         if let Ok(item) = q_items.get(item_entity) {
-            props.push(format!("Weight: {:.1} kg", item.weight));
+            props.push(format!("- Weight: {:.1} kg", item.weight));
         }
 
         // Stack count
         if let Ok(stack) = q_stack_counts.get(item_entity)
             && stack.count > 1
         {
-            props.push(format!("Quantity: {}", stack.count));
+            props.push(format!("- Quantity: {}", stack.count));
+        }
+
+        // Add stat modifiers
+        if let Ok(stat_modifiers) = q_stat_modifiers.get(item_entity) {
+            for (stat_type, modifiers) in &stat_modifiers.modifiers {
+                for modifier in modifiers {
+                    if let ModifierSource::Intrinsic { name } = &modifier.source {
+                        let sign = if modifier.value >= 0 { "+" } else { "" };
+                        props.push(format!("- {}: {}{} {}", name, sign, modifier.value, stat_type.verb()));
+                    }
+                }
+            }
         }
 
         // Equipped status
@@ -1049,10 +1132,22 @@ fn update_item_detail_panel(
                 .map(|s| s.display_name())
                 .collect::<Vec<_>>()
                 .join(", ");
-            props.push(format!("Equipped: {}", slots));
+            props.push(format!("- Equipped: {}", slots));
         }
 
-        detail_text.value = props.join("\n");
+        // Stat modifiers
+        if let Ok(stat_modifiers) = q_stat_modifiers.get(item_entity) {
+            for (stat_type, modifiers) in &stat_modifiers.modifiers {
+                for modifier in modifiers {
+                    if let ModifierSource::Intrinsic { name } = &modifier.source {
+                        let sign = if modifier.value >= 0 { "+" } else { "" };
+                        props.push(format!("- {}: {}{} {}", name, sign, modifier.value, stat_type.verb()));
+                    }
+                }
+            }
+        }
+
+        detail_text.value = "".to_string(); // Cleared - handled by dynamic system
     }
 
     // Update weapon damage section
@@ -1060,20 +1155,20 @@ fn update_item_detail_panel(
         if let Ok(weapon) = q_weapons.get(item_entity) {
             let mut damage_props = Vec::new();
 
-            damage_props.push(format!("Damage: {}", weapon.damage_dice));
+            damage_props.push(format!("- Damage: {}", weapon.damage_dice));
 
             if let Some(range) = weapon.range {
-                damage_props.push(format!("Range: {}", range));
+                damage_props.push(format!("- Range: {}", range));
             }
 
             if let Some(ammo) = weapon.current_ammo
                 && let Some(clip) = weapon.clip_size
             {
-                damage_props.push(format!("Ammo: {}/{}", ammo, clip));
+                damage_props.push(format!("- Ammo: {}/{}", ammo, clip));
             }
 
             damage_props.push(format!(
-                "Type: {}",
+                "- Type: {}",
                 if weapon.weapon_type == WeaponType::Melee {
                     "Melee"
                 } else {
@@ -1081,19 +1176,18 @@ fn update_item_detail_panel(
                 }
             ));
 
-            detail_text.value = damage_props.join("\n");
+            detail_text.value = "".to_string(); // Cleared - handled by dynamic system
         } else {
             detail_text.value = "Not a weapon".to_string();
         }
     }
 
-    // Update hit effects section
+    // Update properties section
     for mut detail_text in detail_text_queries.p4().iter_mut() {
-        if let Ok(weapon) = q_weapons.get(item_entity)
-            && !weapon.hit_effects.is_empty()
-        {
-            let mut effects = Vec::new();
+        if let Ok(weapon) = q_weapons.get(item_entity) {
+            let mut properties = Vec::new();
 
+            // Add hit effects as properties
             for effect in &weapon.hit_effects {
                 let effect_text = match effect {
                     HitEffect::Poison {
@@ -1102,7 +1196,7 @@ fn update_item_detail_panel(
                         chance,
                     } => {
                         format!(
-                            "• {:.0}% Poison ({} dmg/tick, {} ticks)",
+                            "- {:.0}% Poison ({} dmg/tick, {} ticks)",
                             chance * 100.0,
                             damage_per_tick,
                             duration_ticks
@@ -1116,7 +1210,7 @@ fn update_item_detail_panel(
                     } => {
                         let stack_text = if *can_stack { ", stacks" } else { "" };
                         format!(
-                            "• {:.0}% Bleeding ({} dmg/tick, {} ticks{})",
+                            "- {:.0}% Bleeding ({} dmg/tick, {} ticks{})",
                             chance * 100.0,
                             damage_per_tick,
                             duration_ticks,
@@ -1129,7 +1223,7 @@ fn update_item_detail_panel(
                         chance,
                     } => {
                         format!(
-                            "• {:.0}% Burning ({} dmg/tick, {} ticks)",
+                            "- {:.0}% Burning ({} dmg/tick, {} ticks)",
                             chance * 100.0,
                             damage_per_tick,
                             duration_ticks
@@ -1137,26 +1231,19 @@ fn update_item_detail_panel(
                     }
                     HitEffect::Knockback { strength, chance } => {
                         format!(
-                            "• {:.0}% Knockback ({:.1}x strength)",
+                            "- {:.0}% Knockback ({:.1}x strength)",
                             chance * 100.0,
                             strength
                         )
                     }
                 };
-                effects.push(effect_text);
+                properties.push(effect_text);
             }
 
-            detail_text.value = effects.join("\n");
-        } else {
-            detail_text.value = "None".to_string();
-        }
-    }
+            // Add weapon family as a property
+            properties.push(format!("- Family: {:?}", weapon.weapon_family));
 
-    // Update special properties section
-    for mut detail_text in detail_text_queries.p5().iter_mut() {
-        if let Ok(weapon) = q_weapons.get(item_entity) {
-            let mut special_props = Vec::new();
-
+            // Add material damage capabilities
             if !weapon.can_damage.is_empty() {
                 let materials = weapon
                     .can_damage
@@ -1164,25 +1251,24 @@ fn update_item_detail_panel(
                     .map(|m| format!("{:?}", m))
                     .collect::<Vec<_>>()
                     .join(", ");
-                special_props.push(format!("Can damage: {}", materials));
+                properties.push(format!("- Can damage: {}", materials));
             }
 
-            special_props.push(format!("Family: {:?}", weapon.weapon_family));
-
+            // Add reload cost for ranged weapons
             if weapon.base_reload_cost.is_some() {
-                special_props.push(format!(
-                    "Reload cost: {} energy",
+                properties.push(format!(
+                    "- Reload cost: {} energy",
                     weapon.base_reload_cost.unwrap()
                 ));
             }
 
-            detail_text.value = if special_props.is_empty() {
+            detail_text.value = if properties.is_empty() {
                 "None".to_string()
             } else {
-                special_props.join("\n")
+                "".to_string() // Cleared - handled by dynamic system
             };
         } else {
-            detail_text.value = "".to_string();
+            detail_text.value = "Not a weapon".to_string();
         }
     }
 }
@@ -1366,3 +1452,4 @@ fn setup_inventory_background(mut cmds: Commands, screen: Res<ScreenSize>) {
             .layer(Layer::UiPanels), // Render behind UI content but in screen space
     ));
 }
+

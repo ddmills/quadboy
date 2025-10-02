@@ -21,7 +21,8 @@ pub struct Panel {
 #[derive(Resource, Default)]
 pub struct UiLayout {
     pub top_panel: Panel,
-    pub left_panel: Panel,
+    pub player_panel: Panel,
+    pub target_panel: Panel,
     pub game_panel: Panel,
     pub bottom_panel: Panel,
 }
@@ -35,6 +36,7 @@ pub fn update_ui_layout(
     let left_panel_width = 10;
     let bottom_panel_height = 5;
     let top_panel_height = 2;
+    let player_panel_height = 7;
 
     // Top panel takes full width at top of screen
     ui.top_panel.x = 0;
@@ -42,11 +44,17 @@ pub fn update_ui_layout(
     ui.top_panel.width = screen.tile_w;
     ui.top_panel.height = top_panel_height;
 
-    // Left panel starts below top panel
-    ui.left_panel.x = 0;
-    ui.left_panel.y = top_panel_height;
-    ui.left_panel.width = left_panel_width;
-    ui.left_panel.height = screen.tile_h - top_panel_height;
+    // Player panel starts below top panel
+    ui.player_panel.x = 0;
+    ui.player_panel.y = top_panel_height;
+    ui.player_panel.width = left_panel_width;
+    ui.player_panel.height = player_panel_height;//screen.tile_h - top_panel_height;
+
+    // Target panel starts below player panel
+    ui.target_panel.x = 0;
+    ui.target_panel.y = top_panel_height + ui.player_panel.height;
+    ui.target_panel.width = left_panel_width;
+    ui.target_panel.height = screen.tile_h - top_panel_height - ui.player_panel.height;
 
     // Bottom panel positioned to the right of left panel, at bottom of screen
     ui.bottom_panel.x = left_panel_width;
@@ -57,10 +65,10 @@ pub fn update_ui_layout(
     ui.bottom_panel.height = bottom_panel_height;
 
     // Game panel takes remaining space (excluding bottom panel and top panel)
-    ui.game_panel.x = ui.left_panel.width;
+    ui.game_panel.x = ui.player_panel.width;
     ui.game_panel.y = top_panel_height;
-    if screen.tile_w > ui.left_panel.width {
-        ui.game_panel.width = screen.tile_w - ui.left_panel.width;
+    if screen.tile_w > ui.player_panel.width {
+        ui.game_panel.width = screen.tile_w - ui.player_panel.width;
     }
     ui.game_panel.height = screen.tile_h - bottom_panel_height - top_panel_height;
 
@@ -117,44 +125,85 @@ pub fn draw_ui_panels(
         }
     }
 
-    // Handle left panel
-    if let Some(entity) = ui.left_panel.glyph {
+    // Handle player panel
+    if let Some(entity) = ui.player_panel.glyph {
         // Check if entity still exists
         if cmds.get_entity(entity).is_ok() {
             // Update existing entity
             if let Ok(mut glyph) = q_glyphs.get_mut(entity) {
-                glyph.scale = (ui.left_panel.width as f32, ui.left_panel.height as f32);
+                glyph.scale = (ui.player_panel.width as f32, ui.player_panel.height as f32);
             }
             if let Ok(mut position) = q_positions.get_mut(entity) {
-                position.x = ui.left_panel.x as f32;
-                position.y = ui.left_panel.y as f32;
+                position.x = ui.player_panel.x as f32;
+                position.y = ui.player_panel.y as f32;
             }
         } else {
             // Entity was despawned, clear the reference
-            ui.left_panel.glyph = None;
+            ui.player_panel.glyph = None;
         }
     }
 
-    if ui.left_panel.width > 0 && ui.left_panel.height > 0 {
-        if ui.left_panel.glyph.is_none() {
+    if ui.player_panel.width > 0 && ui.player_panel.height > 0 {
+        if ui.player_panel.glyph.is_none() {
             // Create new entity
             let entity = cmds
                 .spawn((
                     CleanupStateExplore,
-                    Position::new(ui.left_panel.x, ui.left_panel.y, 0),
+                    Position::new(ui.player_panel.x, ui.player_panel.y, 0),
                     Glyph::new(0, color, color)
                         .bg(color)
-                        .scale((ui.left_panel.width as f32, ui.left_panel.height as f32))
+                        .scale((ui.player_panel.width as f32, ui.player_panel.height as f32))
                         .layer(Layer::UiPanels),
                 ))
                 .id();
-            ui.left_panel.glyph = Some(entity);
+            ui.player_panel.glyph = Some(entity);
         }
     } else {
         // Panel has no size, remove if it exists
-        if let Some(entity) = ui.left_panel.glyph {
+        if let Some(entity) = ui.player_panel.glyph {
             cmds.entity(entity).try_despawn();
-            ui.left_panel.glyph = None;
+            ui.player_panel.glyph = None;
+        }
+    }
+
+    // Handle target panel
+    if let Some(entity) = ui.target_panel.glyph {
+        // Check if entity still exists
+        if cmds.get_entity(entity).is_ok() {
+            // Update existing entity
+            if let Ok(mut glyph) = q_glyphs.get_mut(entity) {
+                glyph.scale = (ui.target_panel.width as f32, ui.target_panel.height as f32);
+            }
+            if let Ok(mut position) = q_positions.get_mut(entity) {
+                position.x = ui.target_panel.x as f32;
+                position.y = ui.target_panel.y as f32;
+            }
+        } else {
+            // Entity was despawned, clear the reference
+            ui.target_panel.glyph = None;
+        }
+    }
+
+    if ui.target_panel.width > 0 && ui.target_panel.height > 0 {
+        if ui.target_panel.glyph.is_none() {
+            // Create new entity
+            let entity = cmds
+                .spawn((
+                    CleanupStateExplore,
+                    Position::new(ui.target_panel.x, ui.target_panel.y, 0),
+                    Glyph::new(0, color, color)
+                        .bg(color)
+                        .scale((ui.target_panel.width as f32, ui.target_panel.height as f32))
+                        .layer(Layer::UiPanels),
+                ))
+                .id();
+            ui.target_panel.glyph = Some(entity);
+        }
+    } else {
+        // Panel has no size, remove if it exists
+        if let Some(entity) = ui.target_panel.glyph {
+            cmds.entity(entity).try_despawn();
+            ui.target_panel.glyph = None;
         }
     }
 
@@ -201,7 +250,8 @@ pub fn draw_ui_panels(
 
     // Draw borders for panels (excluding game panel)
     draw_panel_borders(&mut cmds, &mut ui.top_panel, true);
-    draw_panel_borders(&mut cmds, &mut ui.left_panel, true);
+    draw_panel_borders(&mut cmds, &mut ui.player_panel, true);
+    draw_panel_borders(&mut cmds, &mut ui.target_panel, true);
     draw_panel_borders(&mut cmds, &mut ui.bottom_panel, true);
     draw_panel_borders(&mut cmds, &mut ui.game_panel, false);
 }

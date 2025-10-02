@@ -139,7 +139,7 @@ pub fn update_event_log_positioning(
     // Position log at bottom-left of screen, aligned with bottom panel
     // Account for text height (0.5) and 6 visible lines = 3.0 total height
     let log_y = screen.tile_h as f32 - 4.5;
-    let left_panel_offset = ui.left_panel.width as f32;
+    let left_panel_offset = ui.player_panel.width as f32;
 
     for mut log_pos in q_log_ui.iter_mut() {
         log_pos.y = log_y;
@@ -312,7 +312,7 @@ pub fn event_log_scroll_system(
     if mouse.wheel_delta.1.abs() > 0.01 {
         let log_y = screen.tile_h as f32 - 4.5;
         let log_height = log_ui.visible_lines as f32 * 0.5;
-        let left_panel_offset = ui.left_panel.width as f32;
+        let left_panel_offset = ui.player_panel.width as f32;
 
         // Check if mouse is over the log area
         let mouse_over_log = mouse.ui.0 >= left_panel_offset + 1.5
