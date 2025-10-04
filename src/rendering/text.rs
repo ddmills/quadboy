@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use bevy_ecs::prelude::*;
 use quadboy_macros::profiled_system;
 
@@ -6,6 +8,7 @@ use crate::{
     domain::IgnoreLighting,
     engine::Time,
     rendering::{GlyphTextureId, Visibility},
+    tracy_span,
 };
 
 use super::{Glyph, Layer, Position};
@@ -21,6 +24,9 @@ pub struct Text {
     pub layer_id: Layer,
     pub glyphs: Vec<Entity>,
     pub texture_id: GlyphTextureId,
+    pub cached_glyphs: Vec<Glyph>,
+    pub cached_tick: usize,
+    pub update_every_frame: bool,
 }
 
 #[allow(dead_code)]
@@ -35,6 +41,9 @@ impl Text {
             layer_id: Layer::Ui,
             glyphs: vec![],
             texture_id: GlyphTextureId::BodyFont,
+            cached_glyphs: vec![],
+            cached_tick: 0,
+            update_every_frame: false,
         }
     }
 
@@ -87,11 +96,8 @@ impl Text {
                     in_seq = false;
                     in_flags = false;
 
-                    let mut seq = PaletteSequence::new(seq_setting.clone());
-                    let glyphs = seq.apply_to(seq_value.clone(), self, tick);
-
-                    seq_setting = String::new();
-                    seq_value = String::new();
+                    let mut seq = PaletteSequence::new(std::mem::take(&mut seq_setting));
+                    let glyphs = seq.apply_to(std::mem::take(&mut seq_value), self, tick);
 
                     return Some(glyphs);
                 }
@@ -148,43 +154,77 @@ pub fn render_text(
 ) {
     let tick = (time.fixed_t * 10.).floor() as usize;
 
-    let changed = { q_text.p0().iter().collect::<Vec<_>>() };
+    let changed = {
+        tracy_span!("collect_changed_entities");
+        q_text.p0().iter().collect::<HashSet<_>>()
+    };
 
     {
         for (entity, mut text, position, visibility, ignore_lighting_opt) in q_text.p1().iter_mut()
         {
-            let is_scroller = text.value.contains("scroll");
+            let needs_regeneration = text.update_every_frame
+                || changed.contains(&entity)
+                || text.cached_tick != tick;
 
-            if !(is_scroller || changed.contains(&entity)) {
+            if !needs_regeneration {
                 continue;
-            }
-
-            // TODO update so this re-uses existing entities instead of re-spawning.
-            for glyph_id in text.glyphs.iter() {
-                cmds.entity(*glyph_id).despawn();
             }
 
             let ignore_lighting = ignore_lighting_opt.is_some();
 
-            text.glyphs = text
-                .get_glyphs(tick)
-                .iter()
-                .enumerate()
-                .map(|(i, g)| {
-                    let mut ecmds = cmds.spawn((
-                        g.to_owned(),
-                        Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
-                        visibility.clone(),
-                        ChildOf(entity),
-                    ));
+            let glyphs = {
+                tracy_span!("generate_glyphs");
+                let new_glyphs = text.get_glyphs(tick);
+                text.cached_tick = tick;
 
-                    if ignore_lighting {
-                        ecmds.insert(IgnoreLighting);
+                if new_glyphs == text.cached_glyphs && !changed.contains(&entity) {
+                    continue;
+                }
+
+                text.cached_glyphs = new_glyphs.clone();
+                new_glyphs
+            };
+
+            {
+                tracy_span!("update_glyph_entities");
+                let old_len = text.glyphs.len();
+                let new_len = glyphs.len();
+
+                if new_len > old_len {
+                    tracy_span!("spawn_new_glyphs");
+                    for i in old_len..new_len {
+                        let g = &glyphs[i];
+                        let mut ecmds = cmds.spawn((
+                            *g,
+                            Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
+                            *visibility,
+                            ChildOf(entity),
+                        ));
+
+                        if ignore_lighting {
+                            ecmds.insert(IgnoreLighting);
+                        }
+
+                        text.glyphs.push(ecmds.id());
                     }
+                } else if new_len < old_len {
+                    tracy_span!("despawn_extra_glyphs");
+                    for glyph_id in text.glyphs.drain(new_len..) {
+                        cmds.entity(glyph_id).despawn();
+                    }
+                }
 
-                    ecmds.id()
-                })
-                .collect();
+                {
+                    tracy_span!("update_existing_glyphs");
+                    for (i, (glyph_id, g)) in text.glyphs.iter().zip(glyphs.iter()).enumerate() {
+                        cmds.entity(*glyph_id).insert((
+                            *g,
+                            Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
+                            *visibility,
+                        ));
+                    }
+                }
+            }
         }
     }
 }

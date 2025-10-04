@@ -3,9 +3,9 @@ use macroquad::math::{Vec3, Vec4};
 
 use crate::{cfg::ZONE_SIZE, common::Grid};
 
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 pub struct LightValue {
-    pub rgb: Vec3, // RGB color (xyz) + intensity (w) packed together
+    pub rgb: Vec3,
     pub intensity: f32,
     pub flicker: f32,
 }

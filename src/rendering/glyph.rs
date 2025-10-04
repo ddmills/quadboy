@@ -10,6 +10,7 @@ use crate::{
     },
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
     tracy_plot,
+    tracy_span,
     ui::{DialogState, UiLayout},
 };
 use bevy_ecs::prelude::*;
@@ -23,7 +24,7 @@ fn default_alpha() -> f32 {
     1.0
 }
 
-#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
+#[derive(Component, Serialize, Deserialize, Clone, Copy, PartialEq, SerializableComponent)]
 #[require(Visibility)]
 pub struct Glyph {
     pub idx: usize,
@@ -106,6 +107,12 @@ pub const SHROUD_FG_COLOR: u32 = 0x8F8F8F;
 pub const SHROUD_BG_COLOR: u32 = 0x535353;
 pub const SHROUD_OUTLINE_COLOR: u32 = 0x1F1F1F;
 pub const DIMMING_FACTOR: f32 = 0.8;
+
+const DEFAULT_LIGHT: LightValue = LightValue {
+    rgb: Vec3::new(1.0, 1.0, 1.0),
+    intensity: 1.,
+    flicker: 0.,
+};
 
 #[allow(dead_code)]
 impl Glyph {
@@ -284,6 +291,7 @@ pub fn render_glyphs(
     tracy_plot!("Rendered Glyphs", q_glyphs.iter().count() as f64);
 
     {
+        tracy_span!("clear_layers");
         layers.iter_mut().for_each(|layer| {
             layer.clear();
         });
@@ -306,6 +314,7 @@ pub fn render_glyphs(
         world_top,
         world_bottom,
     ) = {
+        tracy_span!("setup_camera_params");
         let screen_w = screen.width as f32;
         let screen_h = screen.height as f32;
         let tile_w = TILE_SIZE_F32.0;
@@ -342,7 +351,10 @@ pub fn render_glyphs(
         )
     };
 
+    let should_dim_for_dialog = dialog_state.is_open;
+
     {
+        tracy_span!("glyph_iteration");
         for (entity, glyph, pos, visibility) in q_glyphs.iter() {
             if *visibility == Visibility::Hidden {
                 continue;
@@ -353,23 +365,11 @@ pub fn render_glyphs(
                 continue;
             }
 
-            let texture_id = glyph.texture_id;
-            let w = texture_id.get_glyph_width() * glyph.scale.0;
-            let h = texture_id.get_glyph_height() * glyph.scale.1;
-
-            let mut x = (pos.x * tile_w).floor();
-            let mut y = (pos.y * tile_h).floor();
-
-            // Apply position offset if present
-            if let Some((offset_x, offset_y)) = glyph.position_offset {
-                x += offset_x * tile_w;
-                y += offset_y * tile_h;
-            }
-
             let mut is_shrouded = false;
             let mut ignore_lighting = true;
 
             if is_world_layer {
+                tracy_span!("visibility_check");
                 let Ok((
                     is_visible,
                     is_explored,
@@ -389,6 +389,24 @@ pub fn render_glyphs(
                     continue;
                 }
 
+                is_shrouded = apply_visibility_effects.is_some()
+                    && is_explored.is_some()
+                    && is_visible.is_none();
+            }
+
+            let texture_id = glyph.texture_id;
+            let w = texture_id.get_glyph_width() * glyph.scale.0;
+            let h = texture_id.get_glyph_height() * glyph.scale.1;
+
+            let mut x = (pos.x * tile_w).floor();
+            let mut y = (pos.y * tile_h).floor();
+
+            if let Some((offset_x, offset_y)) = glyph.position_offset {
+                x += offset_x * tile_w;
+                y += offset_y * tile_h;
+            }
+
+            if is_world_layer {
                 let world_x = x - cam_x;
                 let world_y = y - cam_y;
 
@@ -402,18 +420,13 @@ pub fn render_glyphs(
 
                 x = world_x + ui_panel_x;
                 y = world_y + ui_panel_y;
-
-                is_shrouded = apply_visibility_effects.is_some()
-                    && is_explored.is_some()
-                    && is_visible.is_none();
             } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
                 continue;
             }
 
             let mut style = glyph.get_style();
 
-            // Dim non-dialog layers when dialog is open
-            if dialog_state.is_open
+            if should_dim_for_dialog
                 && glyph.layer_id != Layer::DialogPanels
                 && glyph.layer_id != Layer::DialogContent
             {
@@ -421,23 +434,15 @@ pub fn render_glyphs(
             }
 
             let light_value = if is_world_layer && !ignore_lighting {
+                tracy_span!("lighting_lookup");
                 let world_pos = pos.world();
                 let (local_x, local_y) = world_to_zone_local(world_pos.0, world_pos.1);
 
-                lighting_data
+                *lighting_data
                     .get_light(local_x, local_y)
-                    .cloned()
-                    .unwrap_or_else(|| LightValue {
-                        rgb: Vec3::new(1.0, 1.0, 1.0),
-                        intensity: 1.,
-                        flicker: 0.,
-                    })
+                    .unwrap_or(&DEFAULT_LIGHT)
             } else {
-                LightValue {
-                    rgb: Vec3::new(1.0, 1.0, 1.0),
-                    intensity: 1.,
-                    flicker: 0.,
-                }
+                DEFAULT_LIGHT
             };
 
             let layer = layers.get_mut(glyph.layer_id);
