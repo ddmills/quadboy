@@ -257,7 +257,7 @@ pub fn update_mouse_targeting(mut target_cycling: ResMut<TargetCycling>, mouse: 
     }
 }
 
-fn calculate_hit_chance(
+pub fn calculate_hit_chance(
     attacker_entity: Entity,
     target_entity: Entity,
     q_stats: &Query<&Stats>,
@@ -343,14 +343,7 @@ pub fn render_target_info(
     target_cycling: Res<TargetCycling>,
     q_zones: Query<&Zone>,
     q_health: Query<&Health>,
-    q_dynamic_health: Query<(&Health, &Level, &Stats)>, // For entities with dynamic HP
     q_names: Query<&Label>,
-    q_player: Query<Entity, With<Player>>,
-    q_stats: Query<&Stats>,
-    q_equipment: Query<&EquipmentSlots>,
-    q_weapons: Query<&Weapon>,
-    q_default_attacks: Query<&DefaultMeleeAttack>,
-    registry: Res<StableIdRegistry>,
     mut q_target_info: Query<(&mut Text, &mut Position, &mut Visibility), With<TargetInfo>>,
     mut q_target_indicator: Query<
         (&mut Position, &mut Visibility),
@@ -404,48 +397,11 @@ pub fn render_target_info(
                 }
             }
 
-            if let (Some(name), Some(health)) = (target_name, target_health) {
-                // Show and update target info text
+            if let (Some(name), Some(_health)) = (target_name, target_health) {
+                // Show and update target info text (just the name)
                 *text_visibility = Visibility::Visible;
 
-                // Try to get dynamic max HP and armor (for entities with Level/Stats), otherwise use current as max (legacy)
-                let (max_hp, armor_display) =
-                    if let Ok((_, level, stats)) = q_dynamic_health.get(*entity) {
-                        let max_hp = Health::get_max_hp(level, stats);
-                        let (current_armor, max_armor) = health.get_current_max_armor(stats);
-
-                        // Only show armor if entity has any max armor
-                        let armor_text = if max_armor > 0 {
-                            format!(" | A:{}/{}", current_armor, max_armor)
-                        } else {
-                            String::new()
-                        };
-
-                        (max_hp, armor_text)
-                    } else {
-                        (health.current, String::new()) // Legacy entities: assume current is max, no armor
-                    };
-
-                // Calculate hit chance if player exists
-                let hit_chance_display = if let Ok(player_entity) = q_player.single() {
-                    let hit_chance = calculate_hit_chance(
-                        player_entity,
-                        *entity,
-                        &q_stats,
-                        &q_equipment,
-                        &q_weapons,
-                        &q_default_attacks,
-                        &registry,
-                    );
-                    format!(" [Hit: {}%]", hit_chance)
-                } else {
-                    String::new()
-                };
-
-                text.value = format!(
-                    "{} (HP:{}/{}{}{})",
-                    &name, health.current, max_hp, armor_display, hit_chance_display
-                );
+                text.value = name;
                 text_pos.x = pos.0.floor() + 1.;
                 text_pos.y = pos.1.floor();
                 text_pos.z = pos.2.floor();

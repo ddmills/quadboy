@@ -16,17 +16,12 @@ impl Consumable {
             consume_on_use,
         }
     }
-
-    pub fn heal(amount: i32) -> Self {
-        Self::new(ConsumableEffect::Heal(amount), true)
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ConsumableEffect {
     Heal(i32),
-    RestoreEnergy(i32),
-    HealAndEnergy(i32, i32),
+    RestoreArmor(i32),
     Poison(i32, u32),
     Buff(String, i32, u32),
     Cure,

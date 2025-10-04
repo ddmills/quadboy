@@ -23,7 +23,7 @@ pub fn spawn_giant_beetle(entity: Entity, world: &mut World, config: Prefab) -> 
         .with_needs_stable_id()
         .with_glyph_and_texture(
             42,
-            Palette::Purple,
+            Palette::White,
             Palette::White,
             Layer::Actors,
             GlyphTextureId::Creatures,

@@ -55,7 +55,14 @@ impl DefaultMeleeAttack {
     }
 
     pub fn fists() -> Self {
-        let mut attack = Self::new(2, vec![MaterialType::Flesh], "Fists", WeaponFamily::Unarmed, "punches", "punch");
+        let mut attack = Self::new(
+            2,
+            vec![MaterialType::Flesh],
+            "Fists",
+            WeaponFamily::Unarmed,
+            "punches",
+            "punch",
+        );
         attack.weapon.melee_audio = Some(AudioKey::Punch1);
         attack
     }
@@ -123,7 +130,14 @@ impl DefaultMeleeAttack {
     }
 
     pub fn bite() -> Self {
-        Self::new(3, vec![MaterialType::Flesh], "Bite", WeaponFamily::Unarmed, "bites", "bite")
+        Self::new(
+            3,
+            vec![MaterialType::Flesh],
+            "Bite",
+            WeaponFamily::Unarmed,
+            "bites",
+            "bite",
+        )
     }
 
     pub fn wing_buffet() -> Self {

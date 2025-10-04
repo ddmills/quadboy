@@ -11,7 +11,7 @@ pub fn spawn_apple(entity: Entity, world: &mut World, config: Prefab) -> PrefabB
         .with_base_components(config.pos)
         .with_static_tracking()
         .with_glyph(41, Palette::Red, Palette::Green, Layer::Objects)
-        .with_label("{R|Apple}")
+        .with_label("Apple")
         .with_description(
             "Wrinkled and bitter-sweet. Someone planted these trees long ago, before the troubles.",
         )

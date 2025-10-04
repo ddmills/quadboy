@@ -6,6 +6,7 @@ pub mod forest_biome;
 pub mod mountain_biome;
 pub mod mushroom_forest_biome;
 pub mod open_air_biome;
+pub mod swamp_biome;
 
 pub use biome_type::*;
 pub use cavern_biome::*;
@@ -15,3 +16,4 @@ pub use forest_biome::*;
 pub use mountain_biome::*;
 pub use mushroom_forest_biome::*;
 pub use open_air_biome::*;
+pub use swamp_biome::*;

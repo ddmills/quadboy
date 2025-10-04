@@ -6,7 +6,9 @@ use crate::{
     common::Palette,
     domain::{BiomeType, Overworld, PlayerPosition},
     engine::{AudioKey, Mouse, Plugin},
-    rendering::{Glyph, Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz},
+    rendering::{
+        Glyph, Layer, Position, ScreenSize, Text, Visibility, world_to_zone_idx, zone_idx, zone_xyz,
+    },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{Button, FullScreenBackground, setup_fullscreen_backgrounds},
 };
@@ -25,7 +27,14 @@ impl Plugin for OverworldStatePlugin {
         GameStatePlugin::new(GameState::Overworld)
             .on_enter(
                 app,
-                (setup_callbacks, on_enter_overworld, render_overworld_map, setup_overworld_background, setup_fullscreen_backgrounds).chain(),
+                (
+                    setup_callbacks,
+                    on_enter_overworld,
+                    render_overworld_map,
+                    setup_overworld_background,
+                    setup_fullscreen_backgrounds,
+                )
+                    .chain(),
             )
             .on_update(app, display_overworld_debug_at_mouse)
             .on_update(
@@ -119,8 +128,9 @@ fn render_overworld_map(
                 BiomeType::Desert => (33, Palette::Yellow),
                 BiomeType::DustyPlains => (1, Palette::DarkYellow),
                 BiomeType::Cavern => (129, Palette::Gray),
-                BiomeType::MushroomForest => (78, Palette::Purple), // Mushroom glyph in purple
+                BiomeType::MushroomForest => (78, Palette::Purple),
                 BiomeType::Mountain => (30, Palette::White),
+                BiomeType::Swamp => (48, Palette::DarkPurple),
             };
 
             let is_player_zone = x == player_zone_pos.0 && y == player_zone_pos.1;

@@ -23,8 +23,8 @@ pub fn spawn_rattlesnake(entity: Entity, world: &mut World, config: Prefab) -> P
         .with_needs_stable_id()
         .with_glyph_and_texture(
             33,
+            Palette::White,
             Palette::DarkYellow,
-            Palette::Yellow,
             Layer::Actors,
             GlyphTextureId::Creatures,
         )

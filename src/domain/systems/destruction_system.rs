@@ -7,6 +7,7 @@ pub enum DestructionCause {
     Attack { attacker: Entity },
     Environmental,
     Scripted,
+    Consumed,
 }
 
 #[derive(Event)]

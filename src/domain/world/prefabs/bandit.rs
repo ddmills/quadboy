@@ -23,8 +23,8 @@ pub fn spawn_bandit(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_needs_stable_id()
         .with_glyph_and_texture(
             11,
-            Palette::Red,
             Palette::White,
+            Palette::Red,
             Layer::Actors,
             GlyphTextureId::Creatures,
         )

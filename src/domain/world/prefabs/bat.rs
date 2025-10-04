@@ -16,8 +16,8 @@ pub fn spawn_bat(entity: Entity, world: &mut World, config: Prefab) -> PrefabBui
         .with_needs_stable_id()
         .with_glyph_and_texture(
             34,
+            Palette::White,
             Palette::DarkGray,
-            Palette::Black,
             Layer::Actors,
             GlyphTextureId::Creatures,
         )

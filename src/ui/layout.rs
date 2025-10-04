@@ -48,7 +48,7 @@ pub fn update_ui_layout(
     ui.player_panel.x = 0;
     ui.player_panel.y = top_panel_height;
     ui.player_panel.width = left_panel_width;
-    ui.player_panel.height = player_panel_height;//screen.tile_h - top_panel_height;
+    ui.player_panel.height = player_panel_height; //screen.tile_h - top_panel_height;
 
     // Target panel starts below player panel
     ui.target_panel.x = 0;

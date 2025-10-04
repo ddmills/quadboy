@@ -17,8 +17,8 @@ pub fn spawn_rat(entity: Entity, world: &mut World, config: Prefab) -> PrefabBui
         .with_needs_stable_id()
         .with_glyph_and_texture(
             44,
+            Palette::White,
             Palette::Gray,
-            Palette::DarkGray,
             Layer::Actors,
             GlyphTextureId::Creatures,
         )

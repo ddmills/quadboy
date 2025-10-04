@@ -16,6 +16,7 @@ pub enum LootTableId {
     MushroomForestGroundLoot,
     OpenAirGroundLoot,
     MountainGroundLoot,
+    SwampGroundLoot,
 
     // Chest loot tables
     ForestChestLoot,
@@ -25,6 +26,7 @@ pub enum LootTableId {
     MushroomForestChestLoot,
     CommonChestLoot,
     MountainChestLoot,
+    SwampChestLoot,
 
     // Enemy tables
     ForestEnemies,
@@ -34,6 +36,7 @@ pub enum LootTableId {
     MushroomForestEnemies,
     OpenAirEnemies,
     MountainEnemies,
+    SwampEnemies,
 
     // Death loot tables
     BanditLoot,
@@ -71,6 +74,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Campfire, 3.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Apple, 4.0)
+                .add(PrefabId::CanOfBeans, 3.5)
                 .add(PrefabId::Bedroll, 2.0)
                 .build(),
         );
@@ -83,6 +87,7 @@ impl LootTableRegistry {
                 .add(PrefabId::CavalrySword, 1.0)
                 .add(PrefabId::Pickaxe, 2.0)
                 .add(PrefabId::Apple, 3.0)
+                .add(PrefabId::CanOfBeans, 3.0)
                 .add(PrefabId::WoolShirt, 2.0)
                 .add(PrefabId::Overcoat, 1.0)
                 .add(PrefabId::SteelToeBoots, 1.0)
@@ -100,6 +105,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Campfire, 3.0)
+                .add(PrefabId::CanOfBeans, 3.0)
                 .add(PrefabId::Dynamite, 2.0)
                 .add(PrefabId::Bedroll, 2.0)
                 .build(),
@@ -113,6 +119,7 @@ impl LootTableRegistry {
                 .add(PrefabId::CavalrySword, 2.0)
                 .add(PrefabId::Poncho, 3.0)
                 .add(PrefabId::Duster, 2.0)
+                .add(PrefabId::CanOfBeans, 4.0)
                 .add(PrefabId::Dynamite, 1.0)
                 .add(PrefabId::SteelToeBoots, 1.0)
                 .add(PrefabId::DoubleBarrelShotgun, 0.3)
@@ -131,6 +138,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Campfire, 3.0)
                 .add(PrefabId::Hatchet, 1.5)
                 .add(PrefabId::Apple, 2.0)
+                .add(PrefabId::CanOfBeans, 3.0)
                 .add(PrefabId::Bedroll, 2.5)
                 .build(),
         );
@@ -143,6 +151,7 @@ impl LootTableRegistry {
                 .add(PrefabId::CavalrySword, 1.5)
                 .add(PrefabId::Pickaxe, 3.0)
                 .add(PrefabId::Apple, 2.0)
+                .add(PrefabId::CanOfBeans, 3.5)
                 .add(PrefabId::WoolShirt, 2.0)
                 .add(PrefabId::Poncho, 2.0)
                 .add(PrefabId::SteelToeBoots, 1.5)
@@ -160,6 +169,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Campfire, 3.0)
+                .add(PrefabId::CanOfBeans, 2.5)
                 .add(PrefabId::Dynamite, 3.0)
                 .build(),
         );
@@ -170,6 +180,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 6.0)
                 .add(PrefabId::Lantern, 5.0)
                 .add(PrefabId::CavalrySword, 1.0)
+                .add(PrefabId::CanOfBeans, 3.0)
                 .add(PrefabId::Dynamite, 2.0)
                 .add(PrefabId::Overcoat, 1.0)
                 .add(PrefabId::SteelToeBoots, 2.0)
@@ -187,17 +198,19 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Campfire, 2.0)
-                .add(PrefabId::Apple, 1.5) // Mushrooms are edible, so some food
+                .add(PrefabId::Apple, 1.5)
+                .add(PrefabId::CanOfBeans, 2.0)
                 .build(),
         );
 
         self.tables.insert(
             LootTableId::MushroomForestChestLoot,
             LootTable::builder()
-                .add(PrefabId::Lantern, 6.0) // High priority in dark mushroom forests
+                .add(PrefabId::Lantern, 6.0)
                 .add(PrefabId::Pickaxe, 4.0)
                 .add(PrefabId::CavalrySword, 1.0)
                 .add(PrefabId::Apple, 3.0)
+                .add(PrefabId::CanOfBeans, 3.5)
                 .add(PrefabId::Hatchet, 2.0)
                 .add(PrefabId::WoolShirt, 2.0)
                 .add(PrefabId::Overcoat, 1.0)
@@ -217,9 +230,10 @@ impl LootTableRegistry {
             LootTableId::MountainGroundLoot,
             LootTable::builder()
                 .add(PrefabId::Lantern, 2.0)
-                .add(PrefabId::Pickaxe, 5.0) // More mining tools in mountains
+                .add(PrefabId::Pickaxe, 5.0)
                 .add(PrefabId::Campfire, 2.0)
                 .add(PrefabId::Hatchet, 2.0)
+                .add(PrefabId::CanOfBeans, 3.0)
                 .add(PrefabId::Bedroll, 3.0)
                 .add(PrefabId::Dynamite, 4.0)
                 .build(),
@@ -232,6 +246,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Hatchet, 4.0)
                 .add(PrefabId::Lantern, 3.0)
                 .add(PrefabId::CavalrySword, 1.0)
+                .add(PrefabId::CanOfBeans, 4.0)
                 .add(PrefabId::WoolShirt, 4.0)
                 .add(PrefabId::Overcoat, 3.0)
                 .add(PrefabId::LongJohns, 3.0)
@@ -306,6 +321,49 @@ impl LootTableRegistry {
                 .build(),
         );
 
+        // Swamp loot
+        self.tables.insert(
+            LootTableId::SwampGroundLoot,
+            LootTable::builder()
+                .add(PrefabId::Lantern, 2.5)
+                .add(PrefabId::Pickaxe, 2.0)
+                .add(PrefabId::Campfire, 3.0)
+                .add(PrefabId::Hatchet, 1.5)
+                .add(PrefabId::Apple, 2.5)
+                .add(PrefabId::CanOfBeans, 3.0)
+                .add(PrefabId::Bedroll, 2.0)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::SwampChestLoot,
+            LootTable::builder()
+                .add(PrefabId::Hatchet, 4.0)
+                .add(PrefabId::Lantern, 5.0)
+                .add(PrefabId::CavalrySword, 1.5)
+                .add(PrefabId::Pickaxe, 2.5)
+                .add(PrefabId::Apple, 2.5)
+                .add(PrefabId::CanOfBeans, 3.5)
+                .add(PrefabId::WoolShirt, 2.0)
+                .add(PrefabId::Overcoat, 2.0)
+                .add(PrefabId::SteelToeBoots, 1.0)
+                .add(PrefabId::NavyRevolver, 0.4)
+                .add(PrefabId::Amulet, 0.35)
+                .add(PrefabId::Ring, 0.35)
+                .build(),
+        );
+
+        self.tables.insert(
+            LootTableId::SwampEnemies,
+            LootTable::builder()
+                .add(PrefabId::Bandit, 0.8)
+                .add(PrefabId::Rattlesnake, 1.0)
+                .add(PrefabId::Bat, 1.2)
+                .add(PrefabId::GiantBeetle, 1.0)
+                .add(PrefabId::Rat, 1.5)
+                .build(),
+        );
+
         // Common chest loot (fallback)
         self.tables.insert(
             LootTableId::CommonChestLoot,
@@ -314,6 +372,7 @@ impl LootTableRegistry {
                 .add(PrefabId::Pickaxe, 1.0)
                 .add(PrefabId::Hatchet, 1.0)
                 .add(PrefabId::Apple, 2.0)
+                .add(PrefabId::CanOfBeans, 2.0)
                 .add(PrefabId::Bedroll, 1.0)
                 .add(PrefabId::Amulet, 0.1)
                 .add(PrefabId::Ring, 0.1)

@@ -8,21 +8,22 @@ use crate::{
     cfg::ZONE_SIZE,
     common::{Palette, hex},
     domain::{
-        ActiveConditions, AiController, ConditionType, CreatureType, Description, EquipmentSlot,
-        EquipmentSlots, FactionId, FactionMap, Health, IgnoreLighting, Item, Label, Level, Player,
-        PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats, Weapon, WeaponType, Zone,
-        collect_valid_targets, game_loop, handle_item_pickup, init_targeting_resource,
-        player_input, render_player_debug, render_target_crosshair, render_target_info,
-        spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
+        ActiveConditions, AiController, ConditionType, CreatureType, DefaultMeleeAttack,
+        Description, EquipmentSlot, EquipmentSlots, FactionId, FactionMap, Health, IgnoreLighting,
+        Item, Label, Level, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats,
+        TargetCycling, Weapon, WeaponType, Zone, collect_valid_targets, game_loop,
+        handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
+        render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
+        update_target_cycling,
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableId, StableIdRegistry},
     rendering::{
-        Layer, Position, ScreenSize, Text, Visibility, setup_zone_outline_state,
+        Glyph, Layer, Position, ScreenSize, Text, Visibility, setup_zone_outline_state,
         spawn_zone_outline, world_to_zone_idx, world_to_zone_local, zone_local_to_world,
     },
     states::{CurrentGameState, GameStatePlugin, cleanup_system},
     ui::{
-        Bar, Button, Dialog, DialogState, XPProgressBar, center_dialogs_on_screen_change,
+        Bar, Button, Dialog, DialogState, UiLayout, XPProgressBar, center_dialogs_on_screen_change,
         debug_collider_flags, display_entity_names_at_mouse, draw_ui_panels,
         render_ai_debug_indicators, render_cursor, render_lighting_debug, render_tick_display,
         spawn_ai_debug_dialog, spawn_debug_ui_entities, spawn_event_log_ui, spawn_examine_dialog,
@@ -57,6 +58,7 @@ impl Plugin for ExploreStatePlugin {
                     center_camera_on_player,
                     update_ui_layout,
                     draw_ui_panels,
+                    spawn_target_panel_ui,
                 )
                     .chain(),
             )
@@ -89,6 +91,15 @@ impl Plugin for ExploreStatePlugin {
                     update_player_xp_label,
                     update_player_hp_label,
                     update_player_armor_label,
+                    update_target_panel_visibility,
+                    update_target_panel_glyph,
+                    update_target_panel_name,
+                    update_target_panel_hp_label,
+                    update_target_panel_hp_bar,
+                    update_target_panel_armor_label,
+                    update_target_panel_armor_bar,
+                    update_target_panel_hit_chance,
+                    update_target_condition_display,
                     handle_examine_input,
                     handle_debug_input,
                 ),
@@ -100,6 +111,10 @@ impl Plugin for ExploreStatePlugin {
             .on_update(
                 app,
                 center_dialogs_on_screen_change.run_if(resource_changed::<ScreenSize>),
+            )
+            .on_update(
+                app,
+                update_target_panel_positioning.run_if(resource_changed::<UiLayout>),
             )
             .on_leave(
                 app,
@@ -139,6 +154,32 @@ pub struct PlayerConditionDisplay;
 
 #[derive(Component)]
 pub struct PlayerConditionItem {
+    pub condition_type: ConditionType,
+}
+
+#[derive(Component)]
+pub struct TargetPanelGlyph;
+
+#[derive(Component)]
+pub struct TargetPanelName;
+
+#[derive(Component)]
+pub struct TargetPanelHPLabel;
+
+#[derive(Component)]
+pub struct TargetPanelHPBar;
+
+#[derive(Component)]
+pub struct TargetPanelArmorLabel;
+
+#[derive(Component)]
+pub struct TargetPanelArmorBar;
+
+#[derive(Component)]
+pub struct TargetPanelHitChance;
+
+#[derive(Component)]
+pub struct TargetConditionItem {
     pub condition_type: ConditionType,
 }
 
@@ -278,6 +319,525 @@ fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
 
     // Spawn event log UI
     spawn_event_log_ui(&mut cmds);
+}
+
+fn spawn_target_panel_ui(mut cmds: Commands, ui: Res<UiLayout>) {
+    let panel_x = ui.target_panel.x as f32;
+    let panel_y = ui.target_panel.y as f32;
+
+    // Target Name (row 0, y = panel_y + 0.5, left-aligned)
+    cmds.spawn((
+        Text::new("").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(panel_x + 0.5, panel_y + 0.5, 0.0),
+        Visibility::Hidden,
+        TargetPanelName,
+        CleanupStateExplore,
+    ));
+
+    // Target Glyph (row 1, y = panel_y + 1.0, 1.0 tall game glyph)
+    cmds.spawn((
+        Glyph::new(0, Palette::White, Palette::White).layer(Layer::Ui),
+        Position::new_f32(panel_x + 0.5, panel_y + 1.0, 0.0),
+        Visibility::Hidden,
+        TargetPanelGlyph,
+        CleanupStateExplore,
+    ));
+
+    // Health Label (row 3, y = panel_y + 2.5)
+    cmds.spawn((
+        Text::new("Health: 1/1")
+            .fg1(Palette::White)
+            .layer(Layer::Ui),
+        Position::new_f32(panel_x + 0.5, panel_y + 2.5, 0.0),
+        Visibility::Hidden,
+        TargetPanelHPLabel,
+        CleanupStateExplore,
+    ));
+
+    // HP Bar (row 3.5, y = panel_y + 3.0)
+    cmds.spawn((
+        Text::new("")
+            .fg1(Palette::White)
+            .fg2(Palette::DarkGray)
+            .layer(Layer::Ui),
+        Position::new_f32(panel_x + 0.5, panel_y + 3.0, 0.0),
+        Bar::new(1, 1, 18, Palette::Red, Palette::DarkGray),
+        Visibility::Hidden,
+        TargetPanelHPBar,
+        CleanupStateExplore,
+    ));
+
+    // Armor Label (row 4.5, y = panel_y + 4.0)
+    cmds.spawn((
+        Text::new("Armor: 0/1").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(panel_x + 0.5, panel_y + 4.0, 0.0),
+        Visibility::Hidden,
+        TargetPanelArmorLabel,
+        CleanupStateExplore,
+    ));
+
+    // Armor Bar (row 5, y = panel_y + 4.5)
+    cmds.spawn((
+        Text::new("")
+            .fg1(Palette::White)
+            .fg2(Palette::DarkGray)
+            .layer(Layer::Ui),
+        Position::new_f32(panel_x + 0.5, panel_y + 4.5, 0.0),
+        Bar::new(0, 1, 18, Palette::Cyan, Palette::DarkGray),
+        Visibility::Hidden,
+        TargetPanelArmorBar,
+        CleanupStateExplore,
+    ));
+
+    // Hit Chance (row 5.5, y = panel_y + 5.0)
+    cmds.spawn((
+        Text::new("Hit: 0%").fg1(Palette::White).layer(Layer::Ui),
+        Position::new_f32(panel_x + 0.5, panel_y + 5.0, 0.0),
+        Visibility::Hidden,
+        TargetPanelHitChance,
+        CleanupStateExplore,
+    ));
+
+    // Target condition displays are spawned dynamically in update_target_condition_display
+}
+
+fn update_target_panel_positioning(
+    ui: Res<UiLayout>,
+    mut q_name: Query<&mut Position, With<TargetPanelName>>,
+    mut q_glyph: Query<&mut Position, (With<TargetPanelGlyph>, Without<TargetPanelName>)>,
+    mut q_hp_label: Query<
+        &mut Position,
+        (
+            With<TargetPanelHPLabel>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+        ),
+    >,
+    mut q_hp_bar: Query<
+        &mut Position,
+        (
+            With<TargetPanelHPBar>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+        ),
+    >,
+    mut q_armor_label: Query<
+        &mut Position,
+        (
+            With<TargetPanelArmorLabel>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+            Without<TargetPanelHPBar>,
+        ),
+    >,
+    mut q_armor_bar: Query<
+        &mut Position,
+        (
+            With<TargetPanelArmorBar>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+            Without<TargetPanelHPBar>,
+            Without<TargetPanelArmorLabel>,
+        ),
+    >,
+    mut q_hit_chance: Query<
+        &mut Position,
+        (
+            With<TargetPanelHitChance>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+            Without<TargetPanelHPBar>,
+            Without<TargetPanelArmorLabel>,
+            Without<TargetPanelArmorBar>,
+        ),
+    >,
+) {
+    let panel_x = ui.target_panel.x as f32;
+    let panel_y = ui.target_panel.y as f32;
+
+    // Update name position (row 0)
+    if let Ok(mut pos) = q_name.single_mut() {
+        pos.x = panel_x + 0.5;
+        pos.y = panel_y + 0.5;
+    }
+
+    // Update glyph position (row 1)
+    if let Ok(mut pos) = q_glyph.single_mut() {
+        pos.x = panel_x + 0.5;
+        pos.y = panel_y + 1.0;
+    }
+
+    // Update HP label position (row 3)
+    if let Ok(mut pos) = q_hp_label.single_mut() {
+        pos.x = panel_x + 0.5;
+        pos.y = panel_y + 2.5;
+    }
+
+    // Update HP bar position (row 3.5)
+    if let Ok(mut pos) = q_hp_bar.single_mut() {
+        pos.x = panel_x + 0.5;
+        pos.y = panel_y + 3.0;
+    }
+
+    // Update armor label position (row 4.5)
+    if let Ok(mut pos) = q_armor_label.single_mut() {
+        pos.x = panel_x + 0.5;
+        pos.y = panel_y + 4.0;
+    }
+
+    // Update armor bar position (row 5)
+    if let Ok(mut pos) = q_armor_bar.single_mut() {
+        pos.x = panel_x + 0.5;
+        pos.y = panel_y + 4.5;
+    }
+
+    // Update hit chance position (row 5.5)
+    if let Ok(mut pos) = q_hit_chance.single_mut() {
+        pos.x = panel_x + 0.5;
+        pos.y = panel_y + 5.0;
+    }
+
+    // Update condition positions (will be handled in update_target_condition_display when spawning)
+}
+
+fn update_target_panel_visibility(
+    target_cycling: Res<TargetCycling>,
+    mut q_name: Query<&mut Visibility, With<TargetPanelName>>,
+    mut q_glyph: Query<&mut Visibility, (With<TargetPanelGlyph>, Without<TargetPanelName>)>,
+    mut q_hp_label: Query<
+        &mut Visibility,
+        (
+            With<TargetPanelHPLabel>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+        ),
+    >,
+    mut q_hp_bar: Query<
+        &mut Visibility,
+        (
+            With<TargetPanelHPBar>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+        ),
+    >,
+    mut q_armor_label: Query<
+        &mut Visibility,
+        (
+            With<TargetPanelArmorLabel>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+            Without<TargetPanelHPBar>,
+        ),
+    >,
+    mut q_armor_bar: Query<
+        &mut Visibility,
+        (
+            With<TargetPanelArmorBar>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+            Without<TargetPanelHPBar>,
+            Without<TargetPanelArmorLabel>,
+        ),
+    >,
+    mut q_hit_chance: Query<
+        &mut Visibility,
+        (
+            With<TargetPanelHitChance>,
+            Without<TargetPanelName>,
+            Without<TargetPanelGlyph>,
+            Without<TargetPanelHPLabel>,
+            Without<TargetPanelHPBar>,
+            Without<TargetPanelArmorLabel>,
+            Without<TargetPanelArmorBar>,
+        ),
+    >,
+) {
+    let is_visible = target_cycling.current_selected_entity.is_some();
+
+    if let Ok(mut vis) = q_name.single_mut() {
+        *vis = if is_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
+    if let Ok(mut vis) = q_glyph.single_mut() {
+        *vis = if is_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
+    if let Ok(mut vis) = q_hp_label.single_mut() {
+        *vis = if is_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
+    if let Ok(mut vis) = q_hp_bar.single_mut() {
+        *vis = if is_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
+    if let Ok(mut vis) = q_armor_label.single_mut() {
+        *vis = if is_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
+    if let Ok(mut vis) = q_armor_bar.single_mut() {
+        *vis = if is_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
+    if let Ok(mut vis) = q_hit_chance.single_mut() {
+        *vis = if is_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
+}
+
+fn update_target_panel_glyph(
+    target_cycling: Res<TargetCycling>,
+    q_target_glyphs: Query<&Glyph, Without<TargetPanelGlyph>>,
+    mut q_panel_glyph: Query<&mut Glyph, With<TargetPanelGlyph>>,
+) {
+    let Ok(mut panel_glyph) = q_panel_glyph.single_mut() else {
+        return;
+    };
+
+    if let Some(target_entity) = target_cycling.current_selected_entity {
+        if let Ok(target_glyph) = q_target_glyphs.get(target_entity) {
+            panel_glyph.idx = target_glyph.idx;
+            panel_glyph.fg1 = target_glyph.fg1;
+            panel_glyph.fg2 = target_glyph.fg2;
+            panel_glyph.texture_id = target_glyph.texture_id;
+        }
+    }
+}
+
+fn update_target_panel_name(
+    target_cycling: Res<TargetCycling>,
+    q_labels: Query<&Label>,
+    mut q_panel_name: Query<&mut Text, With<TargetPanelName>>,
+) {
+    let Ok(mut panel_name) = q_panel_name.single_mut() else {
+        return;
+    };
+
+    if let Some(target_entity) = target_cycling.current_selected_entity {
+        if let Ok(label) = q_labels.get(target_entity) {
+            panel_name.value = label.get().to_string();
+        } else {
+            panel_name.value = "Unknown".to_string();
+        }
+    } else {
+        panel_name.value = String::new();
+    }
+}
+
+fn update_target_panel_hp_bar(
+    target_cycling: Res<TargetCycling>,
+    q_target_health: Query<(&Health, &Level, &Stats), Or<(Changed<Health>, Changed<Stats>)>>,
+    mut q_hp_bar: Query<&mut Bar, With<TargetPanelHPBar>>,
+) {
+    let Ok(mut hp_bar) = q_hp_bar.single_mut() else {
+        return;
+    };
+
+    if let Some(target_entity) = target_cycling.current_selected_entity {
+        if let Ok((health, level, stats)) = q_target_health.get(target_entity) {
+            let max_hp = Health::get_max_hp(level, stats);
+            hp_bar.update_values(health.current as usize, max_hp as usize);
+        }
+    }
+}
+
+fn update_target_panel_armor_bar(
+    target_cycling: Res<TargetCycling>,
+    q_target: Query<(&Health, &Stats), Or<(Changed<Health>, Changed<Stats>)>>,
+    mut q_armor_bar: Query<&mut Bar, With<TargetPanelArmorBar>>,
+) {
+    let Ok(mut armor_bar) = q_armor_bar.single_mut() else {
+        return;
+    };
+
+    if let Some(target_entity) = target_cycling.current_selected_entity {
+        if let Ok((health, stats)) = q_target.get(target_entity) {
+            let (current_armor, max_armor) = health.get_current_max_armor(stats);
+            armor_bar.update_values(current_armor as usize, max_armor as usize);
+        }
+    }
+}
+
+fn update_target_panel_hp_label(
+    target_cycling: Res<TargetCycling>,
+    q_target_health: Query<(&Health, &Level, &Stats)>,
+    mut q_hp_label: Query<&mut Text, With<TargetPanelHPLabel>>,
+) {
+    let Ok(mut hp_label) = q_hp_label.single_mut() else {
+        return;
+    };
+
+    if let Some(target_entity) = target_cycling.current_selected_entity {
+        if let Ok((health, level, stats)) = q_target_health.get(target_entity) {
+            let max_hp = Health::get_max_hp(level, stats);
+            hp_label.value = format!("Health: {}/{}", health.current, max_hp);
+        }
+    }
+}
+
+fn update_target_panel_armor_label(
+    target_cycling: Res<TargetCycling>,
+    q_target: Query<(&Health, &Stats)>,
+    mut q_armor_label: Query<&mut Text, With<TargetPanelArmorLabel>>,
+) {
+    let Ok(mut armor_label) = q_armor_label.single_mut() else {
+        return;
+    };
+
+    if let Some(target_entity) = target_cycling.current_selected_entity {
+        if let Ok((health, stats)) = q_target.get(target_entity) {
+            let (current_armor, max_armor) = health.get_current_max_armor(stats);
+            armor_label.value = format!("Armor: {}/{}", current_armor, max_armor);
+        }
+    }
+}
+
+fn update_target_panel_hit_chance(
+    target_cycling: Res<TargetCycling>,
+    q_player: Query<Entity, With<Player>>,
+    q_stats: Query<&Stats>,
+    q_equipment: Query<&EquipmentSlots>,
+    q_weapons: Query<&Weapon>,
+    q_default_attacks: Query<&DefaultMeleeAttack>,
+    registry: Res<StableIdRegistry>,
+    mut q_hit_chance_text: Query<&mut Text, With<TargetPanelHitChance>>,
+) {
+    let Ok(mut hit_chance_text) = q_hit_chance_text.single_mut() else {
+        return;
+    };
+
+    if let Some(target_entity) = target_cycling.current_selected_entity {
+        if let Ok(player_entity) = q_player.single() {
+            let hit_chance = crate::domain::calculate_hit_chance(
+                player_entity,
+                target_entity,
+                &q_stats,
+                &q_equipment,
+                &q_weapons,
+                &q_default_attacks,
+                &registry,
+            );
+            hit_chance_text.value = format!("Hit: {}%", hit_chance);
+        } else {
+            hit_chance_text.value = "Hit: --".to_string();
+        }
+    } else {
+        hit_chance_text.value = String::new();
+    }
+}
+
+fn update_target_condition_display(
+    target_cycling: Res<TargetCycling>,
+    ui: Res<UiLayout>,
+    q_target_conditions: Query<&ActiveConditions>,
+    mut q_existing_displays: Query<
+        (Entity, &TargetConditionItem, &mut Text),
+        With<TargetConditionItem>,
+    >,
+    mut cmds: Commands,
+) {
+    let panel_x = ui.target_panel.x as f32;
+    let panel_y = ui.target_panel.y as f32;
+
+    // If no target selected, despawn all condition displays
+    let Some(target_entity) = target_cycling.current_selected_entity else {
+        for (entity, _, _) in q_existing_displays.iter() {
+            cmds.entity(entity).despawn();
+        }
+        return;
+    };
+
+    // Get target's conditions
+    let Ok(active_conditions) = q_target_conditions.get(target_entity) else {
+        // Target has no conditions component, despawn all displays
+        for (entity, _, _) in q_existing_displays.iter() {
+            cmds.entity(entity).despawn();
+        }
+        return;
+    };
+
+    // Despawn displays for conditions that no longer exist
+    for (entity, item, _) in q_existing_displays.iter() {
+        let condition_still_exists = active_conditions
+            .conditions
+            .iter()
+            .any(|c| c.condition_type == item.condition_type);
+
+        if !condition_still_exists {
+            cmds.entity(entity).despawn();
+        }
+    }
+
+    // Update existing displays and spawn new ones
+    for (index, condition) in active_conditions.conditions.iter().enumerate() {
+        let y_position = panel_y + 5.5 + (index as f32 * 0.5);
+
+        // Check if display already exists for this condition type
+        let mut found_existing = false;
+        for (entity, item, mut text) in q_existing_displays.iter_mut() {
+            if item.condition_type == condition.condition_type {
+                // Update existing display
+                let color_char = condition.condition_type.get_display_color_char();
+                let icon = condition.condition_type.get_icon_glyph();
+                text.value = format!(
+                    "{{{}|{} {} ({})}}",
+                    color_char, icon, condition.condition_type, condition.duration_remaining
+                );
+
+                // Update position in case order changed
+                cmds.entity(entity)
+                    .insert(Position::new_f32(panel_x + 0.5, y_position, 0.));
+                found_existing = true;
+                break;
+            }
+        }
+
+        if !found_existing {
+            // Spawn new display
+            let color_char = condition.condition_type.get_display_color_char();
+            let icon = condition.condition_type.get_icon_glyph();
+            let text_value = format!(
+                "{{{}|{} {} ({})}}",
+                color_char, icon, condition.condition_type, condition.duration_remaining
+            );
+
+            cmds.spawn((
+                TargetConditionItem {
+                    condition_type: condition.condition_type.clone(),
+                },
+                Text::new(&text_value).layer(Layer::Ui),
+                Position::new_f32(panel_x + 0.5, y_position, 0.),
+                CleanupStateExplore,
+            ));
+        }
+    }
 }
 
 fn on_leave_explore() {

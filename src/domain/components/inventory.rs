@@ -107,6 +107,7 @@ pub enum StackableType {
     GoldNugget,
     Dynamite,
     Apple,
+    CanOfBeans,
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]

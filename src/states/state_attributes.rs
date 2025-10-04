@@ -4,12 +4,13 @@ use macroquad::input::KeyCode;
 use crate::{
     common::Palette,
     domain::{
-        game_loop, AttributePoints, Attributes, Health, Level, Player, StatModifiers, StatType, Stats
+        AttributePoints, Attributes, Health, Level, Player, StatModifiers, StatType, Stats,
+        game_loop,
     },
     engine::{App, Plugin},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
-    states::{cleanup_system, CurrentGameState, GameState, GameStatePlugin},
-    ui::{setup_fullscreen_backgrounds, Button, FullScreenBackground},
+    states::{CurrentGameState, GameState, GameStatePlugin, cleanup_system},
+    ui::{Button, FullScreenBackground, setup_fullscreen_backgrounds},
 };
 
 #[derive(Resource)]
@@ -58,7 +59,13 @@ impl Plugin for AttributesStatePlugin {
         GameStatePlugin::new(GameState::Attributes)
             .on_enter(
                 app,
-                (setup_attributes_callbacks, setup_attributes_screen, setup_attributes_background, setup_fullscreen_backgrounds).chain(),
+                (
+                    setup_attributes_callbacks,
+                    setup_attributes_screen,
+                    setup_attributes_background,
+                    setup_fullscreen_backgrounds,
+                )
+                    .chain(),
             )
             .on_update(app, (game_loop, update_attributes_display).chain())
             .on_update(

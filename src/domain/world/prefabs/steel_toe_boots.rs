@@ -12,10 +12,6 @@ pub fn spawn_steel_toe_boots(entity: Entity, world: &mut World, config: Prefab) 
         StatType::Fortitude,
         StatModifier::intrinsic(2, "Steel Protection".to_string()),
     );
-    stat_modifiers.add_modifier(
-        StatType::Armor,
-        StatModifier::intrinsic(1, "Steel Protection".to_string()),
-    );
 
     PrefabBuilder::new()
         .with_base_components(config.pos)

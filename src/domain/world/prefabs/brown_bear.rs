@@ -27,8 +27,8 @@ pub fn spawn_brown_bear(entity: Entity, world: &mut World, config: Prefab) -> Pr
         .with_needs_stable_id()
         .with_glyph_and_texture(
             36,
+            Palette::White,
             Palette::Brown,
-            Palette::DarkBrown,
             Layer::Actors,
             GlyphTextureId::Creatures,
         )

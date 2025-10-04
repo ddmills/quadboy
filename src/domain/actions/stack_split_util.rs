@@ -41,6 +41,7 @@ pub fn split_item_from_stack(
         crate::domain::StackableType::Dynamite => PrefabId::Dynamite,
         crate::domain::StackableType::Apple => PrefabId::Apple,
         crate::domain::StackableType::GoldNugget => PrefabId::GoldNugget,
+        crate::domain::StackableType::CanOfBeans => PrefabId::CanOfBeans,
     };
 
     // Create new single item at the inventory owner's position (for safety)

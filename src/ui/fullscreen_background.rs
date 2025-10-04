@@ -31,13 +31,15 @@ pub fn setup_fullscreen_backgrounds(
         }
     } else {
         // Create new background using the same pattern as UI panels
-        let entity = cmds.spawn((
-            FullScreenBackground,
-            Position::new(0, 0, 0),
-            Glyph::new(6, color, color)
-                .bg(color)
-                .scale((screen.tile_w as f32, screen.tile_h as f32))
-                .layer(Layer::UiPanels),
-        )).id();
+        let entity = cmds
+            .spawn((
+                FullScreenBackground,
+                Position::new(0, 0, 0),
+                Glyph::new(6, color, color)
+                    .bg(color)
+                    .scale((screen.tile_w as f32, screen.tile_h as f32))
+                    .layer(Layer::UiPanels),
+            ))
+            .id();
     }
 }

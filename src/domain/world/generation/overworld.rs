@@ -189,7 +189,9 @@ impl Overworld {
 
         if noise < 0.25 {
             return BiomeType::Desert;
-        } else if noise < 0.45 {
+        } else if noise < 0.35 {
+            return BiomeType::Swamp;
+        } else if noise < 0.50 {
             return BiomeType::DustyPlains;
         } else if noise > 0.75 {
             return BiomeType::Mountain;

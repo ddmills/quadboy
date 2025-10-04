@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::domain::{
     Biome, BiomeType, CavernBiome, DesertBiome, DustyPlainsBiome, ForestBiome, MountainBiome,
-    MushroomForestBiome, OpenAirBiome,
+    MushroomForestBiome, OpenAirBiome, SwampBiome,
 };
 
 pub struct BiomeRegistry {
@@ -13,6 +13,7 @@ pub struct BiomeRegistry {
     mushroom_forest: Arc<MushroomForestBiome>,
     open_air: Arc<OpenAirBiome>,
     mountain: Arc<MountainBiome>,
+    swamp: Arc<SwampBiome>,
 }
 
 impl BiomeRegistry {
@@ -25,6 +26,7 @@ impl BiomeRegistry {
             mushroom_forest: Arc::new(MushroomForestBiome::new()),
             open_air: Arc::new(OpenAirBiome::new()),
             mountain: Arc::new(MountainBiome::new()),
+            swamp: Arc::new(SwampBiome::new()),
         }
     }
 
@@ -37,6 +39,7 @@ impl BiomeRegistry {
             BiomeType::MushroomForest => Some(self.mushroom_forest.clone()),
             BiomeType::OpenAir => Some(self.open_air.clone()),
             BiomeType::Mountain => Some(self.mountain.clone()),
+            BiomeType::Swamp => Some(self.swamp.clone()),
         }
     }
 }

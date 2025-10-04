@@ -15,6 +15,7 @@ pub enum Terrain {
     River = 6,
     Sand = 7,
     Shallows = 8,
+    Swamp = 9,
 }
 
 impl Terrain {
@@ -22,6 +23,7 @@ impl Terrain {
         match self {
             Terrain::Grass => vec![0, 1, 2],
             Terrain::DyingGrass => vec![16, 17, 0, 1, 2],
+            Terrain::Swamp => vec![48, 49, 50, 51],
             Terrain::Gravel => vec![16, 17, 0, 1],
             Terrain::Dirt => vec![4, 5],
             // Terrain::Dirt => vec![48, 49],
@@ -43,6 +45,7 @@ impl Terrain {
             Terrain::River => "{B|River}",
             Terrain::Shallows => "{B|Shallows}",
             Terrain::OpenAir => "{B|Open Air}",
+            Terrain::Swamp => "{P|Swamp}",
         }
         .to_owned()
     }
@@ -190,6 +193,22 @@ impl TerrainNoise {
         }
     }
 
+    pub fn swamp(&mut self, pos: (usize, usize)) -> Style {
+        let v = self.dying_grass.get(pos.0 as f32, pos.1 as f32);
+        let swamp_tiles = Terrain::Swamp.tiles();
+
+        let tile_idx = (v * swamp_tiles.len() as f32) as usize;
+        let tile_idx = tile_idx.min(swamp_tiles.len() - 1);
+
+        Style {
+            idx: swamp_tiles[tile_idx],
+            fg1: Palette::DarkPurple.into(),
+            fg2: None,
+            bg: None,
+            outline: None,
+        }
+    }
+
     pub fn style(&mut self, terrain: Terrain, pos: (usize, usize)) -> Style {
         match terrain {
             Terrain::OpenAir => Style {
@@ -206,6 +225,7 @@ impl TerrainNoise {
             Terrain::River => self.river(pos),
             Terrain::Sand => self.sand(pos),
             Terrain::Shallows => self.shallows(pos),
+            Terrain::Swamp => self.swamp(pos),
         }
     }
 }

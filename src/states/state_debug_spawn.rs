@@ -32,6 +32,7 @@ const SPAWNABLE_PREFABS: &[PrefabId] = &[
     PrefabId::StairUp,
     PrefabId::Dynamite,
     PrefabId::Apple,
+    PrefabId::CanOfBeans,
     PrefabId::Bedroll,
     PrefabId::LongJohns,
     PrefabId::Duster,

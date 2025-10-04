@@ -1,8 +1,9 @@
 use super::{
-    SpawnPrefabCommand, spawn_amulet, spawn_apple, spawn_bandit, spawn_bat, spawn_bedroll,
-    spawn_boulder, spawn_brown_bear, spawn_cactus, spawn_campfire, spawn_cavalry_sword,
-    spawn_chest, spawn_coyote, spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite,
-    spawn_giant_beetle, spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
+    SpawnPrefabCommand, spawn_amulet, spawn_apple, spawn_bald_cypress, spawn_bandit, spawn_bat,
+    spawn_bedroll, spawn_boulder, spawn_brown_bear, spawn_cactus, spawn_campfire,
+    spawn_can_of_beans, spawn_cavalry_sword, spawn_chest, spawn_coyote,
+    spawn_double_barrel_shotgun, spawn_duster, spawn_dynamite, spawn_giant_beetle,
+    spawn_giant_firefly, spawn_giant_mushroom, spawn_hatchet, spawn_lantern,
     spawn_lever_action_rifle, spawn_long_johns, spawn_navy_revolver, spawn_overcoat, spawn_pickaxe,
     spawn_pine_tree, spawn_player, spawn_poncho, spawn_rat, spawn_rattlesnake, spawn_ring,
     spawn_stair_down, spawn_stair_up, spawn_steel_toe_boots, spawn_terrain_tile, spawn_tree,
@@ -15,6 +16,7 @@ use std::{collections::HashMap, fmt};
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum PrefabId {
     PineTree,
+    BaldCypress,
     Tree,
     Boulder,
     Campfire,
@@ -39,6 +41,7 @@ pub enum PrefabId {
     TerrainTile(Terrain),
     Dynamite,
     Apple,
+    CanOfBeans,
     Bedroll,
     LongJohns,
     Duster,
@@ -115,6 +118,7 @@ impl Prefabs {
 
     fn register_all_prefabs(&mut self) {
         self.register(PrefabId::PineTree, spawn_pine_tree);
+        self.register(PrefabId::BaldCypress, spawn_bald_cypress);
         self.register(PrefabId::Tree, spawn_tree);
         self.register(PrefabId::Boulder, spawn_boulder);
         self.register(PrefabId::Campfire, spawn_campfire);
@@ -138,6 +142,7 @@ impl Prefabs {
         self.register(PrefabId::GoldNugget, spawn_gold_nugget);
         self.register(PrefabId::Dynamite, spawn_dynamite);
         self.register(PrefabId::Apple, spawn_apple);
+        self.register(PrefabId::CanOfBeans, spawn_can_of_beans);
         self.register(PrefabId::Bedroll, spawn_bedroll);
         self.register(PrefabId::LongJohns, spawn_long_johns);
         self.register(PrefabId::Duster, spawn_duster);
@@ -162,6 +167,7 @@ impl Prefabs {
         self.register(PrefabId::TerrainTile(Terrain::River), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Sand), spawn_terrain_tile);
         self.register(PrefabId::TerrainTile(Terrain::Shallows), spawn_terrain_tile);
+        self.register(PrefabId::TerrainTile(Terrain::Swamp), spawn_terrain_tile);
     }
 
     pub fn register(&mut self, id: PrefabId, spawn_fn: SpawnFunction) {
@@ -215,6 +221,7 @@ impl fmt::Display for PrefabId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PrefabId::PineTree => write!(f, "Pine Tree"),
+            PrefabId::BaldCypress => write!(f, "Bald Cypress"),
             PrefabId::Tree => write!(f, "Tree"),
             PrefabId::Boulder => write!(f, "Boulder"),
             PrefabId::Campfire => write!(f, "Campfire"),
@@ -238,6 +245,7 @@ impl fmt::Display for PrefabId {
             PrefabId::StairUp => write!(f, "Stair Up"),
             PrefabId::Dynamite => write!(f, "Dynamite"),
             PrefabId::Apple => write!(f, "Apple"),
+            PrefabId::CanOfBeans => write!(f, "Can of Beans"),
             PrefabId::Bedroll => write!(f, "Bedroll"),
             PrefabId::LongJohns => write!(f, "Long Johns"),
             PrefabId::Duster => write!(f, "Duster"),
@@ -260,6 +268,7 @@ impl fmt::Display for PrefabId {
                 Terrain::Sand => write!(f, "Sand Tile"),
                 Terrain::Shallows => write!(f, "Shallows Tile"),
                 Terrain::OpenAir => write!(f, "Open Air Tile"),
+                Terrain::Swamp => write!(f, "Swamp Tile"),
             },
         }
     }

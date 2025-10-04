@@ -17,8 +17,8 @@ pub fn spawn_coyote(entity: Entity, world: &mut World, config: Prefab) -> Prefab
         .with_needs_stable_id()
         .with_glyph_and_texture(
             32,
+            Palette::White,
             Palette::DarkYellow,
-            Palette::Brown,
             Layer::Actors,
             GlyphTextureId::Creatures,
         )

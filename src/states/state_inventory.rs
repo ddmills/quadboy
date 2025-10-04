@@ -8,11 +8,11 @@ use macroquad::input::{KeyCode, is_key_pressed};
 use crate::{
     common::Palette,
     domain::{
-        Consumable, DropItemAction, EatAction, EquipItemAction, EquipmentSlot, Equippable,
+        Consumable, ConsumeAction, DropItemAction, EquipItemAction, EquipmentSlot, Equippable,
         Equipped, ExplosiveProperties, Fuse, HitEffect, Inventory, Item, ItemRarity, Label,
-        LightSource, LightStateChangedEvent, Lightable, Player, PlayerPosition, StackCount,
-        ModifierSource, StatModifiers, Throwable, ToggleLightAction, UnequipItemAction, Weapon, WeaponType, game_loop,
-        inventory::InventoryChangedEvent,
+        LightSource, LightStateChangedEvent, Lightable, ModifierSource, Player, PlayerPosition,
+        StackCount, StatModifiers, Throwable, ToggleLightAction, UnequipItemAction, Weapon,
+        WeaponType, game_loop, inventory::InventoryChangedEvent,
     },
     engine::{App, AudioKey, Plugin, StableId, StableIdRegistry},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
@@ -555,7 +555,7 @@ fn eat_selected_item_from_dialog(
                 return;
             };
 
-            cmds.queue(EatAction::new(action_dialog.item_id, player_id.0));
+            cmds.queue(ConsumeAction::new(action_dialog.item_id, player_id.0));
         }
     }
 }
@@ -671,7 +671,14 @@ impl Plugin for InventoryStatePlugin {
         GameStatePlugin::new(GameState::Inventory)
             .on_enter(
                 app,
-                (setup_last_selected_item, setup_inventory_callbacks, setup_inventory_screen, setup_inventory_background, setup_fullscreen_backgrounds).chain(),
+                (
+                    setup_last_selected_item,
+                    setup_inventory_callbacks,
+                    setup_inventory_screen,
+                    setup_inventory_background,
+                    setup_fullscreen_backgrounds,
+                )
+                    .chain(),
             )
             .on_update(app, game_loop)
             .on_update(app, refresh_inventory_display)
@@ -825,7 +832,6 @@ fn setup_inventory_screen(
         CleanupStateInventory,
     ));
 
-
     // Weapon damage section content
     cmds.spawn((
         Text::new("").fg1(Palette::White).layer(Layer::Ui),
@@ -850,7 +856,6 @@ fn setup_inventory_screen(
         CleanupStateInventory,
         ItemDetailEffects,
     ));
-
 
     let help_y = 3.5 + (inventory.count() as f32 * 0.5) + 1.0;
 
@@ -904,7 +909,14 @@ fn update_item_detail_panel(
     q_weapons: Query<&Weapon>,
     q_rarities: Query<&ItemRarity>,
     q_stat_modifiers: Query<&StatModifiers>,
-    q_existing_stat_lines: Query<Entity, Or<(With<ItemDetailStatLine>, With<ItemDetailWeaponLine>, With<ItemDetailPropertyLine>)>>,
+    q_existing_stat_lines: Query<
+        Entity,
+        Or<(
+            With<ItemDetailStatLine>,
+            With<ItemDetailWeaponLine>,
+            With<ItemDetailPropertyLine>,
+        )>,
+    >,
     mut glyph_queries: ParamSet<(Query<&Glyph>, Query<&mut Glyph, With<ItemDetailIcon>>)>,
     mut detail_text_queries: ParamSet<(
         Query<&mut Text, (With<ItemDetailName>, Without<ItemDetailProperties>)>,
@@ -958,7 +970,7 @@ fn update_item_detail_panel(
     let left_x = 2.0; // Same as in setup_inventory_screen
     let detail_x = left_x + 28.0; // Same calculation as setup_inventory_screen
     let detail_y = 3.0;
-    let stat_x = detail_x;// + 3.0; // Align with item name/rarity text
+    let stat_x = detail_x; // + 3.0; // Align with item name/rarity text
     let mut current_y = detail_y + 4.0; // Start after "Basic Stats" header
 
     // Create Basic Stats lines
@@ -978,17 +990,25 @@ fn update_item_detail_panel(
             for modifier in modifiers {
                 if let ModifierSource::Intrinsic { name } = &modifier.source {
                     let sign = if modifier.value >= 0 { "+" } else { "" };
-                    stats.push(format!("- {}: {}{} {}", name, sign, modifier.value, stat_type.verb()));
+                    stats.push(format!(
+                        "- {}: {}{} {}",
+                        name,
+                        sign,
+                        modifier.value,
+                        stat_type.verb()
+                    ));
                 }
             }
         }
     }
 
-
     // Spawn Basic Stats lines
     println!("Creating {} stat lines: {:?}", stats.len(), stats);
     for stat in stats {
-        println!("Spawning stat line: '{}' at position ({}, {})", stat, stat_x, current_y);
+        println!(
+            "Spawning stat line: '{}' at position ({}, {})",
+            stat, stat_x, current_y
+        );
         cmds.spawn((
             Text::new(&stat).fg1(Palette::White).layer(Layer::Ui),
             Position::new_f32(stat_x, current_y, 0.),
@@ -1118,7 +1138,13 @@ fn update_item_detail_panel(
                 for modifier in modifiers {
                     if let ModifierSource::Intrinsic { name } = &modifier.source {
                         let sign = if modifier.value >= 0 { "+" } else { "" };
-                        props.push(format!("- {}: {}{} {}", name, sign, modifier.value, stat_type.verb()));
+                        props.push(format!(
+                            "- {}: {}{} {}",
+                            name,
+                            sign,
+                            modifier.value,
+                            stat_type.verb()
+                        ));
                     }
                 }
             }
@@ -1141,7 +1167,13 @@ fn update_item_detail_panel(
                 for modifier in modifiers {
                     if let ModifierSource::Intrinsic { name } = &modifier.source {
                         let sign = if modifier.value >= 0 { "+" } else { "" };
-                        props.push(format!("- {}: {}{} {}", name, sign, modifier.value, stat_type.verb()));
+                        props.push(format!(
+                            "- {}: {}{} {}",
+                            name,
+                            sign,
+                            modifier.value,
+                            stat_type.verb()
+                        ));
                     }
                 }
             }
@@ -1452,4 +1484,3 @@ fn setup_inventory_background(mut cmds: Commands, screen: Res<ScreenSize>) {
             .layer(Layer::UiPanels), // Render behind UI content but in screen space
     ));
 }
-

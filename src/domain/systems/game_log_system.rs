@@ -58,6 +58,11 @@ pub enum LogMessage {
         item: Entity,
         quantity: Option<u32>,
     },
+    ItemConsumed {
+        consumer: Entity,
+        item: Entity,
+        effect_desc: String,
+    },
 
     // Progression
     XpGain {
@@ -107,11 +112,15 @@ pub enum LogCategory {
 impl LogMessage {
     pub fn category(&self) -> LogCategory {
         match self {
-            LogMessage::Attack { .. } | LogMessage::AttackMiss { .. } | LogMessage::Death { .. } => LogCategory::Combat,
+            LogMessage::Attack { .. }
+            | LogMessage::AttackMiss { .. }
+            | LogMessage::Death { .. } => LogCategory::Combat,
             LogMessage::PoisonApplied { .. }
             | LogMessage::BleedingApplied { .. }
             | LogMessage::BurningApplied { .. } => LogCategory::Status,
-            LogMessage::ItemPickup { .. } | LogMessage::ItemDrop { .. } => LogCategory::Item,
+            LogMessage::ItemPickup { .. }
+            | LogMessage::ItemDrop { .. }
+            | LogMessage::ItemConsumed { .. } => LogCategory::Item,
             LogMessage::XpGain { .. } | LogMessage::LevelUp { .. } => LogCategory::Progression,
             LogMessage::Discovery { .. } => LogCategory::Discovery,
             LogMessage::GameSaved | LogMessage::GameLoaded | LogMessage::Custom(_) => {
@@ -282,7 +291,10 @@ fn format_log_message(
         } => {
             let attacker_label = get_entity_label(*attacker, q_labels, q_player);
             let target_label = get_entity_label(*target, q_labels, q_player);
-            format!("{} {{U|dodges}} {}'s {}", target_label, attacker_label, weapon_noun)
+            format!(
+                "{} {{U|dodges}} {}'s {}",
+                target_label, attacker_label, weapon_noun
+            )
         }
 
         LogMessage::Death { entity, killer } => {
@@ -363,6 +375,19 @@ fn format_log_message(
                 Some(n) if *n > 1 => format!("{} dropped {} {}", dropper_label, n, item_label),
                 _ => format!("{} dropped {}", dropper_label, item_label),
             }
+        }
+
+        LogMessage::ItemConsumed {
+            consumer,
+            item,
+            effect_desc,
+        } => {
+            let consumer_label = get_entity_label(*consumer, q_labels, q_player);
+            let item_label = get_entity_label(*item, q_labels, q_player);
+            format!(
+                "{} ate {} {{u|({})}}",
+                consumer_label, item_label, effect_desc
+            )
         }
 
         LogMessage::XpGain {

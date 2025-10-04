@@ -5,8 +5,8 @@ pub trait GameAction {
 }
 
 mod attack_action;
+mod consume_action;
 mod drop_item_action;
-mod eat_action;
 mod equip_item_action;
 mod move_action;
 mod open_container_action;
@@ -20,8 +20,8 @@ mod unequip_item_action;
 mod wait_action;
 
 pub use attack_action::*;
+pub use consume_action::*;
 pub use drop_item_action::*;
-pub use eat_action::*;
 pub use equip_item_action::*;
 pub use move_action::*;
 pub use open_container_action::*;

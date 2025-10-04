@@ -13,8 +13,8 @@ use crate::{
     domain::{GameSettings, SaveGameCommand, SaveGameResult},
     engine::{Plugin, Time},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
-    states::{cleanup_system, AppState, CurrentAppState, CurrentGameState, GameStatePlugin},
-    ui::{setup_fullscreen_backgrounds, FullScreenBackground, List, ListItemData},
+    states::{AppState, CurrentAppState, CurrentGameState, GameStatePlugin, cleanup_system},
+    ui::{FullScreenBackground, List, ListItemData, setup_fullscreen_backgrounds},
 };
 
 use super::GameState;
@@ -31,7 +31,16 @@ pub struct PauseStatePlugin;
 impl Plugin for PauseStatePlugin {
     fn build(&self, app: &mut crate::engine::App) {
         GameStatePlugin::new(GameState::Pause)
-            .on_enter(app, (setup_callbacks, on_enter_pause, setup_pause_background, setup_fullscreen_backgrounds).chain())
+            .on_enter(
+                app,
+                (
+                    setup_callbacks,
+                    on_enter_pause,
+                    setup_pause_background,
+                    setup_fullscreen_backgrounds,
+                )
+                    .chain(),
+            )
             .on_update(app, (update_save_status_display, handle_save_result))
             .on_update(
                 app,
