@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use bevy_ecs::prelude::*;
 use quadboy_macros::profiled_system;
 
@@ -17,6 +19,7 @@ pub fn condition_blink_system(
     >,
     time: Res<Time>,
 ) {
+    let dt = time.dt;
     let mut entities_to_remove = Vec::new();
 
     for (entity, mut condition_blink, mut glyph, hit_blink) in q_condition_blink.iter_mut() {
@@ -33,7 +36,7 @@ pub fn condition_blink_system(
         }
 
         // Update timers
-        condition_blink.update_timers(time.dt);
+        condition_blink.update_timers(dt);
 
         // Set outline color based on current condition and blink state
         glyph.outline_override = if condition_blink.blink_on {
@@ -52,8 +55,10 @@ pub fn condition_blink_system(
     }
 
     // Remove ConditionBlink components from entities with no conditions
-    for entity in entities_to_remove {
-        cmds.entity(entity).remove::<ConditionBlink>();
+    if !entities_to_remove.is_empty() {
+        for entity in entities_to_remove {
+            cmds.entity(entity).remove::<ConditionBlink>();
+        }
     }
 }
 
@@ -104,16 +109,17 @@ fn sync_condition_blink_with_active(
     condition_blink: &mut ConditionBlink,
     active_conditions: &ActiveConditions,
 ) {
-    // Remove conditions that are no longer active
-    let active_condition_types: Vec<_> = active_conditions
+    // Build HashSet for O(1) lookups instead of O(n) contains
+    let active_condition_types: HashSet<_> = active_conditions
         .conditions
         .iter()
         .map(|c| &c.condition_type)
         .collect();
 
+    // Remove conditions that are no longer active
     condition_blink
         .conditions
-        .retain(|blink_data| active_condition_types.contains(&&blink_data.condition_type));
+        .retain(|blink_data| active_condition_types.contains(&blink_data.condition_type));
 
     // Add new conditions
     for condition in &active_conditions.conditions {

@@ -68,7 +68,6 @@ pub fn try_handle_feared(world: &mut World, entity: Entity) -> bool {
     for condition in &conditions_clone {
         if let ConditionType::Feared {
             flee_from,
-            min_distance,
         } = &condition.condition_type
         {
             let id_registry = world.resource::<StableIdRegistry>();
@@ -85,7 +84,7 @@ pub fn try_handle_feared(world: &mut World, entity: Entity) -> bool {
                         .sqrt();
 
                         // If within minimum distance, try to flee
-                        if distance < *min_distance {
+                        if distance < 10. {
                             if ai_try_flee_from(world, entity, fear_pos) {
                                 return true;
                             }
@@ -110,8 +109,8 @@ pub fn try_handle_confused(world: &mut World, entity: Entity) -> bool {
     let conditions_clone = conditions.conditions.clone();
 
     for condition in &conditions_clone {
-        if let ConditionType::Confused { random_chance } = &condition.condition_type {
-            if rand::gen_range(0.0, 1.0) < *random_chance {
+        if ConditionType::Confused == condition.condition_type {
+            if rand::gen_range(0.0, 1.0) < 0.5 {
                 // Try random movement
                 if ai_try_random_move(world, entity) {
                     return true;

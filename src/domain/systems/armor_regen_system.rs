@@ -1,12 +1,19 @@
 use crate::{
-    domain::{Health, StatType, Stats},
+    domain::{Health, InActiveZone, StatType, Stats},
     engine::Clock,
 };
 use bevy_ecs::prelude::*;
 use quadboy_macros::profiled_system;
 
 #[profiled_system]
-pub fn armor_regen_system(mut q_health: Query<(&mut Health, &Stats)>, clock: Res<Clock>) {
+pub fn armor_regen_system(
+    mut q_health: Query<(&mut Health, &Stats), With<InActiveZone>>,
+    clock: Res<Clock>,
+) {
+    if clock.tick_delta() == 0 {
+        return;
+    }
+
     let current_tick = clock.current_tick();
 
     for (mut health, stats) in q_health.iter_mut() {

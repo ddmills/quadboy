@@ -49,38 +49,43 @@ pub fn render_particle_fragments(
     mut q_glyph: Query<(&mut Glyph, &mut Position), With<ParticleGlyph>>,
     player_position: Option<Res<PlayerPosition>>,
 ) {
+    use crate::tracy_span;
+
     let player_z = player_position.as_ref().map(|p| p.z).unwrap_or(0.0);
     let zone_idx = player_position.as_ref().map(|p| p.zone_idx()).unwrap_or(0);
 
-    for x in 0..grid.data.width() {
-        for y in 0..grid.data.height() {
-            let Some(fragment) = grid.get(x, y) else {
-                continue;
-            };
+    {
+        tracy_span!("grid_iteration");
+        for x in 0..grid.data.width() {
+            for y in 0..grid.data.height() {
+                let Some(fragment) = grid.get(x, y) else {
+                    continue;
+                };
 
-            let Some(free_glyph) = batch.free_glyphs.pop() else {
-                return;
-            };
+                let Some(free_glyph) = batch.free_glyphs.pop() else {
+                    return;
+                };
 
-            batch.used_glyphs.push(free_glyph);
+                batch.used_glyphs.push(free_glyph);
 
-            let Ok((mut glyph, mut position)) = q_glyph.get_mut(free_glyph) else {
-                continue;
-            };
+                let Ok((mut glyph, mut position)) = q_glyph.get_mut(free_glyph) else {
+                    continue;
+                };
 
-            glyph.idx = fragment.glyph_idx;
-            glyph.fg1 = fragment.fg1;
-            glyph.fg2 = fragment.fg1;
-            glyph.bg = fragment.bg;
-            glyph.alpha = fragment.alpha;
+                glyph.idx = fragment.glyph_idx;
+                glyph.fg1 = fragment.fg1;
+                glyph.fg2 = fragment.fg1;
+                glyph.bg = fragment.bg;
+                glyph.alpha = fragment.alpha;
 
-            let world_pos = zone_local_to_world_f32(zone_idx, x as f32 / 2., y as f32 / 2.);
+                let world_pos = zone_local_to_world_f32(zone_idx, x as f32 / 2., y as f32 / 2.);
 
-            position.x = world_pos.0;
-            position.y = world_pos.1;
-            position.z = player_z;
+                position.x = world_pos.0;
+                position.y = world_pos.1;
+                position.z = player_z;
 
-            cmds.entity(free_glyph).insert(Visibility::Visible);
+                cmds.entity(free_glyph).insert(Visibility::Visible);
+            }
         }
     }
 }

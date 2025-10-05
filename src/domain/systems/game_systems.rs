@@ -16,7 +16,6 @@ use crate::{
             condition_system::{process_conditions, spawn_condition_particles},
             death_check_system::death_check_system,
             explosion_system::explosion_system,
-            faction_map::update_faction_maps,
             fuse_system::fuse_system,
             game_log_system::process_game_log_events,
             health_system::update_health_system,
@@ -68,7 +67,6 @@ pub fn register_game_systems(world: &mut World) {
         world.register_system(update_lighting_system),
         world.register_system(update_player_vision),
         world.register_system(update_entity_visibility_flags),
-        world.register_system(update_faction_maps),
     ];
 
     world.insert_resource(GameSystems { all, post });

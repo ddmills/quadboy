@@ -9,7 +9,7 @@ use crate::{
     common::{Palette, hex},
     domain::{
         ActiveConditions, AiController, ConditionType, CreatureType, DefaultMeleeAttack,
-        Description, EquipmentSlot, EquipmentSlots, FactionId, FactionMap, Health, IgnoreLighting,
+        Description, EquipmentSlot, EquipmentSlots, FactionId, Health, IgnoreLighting,
         Item, Label, Level, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats,
         TargetCycling, Weapon, WeaponType, Zone, collect_valid_targets, game_loop,
         handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
@@ -76,7 +76,6 @@ impl Plugin for ExploreStatePlugin {
                     render_cursor,
                     display_entity_names_at_mouse,
                     render_ai_debug_indicators,
-                    debug_player_map_overlay,
                 ),
             )
             .on_update(
@@ -182,9 +181,6 @@ pub struct TargetPanelHitChance;
 pub struct TargetConditionItem {
     pub condition_type: ConditionType,
 }
-
-#[derive(Component)]
-pub struct FactionMapOverlay;
 
 fn setup_callbacks(world: &mut World) {
     let callbacks = ExploreCallbacks {
@@ -1243,98 +1239,3 @@ fn close_examine_dialog(
     dialog_state.is_open = false;
 }
 
-fn debug_player_map_overlay(
-    mut cmds: Commands,
-    keys: Res<KeyInput>,
-    faction_map: Res<FactionMap>,
-    player_pos: Res<PlayerPosition>,
-    q_zones: Query<&Zone>,
-    mut overlay_entities: Local<Vec<Entity>>,
-    mut overlay_enabled: Local<bool>,
-    mut last_player_pos: Local<Option<(usize, usize, usize)>>,
-) {
-    // Toggle overlay on J key press
-    if keys.is_pressed(KeyCode::F2) {
-        *overlay_enabled = !*overlay_enabled;
-    }
-
-    let has_overlay = !overlay_entities.is_empty();
-    let current_player_pos = player_pos.world();
-    let player_moved = last_player_pos.is_none_or(|last_pos| last_pos != current_player_pos);
-
-    // Update last known player position
-    *last_player_pos = Some(current_player_pos);
-
-    if *overlay_enabled && (!has_overlay || player_moved) {
-        // Remove existing overlay if player moved
-        if player_moved && has_overlay {
-            trace!("Player moved, regenerating FactionMap overlay");
-            for entity in overlay_entities.drain(..) {
-                cmds.entity(entity).despawn();
-            }
-        }
-        // Spawn overlay
-        let zone_idx = player_pos.zone_idx();
-        if let Some(zone) = q_zones.iter().find(|z| z.idx == zone_idx) {
-            trace!("Spawning FactionMap overlay for zone {}", zone_idx);
-            if let Some(dijkstra_map) = faction_map.get_map(FactionId::Player) {
-                for x in 0..ZONE_SIZE.0 {
-                    for y in 0..ZONE_SIZE.1 {
-                        let world_pos = zone_local_to_world(zone.idx, x, y);
-
-                        if dijkstra_map.is_blocked(x, y) {
-                            // Show blocked tiles as red X
-                            let entity = cmds
-                                .spawn((
-                                    Text::new("X")
-                                        .fg1(0xB62DAF_u32) // Bright red
-                                        .layer(Layer::Overlay),
-                                    Position::new_world(world_pos),
-                                    Visibility::Visible,
-                                    IgnoreLighting,
-                                    FactionMapOverlay,
-                                    CleanupStateExplore,
-                                ))
-                                .id();
-
-                            overlay_entities.push(entity);
-                        } else if let Some(cost) = dijkstra_map.get_cost(x, y)
-                            && cost.is_finite()
-                            && cost >= 0.0
-                        {
-                            let display_num = (cost.min(12.0) as u32).to_string();
-
-                            // Color gradient from green to red (0-12 range)
-                            let t = (cost / 12.0).min(1.0);
-                            let r = (t * 255.0) as u8;
-                            let g = ((1.0 - t) * 255.0) as u8;
-                            let color = hex(r, g, 0);
-
-                            let entity = cmds
-                                .spawn((
-                                    Text::new(&display_num).fg1(color).layer(Layer::Overlay),
-                                    Position::new_world(world_pos),
-                                    Visibility::Visible,
-                                    IgnoreLighting,
-                                    FactionMapOverlay,
-                                    CleanupStateExplore,
-                                ))
-                                .id();
-
-                            overlay_entities.push(entity);
-                        }
-                    }
-                }
-            }
-        }
-    } else if !*overlay_enabled && has_overlay {
-        // Remove overlay
-        trace!(
-            "Removing FactionMap overlay ({} entities)",
-            overlay_entities.len()
-        );
-        for entity in overlay_entities.drain(..) {
-            cmds.entity(entity).despawn();
-        }
-    }
-}

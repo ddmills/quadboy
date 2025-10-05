@@ -26,8 +26,8 @@ use crate::{
         ActiveConditions, AiController, ApplyVisibilityEffects, AttributePoints, Attributes,
         Bitmasker, BumpAttack, Collider, ConditionBlink, Consumable, CreatureType,
         DefaultMeleeAttack, DefaultRangedAttack, Description, Destructible, DynamicEntity, Energy,
-        EquipmentSlots, Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMap,
-        FactionMember, FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink,
+        EquipmentSlots, Equippable, Equipped, ExplosionEvent, ExplosiveProperties, FactionMember,
+        FactionRelations, Fuse, GameSettings, Health, HideWhenNotVisible, HitBlink,
         InActiveZone, InInventory, Inventory, InventoryAccessible, IsExplored, IsVisible, Item,
         ItemRarity, KnockbackAnimation, Label, Level, LightSource, LightStateChangedEvent,
         LoadGameResult, LoadZoneEvent, LootDrop, LootTableRegistry, MovementCapabilities,
@@ -239,7 +239,6 @@ async fn main() {
         .init_resource::<Prefabs>()
         .init_resource::<Rand>()
         .init_resource::<StableIdRegistry>()
-        .insert_resource(FactionMap::new())
         .init_resource::<LightingData>()
         .init_resource::<AmbientTransition>()
         .init_resource::<ParticleGrid>()

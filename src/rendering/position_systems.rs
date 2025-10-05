@@ -7,10 +7,7 @@ use crate::{
 };
 use bevy_ecs::prelude::*;
 use quadboy_macros::profiled_system;
-// ChildOf is part of prelude now
 
-/// Event-driven placement of static entities in zone caches
-/// Only processes entities when StaticEntitySpawnedEvent is received
 #[profiled_system]
 pub fn place_static_entities(world: &mut World) {
     // Read events for static entities that need placement
@@ -88,7 +85,6 @@ pub fn place_static_entities(world: &mut World) {
 }
 
 /// Handle movement of dynamic entities only
-/// This should process far fewer entities than the original system
 #[profiled_system]
 pub fn update_dynamic_entity_pos(world: &mut World) {
     // Collect only dynamic entities that have moved or were just added

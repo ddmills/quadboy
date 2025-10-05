@@ -156,7 +156,15 @@ pub fn render_text(
 
     let changed = {
         tracy_span!("collect_changed_entities");
-        q_text.p0().iter().collect::<HashSet<_>>()
+        let mut changed_query = q_text.p0();
+        let mut iter = changed_query.iter();
+
+        // Peek to check if there are any changes
+        if iter.size_hint().1 == Some(0) {
+            HashSet::new()
+        } else {
+            iter.collect::<HashSet<_>>()
+        }
     };
 
     {

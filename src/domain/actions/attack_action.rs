@@ -1046,7 +1046,6 @@ impl AttackAction {
         let burning_condition = Condition::new(
             ConditionType::Burning {
                 damage_per_tick,
-                spread_chance: 0.0, // No spreading for weapon-applied burning
             },
             duration_ticks,
             1.0, // intensity

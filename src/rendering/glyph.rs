@@ -365,35 +365,6 @@ pub fn render_glyphs(
                 continue;
             }
 
-            let mut is_shrouded = false;
-            let mut ignore_lighting = true;
-
-            if is_world_layer {
-                tracy_span!("visibility_check");
-                let Ok((
-                    is_visible,
-                    is_explored,
-                    apply_visibility_effects,
-                    hide_when_not_visible,
-                    ignore_lighting_opt,
-                )) = q_visibility.get(entity)
-                else {
-                    continue;
-                };
-
-                ignore_lighting = ignore_lighting_opt.is_some();
-
-                if (hide_when_not_visible.is_some() && is_visible.is_none())
-                    || (apply_visibility_effects.is_some() && is_explored.is_none())
-                {
-                    continue;
-                }
-
-                is_shrouded = apply_visibility_effects.is_some()
-                    && is_explored.is_some()
-                    && is_visible.is_none();
-            }
-
             let texture_id = glyph.texture_id;
             let w = texture_id.get_glyph_width() * glyph.scale.0;
             let h = texture_id.get_glyph_height() * glyph.scale.1;
@@ -422,6 +393,35 @@ pub fn render_glyphs(
                 y = world_y + ui_panel_y;
             } else if x + w < 0. || x > screen_w || y + h < 0. || y > screen_h {
                 continue;
+            }
+
+            let mut is_shrouded = false;
+            let mut ignore_lighting = true;
+
+            if is_world_layer {
+                tracy_span!("visibility_check");
+                let Ok((
+                    is_visible,
+                    is_explored,
+                    apply_visibility_effects,
+                    hide_when_not_visible,
+                    ignore_lighting_opt,
+                )) = q_visibility.get(entity)
+                else {
+                    continue;
+                };
+
+                ignore_lighting = ignore_lighting_opt.is_some();
+
+                if (hide_when_not_visible.is_some() && is_visible.is_none())
+                    || (apply_visibility_effects.is_some() && is_explored.is_none())
+                {
+                    continue;
+                }
+
+                is_shrouded = apply_visibility_effects.is_some()
+                    && is_explored.is_some()
+                    && is_visible.is_none();
             }
 
             let mut style = glyph.get_style();

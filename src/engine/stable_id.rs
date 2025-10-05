@@ -15,6 +15,8 @@ use crate::engine::SerializableComponent;
     Eq,
     Hash,
     Copy,
+    PartialOrd,
+    Ord,
 )]
 pub struct StableId(pub u64);
 

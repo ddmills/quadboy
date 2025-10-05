@@ -105,7 +105,7 @@ impl Condition {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum ConditionType {
     // Damage over time effects
     Poisoned {
@@ -118,21 +118,17 @@ pub enum ConditionType {
     },
     Burning {
         damage_per_tick: i32,
-        spread_chance: f32,
     },
 
     // AI behavior modifiers
     Feared {
         flee_from: StableId,
-        min_distance: f32,
     },
     Taunted {
         move_toward: StableId,
         force_target: bool,
     },
-    Confused {
-        random_chance: f32,
-    },
+    Confused,
 }
 
 impl ConditionType {
