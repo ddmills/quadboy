@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use crate::{
     DebugMode,
     common::Palette,
-    domain::{AiController, AiState, Player, PlayerPosition, VisionBlocker, Zone},
+    domain::{AiController, AiState, Player, PlayerPosition, Zone},
     rendering::{Layer, Position, Text, Visibility},
     states::CleanupStateExplore,
 };
@@ -22,7 +22,6 @@ pub fn render_ai_debug_indicators(
         Query<(Entity, &Position, &AiController), (Without<Player>, Without<AiDebugIndicator>)>,
         Query<(&AiDebugIndicator, &mut Position, &mut Text)>,
         Query<(&Position, &AiController), (Without<Player>, With<AiController>)>,
-        Query<&Position, With<VisionBlocker>>,
         Query<&Position, With<Player>>,
     )>,
     q_existing_indicators: Query<Entity, With<AiDebugIndicator>>,
@@ -43,9 +42,8 @@ pub fn render_ai_debug_indicators(
         return;
     }
 
-    // Collect vision blockers and player position first to avoid ParamSet conflicts
-    let vision_blockers: Vec<Position> = queries.p3().iter().cloned().collect();
-    let player_position = queries.p4().single().ok().cloned();
+    let vision_blockers: Vec<Position> = vec![];
+    let player_position = queries.p3().single().ok().cloned();
 
     // Update existing indicators and create new ones as needed
 

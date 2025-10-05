@@ -14,9 +14,6 @@ impl Vision {
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
-pub struct VisionBlocker;
-
-#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]
 pub struct IsVisible;
 
 #[derive(Component, Serialize, Deserialize, Clone, SerializableComponent)]

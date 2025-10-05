@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use crate::{
     cfg::ZONE_SIZE,
     common::algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     domain::{
-        ApplyVisibilityEffects, BitmaskGlyph, InActiveZone, IsExplored, IsVisible, Player,
-        PlayerPosition, RefreshBitmask, Vision, VisionBlocker, Zone, Zones,
+        ApplyVisibilityEffects, BitmaskGlyph, ColliderFlags, InActiveZone, IsExplored, IsVisible,
+        Player, PlayerPosition, RefreshBitmask, Vision, Zone, Zones,
     },
     engine::Clock,
     rendering::{LightingData, Position, world_to_zone_idx, world_to_zone_local},
@@ -19,7 +17,6 @@ pub fn update_player_vision(
     q_player: Query<&Vision, With<Player>>,
     player_pos: Res<PlayerPosition>,
     mut q_zones: Query<&mut Zone>,
-    q_vision_blockers: Query<&Position, (With<VisionBlocker>, With<InActiveZone>)>,
     clock: ResMut<Clock>,
     zones: Res<Zones>,
     lighting_data: Res<LightingData>,
@@ -52,18 +49,6 @@ pub fn update_player_vision(
     zone.visible.clear(false);
     let mut vis = vec![];
 
-    let blocker_cache: HashMap<(i32, i32), bool> = {
-        let mut blocker_cache: HashMap<(i32, i32), bool> = HashMap::new();
-        for blocker_pos in q_vision_blockers.iter() {
-            if blocker_pos.zone_idx() == player_zone_idx {
-                let local_pos = blocker_pos.zone_local();
-                blocker_cache.insert((local_pos.0 as i32, local_pos.1 as i32), true);
-            }
-        }
-
-        blocker_cache
-    };
-
     let (player_x, player_y, max_vision_range, vision_range) = {
         let player_x = player_local_pos.0 as i32;
         let player_y = player_local_pos.1 as i32;
@@ -80,7 +65,14 @@ pub fn update_player_vision(
         start_x: player_x,
         start_y: player_y,
         distance: max_vision_range as i32,
-        is_blocker: |x: i32, y: i32| blocker_cache.contains_key(&(x, y)),
+        is_blocker: |x: i32, y: i32| {
+            if x < 0 || y < 0 || x >= ZONE_SIZE.0 as i32 || y >= ZONE_SIZE.1 as i32 {
+                return true;
+            }
+            zone.colliders
+                .get_flags(x as usize, y as usize)
+                .contains(ColliderFlags::BLOCKS_SIGHT)
+        },
         on_light: |x: i32, y: i32, distance: f64| {
             if x < 0 || y < 0 || x >= ZONE_SIZE.0 as i32 || y >= ZONE_SIZE.1 as i32 {
                 return;

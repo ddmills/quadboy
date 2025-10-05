@@ -98,7 +98,7 @@ pub fn update_dynamic_entity_pos(world: &mut World) {
             .iter(world)
             .map(|(e, pos, opt_collider)| {
                 let collider_flags = opt_collider.map(|c| c.flags);
-                (e, pos.clone(), collider_flags)
+                (e, *pos, collider_flags)
             })
             .collect()
     };
@@ -140,9 +140,13 @@ pub fn update_dynamic_entity_pos(world: &mut World) {
             {
                 let (local_x, local_y) = world_to_zone_local(pos.x as usize, pos.y as usize);
 
-                // Remove from current position and get old position for intra-zone moves
-                let _ = zone.entities.remove(&entity);
-                let old_collider_pos = zone.colliders.remove(&entity);
+                // Only remove if moving within same zone (inter-zone removal already happened)
+                let old_collider_pos = if new_zone_idx == old_zone_idx {
+                    let _ = zone.entities.remove(&entity);
+                    zone.colliders.remove(&entity)
+                } else {
+                    None
+                };
 
                 // Add at new position
                 zone.entities.insert(local_x, local_y, entity);

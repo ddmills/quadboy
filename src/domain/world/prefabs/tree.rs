@@ -1,6 +1,6 @@
 use super::{Prefab, PrefabBuilder, SpawnValue};
 use crate::common::Rand;
-use crate::{common::Palette, domain::MaterialType, rendering::Layer};
+use crate::{common::Palette, domain::{ColliderFlags, MaterialType}, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_tree(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
@@ -22,8 +22,7 @@ pub fn spawn_tree(entity: Entity, world: &mut World, config: Prefab) -> PrefabBu
         .with_glyph(glyph_char, fg1, Palette::Brown, Layer::Objects)
         .with_label("{c|T}ree")
         .with_description("A sturdy tree with thick branches and deep roots.")
-        .with_collider()
+        .with_collider_flags(ColliderFlags::WALL)
         .with_destructible(5, MaterialType::Wood)
-        .with_vision_blocker()
         .with_light_blocker()
 }

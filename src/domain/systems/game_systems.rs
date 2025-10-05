@@ -110,7 +110,7 @@ pub fn apply_deferred(world: &mut World) {
 #[profiled_system]
 pub fn game_loop(world: &mut World) {
     let mut iterations = 0;
-    const MAX_ITERATIONS: u32 = 200;
+    const MAX_ITERATIONS: u32 = 100;
 
     loop {
         {

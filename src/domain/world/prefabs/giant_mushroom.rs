@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use super::PrefabBuilder;
 use crate::{
     common::{Palette, Rand},
-    domain::{LightSource, MaterialType, Prefab},
+    domain::{ColliderFlags, LightSource, MaterialType, Prefab},
     rendering::Layer,
 };
 
@@ -15,15 +15,14 @@ pub fn spawn_giant_mushroom(entity: Entity, world: &mut World, config: Prefab) -
 
     PrefabBuilder::new()
         .with_base_components(config.pos)
-        .with_static_tracking() // Giant mushrooms never move
+        .with_static_tracking()
         .with_needs_stable_id()
         .with_glyph(glyph_char, Palette::White, Palette::Red, Layer::Objects)
         .with_label("{R|G}iant {R|M}ushroom")
         .with_description(
             "Pale and bloated in the underground dark. Fed on things better left buried.",
         )
-        .with_collider()
-        .with_vision_blocker()
+        .with_collider_flags(ColliderFlags::WALL)
         .with_light_source(LightSource::mushroom())
         .with_destructible(5, MaterialType::Wood)
 }

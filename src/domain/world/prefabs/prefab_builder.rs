@@ -9,7 +9,7 @@ use crate::{
         InventoryAccessible, Item, Label, Level, LightBlocker, LightSource, Lightable, LootDrop,
         MaterialType, MovementCapabilities, NeedsStableId, Player, SaveFlag, StackCount, Stackable,
         StackableType, StairDown, StairUp, StatModifiers, StaticEntity, StaticEntitySpawnedEvent,
-        Stats, Throwable, Vision, VisionBlocker, Weapon, components::ai_controller::AiController,
+        Stats, Throwable, Vision, Weapon, components::ai_controller::AiController,
     },
     engine::AudioKey,
     rendering::{AnimatedGlyph, Glyph, GlyphTextureId, Layer, Position},
@@ -31,7 +31,6 @@ pub enum PrefabComponent {
     Description(Description),
     Item(Item),
     Collider(Collider),
-    VisionBlocker(VisionBlocker),
     LightBlocker(LightBlocker),
     Destructible(Destructible),
     BitmaskGlyph(BitmaskGlyph),
@@ -185,11 +184,6 @@ impl PrefabBuilder {
         self
     }
 
-    pub fn with_vision_blocker(mut self) -> Self {
-        self.components
-            .push(PrefabComponent::VisionBlocker(VisionBlocker));
-        self
-    }
 
     pub fn with_light_blocker(mut self) -> Self {
         self.components
@@ -531,9 +525,6 @@ impl PrefabBuilder {
                     entity_mut.insert(c.clone());
                 }
                 PrefabComponent::Collider(c) => {
-                    entity_mut.insert(c.clone());
-                }
-                PrefabComponent::VisionBlocker(c) => {
                     entity_mut.insert(c.clone());
                 }
                 PrefabComponent::LightBlocker(c) => {

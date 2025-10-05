@@ -1,6 +1,6 @@
 use super::{Prefab, PrefabBuilder};
 use crate::common::Rand;
-use crate::{common::Palette, domain::MaterialType, rendering::Layer};
+use crate::{common::Palette, domain::{ColliderFlags, MaterialType}, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
@@ -11,7 +11,7 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) -> Pre
 
     PrefabBuilder::new()
         .with_base_components(config.pos)
-        .with_static_tracking() // Trees never move
+        .with_static_tracking()
         .with_needs_stable_id()
         .with_glyph(
             glyph_char,
@@ -21,8 +21,7 @@ pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) -> Pre
         )
         .with_label("{c|P}ine {c|T}ree")
         .with_description("Scarred bark and sap like blood. Roots deep in soil that's tasted iron.")
-        .with_collider()
+        .with_collider_flags(ColliderFlags::WALL)
         .with_destructible(5, MaterialType::Wood)
-        .with_vision_blocker()
         .with_light_blocker()
 }

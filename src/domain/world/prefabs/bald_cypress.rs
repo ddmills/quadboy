@@ -1,6 +1,6 @@
 use super::{Prefab, PrefabBuilder};
 use crate::common::Rand;
-use crate::{common::Palette, domain::MaterialType, rendering::Layer};
+use crate::{common::Palette, domain::{ColliderFlags, MaterialType}, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_bald_cypress(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {
@@ -23,8 +23,7 @@ pub fn spawn_bald_cypress(entity: Entity, world: &mut World, config: Prefab) -> 
         .with_description(
             "Gnarled roots twist through stagnant water. Pale bark weeps with purple moss.",
         )
-        .with_collider()
+        .with_collider_flags(ColliderFlags::WALL)
         .with_destructible(5, MaterialType::Wood)
-        .with_vision_blocker()
         .with_light_blocker()
 }

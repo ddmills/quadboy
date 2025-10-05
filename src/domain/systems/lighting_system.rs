@@ -9,21 +9,21 @@ use crate::{
         algorithm::shadowcast::{ShadowcastSettings, shadowcast},
     },
     domain::{
-        EquipmentSlots, Equipped, InActiveZone, LightBlocker, LightSource, Overworld,
-        PlayerPosition,
+        ColliderFlags, EquipmentSlots, Equipped, InActiveZone, LightSource, Overworld,
+        PlayerPosition, Zone, Zones,
     },
     engine::{Clock, StableId, StableIdRegistry},
     rendering::{LightingData, Position, world_to_zone_local},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct LightContribution {
     r: f32,
     g: f32,
     b: f32,
     intensity: f32,
     flicker: f32,
-    source_id: Entity, // Track which light source created this contribution
+    source_id: Entity,
 }
 
 #[profiled_system]
@@ -31,20 +31,17 @@ pub fn update_lighting_system(
     clock: Res<Clock>,
     player_pos: Res<PlayerPosition>,
     overworld: Res<Overworld>,
+    zones: Res<Zones>,
     mut lighting_data: ResMut<LightingData>,
     registry: Res<StableIdRegistry>,
     q_lights: Query<(Entity, &Position, &LightSource), With<InActiveZone>>,
-    q_blockers: Query<&Position, (With<LightBlocker>, With<InActiveZone>)>,
+    q_zones: Query<&Zone>,
     q_equipped_lights: Query<&LightSource, With<Equipped>>,
     q_entities_with_equipment: Query<(&Position, &EquipmentSlots), With<InActiveZone>>,
 ) {
     if clock.tick_delta_accum() == 0 {
         return;
     }
-
-    // if clock.is_frozen() {
-    //     return;
-    // }
 
     let player_zone_idx = player_pos.zone_idx();
     let biome_type = overworld.get_zone_type(player_zone_idx);
@@ -83,36 +80,28 @@ pub fn update_lighting_system(
     lighting_data.clear();
     lighting_data.set_ambient(ambient_color, ambient_intensity);
 
-    let blocker_positions: HashSet<_> = {
-        // Build blocker set for fast lookups - only include blockers in player's zone
-        q_blockers
-            .iter()
-            .filter(|pos| pos.zone_idx() == player_zone_idx)
-            .map(|pos| {
-                let (local_x, local_y) = pos.zone_local();
-                (local_x as i32, local_y as i32)
-            })
-            .collect()
+    let Some(zone_entity) = zones.cache.get(&player_zone_idx) else {
+        return;
+    };
+
+    let Ok(zone) = q_zones.get(*zone_entity) else {
+        return;
     };
 
     let all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = {
         let mut all_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
 
-        // Process all enabled lights in the zone
-        for (entity, pos, light) in q_lights.iter() {
-            if !light.is_enabled || pos.zone_idx() != player_zone_idx {
-                continue;
-            }
-
-            apply_light_source(pos, light, entity, &blocker_positions, &mut all_fragments);
+        for (entity, pos, light) in q_lights
+            .iter()
+            .filter(|(_, pos, light)| light.is_enabled && pos.zone_idx() == player_zone_idx)
+        {
+            apply_light_source(pos, light, entity, zone, &mut all_fragments);
         }
 
-        // Process equipped light sources
-        for (owner_pos, equipment_slots) in q_entities_with_equipment.iter() {
-            if owner_pos.zone_idx() != player_zone_idx {
-                continue;
-            }
-
+        for (owner_pos, equipment_slots) in q_entities_with_equipment
+            .iter()
+            .filter(|(pos, _)| pos.zone_idx() == player_zone_idx)
+        {
             for slot_id in equipment_slots.slots.values().filter_map(|&id| id) {
                 if let Some(item_entity) = registry.get_entity(StableId(slot_id))
                     && let Ok(light) = q_equipped_lights.get(item_entity)
@@ -122,7 +111,7 @@ pub fn update_lighting_system(
                         owner_pos,
                         light,
                         item_entity,
-                        &blocker_positions,
+                        zone,
                         &mut all_fragments,
                     );
                 }
@@ -133,16 +122,18 @@ pub fn update_lighting_system(
     };
 
     let (floor_fragments, wall_fragments) = {
-        // Phase 2: Separate floors and walls, apply floors immediately
         let mut floor_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
         let mut wall_fragments: HashMap<(i32, i32), Vec<LightContribution>> = HashMap::new();
 
         for ((x, y), contributions) in all_fragments {
-            if blocker_positions.contains(&(x, y)) {
-                // This is a wall
+            let is_wall = zone
+                .colliders
+                .get_flags(x as usize, y as usize)
+                .contains(ColliderFlags::BLOCKS_SIGHT);
+
+            if is_wall {
                 wall_fragments.insert((x, y), contributions);
             } else {
-                // This is a floor - apply immediately and store for POV checking
                 apply_combined_light(x, y, &contributions, &mut lighting_data);
                 floor_fragments.insert((x, y), contributions);
             }
@@ -175,10 +166,9 @@ fn apply_light_source(
     pos: &Position,
     light: &LightSource,
     source_entity: Entity,
-    blocker_positions: &HashSet<(i32, i32)>,
+    zone: &Zone,
     all_fragments: &mut HashMap<(i32, i32), Vec<LightContribution>>,
 ) {
-    // Convert color once
     let r = ((light.color >> 16) & 0xFF) as f32 / 255.0;
     let g = ((light.color >> 8) & 0xFF) as f32 / 255.0;
     let b = (light.color & 0xFF) as f32 / 255.0;
@@ -192,20 +182,24 @@ fn apply_light_source(
         start_x: light_x,
         start_y: light_y,
         distance: light.range,
-        is_blocker: |x, y| blocker_positions.contains(&(x, y)),
+        is_blocker: |x, y| {
+            if x < 0 || y < 0 {
+                return true;
+            }
+            zone.colliders
+                .get_flags(x as usize, y as usize)
+                .contains(ColliderFlags::BLOCKS_SIGHT)
+        },
         on_light: |x, y, distance| {
-            // Skip out of bounds (coordinates are already zone-local)
             if x < 0 || y < 0 || light_z < 0 {
                 return;
             }
 
-            // Calculate light intensity with falloff
             let d = distance as f32;
 
             let intensity = if d == 0.0 {
                 light.intensity
             } else {
-                // Smoothstep falloff: smooth S-curve from 1.0 to 0.0
                 let t = (d / light.range as f32).min(1.0);
                 let smoothstep = 1.0 - (t * t * (3.0 - 2.0 * t));
                 light.intensity * smoothstep
@@ -220,7 +214,6 @@ fn apply_light_source(
                 source_id: source_entity,
             };
 
-            // Store ALL fragments together (don't separate walls/floors yet)
             all_fragments.entry((x, y)).or_default().push(contribution);
         },
     };
@@ -277,37 +270,33 @@ fn apply_pov_wall_lighting(
     floor_contributions: &HashMap<(i32, i32), Vec<LightContribution>>,
     lighting_data: &mut LightingData,
 ) {
-    // Calculate direction from player to wall
     let dx = wall_x - player_x;
     let dy = wall_y - player_y;
 
-    // Get direction offset including diagonals (8-directional)
     let (offset_x, offset_y) = match (dx.signum(), dy.signum()) {
-        (1, 0) => (-1, 0),  // East -> West
-        (-1, 0) => (1, 0),  // West -> East
-        (0, 1) => (0, -1),  // South -> North
-        (0, -1) => (0, 1),  // North -> South
-        (1, 1) => (-1, -1), // Southeast -> Northwest
-        (1, -1) => (-1, 1), // Northeast -> Southwest
-        (-1, 1) => (1, -1), // Southwest -> Northeast
-        (-1, -1) => (1, 1), // Northwest -> Southeast
-        _ => (0, 0),        // Same position (shouldn't happen)
+        (1, 0) => (-1, 0),
+        (-1, 0) => (1, 0),
+        (0, 1) => (0, -1),
+        (0, -1) => (0, 1),
+        (1, 1) => (-1, -1),
+        (1, -1) => (-1, 1),
+        (-1, 1) => (1, -1),
+        (-1, -1) => (1, 1),
+        _ => (0, 0),
     };
 
-    // Check the floor tile adjacent to the wall (in player's direction)
     let adjacent_floor_pos = (wall_x + offset_x, wall_y + offset_y);
 
     if let Some(floor_lights) = floor_contributions.get(&adjacent_floor_pos) {
-        // Find matching light contributions by source ID (like Haxe)
+        let floor_source_ids: HashSet<Entity> = floor_lights
+            .iter()
+            .map(|contrib| contrib.source_id)
+            .collect();
+
         let valid_contributions: Vec<_> = wall_contributions
             .iter()
-            .filter(|wall_contrib| {
-                // Check if this light source also lights the adjacent floor
-                floor_lights
-                    .iter()
-                    .any(|floor_contrib| wall_contrib.source_id == floor_contrib.source_id)
-            })
-            .cloned()
+            .filter(|wall_contrib| floor_source_ids.contains(&wall_contrib.source_id))
+            .copied()
             .collect();
 
         if !valid_contributions.is_empty() {

@@ -35,7 +35,7 @@ use crate::{
         RecalculateColliderFlagsEvent, RefreshBitmask, SaveFlag, SaveGameResult,
         SetZoneStatusEvent, SmoothMovement, StackCount, Stackable, StairDown, StairUp,
         StatModifiers, StaticEntity, StaticEntitySpawnedEvent, Stats, Throwable, TurnState,
-        UnloadZoneEvent, UnopenedContainer, Vision, VisionBlocker, Weapon, Zones,
+        UnloadZoneEvent, UnopenedContainer, Vision, Weapon, Zones,
         inventory::InventoryChangedEvent,
         on_bitmask_spawn, on_refresh_bitmask,
         systems::bump_attack_system::bump_attack_system,
@@ -141,7 +141,6 @@ async fn main() {
     reg.register::<StableId>();
     reg.register::<NeedsStableId>();
     reg.register::<Vision>();
-    reg.register::<VisionBlocker>();
     reg.register::<IsVisible>();
     reg.register::<IsExplored>();
     reg.register::<ApplyVisibilityEffects>();

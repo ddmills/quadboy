@@ -6,7 +6,7 @@ use crate::rendering::{world_to_zone_idx, world_to_zone_local};
 
 use crate::engine::SerializableComponent;
 
-#[derive(Component, Serialize, Deserialize, Clone, SerializableComponent, Debug)]
+#[derive(Component, Serialize, Deserialize, Clone, Copy, SerializableComponent, Debug)]
 pub struct Position {
     pub x: f32,
     pub y: f32,

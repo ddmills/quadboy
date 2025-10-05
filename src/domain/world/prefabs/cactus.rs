@@ -1,6 +1,6 @@
 use super::{Prefab, PrefabBuilder};
 use crate::common::Rand;
-use crate::domain::MaterialType;
+use crate::domain::{ColliderFlags, MaterialType};
 use crate::{common::Palette, rendering::Layer};
 use bevy_ecs::{entity::Entity, world::World};
 
@@ -12,14 +12,13 @@ pub fn spawn_cactus(entity: Entity, world: &mut World, config: Prefab) -> Prefab
 
     PrefabBuilder::new()
         .with_base_components(config.pos)
-        .with_static_tracking() // Cacti never move
+        .with_static_tracking()
         .with_needs_stable_id()
         .with_glyph(glyph_idx, Palette::Green, Palette::Purple, Layer::Objects)
         .with_label("Cactus")
         .with_description(
             "Twisted flesh armored in thorns. Patience made plant, waiting decades for rain.",
         )
-        .with_collider()
-        .with_vision_blocker()
+        .with_collider_flags(ColliderFlags::WALL)
         .with_destructible(10, MaterialType::Wood)
 }
