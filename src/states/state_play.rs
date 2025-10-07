@@ -67,11 +67,9 @@ impl Plugin for PlayStatePlugin {
 pub struct CleanupStatePlay;
 
 fn on_enter_play_state(mut game_state: ResMut<CurrentGameState>) {
-    trace!("EnterAppState::<Play>");
     game_state.next = GameState::Explore;
 }
 
 fn on_leave_play_state(mut game_state: ResMut<CurrentGameState>) {
-    trace!("LeaveAppState::<Play>");
     game_state.next = GameState::None;
 }

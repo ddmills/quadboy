@@ -170,9 +170,8 @@ pub fn render_text(
     {
         for (entity, mut text, position, visibility, ignore_lighting_opt) in q_text.p1().iter_mut()
         {
-            let needs_regeneration = text.update_every_frame
-                || changed.contains(&entity)
-                || text.cached_tick != tick;
+            let needs_regeneration =
+                text.update_every_frame || changed.contains(&entity) || text.cached_tick != tick;
 
             if !needs_regeneration {
                 continue;
@@ -204,7 +203,11 @@ pub fn render_text(
                         let g = &glyphs[i];
                         let mut ecmds = cmds.spawn((
                             *g,
-                            Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
+                            Position::new_f32(
+                                position.x + (i as f32 * 0.5),
+                                position.y,
+                                position.z,
+                            ),
                             *visibility,
                             ChildOf(entity),
                         ));
@@ -227,7 +230,11 @@ pub fn render_text(
                     for (i, (glyph_id, g)) in text.glyphs.iter().zip(glyphs.iter()).enumerate() {
                         cmds.entity(*glyph_id).insert((
                             *g,
-                            Position::new_f32(position.x + (i as f32 * 0.5), position.y, position.z),
+                            Position::new_f32(
+                                position.x + (i as f32 * 0.5),
+                                position.y,
+                                position.z,
+                            ),
                             *visibility,
                         ));
                     }

@@ -184,7 +184,6 @@ impl PrefabBuilder {
         self
     }
 
-
     pub fn with_light_blocker(mut self) -> Self {
         self.components
             .push(PrefabComponent::LightBlocker(LightBlocker));

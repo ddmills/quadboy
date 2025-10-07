@@ -66,10 +66,7 @@ pub fn try_handle_feared(world: &mut World, entity: Entity) -> bool {
     let conditions_clone = conditions.conditions.clone();
 
     for condition in &conditions_clone {
-        if let ConditionType::Feared {
-            flee_from,
-        } = &condition.condition_type
-        {
+        if let ConditionType::Feared { flee_from } = &condition.condition_type {
             let id_registry = world.resource::<StableIdRegistry>();
             if let Some(fear_entity) = id_registry.get_entity(*flee_from) {
                 if let Some(fear_position) = world.get::<Position>(fear_entity) {

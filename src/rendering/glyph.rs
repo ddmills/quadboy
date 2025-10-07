@@ -9,8 +9,7 @@ use crate::{
         ZoneStatus,
     },
     rendering::{GlyphTextureId, RenderTargetType, Visibility},
-    tracy_plot,
-    tracy_span,
+    tracy_plot, tracy_span,
     ui::{DialogState, UiLayout},
 };
 use bevy_ecs::prelude::*;

@@ -71,11 +71,9 @@ pub use lighting::{IgnoreLighting, LightBlocker, LightSource, Lightable};
 pub use loot_drop::LootDrop;
 pub use smooth_movement::SmoothMovement;
 pub use stairs::{StairDown, StairUp};
-pub use stats::{ModifierSource, StatModifier, StatModifiers, StatType, Stats};
+pub use stats::{AttributeGroup, ModifierSource, StatModifier, StatModifiers, StatType, Stats};
 pub use throwable::Throwable;
-pub use vision::{
-    ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Vision,
-};
+pub use vision::{ApplyVisibilityEffects, HideWhenNotVisible, IsExplored, IsVisible, Vision};
 pub use weapon::Weapon;
 pub use weapon_family::WeaponFamily;
 pub use weapon_modifiers::{

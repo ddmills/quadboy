@@ -6,21 +6,33 @@ use serde::{Deserialize, Serialize};
 
 use super::Attributes;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum AttributeGroup {
+    Strength,
+    Dexterity,
+    Constitution,
+    Intelligence,
+    Special,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StatType {
-    Fortitude,   // affects max HP
-    Speed,       // affects movement energy cost
-    Armor,       // no base attribute
-    ArmorRegen,  // affects armor regeneration rate
-    Rifle,       // rifle weapon proficiency
-    Shotgun,     // shotgun weapon proficiency
-    Pistol,      // pistol weapon proficiency
-    Blade,       // blade weapon proficiency
-    Cudgel,      // cudgel weapon proficiency
-    Unarmed,     // unarmed combat proficiency
-    Dodge,       // dodge/evasion ability
-    Knockback,   // affects knockback distance
-    ReloadSpeed, // affects reload energy cost
+    Fortitude,    // affects max HP
+    Speed,        // affects movement energy cost
+    Armor,        // no base attribute
+    ArmorRegen,   // affects armor regeneration rate
+    Rifle,        // rifle weapon proficiency
+    Shotgun,      // shotgun weapon proficiency
+    Pistol,       // pistol weapon proficiency
+    Blade,        // blade weapon proficiency
+    Cudgel,       // cudgel weapon proficiency
+    Unarmed,      // unarmed combat proficiency
+    Dodge,        // dodge/evasion ability
+    Knockback,    // affects knockback distance
+    ReloadSpeed,  // affects reload energy cost
+    PoisonDamage, // bonus damage to poison effects
+    BleedDamage,  // bonus damage to bleed effects
+    BurnDamage,   // bonus damage to burn effects
 }
 
 impl StatType {
@@ -39,6 +51,9 @@ impl StatType {
             StatType::Dodge => attributes.dexterity as i32,
             StatType::Knockback => attributes.strength as i32,
             StatType::ReloadSpeed => attributes.dexterity as i32,
+            StatType::PoisonDamage => 3,
+            StatType::BleedDamage => 3,
+            StatType::BurnDamage => 3,
         }
     }
 
@@ -57,6 +72,9 @@ impl StatType {
             StatType::Dodge,
             StatType::Knockback,
             StatType::ReloadSpeed,
+            StatType::PoisonDamage,
+            StatType::BleedDamage,
+            StatType::BurnDamage,
         ]
     }
 
@@ -75,6 +93,51 @@ impl StatType {
             StatType::Dodge => "Evasion",
             StatType::Knockback => "Impact",
             StatType::ReloadSpeed => "Reloading",
+            StatType::PoisonDamage => "Toxicity",
+            StatType::BleedDamage => "Laceration",
+            StatType::BurnDamage => "Combustion",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            StatType::Fortitude => "Maximum health points capacity",
+            StatType::Speed => "Reduces movement energy cost",
+            StatType::Armor => "Damage absorbed before health loss",
+            StatType::ArmorRegen => "Rate of armor regeneration per tick",
+            StatType::Rifle => "Rifle weapon proficiency and accuracy",
+            StatType::Shotgun => "Shotgun weapon proficiency and damage",
+            StatType::Pistol => "Pistol weapon proficiency and accuracy",
+            StatType::Blade => "Blade weapon proficiency and damage",
+            StatType::Cudgel => "Cudgel weapon proficiency and damage",
+            StatType::Unarmed => "Unarmed combat proficiency and damage",
+            StatType::Dodge => "Chance to evade incoming attacks",
+            StatType::Knockback => "Distance enemies are pushed on hit",
+            StatType::ReloadSpeed => "Reduces weapon reload energy cost",
+            StatType::PoisonDamage => "Bonus damage to poison effects per tick",
+            StatType::BleedDamage => "Bonus damage to bleeding effects per tick",
+            StatType::BurnDamage => "Bonus damage to burning effects per tick",
+        }
+    }
+
+    pub fn get_attribute_group(&self) -> AttributeGroup {
+        match self {
+            StatType::Shotgun
+            | StatType::Pistol
+            | StatType::Cudgel
+            | StatType::Unarmed
+            | StatType::Knockback => AttributeGroup::Strength,
+            StatType::Speed
+            | StatType::Rifle
+            | StatType::Blade
+            | StatType::Dodge
+            | StatType::ReloadSpeed => AttributeGroup::Dexterity,
+            StatType::Fortitude => AttributeGroup::Constitution,
+            StatType::ArmorRegen => AttributeGroup::Intelligence,
+            StatType::Armor
+            | StatType::PoisonDamage
+            | StatType::BleedDamage
+            | StatType::BurnDamage => AttributeGroup::Special,
         }
     }
 }

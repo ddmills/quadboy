@@ -107,13 +107,7 @@ pub fn update_lighting_system(
                     && let Ok(light) = q_equipped_lights.get(item_entity)
                     && light.is_enabled
                 {
-                    apply_light_source(
-                        owner_pos,
-                        light,
-                        item_entity,
-                        zone,
-                        &mut all_fragments,
-                    );
+                    apply_light_source(owner_pos, light, item_entity, zone, &mut all_fragments);
                 }
             }
         }

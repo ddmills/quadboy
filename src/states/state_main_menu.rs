@@ -64,8 +64,6 @@ fn on_btn_load(mut app_state: ResMut<CurrentAppState>, mut game_state: ResMut<Cu
 struct CleanupMainMenu;
 
 fn render_menu(mut cmds: Commands, callbacks: Res<MainMenuCallbacks>) {
-    trace!("EnterAppState::<MainMenu>");
-
     cmds.spawn((
         Text::new("Welcome to..."),
         Position::new_f32(4., 2., 0.),

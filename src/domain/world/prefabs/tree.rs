@@ -1,6 +1,10 @@
 use super::{Prefab, PrefabBuilder, SpawnValue};
 use crate::common::Rand;
-use crate::{common::Palette, domain::{ColliderFlags, MaterialType}, rendering::Layer};
+use crate::{
+    common::Palette,
+    domain::{ColliderFlags, MaterialType},
+    rendering::Layer,
+};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_tree(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {

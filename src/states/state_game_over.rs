@@ -41,9 +41,7 @@ impl Plugin for GameOverStatePlugin {
     }
 }
 
-fn on_leave_game_over() {
-    trace!("LeaveGameState::<GameOver>");
-}
+fn on_leave_game_over() {}
 
 #[derive(Component)]
 pub struct CleanupStateGameOver;

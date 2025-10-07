@@ -1,11 +1,13 @@
+use std::collections::HashMap;
+
 use bevy_ecs::{prelude::*, system::SystemId};
 use macroquad::input::KeyCode;
 
 use crate::{
     common::Palette,
     domain::{
-        AttributePoints, Attributes, Health, Level, Player, StatModifiers, StatType, Stats,
-        game_loop,
+        AttributeGroup, AttributePoints, Attributes, Health, Level, ModifierSource, Player,
+        StatModifiers, StatType, Stats, game_loop,
     },
     engine::{App, Plugin},
     rendering::{Glyph, Layer, Position, ScreenSize, Text},
@@ -25,10 +27,44 @@ struct AttributesCallbacks {
     increase_intelligence: SystemId,
     decrease_intelligence: SystemId,
     reset_all: SystemId,
+    select_strength: SystemId,
+    select_dexterity: SystemId,
+    select_constitution: SystemId,
+    select_intelligence: SystemId,
+    select_special: SystemId,
+    select_stat: HashMap<StatType, SystemId>,
+    close_stat_dialog: SystemId,
 }
 
 #[derive(Component, Clone)]
 pub struct CleanupStateAttributes;
+
+#[derive(Component, Clone)]
+struct CleanupStatDialog;
+
+#[derive(Resource)]
+struct SelectedAttribute {
+    current: AttributeGroup,
+}
+
+impl Default for SelectedAttribute {
+    fn default() -> Self {
+        Self {
+            current: AttributeGroup::Strength,
+        }
+    }
+}
+
+#[derive(Resource)]
+struct SelectedStat {
+    current: Option<StatType>,
+}
+
+impl Default for SelectedStat {
+    fn default() -> Self {
+        Self { current: None }
+    }
+}
 
 #[derive(Resource)]
 struct AttributesUIEntities {
@@ -38,18 +74,14 @@ struct AttributesUIEntities {
     dexterity_value: Entity,
     constitution_value: Entity,
     intelligence_value: Entity,
-    fortitude_display: Entity,
-    speed_display: Entity,
-    armor_display: Entity,
-    armor_regen_display: Entity,
-    rifle_display: Entity,
-    shotgun_display: Entity,
-    pistol_display: Entity,
-    blade_display: Entity,
-    cudgel_display: Entity,
-    unarmed_display: Entity,
-    dodge_display: Entity,
-    reload_speed_display: Entity,
+    strength_indicator: Entity,
+    dexterity_indicator: Entity,
+    constitution_indicator: Entity,
+    intelligence_indicator: Entity,
+    special_indicator: Entity,
+    stat_displays: HashMap<StatType, Entity>,
+    stat_section_title: Entity,
+    stat_section_desc: Entity,
 }
 
 pub struct AttributesStatePlugin;
@@ -67,7 +99,7 @@ impl Plugin for AttributesStatePlugin {
                 )
                     .chain(),
             )
-            .on_update(app, (game_loop, update_attributes_display).chain())
+            .on_update(app, (game_loop, update_attributes_display, spawn_stat_dialog, cleanup_stat_dialog).chain())
             .on_update(
                 app,
                 setup_fullscreen_backgrounds.run_if(resource_changed::<ScreenSize>),
@@ -78,6 +110,8 @@ impl Plugin for AttributesStatePlugin {
                     cleanup_system::<CleanupStateAttributes>,
                     remove_attributes_callbacks,
                     remove_attributes_ui_entities,
+                    remove_selected_attribute,
+                    remove_selected_stat,
                 )
                     .chain(),
             );
@@ -85,6 +119,15 @@ impl Plugin for AttributesStatePlugin {
 }
 
 fn setup_attributes_callbacks(world: &mut World) {
+    let mut select_stat_callbacks = HashMap::new();
+    for stat_type in StatType::all() {
+        let stat = *stat_type;
+        let system_id = world.register_system(move |mut selected: ResMut<SelectedStat>| {
+            selected.current = Some(stat);
+        });
+        select_stat_callbacks.insert(*stat_type, system_id);
+    }
+
     let callbacks = AttributesCallbacks {
         back_to_explore: world.register_system(back_to_explore),
         increase_strength: world.register_system(increase_strength),
@@ -96,9 +139,18 @@ fn setup_attributes_callbacks(world: &mut World) {
         increase_intelligence: world.register_system(increase_intelligence),
         decrease_intelligence: world.register_system(decrease_intelligence),
         reset_all: world.register_system(reset_all_attributes),
+        select_strength: world.register_system(select_strength),
+        select_dexterity: world.register_system(select_dexterity),
+        select_constitution: world.register_system(select_constitution),
+        select_intelligence: world.register_system(select_intelligence),
+        select_special: world.register_system(select_special),
+        select_stat: select_stat_callbacks,
+        close_stat_dialog: world.register_system(close_stat_dialog),
     };
 
     world.insert_resource(callbacks);
+    world.insert_resource(SelectedAttribute::default());
+    world.insert_resource(SelectedStat::default());
 }
 
 fn back_to_explore(mut game_state: ResMut<CurrentGameState>) {
@@ -193,9 +245,35 @@ fn reset_all_attributes(
     }
 }
 
+fn select_strength(mut selected: ResMut<SelectedAttribute>) {
+    selected.current = AttributeGroup::Strength;
+}
+
+fn select_dexterity(mut selected: ResMut<SelectedAttribute>) {
+    selected.current = AttributeGroup::Dexterity;
+}
+
+fn select_constitution(mut selected: ResMut<SelectedAttribute>) {
+    selected.current = AttributeGroup::Constitution;
+}
+
+fn select_intelligence(mut selected: ResMut<SelectedAttribute>) {
+    selected.current = AttributeGroup::Intelligence;
+}
+
+fn select_special(mut selected: ResMut<SelectedAttribute>) {
+    selected.current = AttributeGroup::Special;
+}
+
+fn close_stat_dialog(mut selected: ResMut<SelectedStat>) {
+    selected.current = None;
+}
+
 fn update_attributes_display(
     mut q_text: Query<&mut Text>,
-    q_player: Query<
+    mut q_button: Query<&mut Button>,
+    mut q_position: Query<&mut Position>,
+    q_player_changed: Query<
         (
             &Level,
             &Attributes,
@@ -209,183 +287,191 @@ fn update_attributes_display(
             Or<(
                 Changed<Attributes>,
                 Changed<AttributePoints>,
+                Changed<Stats>,
                 Changed<Health>,
             )>,
         ),
     >,
+    q_player: Query<
+        (
+            &Level,
+            &Attributes,
+            &AttributePoints,
+            &Stats,
+            &StatModifiers,
+            &Health,
+        ),
+        With<Player>,
+    >,
     ui_entities: Option<Res<AttributesUIEntities>>,
+    selected: Res<SelectedAttribute>,
 ) {
     let Some(ui_entities) = ui_entities else {
         return;
     };
 
-    // Only update if player attributes/points/health changed
+    let player_data_changed = !q_player_changed.is_empty();
+    let selection_changed = selected.is_changed();
+
+    if !player_data_changed && !selection_changed {
+        return;
+    }
+
     let Ok((level, attributes, attribute_points, stats, stat_modifiers, health)) =
-        q_player.single()
+        q_player.get_single()
     else {
         return;
     };
 
-    // Update level display
     if let Ok(mut text) = q_text.get_mut(ui_entities.level_display) {
         text.value = format!("Level: {}", level.current_level);
     }
 
-    // Update available points display
     if let Ok(mut text) = q_text.get_mut(ui_entities.available_points) {
-        text.value = format!("Available Points: {}", attribute_points.available);
+        text.value = format!("Available: {} pts", attribute_points.available);
     }
 
-    // Update attribute values
-    if let Ok(mut text) = q_text.get_mut(ui_entities.strength_value) {
-        text.value = format!("Strength:     {}", attributes.strength);
+    if let Ok(mut button) = q_button.get_mut(ui_entities.strength_value) {
+        if let Button::Button { label, .. } = &mut *button {
+            *label = format!("STRENGTH      {}", attributes.strength);
+        }
     }
 
-    if let Ok(mut text) = q_text.get_mut(ui_entities.dexterity_value) {
-        text.value = format!("Dexterity:    {}", attributes.dexterity);
+    if let Ok(mut button) = q_button.get_mut(ui_entities.dexterity_value) {
+        if let Button::Button { label, .. } = &mut *button {
+            *label = format!("DEXTERITY     {}", attributes.dexterity);
+        }
     }
 
-    if let Ok(mut text) = q_text.get_mut(ui_entities.constitution_value) {
-        text.value = format!("Constitution: {}", attributes.constitution);
+    if let Ok(mut button) = q_button.get_mut(ui_entities.constitution_value) {
+        if let Button::Button { label, .. } = &mut *button {
+            *label = format!("CONSTITUTION  {}", attributes.constitution);
+        }
     }
 
-    if let Ok(mut text) = q_text.get_mut(ui_entities.intelligence_value) {
-        text.value = format!("Intelligence: {}", attributes.intelligence);
+    if let Ok(mut button) = q_button.get_mut(ui_entities.intelligence_value) {
+        if let Button::Button { label, .. } = &mut *button {
+            *label = format!("INTELLIGENCE  {}", attributes.intelligence);
+        }
     }
 
-    // Update calculated stats
-    let fortitude_base = StatType::Fortitude.get_base_value(attributes);
-    let fortitude_modifiers = stat_modifiers.get_total_for_stat(StatType::Fortitude);
-    let fortitude_total = stats.get_stat(StatType::Fortitude);
+    let (indicator_char, title, desc) = match selected.current {
+        AttributeGroup::Strength => (
+            "→",
+            "STRENGTH STATS",
+            "Raw physical power affects weapon handling and melee damage.",
+        ),
+        AttributeGroup::Dexterity => (
+            "→",
+            "DEXTERITY STATS",
+            "Agility and precision affects speed, accuracy, and evasion.",
+        ),
+        AttributeGroup::Constitution => (
+            "→",
+            "CONSTITUTION STATS",
+            "Durability and health determines max HP and fortitude.",
+        ),
+        AttributeGroup::Intelligence => (
+            "→",
+            "INTELLIGENCE STATS",
+            "Knowledge and tactics affects armor regeneration.",
+        ),
+        AttributeGroup::Special => (
+            "→",
+            "SPECIAL STATS",
+            "Stats that don't derive from base attributes.",
+        ),
+    };
 
-    if let Ok(mut text) = q_text.get_mut(ui_entities.fortitude_display) {
-        text.value = format!(
-            "Fortitude:    {}  (Constitution: {} + Modifiers: {:+})",
-            fortitude_total, fortitude_base, fortitude_modifiers
-        );
+    if let Ok(mut text) = q_text.get_mut(ui_entities.strength_indicator) {
+        text.value = if selected.current == AttributeGroup::Strength {
+            indicator_char.to_string()
+        } else {
+            " ".to_string()
+        };
     }
 
-    let speed_base = StatType::Speed.get_base_value(attributes);
-    let speed_modifiers = stat_modifiers.get_total_for_stat(StatType::Speed);
-    let speed_total = stats.get_stat(StatType::Speed);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.speed_display) {
-        text.value = format!(
-            "Speed:        {}  (Dexterity: {} + Modifiers: {:+})",
-            speed_total, speed_base, speed_modifiers
-        );
+    if let Ok(mut text) = q_text.get_mut(ui_entities.dexterity_indicator) {
+        text.value = if selected.current == AttributeGroup::Dexterity {
+            indicator_char.to_string()
+        } else {
+            " ".to_string()
+        };
     }
 
-    let _armor_base = StatType::Armor.get_base_value(attributes);
-    let armor_modifiers = stat_modifiers.get_total_for_stat(StatType::Armor);
-    let armor_total = stats.get_stat(StatType::Armor);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.armor_display) {
-        let (current_armor, max_armor) = health.get_current_max_armor(stats);
-        text.value = format!(
-            "Armor:        {}/{}  (Max: {} | Modifiers: {:+})",
-            current_armor, max_armor, armor_total, armor_modifiers
-        );
+    if let Ok(mut text) = q_text.get_mut(ui_entities.constitution_indicator) {
+        text.value = if selected.current == AttributeGroup::Constitution {
+            indicator_char.to_string()
+        } else {
+            " ".to_string()
+        };
     }
 
-    let armor_regen_base = StatType::ArmorRegen.get_base_value(attributes);
-    let armor_regen_modifiers = stat_modifiers.get_total_for_stat(StatType::ArmorRegen);
-    let armor_regen_total = stats.get_stat(StatType::ArmorRegen);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.armor_regen_display) {
-        text.value = format!(
-            "Armor Regen:  {}  (Intelligence: {} + Modifiers: {:+})",
-            armor_regen_total, armor_regen_base, armor_regen_modifiers
-        );
+    if let Ok(mut text) = q_text.get_mut(ui_entities.intelligence_indicator) {
+        text.value = if selected.current == AttributeGroup::Intelligence {
+            indicator_char.to_string()
+        } else {
+            " ".to_string()
+        };
     }
 
-    // Update weapon family stats
-    let rifle_base = StatType::Rifle.get_base_value(attributes);
-    let rifle_modifiers = stat_modifiers.get_total_for_stat(StatType::Rifle);
-    let rifle_total = stats.get_stat(StatType::Rifle);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.rifle_display) {
-        text.value = format!(
-            "Rifle:        {}  (Dexterity: {} + Modifiers: {:+})",
-            rifle_total, rifle_base, rifle_modifiers
-        );
+    if let Ok(mut text) = q_text.get_mut(ui_entities.special_indicator) {
+        text.value = if selected.current == AttributeGroup::Special {
+            indicator_char.to_string()
+        } else {
+            " ".to_string()
+        };
     }
 
-    let shotgun_base = StatType::Shotgun.get_base_value(attributes);
-    let shotgun_modifiers = stat_modifiers.get_total_for_stat(StatType::Shotgun);
-    let shotgun_total = stats.get_stat(StatType::Shotgun);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.shotgun_display) {
-        text.value = format!(
-            "Shotgun:      {}  (Strength: {} + Modifiers: {:+})",
-            shotgun_total, shotgun_base, shotgun_modifiers
-        );
+    if let Ok(mut text) = q_text.get_mut(ui_entities.stat_section_title) {
+        text.value = format!("=== {} ===", title);
     }
 
-    let pistol_base = StatType::Pistol.get_base_value(attributes);
-    let pistol_modifiers = stat_modifiers.get_total_for_stat(StatType::Pistol);
-    let pistol_total = stats.get_stat(StatType::Pistol);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.pistol_display) {
-        text.value = format!(
-            "Pistol:       {}  (Strength: {} + Modifiers: {:+})",
-            pistol_total, pistol_base, pistol_modifiers
-        );
+    if let Ok(mut text) = q_text.get_mut(ui_entities.stat_section_desc) {
+        text.value = desc.to_string();
     }
 
-    let blade_base = StatType::Blade.get_base_value(attributes);
-    let blade_modifiers = stat_modifiers.get_total_for_stat(StatType::Blade);
-    let blade_total = stats.get_stat(StatType::Blade);
+    let right_x = 32.0;
+    let mut y_pos = 4.5;
 
-    if let Ok(mut text) = q_text.get_mut(ui_entities.blade_display) {
-        text.value = format!(
-            "Blade:        {}  (Dexterity: {} + Modifiers: {:+})",
-            blade_total, blade_base, blade_modifiers
-        );
-    }
+    for stat_type in StatType::all() {
+        let is_visible = stat_type.get_attribute_group() == selected.current;
 
-    let cudgel_base = StatType::Cudgel.get_base_value(attributes);
-    let cudgel_modifiers = stat_modifiers.get_total_for_stat(StatType::Cudgel);
-    let cudgel_total = stats.get_stat(StatType::Cudgel);
+        if let Some(&entity) = ui_entities.stat_displays.get(stat_type) {
+            if let Ok(mut button) = q_button.get_mut(entity) {
+                let base = stat_type.get_base_value(attributes);
+                let modifiers = stat_modifiers.get_total_for_stat(*stat_type);
+                let total = stats.get_stat(*stat_type);
 
-    if let Ok(mut text) = q_text.get_mut(ui_entities.cudgel_display) {
-        text.value = format!(
-            "Cudgel:       {}  (Strength: {} + Modifiers: {:+})",
-            cudgel_total, cudgel_base, cudgel_modifiers
-        );
-    }
+                let stat_name = format!("{:?}", stat_type);
 
-    let unarmed_base = StatType::Unarmed.get_base_value(attributes);
-    let unarmed_modifiers = stat_modifiers.get_total_for_stat(StatType::Unarmed);
-    let unarmed_total = stats.get_stat(StatType::Unarmed);
+                let display_text = if *stat_type == StatType::Armor {
+                    let (current_armor, max_armor) = health.get_current_max_armor(stats);
+                    format!(
+                        "  {:14} {:3}  ({}/{} current | {} max | {:+} mods)",
+                        stat_name, total, current_armor, max_armor, total, modifiers
+                    )
+                } else {
+                    format!(
+                        "  {:14} {:3}  ({} base {:+} mods)",
+                        stat_name, total, base, modifiers
+                    )
+                };
 
-    if let Ok(mut text) = q_text.get_mut(ui_entities.unarmed_display) {
-        text.value = format!(
-            "Unarmed:      {}  (Strength: {} + Modifiers: {:+})",
-            unarmed_total, unarmed_base, unarmed_modifiers
-        );
-    }
+                if let Button::Button { label, .. } = &mut *button {
+                    *label = display_text;
+                }
+            }
 
-    let dodge_base = StatType::Dodge.get_base_value(attributes);
-    let dodge_modifiers = stat_modifiers.get_total_for_stat(StatType::Dodge);
-    let dodge_total = stats.get_stat(StatType::Dodge);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.dodge_display) {
-        text.value = format!(
-            "Dodge:        {}  (Dexterity: {} + Modifiers: {:+})",
-            dodge_total, dodge_base, dodge_modifiers
-        );
-    }
-
-    let reload_speed_base = StatType::ReloadSpeed.get_base_value(attributes);
-    let reload_speed_modifiers = stat_modifiers.get_total_for_stat(StatType::ReloadSpeed);
-    let reload_speed_total = stats.get_stat(StatType::ReloadSpeed);
-
-    if let Ok(mut text) = q_text.get_mut(ui_entities.reload_speed_display) {
-        text.value = format!(
-            "Reload Speed: {}  (Dexterity: {} + Modifiers: {:+})",
-            reload_speed_total, reload_speed_base, reload_speed_modifiers
-        );
+            if let Ok(mut pos) = q_position.get_mut(entity) {
+                if is_visible {
+                    *pos = Position::new_f32(right_x, y_pos, 0.);
+                    y_pos += 0.5;
+                } else {
+                    *pos = Position::new_f32(-1000.0, -1000.0, 0.);
+                }
+            }
+        }
     }
 }
 
@@ -397,11 +483,182 @@ fn remove_attributes_ui_entities(mut cmds: Commands) {
     cmds.remove_resource::<AttributesUIEntities>();
 }
 
+fn remove_selected_attribute(mut cmds: Commands) {
+    cmds.remove_resource::<SelectedAttribute>();
+}
+
+fn remove_selected_stat(mut cmds: Commands) {
+    cmds.remove_resource::<SelectedStat>();
+}
+
+fn spawn_stat_dialog(
+    mut cmds: Commands,
+    selected_stat: Res<SelectedStat>,
+    q_dialog: Query<Entity, With<CleanupStatDialog>>,
+    q_player: Query<(&Attributes, &Stats, &StatModifiers, &Health), With<Player>>,
+    callbacks: Option<Res<AttributesCallbacks>>,
+) {
+    if !selected_stat.is_changed() {
+        return;
+    }
+
+    if !q_dialog.is_empty() {
+        return;
+    }
+
+    let Some(stat_type) = selected_stat.current else {
+        return;
+    };
+
+    let Some(callbacks) = callbacks else {
+        return;
+    };
+
+    let Ok((attributes, stats, stat_modifiers, health)) = q_player.single() else {
+        return;
+    };
+
+    let screen_width = 80.0;
+    let screen_height = 40.0;
+    let dialog_width = 60.0;
+    let dialog_height = 30.0;
+    let dialog_x = (screen_width - dialog_width) / 2.0;
+    let dialog_y = (screen_height - dialog_height) / 2.0;
+
+    cmds.spawn((
+        Glyph::new(6, Palette::Black, Palette::Black)
+            .bg(Palette::Black)
+            .alpha(0.7)
+            .scale((screen_width, screen_height))
+            .layer(Layer::DialogPanels),
+        Position::new_f32(0.0, 0.0, 0.),
+        FullScreenBackground,
+        CleanupStatDialog,
+    ));
+
+    let stat_name = format!("{:?}", stat_type);
+    let description = stat_type.description();
+    let base = stat_type.get_base_value(attributes);
+    let total = stats.get_stat(stat_type);
+    let modifiers_list = stat_modifiers.modifiers.get(&stat_type);
+
+    let mut y = dialog_y + 2.0;
+
+    cmds.spawn((
+        Text::new(&format!("=== {} ===", stat_name))
+            .fg1(Palette::Yellow)
+            .layer(Layer::DialogContent),
+        Position::new_f32(dialog_x + 2.0, y, 0.),
+        CleanupStatDialog,
+    ));
+
+    y += 1.0;
+
+    cmds.spawn((
+        Text::new(description)
+            .fg1(Palette::DarkGray)
+            .layer(Layer::DialogContent),
+        Position::new_f32(dialog_x + 2.0, y, 0.),
+        CleanupStatDialog,
+    ));
+
+    y += 1.5;
+
+    cmds.spawn((
+        Text::new(&format!("Base Value: {}", base))
+            .fg1(Palette::White)
+            .layer(Layer::DialogContent),
+        Position::new_f32(dialog_x + 2.0, y, 0.),
+        CleanupStatDialog,
+    ));
+
+    y += 1.0;
+
+    if let Some(mods) = modifiers_list {
+        if !mods.is_empty() {
+            cmds.spawn((
+                Text::new("Modifiers:")
+                    .fg1(Palette::Cyan)
+                    .layer(Layer::DialogContent),
+                Position::new_f32(dialog_x + 2.0, y, 0.),
+                CleanupStatDialog,
+            ));
+
+            y += 0.5;
+
+            for modifier in mods {
+                let source_text = match &modifier.source {
+                    ModifierSource::Equipment { item_id } => format!("  Equipment #{}: {:+}", item_id, modifier.value),
+                    ModifierSource::Intrinsic { name } => format!("  {}: {:+}", name, modifier.value),
+                    ModifierSource::Condition { condition_id } => format!("  Condition {}: {:+}", condition_id, modifier.value),
+                };
+
+                cmds.spawn((
+                    Text::new(&source_text)
+                        .fg1(Palette::White)
+                        .layer(Layer::DialogContent),
+                    Position::new_f32(dialog_x + 2.0, y, 0.),
+                    CleanupStatDialog,
+                ));
+
+                y += 0.5;
+            }
+        }
+    }
+
+    y += 0.5;
+
+    if stat_type == StatType::Armor {
+        let (current_armor, max_armor) = health.get_current_max_armor(stats);
+        cmds.spawn((
+            Text::new(&format!("Current Armor: {}/{}", current_armor, max_armor))
+                .fg1(Palette::Green)
+                .layer(Layer::DialogContent),
+            Position::new_f32(dialog_x + 2.0, y, 0.),
+            CleanupStatDialog,
+        ));
+        y += 0.5;
+    }
+
+    cmds.spawn((
+        Text::new(&format!("Total: {}", total))
+            .fg1(Palette::Green)
+            .layer(Layer::DialogContent),
+        Position::new_f32(dialog_x + 2.0, y, 0.),
+        CleanupStatDialog,
+    ));
+
+    y += 2.0;
+
+    cmds.spawn((
+        Position::new_f32(dialog_x + 2.0, y, 0.),
+        Button::new("({Y|ESC}) CLOSE", callbacks.close_stat_dialog).hotkey(KeyCode::Escape),
+        CleanupStatDialog,
+    ));
+}
+
+fn cleanup_stat_dialog(
+    mut cmds: Commands,
+    selected_stat: Res<SelectedStat>,
+    q_dialog: Query<Entity, With<CleanupStatDialog>>,
+) {
+    if !selected_stat.is_changed() {
+        return;
+    }
+
+    if selected_stat.current.is_some() {
+        return;
+    }
+
+    for entity in q_dialog.iter() {
+        cmds.entity(entity).despawn();
+    }
+}
+
 fn setup_attributes_screen(
     mut cmds: Commands,
     q_player: Query<
         (
-            Entity,
             &Level,
             &Attributes,
             &AttributePoints,
@@ -412,29 +669,28 @@ fn setup_attributes_screen(
         With<Player>,
     >,
     callbacks: Res<AttributesCallbacks>,
+    selected: Res<SelectedAttribute>,
 ) {
-    let Ok((_, level, attributes, attribute_points, stats, stat_modifiers, health)) =
+    let Ok((level, attributes, attribute_points, stats, stat_modifiers, health)) =
         q_player.single()
     else {
         return;
     };
 
     let left_x = 2.0;
+    let right_x = 32.0;
     let mut y_pos = 1.0;
 
-    // Title
     cmds.spawn((
-        Text::new("PLAYER ATTRIBUTES & STATS")
+        Text::new("=== PLAYER ATTRIBUTES & STATS ===")
             .fg1(Palette::Yellow)
-            .bg(Palette::Black)
             .layer(Layer::Ui),
         Position::new_f32(left_x, y_pos, 0.),
         CleanupStateAttributes,
     ));
 
-    y_pos += 1.0;
+    y_pos += 0.5;
 
-    // Level display
     let level_display = cmds
         .spawn((
             Text::new(&format!("Level: {}", level.current_level))
@@ -445,39 +701,40 @@ fn setup_attributes_screen(
         ))
         .id();
 
-    y_pos += 0.5;
-
-    // Available points display
     let available_points = cmds
         .spawn((
-            Text::new(&format!("Available Points: {}", attribute_points.available))
+            Text::new(&format!("Available: {} pts", attribute_points.available))
                 .fg1(Palette::Green)
                 .layer(Layer::Ui),
+            Position::new_f32(left_x + 15.0, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 1.5;
+
+    let strength_indicator = cmds
+        .spawn((
+            Text::new(if selected.current == AttributeGroup::Strength {
+                "→"
+            } else {
+                " "
+            })
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
             Position::new_f32(left_x, y_pos, 0.),
             CleanupStateAttributes,
         ))
         .id();
 
-    y_pos += 1.0;
-
-    // Base Attributes Section
-    cmds.spawn((
-        Text::new("=== BASE ATTRIBUTES ===")
-            .fg1(Palette::Cyan)
-            .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
-        CleanupStateAttributes,
-    ));
-
-    y_pos += 0.5;
-
-    // Strength row
     let strength_value = cmds
         .spawn((
-            Text::new(&format!("Strength:     {}", attributes.strength))
-                .fg1(Palette::White)
-                .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
+            Position::new_f32(left_x + 2.0, y_pos, 0.),
+            Button::new(
+                &format!("STRENGTH      {}", attributes.strength),
+                callbacks.select_strength,
+            )
+            .hotkey(KeyCode::Key1),
             CleanupStateAttributes,
         ))
         .id();
@@ -489,20 +746,45 @@ fn setup_attributes_screen(
     ));
 
     cmds.spawn((
-        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Position::new_f32(left_x + 22.0, y_pos, 0.),
         Button::new("[-]", callbacks.decrease_strength),
         CleanupStateAttributes,
     ));
 
     y_pos += 0.5;
 
-    // Dexterity row
+    cmds.spawn((
+        Text::new("  Raw physical power")
+            .fg1(Palette::DarkGray)
+            .layer(Layer::Ui),
+        Position::new_f32(left_x + 2.0, y_pos, 0.),
+        CleanupStateAttributes,
+    ));
+
+    y_pos += 0.5;
+
+    let dexterity_indicator = cmds
+        .spawn((
+            Text::new(if selected.current == AttributeGroup::Dexterity {
+                "→"
+            } else {
+                " "
+            })
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     let dexterity_value = cmds
         .spawn((
-            Text::new(&format!("Dexterity:    {}", attributes.dexterity))
-                .fg1(Palette::White)
-                .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
+            Position::new_f32(left_x + 2.0, y_pos, 0.),
+            Button::new(
+                &format!("DEXTERITY     {}", attributes.dexterity),
+                callbacks.select_dexterity,
+            )
+            .hotkey(KeyCode::Key2),
             CleanupStateAttributes,
         ))
         .id();
@@ -514,20 +796,45 @@ fn setup_attributes_screen(
     ));
 
     cmds.spawn((
-        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Position::new_f32(left_x + 22.0, y_pos, 0.),
         Button::new("[-]", callbacks.decrease_dexterity),
         CleanupStateAttributes,
     ));
 
     y_pos += 0.5;
 
-    // Constitution row
+    cmds.spawn((
+        Text::new("  Agility & precision")
+            .fg1(Palette::DarkGray)
+            .layer(Layer::Ui),
+        Position::new_f32(left_x + 2.0, y_pos, 0.),
+        CleanupStateAttributes,
+    ));
+
+    y_pos += 0.5;
+
+    let constitution_indicator = cmds
+        .spawn((
+            Text::new(if selected.current == AttributeGroup::Constitution {
+                "→"
+            } else {
+                " "
+            })
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     let constitution_value = cmds
         .spawn((
-            Text::new(&format!("Constitution: {}", attributes.constitution))
-                .fg1(Palette::White)
-                .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
+            Position::new_f32(left_x + 2.0, y_pos, 0.),
+            Button::new(
+                &format!("CONSTITUTION  {}", attributes.constitution),
+                callbacks.select_constitution,
+            )
+            .hotkey(KeyCode::Key3),
             CleanupStateAttributes,
         ))
         .id();
@@ -539,20 +846,45 @@ fn setup_attributes_screen(
     ));
 
     cmds.spawn((
-        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Position::new_f32(left_x + 22.0, y_pos, 0.),
         Button::new("[-]", callbacks.decrease_constitution),
         CleanupStateAttributes,
     ));
 
     y_pos += 0.5;
 
-    // Intelligence row
+    cmds.spawn((
+        Text::new("  Durability & health")
+            .fg1(Palette::DarkGray)
+            .layer(Layer::Ui),
+        Position::new_f32(left_x + 2.0, y_pos, 0.),
+        CleanupStateAttributes,
+    ));
+
+    y_pos += 0.5;
+
+    let intelligence_indicator = cmds
+        .spawn((
+            Text::new(if selected.current == AttributeGroup::Intelligence {
+                "→"
+            } else {
+                " "
+            })
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
     let intelligence_value = cmds
         .spawn((
-            Text::new(&format!("Intelligence: {}", attributes.intelligence))
-                .fg1(Palette::White)
-                .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
+            Position::new_f32(left_x + 2.0, y_pos, 0.),
+            Button::new(
+                &format!("INTELLIGENCE  {}", attributes.intelligence),
+                callbacks.select_intelligence,
+            )
+            .hotkey(KeyCode::Key4),
             CleanupStateAttributes,
         ))
         .id();
@@ -564,292 +896,151 @@ fn setup_attributes_screen(
     ));
 
     cmds.spawn((
-        Position::new_f32(left_x + 20.0, y_pos, 0.),
+        Position::new_f32(left_x + 22.0, y_pos, 0.),
         Button::new("[-]", callbacks.decrease_intelligence),
+        CleanupStateAttributes,
+    ));
+
+    y_pos += 0.5;
+
+    cmds.spawn((
+        Text::new("  Knowledge & tactics")
+            .fg1(Palette::DarkGray)
+            .layer(Layer::Ui),
+        Position::new_f32(left_x + 2.0, y_pos, 0.),
+        CleanupStateAttributes,
+    ));
+
+    y_pos += 0.5;
+
+    let special_indicator = cmds
+        .spawn((
+            Text::new(if selected.current == AttributeGroup::Special {
+                "→"
+            } else {
+                " "
+            })
+            .fg1(Palette::Yellow)
+            .layer(Layer::Ui),
+            Position::new_f32(left_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    cmds.spawn((
+        Position::new_f32(left_x + 2.0, y_pos, 0.),
+        Button::new("SPECIAL", callbacks.select_special).hotkey(KeyCode::Key5),
         CleanupStateAttributes,
     ));
 
     y_pos += 1.0;
 
-    // Reset All button
     cmds.spawn((
         Position::new_f32(left_x, y_pos, 0.),
         Button::new("[RESET ALL]", callbacks.reset_all),
         CleanupStateAttributes,
     ));
 
-    y_pos += 1.0;
-
-    // Calculated Stats Section
-    cmds.spawn((
-        Text::new("=== CALCULATED STATS ===")
-            .fg1(Palette::Cyan)
-            .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
-        CleanupStateAttributes,
-    ));
-
-    y_pos += 0.5;
-
-    // Fortitude
-    let fortitude_base = StatType::Fortitude.get_base_value(attributes);
-    let fortitude_modifiers = stat_modifiers.get_total_for_stat(StatType::Fortitude);
-    let fortitude_total = stats.get_stat(StatType::Fortitude);
-
-    let fortitude_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Fortitude:    {}  (Constitution: {} + Modifiers: {:+})",
-                fortitude_total, fortitude_base, fortitude_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Speed
-    let speed_base = StatType::Speed.get_base_value(attributes);
-    let speed_modifiers = stat_modifiers.get_total_for_stat(StatType::Speed);
-    let speed_total = stats.get_stat(StatType::Speed);
-
-    let speed_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Speed:        {}  (Dexterity: {} + Modifiers: {:+})",
-                speed_total, speed_base, speed_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Armor
-    let _armor_base = StatType::Armor.get_base_value(attributes);
-    let armor_modifiers = stat_modifiers.get_total_for_stat(StatType::Armor);
-    let armor_total = stats.get_stat(StatType::Armor);
-
-    let armor_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Armor:        {}/{}  (Max: {} | Modifiers: {:+})",
-                health.current_armor, armor_total, armor_total, armor_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Armor Regen
-    let armor_regen_base = StatType::ArmorRegen.get_base_value(attributes);
-    let armor_regen_modifiers = stat_modifiers.get_total_for_stat(StatType::ArmorRegen);
-    let armor_regen_total = stats.get_stat(StatType::ArmorRegen);
-
-    let armor_regen_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Armor Regen:  {}  (Intelligence: {} + Modifiers: {:+})",
-                armor_regen_total, armor_regen_base, armor_regen_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Reload Speed
-    let reload_speed_base = StatType::ReloadSpeed.get_base_value(attributes);
-    let reload_speed_modifiers = stat_modifiers.get_total_for_stat(StatType::ReloadSpeed);
-    let reload_speed_total = stats.get_stat(StatType::ReloadSpeed);
-
-    let reload_speed_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Reload Speed: {}  (Dexterity: {} + Modifiers: {:+})",
-                reload_speed_total, reload_speed_base, reload_speed_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 1.0;
-
-    // Weapon Proficiencies Section
-    cmds.spawn((
-        Text::new("=== WEAPON PROFICIENCIES ===")
-            .fg1(Palette::Cyan)
-            .layer(Layer::Ui),
-        Position::new_f32(left_x, y_pos, 0.),
-        CleanupStateAttributes,
-    ));
-
-    y_pos += 0.5;
-
-    // Rifle
-    let rifle_base = StatType::Rifle.get_base_value(attributes);
-    let rifle_modifiers = stat_modifiers.get_total_for_stat(StatType::Rifle);
-    let rifle_total = stats.get_stat(StatType::Rifle);
-
-    let rifle_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Rifle:        {}  (Dexterity: {} + Modifiers: {:+})",
-                rifle_total, rifle_base, rifle_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Shotgun
-    let shotgun_base = StatType::Shotgun.get_base_value(attributes);
-    let shotgun_modifiers = stat_modifiers.get_total_for_stat(StatType::Shotgun);
-    let shotgun_total = stats.get_stat(StatType::Shotgun);
-
-    let shotgun_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Shotgun:      {}  (Strength: {} + Modifiers: {:+})",
-                shotgun_total, shotgun_base, shotgun_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Pistol
-    let pistol_base = StatType::Pistol.get_base_value(attributes);
-    let pistol_modifiers = stat_modifiers.get_total_for_stat(StatType::Pistol);
-    let pistol_total = stats.get_stat(StatType::Pistol);
-
-    let pistol_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Pistol:       {}  (Strength: {} + Modifiers: {:+})",
-                pistol_total, pistol_base, pistol_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Blade
-    let blade_base = StatType::Blade.get_base_value(attributes);
-    let blade_modifiers = stat_modifiers.get_total_for_stat(StatType::Blade);
-    let blade_total = stats.get_stat(StatType::Blade);
-
-    let blade_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Blade:        {}  (Dexterity: {} + Modifiers: {:+})",
-                blade_total, blade_base, blade_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Cudgel
-    let cudgel_base = StatType::Cudgel.get_base_value(attributes);
-    let cudgel_modifiers = stat_modifiers.get_total_for_stat(StatType::Cudgel);
-    let cudgel_total = stats.get_stat(StatType::Cudgel);
-
-    let cudgel_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Cudgel:       {}  (Strength: {} + Modifiers: {:+})",
-                cudgel_total, cudgel_base, cudgel_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Unarmed
-    let unarmed_base = StatType::Unarmed.get_base_value(attributes);
-    let unarmed_modifiers = stat_modifiers.get_total_for_stat(StatType::Unarmed);
-    let unarmed_total = stats.get_stat(StatType::Unarmed);
-
-    let unarmed_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Unarmed:      {}  (Strength: {} + Modifiers: {:+})",
-                unarmed_total, unarmed_base, unarmed_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
-    y_pos += 0.5;
-
-    // Dodge
-    let dodge_base = StatType::Dodge.get_base_value(attributes);
-    let dodge_modifiers = stat_modifiers.get_total_for_stat(StatType::Dodge);
-    let dodge_total = stats.get_stat(StatType::Dodge);
-
-    let dodge_display = cmds
-        .spawn((
-            Text::new(&format!(
-                "Dodge:        {}  (Dexterity: {} + Modifiers: {:+})",
-                dodge_total, dodge_base, dodge_modifiers
-            ))
-            .fg1(Palette::White)
-            .layer(Layer::Ui),
-            Position::new_f32(left_x, y_pos, 0.),
-            CleanupStateAttributes,
-        ))
-        .id();
-
     y_pos += 1.5;
 
-    // Back Button
     cmds.spawn((
         Position::new_f32(left_x, y_pos, 0.),
         Button::new("({Y|ESC}) BACK", callbacks.back_to_explore).hotkey(KeyCode::Escape),
         CleanupStateAttributes,
     ));
 
-    // Insert the resource with all entity IDs for dynamic updates
+    let (title_text, desc_text) = match selected.current {
+        AttributeGroup::Strength => (
+            "=== STRENGTH STATS ===",
+            "Raw physical power affects weapon handling and melee damage.",
+        ),
+        AttributeGroup::Dexterity => (
+            "=== DEXTERITY STATS ===",
+            "Agility and precision affects speed, accuracy, and evasion.",
+        ),
+        AttributeGroup::Constitution => (
+            "=== CONSTITUTION STATS ===",
+            "Durability and health determines max HP and fortitude.",
+        ),
+        AttributeGroup::Intelligence => (
+            "=== INTELLIGENCE STATS ===",
+            "Knowledge and tactics affects armor regeneration.",
+        ),
+        AttributeGroup::Special => (
+            "=== SPECIAL STATS ===",
+            "Stats that don't derive from base attributes.",
+        ),
+    };
+
+    y_pos = 3.0;
+
+    let stat_section_title = cmds
+        .spawn((
+            Text::new(title_text).fg1(Palette::Cyan).layer(Layer::Ui),
+            Position::new_f32(right_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 0.5;
+
+    let stat_section_desc = cmds
+        .spawn((
+            Text::new(desc_text).fg1(Palette::DarkGray).layer(Layer::Ui),
+            Position::new_f32(right_x, y_pos, 0.),
+            CleanupStateAttributes,
+        ))
+        .id();
+
+    y_pos += 1.0;
+
+    let mut stat_displays = HashMap::new();
+
+    for stat_type in StatType::all() {
+        let is_visible = stat_type.get_attribute_group() == selected.current;
+
+        let base = stat_type.get_base_value(attributes);
+        let modifiers = stat_modifiers.get_total_for_stat(*stat_type);
+        let total = stats.get_stat(*stat_type);
+
+        let stat_name = format!("{:?}", stat_type);
+
+        let display_text = if *stat_type == StatType::Armor {
+            let (current_armor, max_armor) = health.get_current_max_armor(stats);
+            format!(
+                "  {:14} {:3}  ({}/{} current | {} max | {:+} mods)",
+                stat_name, total, current_armor, max_armor, total, modifiers
+            )
+        } else {
+            format!(
+                "  {:14} {:3}  ({} base {:+} mods)",
+                stat_name, total, base, modifiers
+            )
+        };
+
+        let position = if is_visible {
+            Position::new_f32(right_x, y_pos, 0.)
+        } else {
+            Position::new_f32(-1000.0, -1000.0, 0.)
+        };
+
+        let callback = *callbacks.select_stat.get(stat_type).unwrap();
+
+        let entity = cmds
+            .spawn((
+                position,
+                Button::new(&display_text, callback),
+                CleanupStateAttributes,
+            ))
+            .id();
+
+        stat_displays.insert(*stat_type, entity);
+
+        if is_visible {
+            y_pos += 0.5;
+        }
+    }
+
     cmds.insert_resource(AttributesUIEntities {
         level_display,
         available_points,
@@ -857,18 +1048,14 @@ fn setup_attributes_screen(
         dexterity_value,
         constitution_value,
         intelligence_value,
-        fortitude_display,
-        speed_display,
-        armor_display,
-        armor_regen_display,
-        rifle_display,
-        shotgun_display,
-        pistol_display,
-        blade_display,
-        cudgel_display,
-        unarmed_display,
-        dodge_display,
-        reload_speed_display,
+        strength_indicator,
+        dexterity_indicator,
+        constitution_indicator,
+        intelligence_indicator,
+        special_indicator,
+        stat_displays,
+        stat_section_title,
+        stat_section_desc,
     });
 }
 

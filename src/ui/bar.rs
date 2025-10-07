@@ -28,7 +28,6 @@ impl Bar {
         color: Palette,
         color_empty: Palette,
     ) -> Self {
-        trace!("New bar: {}/{} width={}", current, max, width);
         Self {
             current,
             max,

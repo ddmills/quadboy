@@ -913,10 +913,18 @@ impl AttackAction {
                 ConditionSource::Unknown
             };
 
+        // Get attacker's PoisonDamage stat bonus
+        let poison_damage_bonus = world
+            .get::<Stats>(attacker_entity)
+            .map(|stats| stats.get_stat(StatType::PoisonDamage))
+            .unwrap_or(0);
+
+        let total_damage_per_tick = damage_per_tick + poison_damage_bonus;
+
         // Create the poison condition
         let poison_condition = Condition::new(
             ConditionType::Poisoned {
-                damage_per_tick,
+                damage_per_tick: total_damage_per_tick,
                 tick_interval: 100, // Damage every 100 ticks
             },
             duration_ticks,
@@ -978,10 +986,18 @@ impl AttackAction {
                 ConditionSource::Unknown
             };
 
+        // Get attacker's BleedDamage stat bonus
+        let bleed_damage_bonus = world
+            .get::<Stats>(attacker_entity)
+            .map(|stats| stats.get_stat(StatType::BleedDamage))
+            .unwrap_or(0);
+
+        let total_damage_per_tick = damage_per_tick + bleed_damage_bonus;
+
         // Create the bleeding condition
         let bleeding_condition = Condition::new(
             ConditionType::Bleeding {
-                damage_per_tick,
+                damage_per_tick: total_damage_per_tick,
                 can_stack,
             },
             duration_ticks,
@@ -1042,10 +1058,18 @@ impl AttackAction {
                 ConditionSource::Unknown
             };
 
+        // Get attacker's BurnDamage stat bonus
+        let burn_damage_bonus = world
+            .get::<Stats>(attacker_entity)
+            .map(|stats| stats.get_stat(StatType::BurnDamage))
+            .unwrap_or(0);
+
+        let total_damage_per_tick = damage_per_tick + burn_damage_bonus;
+
         // Create the burning condition
         let burning_condition = Condition::new(
             ConditionType::Burning {
-                damage_per_tick,
+                damage_per_tick: total_damage_per_tick,
             },
             duration_ticks,
             1.0, // intensity

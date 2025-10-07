@@ -1,6 +1,10 @@
 use super::{Prefab, PrefabBuilder};
 use crate::common::Rand;
-use crate::{common::Palette, domain::{ColliderFlags, MaterialType}, rendering::Layer};
+use crate::{
+    common::Palette,
+    domain::{ColliderFlags, MaterialType},
+    rendering::Layer,
+};
 use bevy_ecs::{entity::Entity, world::World};
 
 pub fn spawn_pine_tree(entity: Entity, world: &mut World, config: Prefab) -> PrefabBuilder {

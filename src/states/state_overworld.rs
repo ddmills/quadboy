@@ -53,9 +53,7 @@ impl Plugin for OverworldStatePlugin {
     }
 }
 
-fn on_leave_overworld() {
-    trace!("LeaveGameState::<Overworld>");
-}
+fn on_leave_overworld() {}
 
 #[derive(Component)]
 pub struct CleanupStateOverworld;

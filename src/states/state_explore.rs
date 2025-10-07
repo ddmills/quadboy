@@ -9,12 +9,11 @@ use crate::{
     common::{Palette, hex},
     domain::{
         ActiveConditions, AiController, ConditionType, CreatureType, DefaultMeleeAttack,
-        Description, EquipmentSlot, EquipmentSlots, FactionId, Health, IgnoreLighting,
-        Item, Label, Level, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats,
-        TargetCycling, Weapon, WeaponType, Zone, collect_valid_targets, game_loop,
-        handle_item_pickup, init_targeting_resource, player_input, render_player_debug,
-        render_target_crosshair, render_target_info, spawn_targeting_ui, update_mouse_targeting,
-        update_target_cycling,
+        Description, EquipmentSlot, EquipmentSlots, FactionId, Health, IgnoreLighting, Item, Label,
+        Level, Player, PlayerDebug, PlayerMovedEvent, PlayerPosition, Stats, TargetCycling, Weapon,
+        WeaponType, Zone, collect_valid_targets, game_loop, handle_item_pickup,
+        init_targeting_resource, player_input, render_player_debug, render_target_crosshair,
+        render_target_info, spawn_targeting_ui, update_mouse_targeting, update_target_cycling,
     },
     engine::{App, KeyInput, Mouse, Plugin, SerializableComponent, StableId, StableIdRegistry},
     rendering::{
@@ -221,8 +220,6 @@ fn remove_explore_callbacks(mut cmds: Commands) {
 }
 
 fn on_enter_explore(mut cmds: Commands, callbacks: Res<ExploreCallbacks>) {
-    trace!("EnterGameState::<Explore>");
-
     // Initialize targeting system
     init_targeting_resource(&mut cmds);
     spawn_targeting_ui(&mut cmds, CleanupStateExplore);
@@ -836,9 +833,7 @@ fn update_target_condition_display(
     }
 }
 
-fn on_leave_explore() {
-    trace!("LeaveGameState::<Explore>");
-}
+fn on_leave_explore() {}
 
 fn center_camera_on_player(
     mut e_player_moved: EventWriter<PlayerMovedEvent>,
@@ -1238,4 +1233,3 @@ fn close_examine_dialog(
     }
     dialog_state.is_open = false;
 }
-

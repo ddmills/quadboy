@@ -270,7 +270,7 @@ fn draw_panel_borders(cmds: &mut Commands, panel: &mut Panel, has_borders: bool)
         cmds.entity(entity).try_despawn();
     }
 
-    let border_color = Palette::DarkGreen;
+    let border_color = Palette::DarkGray;
 
     // Convert panel coordinates to text coordinates (multiply by 2)
     let text_x = panel.x * 2;

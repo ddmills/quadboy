@@ -58,9 +58,7 @@ impl Plugin for PauseStatePlugin {
     }
 }
 
-fn on_leave_pause() {
-    trace!("LeaveGameState::<Pause>");
-}
+fn on_leave_pause() {}
 
 #[derive(Component)]
 pub struct CleanupStatePause;
